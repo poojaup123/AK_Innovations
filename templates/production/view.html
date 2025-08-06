@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-cog me-2"></i>{{ title }}</h2>
+                <div>
+                    <a href="{{ url_for('production.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Production Overview -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>Production Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Production Number:</strong></td>
+                                    <td>{{ production.production_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Item:</strong></td>
+                                    <td>{{ item.name if item else 'N/A' }} ({{ item.code if item else 'N/A' }})</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Quantity Planned:</strong></td>
+                                    <td>{{ production.quantity_planned }} {{ item.unit_of_measure if item else 'units' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Quantity Produced:</strong></td>
+                                    <td>{{ production.quantity_produced or 0 }} {{ item.unit_of_measure if item else 'units' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        {% if production.status == 'planned' %}
+                                            <span class="badge bg-info">Planned</span>
+                                        {% elif production.status == 'in_progress' %}
+                                            <span class="badge bg-warning">In Progress</span>
+                                        {% elif production.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ production.status.title() }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Production Date:</strong></td>
+                                    <td>{{ production.production_date.strftime('%d/%m/%Y') if production.production_date else 'Not set' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created By:</strong></td>
+                                    <td>{{ production.creator.username if production.creator else 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created At:</strong></td>
+                                    <td>{{ production.created_at.strftime('%d/%m/%Y %H:%M') if production.created_at else 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Batch Tracking:</strong></td>
+                                    <td>
+                                        {% if production.batch_tracking_enabled %}
+                                            <span class="badge bg-success">Enabled</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Disabled</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Quality Control:</strong></td>
+                                    <td>
+                                        {% if production.quality_control_passed %}
+                                            <span class="badge bg-success">Passed</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {% if production.notes %}
+                    <div class="mt-3">
+                        <strong>Notes:</strong>
+                        <p class="text-muted">{{ production.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie me-2"></i>Production Progress</h5>
+                </div>
+                <div class="card-body text-center">
+                    {% set progress_percent = ((production.quantity_produced or 0) / production.quantity_planned * 100) if production.quantity_planned > 0 else 0 %}
+                    <div class="progress mb-3" style="height: 20px;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ progress_percent }}%" 
+                             aria-valuenow="{{ progress_percent }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ "%.1f"|format(progress_percent) }}%
+                        </div>
+                    </div>
+                    <p class="mb-1"><strong>{{ production.quantity_produced or 0 }}</strong> of <strong>{{ production.quantity_planned }}</strong> produced</p>
+                    <small class="text-muted">{{ item.unit_of_measure if item else 'units' }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOM Information -->
+    {% if bom_items %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list-alt me-2"></i>Bill of Materials</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Required Qty (per unit)</th>
+                                    <th>Total Required</th>
+                                    <th>Unit Cost</th>
+                                    <th>Total Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for bom_item in bom_items %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ bom_item.material.name if bom_item.material else 'N/A' }}</strong>
+                                        <br><small class="text-muted">{{ bom_item.material.code if bom_item.material else 'N/A' }}</small>
+                                    </td>
+                                    <td>{{ bom_item.quantity_required }} {{ bom_item.material.unit_of_measure if bom_item.material else 'units' }}</td>
+                                    <td>{{ bom_item.quantity_required * production.quantity_planned }} {{ bom_item.material.unit_of_measure if bom_item.material else 'units' }}</td>
+                                    <td>₹{{ "%.2f"|format(bom_item.material.purchase_price or 0) if bom_item.material else '0.00' }}</td>
+                                    <td>₹{{ "%.2f"|format((bom_item.material.purchase_price or 0) * bom_item.quantity_required * production.quantity_planned) if bom_item.material else '0.00' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Production Batches -->
+    {% if batches %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-boxes me-2"></i>Production Batches</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Batch Number</th>
+                                    <th>Quantity Consumed</th>
+                                    <th>Consumption Date</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for batch in batches %}
+                                <tr>
+                                    <td>{{ batch.material_name or 'N/A' }}</td>
+                                    <td>{{ batch.batch_number or 'N/A' }}</td>
+                                    <td>{{ batch.quantity_consumed }}</td>
+                                    <td>{{ batch.consumption_date.strftime('%d/%m/%Y %H:%M') if batch.consumption_date else 'N/A' }}</td>
+                                    <td>{{ batch.notes or '' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-tools me-2"></i>Actions</h5>
+                </div>
+                <div class="card-body">
+                    {% if production.status == 'planned' %}
+                        <button class="btn btn-success me-2" onclick="startProduction({{ production.id }})">
+                            <i class="fas fa-play"></i> Start Production
+                        </button>
+                    {% elif production.status == 'in_progress' %}
+                        <button class="btn btn-warning me-2" onclick="completeProduction({{ production.id }})">
+                            <i class="fas fa-check"></i> Complete Production
+                        </button>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('production.add_production') }}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-plus"></i> Add New Production
+                    </a>
+                    
+                    {% if production.batch_tracking_enabled %}
+                    <button class="btn btn-outline-info me-2" onclick="viewBatchConsumption({{ production.id }})">
+                        <i class="fas fa-clipboard-list"></i> View Batch Consumption
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function startProduction(productionId) {
+    if (confirm('Are you sure you want to start this production?')) {
+        console.log('Starting production:', productionId);
+    }
+}
+
+function completeProduction(productionId) {
+    if (confirm('Are you sure you want to mark this production as completed?')) {
+        console.log('Completing production:', productionId);
+    }
+}
+
+function viewBatchConsumption(productionId) {
+    console.log('Viewing batch consumption for production:', productionId);
+}
+</script>
+{% endblock %}

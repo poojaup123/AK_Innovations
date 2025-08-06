@@ -1,0 +1,155 @@
+<!-- Process Template for Dynamic Addition -->
+<div class="card process-card mb-3" id="process-{index}">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+            <i class="fas fa-cog"></i> Process {sequence}
+        </h6>
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeProcess('{index}')">
+            <i class="fas fa-times"></i> Remove
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <!-- Process Name and Sequence -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Process Name</label>
+                <select name="processes-{index}-process_name" class="form-select" required>
+                    <option value="">Select Process</option>
+                    <option value="Zinc">Zinc</option>
+                    <option value="Cutting">Cutting</option>
+                    <option value="Bending">Bending</option>
+                    <option value="Welding">Welding</option>
+                    <option value="Painting">Painting</option>
+                    <option value="Assembly">Assembly</option>
+                    <option value="Machining">Machining</option>
+                    <option value="Polishing">Polishing</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Sequence</label>
+                <input type="number" name="processes-{index}-sequence_number" class="form-control" value="{sequence}" min="1" max="20" required>
+            </div>
+            
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Quantity</label>
+                <input type="number" name="processes-{index}-quantity_input" class="form-control" step="0.01" min="0" placeholder="Process qty" required>
+            </div>
+            
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Scrap</label>
+                <input type="number" name="processes-{index}-expected_scrap" class="form-control" step="0.01" min="0" value="0.0" placeholder="Expected scrap">
+            </div>
+        </div>
+        
+        <!-- Output Product Section (NEW) -->
+        <div class="row">
+            <div class="col-12 mb-3">
+                <h6 class="text-success border-bottom pb-1">
+                    <i class="fas fa-arrow-right"></i> Output Products
+                    <small class="text-muted">(What finished products will be created?)</small>
+                </h6>
+            </div>
+            
+            <div class="col-md-8 mb-3">
+                <label class="form-label">Output Product</label>
+                <select name="processes-{index}-output_item_id" class="form-select output-product-select">
+                    <option value="">Select Output Product</option>
+                    <!-- Options will be populated dynamically -->
+                </select>
+                <small class="text-muted">Select the finished product that will be created from this process</small>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Output Quantity</label>
+                <input type="number" name="processes-{index}-output_quantity" class="form-control" step="0.01" min="0" value="0.0" placeholder="Expected output">
+                <small class="text-muted">How many units expected</small>
+            </div>
+        </div>
+        
+        <!-- Work Assignment -->
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Work Type</label>
+                <select name="processes-{index}-work_type" class="form-select work-type-select" onchange="toggleWorkFields('{index}')">
+                    <option value="outsourced">Outsourced</option>
+                    <option value="in_house">In-House</option>
+                </select>
+            </div>
+            
+            <div class="col-md-5 mb-3 customer-field" id="customer-field-{index}">
+                <label class="form-label">Customer/Vendor</label>
+                <select name="processes-{index}-customer_name" class="form-select">
+                    <option value="">Select Customer/Vendor</option>
+                    <!-- Options will be populated dynamically -->
+                </select>
+            </div>
+            
+            <div class="col-md-4 mb-3 department-field" id="department-field-{index}" style="display: none;">
+                <label class="form-label">Department</label>
+                <select name="processes-{index}-department" class="form-select">
+                    <option value="">Select Department</option>
+                    <option value="production">Production</option>
+                    <option value="assembly">Assembly</option>
+                    <option value="quality_control">Quality Control</option>
+                    <option value="finishing">Finishing</option>
+                    <option value="packaging">Packaging</option>
+                    <option value="maintenance">Maintenance</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Team Assignment Section (Only for In-House) -->
+        <div class="team-assignment-section" id="team-section-{index}" style="display: none;">
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <h6 class="text-info border-bottom pb-1">
+                        <i class="fas fa-users"></i> Team Assignment
+                        <small class="text-muted">(For In-House work)</small>
+                    </h6>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Team Work?</label>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="processes-{index}-is_team_work" id="team-work-{index}" onchange="toggleTeamFields('{index}')">
+                        <label class="form-check-label" for="team-work-{index}">
+                            Enable team assignment for this process
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-3 team-fields" id="team-fields-{index}" style="display: none;">
+                    <label class="form-label">Max Team Members</label>
+                    <input type="number" name="processes-{index}-max_team_members" class="form-control" min="1" max="10" value="1" placeholder="Maximum team size">
+                </div>
+                
+                <div class="col-md-3 mb-3 team-fields" id="team-fields2-{index}" style="display: none;">
+                    <label class="form-label">Team Lead</label>
+                    <select name="processes-{index}-team_lead" class="form-select">
+                        <option value="">Select Team Lead</option>
+                        <!-- Options will be populated from employees -->
+                    </select>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Rate/Unit</label>
+                <input type="number" name="processes-{index}-rate_per_unit" class="form-control rate-input" step="0.01" min="0" value="0.0" placeholder="₹ per unit">
+            </div>
+        </div>
+        
+        <!-- Dates -->
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Expected Completion</label>
+                <input type="date" name="processes-{index}-expected_completion" class="form-control">
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Process Notes</label>
+                <textarea name="processes-{index}-notes" class="form-control" rows="2" placeholder="Specific instructions for this process"></textarea>
+            </div>
+        </div>
+    </div>
+</div>

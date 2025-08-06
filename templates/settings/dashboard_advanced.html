@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Settings Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('settings.dashboard') }}">Settings</a></li>
+                    <li class="breadcrumb-item active">Advanced Configuration</li>
+                </ol>
+            </nav>
+            <h2><i class="fas fa-sliders-h"></i> Advanced Settings Dashboard</h2>
+            <p class="text-muted">Centralized multi-company ERP configuration system with comprehensive business rules</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Statistics Overview -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div class="card-body text-center">
+                            <h3>{{ stats.total_companies }}</h3>
+                            <p class="mb-0">Companies</p>
+                            <i class="fas fa-building position-absolute" style="top: 10px; right: 15px; opacity: 0.3; font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                        <div class="card-body text-center">
+                            <h3>{{ stats.active_companies }}</h3>
+                            <p class="mb-0">Active</p>
+                            <i class="fas fa-check-circle position-absolute" style="top: 10px; right: 15px; opacity: 0.3; font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);">
+                        <div class="card-body text-center">
+                            <h3>{{ stats.total_users }}</h3>
+                            <p class="mb-0">Users</p>
+                            <i class="fas fa-users position-absolute" style="top: 10px; right: 15px; opacity: 0.3; font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white" style="background: linear-gradient(135deg, #c2185b 0%, #e91e63 100%);">
+                        <div class="card-body text-center">
+                            <h3>{{ stats.settings_count }}</h3>
+                            <p class="mb-0">Settings</p>
+                            <i class="fas fa-sliders-h position-absolute" style="top: 10px; right: 15px; opacity: 0.3; font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Core Configuration Modules -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-cogs"></i> Core Configuration Modules</h5>
+                    <p class="text-muted mb-0">Configure business rules and system behavior across all companies</p>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Company Management -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-building"></i>
+                                            <span class="ms-2">Company Management</span>
+                                        </div>
+                                        <span class="badge bg-light text-dark">Core</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-2">Multi-company setup, user assignments, and organizational structure</p>
+                                    <div class="mb-3">
+                                        <small class="text-success"><i class="fas fa-check"></i> Multi-company support</small><br>
+                                        <small class="text-success"><i class="fas fa-check"></i> User-company assignments</small><br>
+                                        <small class="text-success"><i class="fas fa-check"></i> Role-based access control</small>
+                                    </div>
+                                    <a href="{{ url_for('settings_advanced.company_management') }}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-cog"></i> Configure
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Inventory Configuration -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-boxes"></i>
+                                            <span class="ms-2">Inventory Rules</span>
+                                        </div>
+                                        <span class="badge bg-light text-dark">Critical</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-2">Stock valuation methods, batch tracking, and multi-UOM configurations</p>
+                                    <div class="mb-3">
+                                        <small class="text-success"><i class="fas fa-check"></i> FIFO/LIFO/Average costing</small><br>
+                                        <small class="text-success"><i class="fas fa-check"></i> Batch & expiry tracking</small><br>
+                                        <small class="text-success"><i class="fas fa-check"></i> Multi-UOM conversions</small>
+                                    </div>
+                                    <a href="{{ url_for('settings_advanced.inventory_settings') }}" class="btn btn-success btn-sm">
+                                        <i class="fas fa-cog"></i> Configure
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accounting Automation -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); color: white;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-calculator"></i>
+                                            <span class="ms-2">Accounting Automation</span>
+                                        </div>
+                                        <span class="badge bg-light text-dark">Essential</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-2">Auto journal entries, default ledgers, and GST compliance settings</p>
+                                    <div class="mb-3">
+                                        <small class="text-success"><i class="fas fa-check"></i> Double-entry automation</small><br>
+                                        <small class="text-success"><i class="fas fa-check"></i> GST compliance</small><br>
+                                        <small class="text-success"><i class="fas fa-check"></i> Invoice generation</small>
+                                    </div>
+                                    <a href="{{ url_for('settings_advanced.accounting_settings') }}" class="btn btn-warning btn-sm">
+                                        <i class="fas fa-cog"></i> Configure
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Production Controls -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header" style="background: linear-gradient(135deg, #c2185b 0%, #e91e63 100%); color: white;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-industry"></i>
+                                            <span class="ms-2">Production Controls</span>
+                                        </div>
+                                        <span class="badge bg-light text-dark">Advanced</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-2">BOM configurations, cost calculations, and batch linking rules</p>
+                                    <div class="mb-3">
+                                        <small class="text-success"><i class="fas fa-check"></i> Multi-level BOM</small><br>
+                                        <small class="text-success"><i class="fas fa-check"></i> Auto cost calculation</small><br>
+                                        <small class="text-success"><i class="fas fa-check"></i> Process tracking</small>
+                                    </div>
+                                    <a href="{{ url_for('settings_advanced.production_settings') }}" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-cog"></i> Configure
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Secondary Modules -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-tools"></i> Operational Settings</h5>
+                    <p class="text-muted mb-0">Configure job work, vendor management, and operational preferences</p>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Job Work Preferences -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header" style="background: linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%); color: white;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-tools"></i>
+                                            <span class="ms-2">Job Work Settings</span>
+                                        </div>
+                                        <span class="badge bg-light text-dark">Operational</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-2">GRN requirements, vendor rates, and billing configurations</p>
+                                    <div class="mb-3">
+                                        <small class="text-success"><i class="fas fa-check"></i> Vendor rate tracking</small><br>
+                                        <small class="text-success"><i class="fas fa-check"></i> Auto/manual billing</small><br>
+                                        <small class="text-success"><i class="fas fa-check"></i> GRN integration</small>
+                                    </div>
+                                    <a href="{{ url_for('settings_advanced.jobwork_settings') }}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-cog"></i> Configure
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- System Administration -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header" style="background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%); color: white;">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-user-shield"></i>
+                                            <span class="ms-2">System Administration</span>
+                                        </div>
+                                        <span class="badge bg-light text-dark">Security</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-2">User permissions, role assignments, and access control management</p>
+                                    <div class="mb-3">
+                                        <small class="text-success"><i class="fas fa-check"></i> Role-based access</small><br>
+                                        <small class="text-success"><i class="fas fa-check"></i> Audit trails</small><br>
+                                        <small class="text-success"><i class="fas fa-check"></i> Security policies</small>
+                                    </div>
+                                    <a href="{{ url_for('settings.user_management') }}" class="btn btn-secondary btn-sm">
+                                        <i class="fas fa-cog"></i> Configure
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('settings.dashboard') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back to Basic Settings
+                        </a>
+                        <a href="{{ url_for('settings_advanced.company_management') }}" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-plus"></i> Add New Company
+                        </a>
+                        <a href="{{ url_for('settings.user_management') }}" class="btn btn-outline-warning btn-sm">
+                            <i class="fas fa-user-plus"></i> Manage Users
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Health -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-heartbeat"></i> System Health</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Centralized Settings</span>
+                            <span class="badge bg-success">Active</span>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Multi-Company Support</span>
+                            <span class="badge bg-success">Enabled</span>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Default Company</span>
+                            <span class="badge bg-success">Configured</span>
+                        </div>
+                    </div>
+                    <div class="mb-0">
+                        <div class="d-flex justify-content-between">
+                            <span>Admin Access</span>
+                            <span class="badge bg-success">Assigned</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuration Guide -->
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-question-circle"></i> Configuration Guide</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>Getting Started:</h6>
+                        <ol class="small">
+                            <li>Configure company details</li>
+                            <li>Set up inventory rules</li>
+                            <li>Configure accounting automation</li>
+                            <li>Define production controls</li>
+                            <li>Set job work preferences</li>
+                        </ol>
+                    </div>
+                    <div class="alert alert-info p-2">
+                        <small><i class="fas fa-lightbulb"></i> <strong>Tip:</strong> Start with Company Management to establish the foundation for all other settings.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Configuration Changes -->
+    {% if recent_changes %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-history"></i> Recent Configuration Changes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Setting</th>
+                                    <th>Value</th>
+                                    <th>Updated By</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for change in recent_changes %}
+                                <tr>
+                                    <td><span class="badge bg-primary">{{ change.category.title() }}</span></td>
+                                    <td>{{ change.setting_key.replace('_', ' ').title() }}</td>
+                                    <td>
+                                        {% if change.data_type == 'boolean' %}
+                                            {% if change.setting_value.lower() in ['true', '1'] %}
+                                                <i class="fas fa-check-circle text-success"></i> Enabled
+                                            {% else %}
+                                                <i class="fas fa-times-circle text-danger"></i> Disabled
+                                            {% endif %}
+                                        {% else %}
+                                            {{ change.setting_value }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ change.updated_by_user.username if change.updated_by_user else 'System' }}</td>
+                                    <td><small>{{ change.updated_at.strftime('%Y-%m-%d %H:%M') if change.updated_at else 'N/A' }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

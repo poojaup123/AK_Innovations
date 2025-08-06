@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block extra_head %}
+<style>
+.search-dropdown {
+    position: relative;
+}
+.search-input {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.search-select {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-top: none;
+    max-height: 200px;
+    overflow-y: auto;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-money-bill-wave"></i> {{ title }}</h1>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.item_id.label(class="form-label") }}
+                            {{ form.item_id(class="form-select") }}
+                            {% if form.item_id.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.item_id.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.rate_per_unit.label(class="form-label") }}
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                {{ form.rate_per_unit(class="form-control", placeholder="0.00", step="0.01") }}
+                            </div>
+                            {% if form.rate_per_unit.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.rate_per_unit.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.process_type.label(class="form-label") }}
+                            {{ form.process_type(class="form-select") }}
+                            <div class="form-text">Leave blank for general rate applicable to all processes</div>
+                            {% if form.process_type.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.process_type.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.vendor_name.label(class="form-label") }}
+                            <div class="search-dropdown">
+                                <input type="text" class="form-control search-input" id="vendor_search" placeholder="Type to search vendors..." />
+                                <select class="form-select search-select" id="vendor_name_select" size="6" style="display: none;">
+                                    {% for value, label in form.vendor_name.choices %}
+                                        <option value="{{ value }}" {% if form.vendor_name.data == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="hidden" name="vendor_name" id="vendor_name_hidden" value="{{ form.vendor_name.data or '' }}" />
+                            </div>
+                            <div class="form-text">Search and select vendor/supplier for this specific rate</div>
+                            {% if form.vendor_name.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.vendor_name.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <div class="form-check mt-2">
+                                {{ form.is_active(class="form-check-input") }}
+                                {{ form.is_active.label(class="form-check-label") }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    {{ form.notes.label(class="form-label") }}
+                    {{ form.notes(class="form-control", rows="3", placeholder="Additional notes about this rate...") }}
+                    {% if form.notes.errors %}
+                        <div class="text-danger">
+                            {% for error in form.notes.errors %}
+                                <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('jobwork_rates.list_rates') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> {{ 'Update' if rate else 'Save' }} Rate
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if rate %}
+    <!-- Rate Details Card -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h6><i class="fas fa-info-circle"></i> Rate Information</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Item:</strong> {{ rate.item.code }} - {{ rate.item.name }}</p>
+                    <p><strong>Current Rate:</strong> ₹{{ "%.2f"|format(rate.rate_per_unit) }}/unit</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Process:</strong> 
+                        {% if rate.process_type %}
+                            <span class="badge bg-info">{{ rate.process_type }}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">All Processes</span>
+                        {% endif %}
+                    </p>
+                    {% if rate.vendor_name %}
+                    <p><strong>Vendor:</strong> <span class="badge bg-success">{{ rate.vendor_name }}</span></p>
+                    {% endif %}
+                    <p><strong>Created:</strong> {{ rate.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+                </div>
+            </div>
+            {% if rate.notes %}
+            <hr>
+            <p><strong>Notes:</strong> {{ rate.notes }}</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('vendor_search');
+    const selectElement = document.getElementById('vendor_name_select');
+    const hiddenInput = document.getElementById('vendor_name_hidden');
+    const allOptions = Array.from(selectElement.options);
+    
+    // Store original options
+    const originalOptions = allOptions.map(option => ({
+        value: option.value,
+        text: option.text,
+        selected: option.selected
+    }));
+    
+    // Initialize search input with selected value
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    if (selectedOption && selectedOption.value !== '') {
+        searchInput.value = selectedOption.text;
+        hiddenInput.value = selectedOption.value;
+    }
+    
+    // Show dropdown when search input is focused
+    searchInput.addEventListener('focus', function() {
+        selectElement.style.display = 'block';
+        this.select(); // Select all text for easy replacement
+    });
+    
+    // Hide dropdown when clicked outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.search-dropdown')) {
+            selectElement.style.display = 'none';
+        }
+    });
+    
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        selectElement.style.display = 'block';
+        
+        // Clear current options
+        selectElement.innerHTML = '';
+        
+        // Filter and add matching options
+        let hasMatches = false;
+        originalOptions.forEach(optionData => {
+            if (optionData.text.toLowerCase().includes(searchTerm) || optionData.value === '') {
+                const option = document.createElement('option');
+                option.value = optionData.value;
+                option.text = optionData.text;
+                selectElement.appendChild(option);
+                hasMatches = true;
+            }
+        });
+        
+        // If no matches found, show "No matches" message
+        if (!hasMatches) {
+            const noMatchOption = document.createElement('option');
+            noMatchOption.text = 'No vendors found matching "' + searchTerm + '"';
+            noMatchOption.disabled = true;
+            noMatchOption.value = '';
+            selectElement.appendChild(noMatchOption);
+        }
+        
+        // Clear hidden input when typing
+        hiddenInput.value = '';
+    });
+    
+    // When selecting from dropdown, update search input and hide dropdown
+    selectElement.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption && selectedOption.value !== '' && !selectedOption.disabled) {
+            searchInput.value = selectedOption.text;
+            hiddenInput.value = selectedOption.value;
+            selectElement.style.display = 'none';
+        }
+    });
+    
+    // Handle clicking on options
+    selectElement.addEventListener('click', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption && selectedOption.value !== '' && !selectedOption.disabled) {
+            searchInput.value = selectedOption.text;
+            hiddenInput.value = selectedOption.value;
+            selectElement.style.display = 'none';
+        }
+    });
+    
+    // Pre-fill item if provided in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const itemId = urlParams.get('item_id');
+    
+    if (itemId) {
+        const itemSelect = document.getElementById('item_id');
+        itemSelect.value = itemId;
+    }
+});
+</script>
+{% endblock %}

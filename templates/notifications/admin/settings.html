@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Settings{% endblock %}
+
+{% block extra_css %}
+<style>
+.settings-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+.channel-toggle {
+    padding: 15px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+.channel-toggle.enabled {
+    border-color: #28a745;
+    background-color: #d4edda;
+}
+.event-checkbox {
+    margin: 8px 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-cog"></i> Notification Settings</h2>
+                <a href="{{ url_for('notifications.admin_dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST">
+        <!-- Channel Settings -->
+        <div class="settings-section">
+            <h4><i class="fas fa-broadcast-tower"></i> Communication Channels</h4>
+            <p class="text-muted">Configure which notification channels are enabled for your system.</p>
+            
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="channel-toggle {{ 'enabled' if settings.email_enabled else '' }}">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="email_enabled" name="email_enabled" 
+                                   {{ 'checked' if settings.email_enabled else '' }}>
+                            <label class="custom-control-label" for="email_enabled">
+                                <i class="fas fa-envelope"></i> Email Notifications
+                            </label>
+                        </div>
+                        <small class="text-muted">Send notifications via email</small>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="channel-toggle {{ 'enabled' if settings.sms_enabled else '' }}">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="sms_enabled" name="sms_enabled" 
+                                   {{ 'checked' if settings.sms_enabled else '' }}>
+                            <label class="custom-control-label" for="sms_enabled">
+                                <i class="fas fa-sms"></i> SMS Notifications
+                            </label>
+                        </div>
+                        <small class="text-muted">Send notifications via SMS</small>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="channel-toggle {{ 'enabled' if settings.whatsapp_enabled else '' }}">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="whatsapp_enabled" name="whatsapp_enabled" 
+                                   {{ 'checked' if settings.whatsapp_enabled else '' }}>
+                            <label class="custom-control-label" for="whatsapp_enabled">
+                                <i class="fab fa-whatsapp"></i> WhatsApp Notifications
+                            </label>
+                        </div>
+                        <small class="text-muted">Send notifications via WhatsApp</small>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="channel-toggle {{ 'enabled' if settings.in_app_enabled else '' }}">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="in_app_enabled" name="in_app_enabled" 
+                                   {{ 'checked' if settings.in_app_enabled else '' }}>
+                            <label class="custom-control-label" for="in_app_enabled">
+                                <i class="fas fa-bell"></i> In-App Notifications
+                            </label>
+                        </div>
+                        <small class="text-muted">Show in-app notifications</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Configuration -->
+        <div class="settings-section">
+            <h4><i class="fas fa-envelope-open"></i> Email Configuration</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="sender_email">Sender Email Address</label>
+                        <input type="email" class="form-control" id="sender_email" name="sender_email" 
+                               value="{{ settings.sender_email or '' }}" 
+                               placeholder="notifications@yourcompany.com">
+                        <small class="form-text text-muted">Email address used as sender for all notifications</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="sender_name">Sender Name</label>
+                        <input type="text" class="form-control" id="sender_name" name="sender_name" 
+                               value="{{ settings.sender_name or '' }}" 
+                               placeholder="Factory Management System">
+                        <small class="form-text text-muted">Display name for email notifications</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Business Event Notifications -->
+        <div class="settings-section">
+            <h4><i class="fas fa-business-time"></i> Business Event Notifications</h4>
+            <p class="text-muted">Control which business events trigger notifications.</p>
+            
+            <div class="row">
+                <div class="col-md-4">
+                    <h6>Purchase & Procurement</h6>
+                    <div class="event-checkbox">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="po_notifications" name="po_notifications" 
+                                   {{ 'checked' if settings.po_notifications else '' }}>
+                            <label class="custom-control-label" for="po_notifications">Purchase Order Events</label>
+                        </div>
+                    </div>
+                    <div class="event-checkbox">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="grn_notifications" name="grn_notifications" 
+                                   {{ 'checked' if settings.grn_notifications else '' }}>
+                            <label class="custom-control-label" for="grn_notifications">GRN Events</label>
+                        </div>
+                    </div>
+                    <div class="event-checkbox">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="po_vendor_notification" name="po_vendor_notification" 
+                                   {{ 'checked' if settings.po_vendor_notification else '' }}>
+                            <label class="custom-control-label" for="po_vendor_notification">Notify Vendors</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <h6>Production & Job Work</h6>
+                    <div class="event-checkbox">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="job_work_notifications" name="job_work_notifications" 
+                                   {{ 'checked' if settings.job_work_notifications else '' }}>
+                            <label class="custom-control-label" for="job_work_notifications">Job Work Events</label>
+                        </div>
+                    </div>
+                    <div class="event-checkbox">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="production_notifications" name="production_notifications" 
+                                   {{ 'checked' if settings.production_notifications else '' }}>
+                            <label class="custom-control-label" for="production_notifications">Production Events</label>
+                        </div>
+                    </div>
+                    <div class="event-checkbox">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="job_work_vendor_notification" name="job_work_vendor_notification" 
+                                   {{ 'checked' if settings.job_work_vendor_notification else '' }}>
+                            <label class="custom-control-label" for="job_work_vendor_notification">Notify Job Work Vendors</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <h6>Sales & Customer</h6>
+                    <div class="event-checkbox">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="sales_notifications" name="sales_notifications" 
+                                   {{ 'checked' if settings.sales_notifications else '' }}>
+                            <label class="custom-control-label" for="sales_notifications">Sales Order Events</label>
+                        </div>
+                    </div>
+                    <div class="event-checkbox">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="customer_invoice_notification" name="customer_invoice_notification" 
+                                   {{ 'checked' if settings.customer_invoice_notification else '' }}>
+                            <label class="custom-control-label" for="customer_invoice_notification">Customer Invoices</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accounting & Finance -->
+        <div class="settings-section">
+            <h4><i class="fas fa-calculator"></i> Accounting & Finance Notifications</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="event-checkbox">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="accounts_notifications" name="accounts_notifications" 
+                                   {{ 'checked' if settings.accounts_notifications else '' }}>
+                            <label class="custom-control-label" for="accounts_notifications">Accounting Events</label>
+                        </div>
+                    </div>
+                    <div class="event-checkbox">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="payment_overdue_notification" name="payment_overdue_notification" 
+                                   {{ 'checked' if settings.payment_overdue_notification else '' }}>
+                            <label class="custom-control-label" for="payment_overdue_notification">Payment Overdue Alerts</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="event-checkbox">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="grn_rejection_notification" name="grn_rejection_notification" 
+                                   {{ 'checked' if settings.grn_rejection_notification else '' }}>
+                            <label class="custom-control-label" for="grn_rejection_notification">GRN Rejection Alerts</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory & Stock -->
+        <div class="settings-section">
+            <h4><i class="fas fa-boxes"></i> Inventory & Stock Notifications</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="event-checkbox">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="inventory_notifications" name="inventory_notifications" 
+                                   {{ 'checked' if settings.inventory_notifications else '' }}>
+                            <label class="custom-control-label" for="inventory_notifications">Inventory Events</label>
+                        </div>
+                    </div>
+                    <div class="event-checkbox">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="low_stock_notifications" name="low_stock_notifications" 
+                                   {{ 'checked' if settings.low_stock_notifications else '' }}>
+                            <label class="custom-control-label" for="low_stock_notifications">Low Stock Alerts</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="event-checkbox">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="scrap_threshold_notifications" name="scrap_threshold_notifications" 
+                                   {{ 'checked' if settings.scrap_threshold_notifications else '' }}>
+                            <label class="custom-control-label" for="scrap_threshold_notifications">Scrap Threshold Alerts</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Configuration -->
+        <div class="settings-section">
+            <h4><i class="fas fa-user-shield"></i> Admin Configuration</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="admin_email">Admin Email</label>
+                        <input type="email" class="form-control" id="admin_email" name="admin_email" 
+                               value="{{ settings.admin_email or '' }}" 
+                               placeholder="admin@yourcompany.com">
+                        <small class="form-text text-muted">Primary admin email for critical alerts</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="admin_phone">Admin Phone</label>
+                        <input type="tel" class="form-control" id="admin_phone" name="admin_phone" 
+                               value="{{ settings.admin_phone or '' }}" 
+                               placeholder="+91 9876543210">
+                        <small class="form-text text-muted">Primary admin phone for SMS alerts</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="text-center">
+            <button type="submit" class="btn btn-success btn-lg">
+                <i class="fas fa-save"></i> Save Settings
+            </button>
+            <a href="{{ url_for('notifications.admin_dashboard') }}" class="btn btn-secondary btn-lg ml-3">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle channel styling based on checkbox state
+$(document).ready(function() {
+    // Function to update channel toggle styling
+    function updateChannelToggle(checkbox) {
+        const channelToggle = $(checkbox).closest('.channel-toggle');
+        if ($(checkbox).is(':checked')) {
+            channelToggle.addClass('enabled');
+        } else {
+            channelToggle.removeClass('enabled');
+        }
+    }
+    
+    // Initialize styling on page load
+    $('.channel-toggle input[type="checkbox"]').each(function() {
+        updateChannelToggle(this);
+    });
+    
+    // Update styling when checkboxes are clicked
+    $('.channel-toggle input[type="checkbox"]').change(function() {
+        updateChannelToggle(this);
+    });
+    
+    // Form validation
+    $('form').submit(function(e) {
+        let hasChannelEnabled = false;
+        $('.channel-toggle input[type="checkbox"]').each(function() {
+            if ($(this).is(':checked')) {
+                hasChannelEnabled = true;
+                return false; // break loop
+            }
+        });
+        
+        if (!hasChannelEnabled) {
+            e.preventDefault();
+            alert('Please enable at least one notification channel before saving.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

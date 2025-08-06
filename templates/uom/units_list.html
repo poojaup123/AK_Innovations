@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Units List - AK Innovations Factory{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('uom.dashboard') }}">UOM Management</a></li>
+                    <li class="breadcrumb-item active">Units List</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-ruler"></i> Units of Measure</h2>
+                    <p class="text-muted">Manage all measurement units in your system</p>
+                </div>
+                <a href="{{ url_for('uom.add_unit') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Unit
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> All Units</h5>
+                </div>
+                <div class="card-body">
+                    {% if units %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Name</th>
+                                    <th>Symbol</th>
+                                    <th>Base Unit</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for unit in units %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ unit.category }}</span>
+                                    </td>
+                                    <td><strong>{{ unit.name }}</strong></td>
+                                    <td><code>{{ unit.symbol }}</code></td>
+                                    <td>
+                                        {% if unit.is_base_unit %}
+                                            <span class="badge bg-success">Base</span>
+                                        {% else %}
+                                            <span class="badge bg-light text-dark">Derived</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ unit.description or 'No description' }}</td>
+                                    <td>
+                                        <a href="{{ url_for('uom.edit_unit', unit_id=unit.id) }}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-ruler fa-3x text-muted mb-3"></i>
+                        <h5>No Units Found</h5>
+                        <p class="text-muted">Start by adding your first unit of measure.</p>
+                        <a href="{{ url_for('uom.add_unit') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add First Unit
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header Section -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-calendar-check me-2"></i>{{ title }}</h2>
+                    <p class="text-muted mb-0">Track employee attendance and working hours</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('hr.attendance_list') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to List
+                    </a>
+                </div>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user-check me-2"></i>Attendance Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Basic Information Section -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="{{ form.employee_id.id }}" class="form-label">
+                                    <i class="fas fa-user me-1"></i>{{ form.employee_id.label.text }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.employee_id(class="form-select" + (" is-invalid" if form.employee_id.errors else "")) }}
+                                {% if form.employee_id.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.employee_id.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.attendance_date.id }}" class="form-label">
+                                    <i class="fas fa-calendar me-1"></i>{{ form.attendance_date.label.text }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.attendance_date(class="form-control" + (" is-invalid" if form.attendance_date.errors else "")) }}
+                                {% if form.attendance_date.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.attendance_date.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Time Information Section -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <label for="{{ form.check_in_time.id }}" class="form-label">
+                                    <i class="fas fa-sign-in-alt me-1 text-success"></i>{{ form.check_in_time.label.text }}
+                                </label>
+                                {{ form.check_in_time(class="form-control" + (" is-invalid" if form.check_in_time.errors else "")) }}
+                                {% if form.check_in_time.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.check_in_time.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Format: HH:MM (24-hour)</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.check_out_time.id }}" class="form-label">
+                                    <i class="fas fa-sign-out-alt me-1 text-danger"></i>{{ form.check_out_time.label.text }}
+                                </label>
+                                {{ form.check_out_time(class="form-control" + (" is-invalid" if form.check_out_time.errors else "")) }}
+                                {% if form.check_out_time.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.check_out_time.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Format: HH:MM (24-hour)</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.overtime_hours.id }}" class="form-label">
+                                    <i class="fas fa-plus-circle me-1 text-warning"></i>{{ form.overtime_hours.label.text }}
+                                </label>
+                                {{ form.overtime_hours(class="form-control" + (" is-invalid" if form.overtime_hours.errors else ""), step="0.5", min="0", max="24") }}
+                                {% if form.overtime_hours.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.overtime_hours.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Hours (e.g., 2.5 for 2hr 30min)</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.status.id }}" class="form-label">
+                                    <i class="fas fa-clipboard-check me-1"></i>{{ form.status.label.text }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.status(class="form-select" + (" is-invalid" if form.status.errors else ""), id="attendance_status") }}
+                                {% if form.status.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.status.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Leave Information Section -->
+                        <div class="row g-3 mb-4" id="leave_section" style="display: none;">
+                            <div class="col-md-6">
+                                <label for="{{ form.leave_type.id }}" class="form-label">
+                                    <i class="fas fa-clipboard-list me-1"></i>{{ form.leave_type.label.text }}
+                                </label>
+                                {{ form.leave_type(class="form-select" + (" is-invalid" if form.leave_type.errors else "")) }}
+                                {% if form.leave_type.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.leave_type.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Notes Section -->
+                        <div class="mb-4">
+                            <label for="{{ form.notes.id }}" class="form-label">
+                                <i class="fas fa-sticky-note me-1"></i>{{ form.notes.label.text }}
+                            </label>
+                            {{ form.notes(class="form-control" + (" is-invalid" if form.notes.errors else ""), placeholder="Additional notes about attendance...") }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.notes.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Working Hours Information -->
+                        {% if attendance and (attendance.check_in_time and attendance.check_out_time) %}
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-clock me-2"></i>Working Hours Information</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Regular Hours:</strong> {{ "%.1f"|format(attendance.hours_worked or 0) }} hours
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Overtime:</strong> {{ "%.1f"|format(attendance.overtime_hours or 0) }} hours
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Total Hours:</strong> {{ "%.1f"|format((attendance.hours_worked or 0) + (attendance.overtime_hours or 0)) }} hours
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Overtime Calculation Helper -->
+                        <div class="alert alert-light" id="overtime-help" style="display: none;">
+                            <h6><i class="fas fa-calculator me-2"></i>Overtime Calculation Helper</h6>
+                            <p class="mb-2">Based on check-in/out times, calculated overtime would be: <strong id="calculated-overtime">0.0</strong> hours</p>
+                            <small class="text-muted">You can manually adjust the overtime hours field above or use this calculated value.</small>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('hr.attendance_list') }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show/hide leave type field based on attendance status
+document.getElementById('attendance_status').addEventListener('change', function() {
+    const leaveSection = document.getElementById('leave_section');
+    if (this.value === 'leave') {
+        leaveSection.style.display = 'block';
+    } else {
+        leaveSection.style.display = 'none';
+    }
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const statusField = document.getElementById('attendance_status');
+    if (statusField.value === 'leave') {
+        document.getElementById('leave_section').style.display = 'block';
+    }
+});
+
+// Set current time helpers
+function setCurrentTime(field) {
+    const now = new Date();
+    const timeString = now.toTimeString().slice(0, 5);
+    document.getElementById(field).value = timeString;
+}
+
+// Calculate overtime based on check-in/out times
+function calculateOvertimeFromTimes() {
+    const checkInField = document.querySelector('input[name="check_in_time"]');
+    const checkOutField = document.querySelector('input[name="check_out_time"]');
+    const overtimeField = document.querySelector('input[name="overtime_hours"]');
+    const calculatedOvertimeSpan = document.getElementById('calculated-overtime');
+    const overtimeHelp = document.getElementById('overtime-help');
+    
+    if (checkInField.value && checkOutField.value) {
+        const checkIn = new Date('2000-01-01T' + checkInField.value);
+        let checkOut = new Date('2000-01-01T' + checkOutField.value);
+        
+        // Handle overnight shifts
+        if (checkOut < checkIn) {
+            checkOut.setDate(checkOut.getDate() + 1);
+        }
+        
+        const totalHours = (checkOut - checkIn) / (1000 * 60 * 60);
+        const standardHours = 8.0;
+        const calculatedOvertime = Math.max(0, totalHours - standardHours);
+        
+        if (calculatedOvertimeSpan) {
+            calculatedOvertimeSpan.textContent = calculatedOvertime.toFixed(1);
+        }
+        
+        if (overtimeHelp) {
+            overtimeHelp.style.display = calculatedOvertime > 0 ? 'block' : 'none';
+        }
+        
+        // Auto-suggest overtime if field is empty or zero
+        if (overtimeField && (overtimeField.value === '' || parseFloat(overtimeField.value) === 0)) {
+            overtimeField.value = calculatedOvertime.toFixed(1);
+        }
+    } else {
+        if (overtimeHelp) {
+            overtimeHelp.style.display = 'none';
+        }
+    }
+}
+
+// Add quick time buttons and overtime calculation
+document.addEventListener('DOMContentLoaded', function() {
+    const checkInField = document.querySelector('input[name="check_in_time"]');
+    const checkOutField = document.querySelector('input[name="check_out_time"]');
+    
+    if (checkInField) {
+        const checkInButton = document.createElement('button');
+        checkInButton.type = 'button';
+        checkInButton.className = 'btn btn-sm btn-outline-success mt-1';
+        checkInButton.innerHTML = '<i class="fas fa-clock me-1"></i>Now';
+        checkInButton.onclick = () => {
+            setCurrentTime('check_in_time');
+            setTimeout(calculateOvertimeFromTimes, 100);
+        };
+        checkInField.parentNode.appendChild(checkInButton);
+        
+        // Add event listener for overtime calculation
+        checkInField.addEventListener('change', calculateOvertimeFromTimes);
+    }
+    
+    if (checkOutField) {
+        const checkOutButton = document.createElement('button');
+        checkOutButton.type = 'button';
+        checkOutButton.className = 'btn btn-sm btn-outline-danger mt-1';
+        checkOutButton.innerHTML = '<i class="fas fa-clock me-1"></i>Now';
+        checkOutButton.onclick = () => {
+            setCurrentTime('check_out_time');
+            setTimeout(calculateOvertimeFromTimes, 100);
+        };
+        checkOutField.parentNode.appendChild(checkOutButton);
+        
+        // Add event listener for overtime calculation
+        checkOutField.addEventListener('change', calculateOvertimeFromTimes);
+    }
+    
+    // Initial calculation on page load
+    calculateOvertimeFromTimes();
+});
+</script>
+{% endblock %}

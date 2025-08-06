@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Traceability - {{ traceability.batch.batch_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-search"></i> Batch Traceability: {{ traceability.batch.batch_number }}</h1>
+                <div class="btn-group">
+                    <a href="{{ url_for('inventory.batch_tracking_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                    <button onclick="window.print()" class="btn btn-outline-primary">
+                        <i class="fas fa-print"></i> Print Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Information Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Batch Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Batch Number:</strong></td>
+                                    <td>{{ traceability.batch.batch_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Item:</strong></td>
+                                    <td>{{ traceability.batch.item_name }} ({{ traceability.batch.item_code }})</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Supplier Batch:</strong></td>
+                                    <td>{{ traceability.batch.supplier_batch or 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Manufacture Date:</strong></td>
+                                    <td>{{ traceability.batch.manufacture_date or 'N/A' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Expiry Date:</strong></td>
+                                    <td>
+                                        {% if traceability.batch.expiry_date %}
+                                            {{ traceability.batch.expiry_date }}
+                                            {% set days_to_expiry = (traceability.batch.expiry_date|strptime('%Y-%m-%d') - moment().format('YYYY-MM-DD')|strptime('%Y-%m-%d')).days %}
+                                            {% if days_to_expiry <= 0 %}
+                                                <span class="badge badge-danger">Expired</span>
+                                            {% elif days_to_expiry <= 7 %}
+                                                <span class="badge badge-warning">Expiring Soon</span>
+                                            {% endif %}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Quality Status:</strong></td>
+                                    <td>
+                                        <span class="badge badge-{% if traceability.batch.quality_status == 'good' %}success{% elif traceability.batch.quality_status == 'pending_inspection' %}warning{% else %}danger{% endif %}">
+                                            {{ traceability.batch.quality_status|title }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Storage Location:</strong></td>
+                                    <td>{{ traceability.batch.storage_location or 'Default' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Total Quantity:</strong></td>
+                                    <td>{{ "%.2f"|format(traceability.batch.total_quantity) }} {{ traceability.batch.unit_of_measure }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current State Breakdown -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Current State Breakdown</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="text-center">
+                                <h6 class="text-primary">Raw Material</h6>
+                                <h4>{{ "%.2f"|format(traceability.current_state.qty_raw or 0) }}</h4>
+                                <small class="text-muted">{{ traceability.batch.unit_of_measure }}</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="text-center">
+                                <h6 class="text-warning">Work in Progress</h6>
+                                <h4>{{ "%.2f"|format(traceability.current_state.qty_wip or 0) }}</h4>
+                                <small class="text-muted">{{ traceability.batch.unit_of_measure }}</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="text-center">
+                                <h6 class="text-success">Finished Goods</h6>
+                                <h4>{{ "%.2f"|format(traceability.current_state.qty_finished or 0) }}</h4>
+                                <small class="text-muted">{{ traceability.batch.unit_of_measure }}</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="text-center">
+                                <h6 class="text-danger">Scrap</h6>
+                                <h4>{{ "%.2f"|format(traceability.current_state.qty_scrap or 0) }}</h4>
+                                <small class="text-muted">{{ traceability.batch.unit_of_measure }}</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Process-wise WIP Breakdown -->
+                    {% if traceability.wip_processes %}
+                    <hr>
+                    <h6 class="mb-3">Process-wise Work in Progress</h6>
+                    <div class="row">
+                        {% for process, qty in traceability.wip_processes.items() %}
+                        {% if qty > 0 %}
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-2">
+                            <div class="text-center">
+                                <small class="text-muted">{{ process|title }}</small>
+                                <div class="font-weight-bold">{{ "%.2f"|format(qty) }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movement History -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> Complete Movement History</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>From State</th>
+                                    <th>To State</th>
+                                    <th>Quantity</th>
+                                    <th>Reference</th>
+                                    <th>Process/Vendor</th>
+                                    <th>Quality</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for movement in traceability.movement_history %}
+                                <tr>
+                                    <td>{{ movement.movement_date }}</td>
+                                    <td>
+                                        {% if movement.from_state %}
+                                        <span class="badge badge-secondary">{{ movement.from_state.replace('_', ' ')|title }}</span>
+                                        {% else %}
+                                        <span class="badge badge-light">External</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{% if movement.to_state == 'Raw' %}primary{% elif movement.to_state.startswith('WIP') %}warning{% elif movement.to_state == 'Finished' %}success{% elif movement.to_state == 'Scrap' %}danger{% else %}secondary{% endif %}">
+                                            {{ movement.to_state.replace('_', ' ')|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ "%.2f"|format(movement.quantity) }} {{ movement.unit_of_measure }}</td>
+                                    <td>
+                                        <strong>{{ movement.ref_type }}</strong>
+                                        {% if movement.ref_number %}
+                                        <br><small class="text-muted">{{ movement.ref_number }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if movement.process_name %}
+                                        {{ movement.process_name }}
+                                        {% endif %}
+                                        {% if movement.vendor_name %}
+                                        <br><small class="text-muted">{{ movement.vendor_name }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{% if movement.quality_status == 'good' %}success{% elif movement.quality_status == 'pending' %}warning{% else %}danger{% endif %}">
+                                            {{ movement.quality_status|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small>{{ movement.notes or '' }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .btn-group, .no-print {
+        display: none !important;
+    }
+    .card {
+        border: 1px solid #000 !important;
+    }
+    .table {
+        font-size: 12px;
+    }
+}
+</style>
+{% endblock %}

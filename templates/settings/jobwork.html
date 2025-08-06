@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}Job Work Settings{% endblock %}
+
+{% block extra_css %}
+<style>
+.settings-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #17a2b8;
+}
+
+.form-switch .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+}
+
+.setting-description {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.company-selector {
+    background: linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-tools"></i> Job Work Settings</h2>
+        <a href="{{ url_for('settings_advanced.settings_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Settings
+        </a>
+    </div>
+
+    <!-- Company Selector -->
+    <div class="company-selector">
+        <h5 class="mb-3">Select Company</h5>
+        <select class="form-select" id="companySelect" onchange="loadCompanySettings()">
+            <option value="">Global Settings</option>
+            {% for company in companies %}
+            <option value="{{ company.id }}" 
+                    {% if company.id == selected_company_id %}selected{% endif %}>
+                {{ company.name }}
+            </option>
+            {% endfor %}
+        </select>
+        <small class="text-white-50 mt-2 d-block">
+            Select a company to configure company-specific job work settings
+        </small>
+    </div>
+
+    <form id="jobworkSettingsForm">
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Job Work Control -->
+                <div class="settings-section">
+                    <h5><i class="fas fa-clipboard-check"></i> Job Work Control</h5>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="grn_required_on_return" name="grn_required_on_return"
+                                   {% if not settings or settings.grn_required_on_return %}checked{% endif %}>
+                            <label class="form-check-label" for="grn_required_on_return">
+                                <strong>GRN Required on Return</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Require GRN (Goods Receipt Note) when job work items are returned
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="track_vendor_rates" name="track_vendor_rates"
+                                   {% if not settings or settings.track_vendor_rates %}checked{% endif %}>
+                            <label class="form-check-label" for="track_vendor_rates">
+                                <strong>Track Vendor Rates</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Maintain vendor-specific rates for different processes
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="enable_scrap_entry" name="enable_scrap_entry"
+                                   {% if not settings or settings.enable_scrap_entry %}checked{% endif %}>
+                            <label class="form-check-label" for="enable_scrap_entry">
+                                <strong>Enable Scrap Entry</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Allow entry of scrap quantities during job work return
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="billing_mode" class="form-label">
+                            <strong>Billing Mode</strong>
+                        </label>
+                        <select class="form-select" id="billing_mode" name="billing_mode">
+                            <option value="manual" {% if not settings or settings.billing_mode == 'manual' %}selected{% endif %}>
+                                Manual Billing
+                            </option>
+                            <option value="auto" {% if settings and settings.billing_mode == 'auto' %}selected{% endif %}>
+                                Auto Billing
+                            </option>
+                        </select>
+                        <div class="setting-description">
+                            Choose between manual invoice creation or automatic billing
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Process Tracking -->
+                <div class="settings-section">
+                    <h5><i class="fas fa-route"></i> Process Tracking</h5>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="mandatory_process_selection" name="mandatory_process_selection"
+                                   {% if not settings or settings.mandatory_process_selection %}checked{% endif %}>
+                            <label class="form-check-label" for="mandatory_process_selection">
+                                <strong>Mandatory Process Selection</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Require process selection when creating job work orders
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="allow_partial_returns" name="allow_partial_returns"
+                                   {% if not settings or settings.allow_partial_returns %}checked{% endif %}>
+                            <label class="form-check-label" for="allow_partial_returns">
+                                <strong>Allow Partial Returns</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Allow returning job work in multiple batches
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="auto_calculate_loss" name="auto_calculate_loss"
+                                   {% if not settings or settings.auto_calculate_loss %}checked{% endif %}>
+                            <label class="form-check-label" for="auto_calculate_loss">
+                                <strong>Auto Calculate Loss</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Automatically calculate material loss/wastage in job work
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Approval Workflow -->
+                <div class="settings-section">
+                    <h5><i class="fas fa-user-check"></i> Approval Workflow</h5>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="require_approval_for_issue" name="require_approval_for_issue"
+                                   {% if settings and settings.require_approval_for_issue %}checked{% endif %}>
+                            <label class="form-check-label" for="require_approval_for_issue">
+                                <strong>Require Approval for Issue</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Require approval before issuing materials for job work
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="require_approval_for_return" name="require_approval_for_return"
+                                   {% if settings and settings.require_approval_for_return %}checked{% endif %}>
+                            <label class="form-check-label" for="require_approval_for_return">
+                                <strong>Require Approval for Return</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Require approval when accepting returned job work items
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="approval_limit_amount" class="form-label">
+                            <strong>Approval Limit Amount (₹)</strong>
+                        </label>
+                        <input type="number" class="form-control" id="approval_limit_amount" name="approval_limit_amount" 
+                               step="0.01" min="0"
+                               value="{{ settings.approval_limit_amount if settings else 0.0 }}">
+                        <div class="setting-description">
+                            Job work orders above this amount require approval (0 = no limit)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary me-2" onclick="resetForm()">Reset</button>
+                    <button type="submit" class="btn btn-info">Save Settings</button>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Job Work Guide</h6>
+                    </div>
+                    <div class="card-body">
+                        <h6>GRN on Return:</h6>
+                        <p class="small text-muted">
+                            When enabled, returned job work items must go through 
+                            GRN process for proper inventory tracking.
+                        </p>
+
+                        <h6 class="mt-3">Vendor Rates:</h6>
+                        <p class="small text-muted">
+                            Track different rates for each vendor-process combination. 
+                            Helps in cost analysis and vendor comparison.
+                        </p>
+
+                        <h6 class="mt-3">Billing Modes:</h6>
+                        <ul class="list-unstyled small">
+                            <li><strong>Manual:</strong> Create invoices manually</li>
+                            <li><strong>Auto:</strong> Generate invoices automatically on completion</li>
+                        </ul>
+
+                        <h6 class="mt-3">Partial Returns:</h6>
+                        <p class="small text-muted">
+                            Allow job work to be returned in multiple shipments, 
+                            useful for large orders or staged completion.
+                        </p>
+
+                        <div class="alert alert-warning mt-3">
+                            <small>
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Approval settings will affect new job work orders only.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function loadCompanySettings() {
+    const companyId = document.getElementById('companySelect').value;
+    const url = new URL(window.location.href);
+    if (companyId) {
+        url.searchParams.set('company_id', companyId);
+    } else {
+        url.searchParams.delete('company_id');
+    }
+    window.location.href = url.toString();
+}
+
+function resetForm() {
+    if (confirm('Reset all settings to default values?')) {
+        document.getElementById('jobworkSettingsForm').reset();
+    }
+}
+
+document.getElementById('jobworkSettingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    alert('Job work settings save functionality coming soon!');
+});
+</script>
+{% endblock %}

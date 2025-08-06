@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ invoice.invoice_type.title() }} Invoice - {{ invoice.invoice_number }}</title>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { margin: 0; }
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            font-size: 12px;
+            color: #333;
+        }
+        
+        .invoice-container {
+            max-width: 210mm;
+            margin: 0 auto;
+            background: white;
+            border: 2px solid #000;
+        }
+        
+        .invoice-header {
+            border-bottom: 2px solid #000;
+            padding: 15px;
+            background-color: #f8f9fa;
+        }
+        
+        .company-details {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .company-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        
+        .company-address {
+            font-size: 11px;
+            line-height: 1.3;
+            margin-bottom: 8px;
+        }
+        
+        .gst-details {
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .invoice-title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border: 1px solid #000;
+            padding: 8px;
+            margin: 10px 0;
+            background-color: #000;
+            color: white;
+        }
+        
+        .invoice-details {
+            display: table;
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .invoice-details-row {
+            display: table-row;
+        }
+        
+        .invoice-details-cell {
+            display: table-cell;
+            border: 1px solid #000;
+            padding: 8px;
+            vertical-align: top;
+        }
+        
+        .party-details {
+            border: 1px solid #000;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        .party-title {
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 5px;
+            text-decoration: underline;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        
+        .items-table th,
+        .items-table td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: left;
+            font-size: 11px;
+        }
+        
+        .items-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-left { text-align: left; }
+        
+        .totals-section {
+            margin-top: 10px;
+        }
+        
+        .totals-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .totals-table td {
+            border: 1px solid #000;
+            padding: 5px;
+            font-size: 11px;
+        }
+        
+        .total-row {
+            font-weight: bold;
+            background-color: #f0f0f0;
+        }
+        
+        .amount-in-words {
+            border: 1px solid #000;
+            padding: 10px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .footer-section {
+            display: table;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .footer-left,
+        .footer-right {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+            padding: 10px;
+            border: 1px solid #000;
+        }
+        
+        .signature-line {
+            margin-top: 40px;
+            border-bottom: 1px solid #000;
+            height: 20px;
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .terms-conditions {
+            font-size: 10px;
+            margin-top: 10px;
+            border: 1px solid #000;
+            padding: 8px;
+        }
+        
+        .declaration {
+            font-size: 10px;
+            font-style: italic;
+            margin-top: 10px;
+            padding: 5px;
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">
+        <i class="fas fa-print"></i> Print Invoice
+    </button>
+
+    <div class="invoice-container">
+        <!-- Invoice Header -->
+        <div class="invoice-header">
+            <div class="company-details">
+                <div class="company-name">{{ company.company_name if company else 'Your Company Name' }}</div>
+                <div class="company-address">
+                    {% if company %}
+                        {{ company.address_line1 }}<br>
+                        {% if company.address_line2 %}{{ company.address_line2 }}<br>{% endif %}
+                        {{ company.city }}, {{ company.state }} - {{ company.pin_code }}<br>
+                        Phone: {{ company.phone }}{% if company.email %} | Email: {{ company.email }}{% endif %}
+                    {% else %}
+                        Address Line 1<br>
+                        Address Line 2<br>
+                        City, State - PIN Code<br>
+                        Phone: +91-XXX-XXXXXXX | Email: info@company.com
+                    {% endif %}
+                </div>
+                <div class="gst-details">
+                    GSTIN: {{ company.gst_number if company else 'XXAABCRXXXXMXZC' }}
+                    {% if company and company.arn_number %} | ARN: {{ company.arn_number }}{% endif %}
+                </div>
+            </div>
+            
+            <div class="invoice-title">
+                {{ 'TAX INVOICE' if invoice.invoice_type == 'sales' else 'PURCHASE INVOICE' }}
+            </div>
+        </div>
+
+        <!-- Invoice Details Section -->
+        <div class="invoice-details">
+            <div class="invoice-details-row">
+                <div class="invoice-details-cell" style="width: 50%;">
+                    <strong>Invoice No:</strong> {{ invoice.invoice_number }}<br>
+                    <strong>Date:</strong> {{ invoice.invoice_date.strftime('%d-%m-%Y') }}<br>
+                    {% if invoice.due_date %}<strong>Due Date:</strong> {{ invoice.due_date.strftime('%d-%m-%Y') }}<br>{% endif %}
+                    <strong>Place of Supply:</strong> {{ invoice.place_of_supply or 'N/A' }}
+                </div>
+                <div class="invoice-details-cell" style="width: 50%;">
+                    {% if invoice.reference_type and invoice.reference_id %}
+                    <strong>Reference:</strong> {{ invoice.reference_type.title() }} #{{ invoice.reference_id }}<br>
+                    {% endif %}
+                    <strong>Time of Supply:</strong> {{ invoice.invoice_date.strftime('%d-%m-%Y') }}<br>
+                    <strong>Invoice Type:</strong> {{ invoice.invoice_type.title() }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Party Details -->
+        <div class="party-details">
+            <div class="party-title">
+                {{ 'BILL TO' if invoice.invoice_type == 'sales' else 'BILL FROM' }}:
+            </div>
+            <strong>{{ invoice.party_name }}</strong><br>
+            {% if invoice.party_address %}
+                {{ invoice.party_address|replace('\n', '<br>')|safe }}<br>
+            {% endif %}
+            {% if invoice.party_gst %}
+                <strong>GSTIN:</strong> {{ invoice.party_gst }}
+            {% endif %}
+        </div>
+
+        <!-- Items Table -->
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">S.No</th>
+                    <th style="width: 35%;">Description of Goods/Services</th>
+                    <th style="width: 10%;">HSN/SAC</th>
+                    <th style="width: 8%;">Qty</th>
+                    <th style="width: 8%;">Unit</th>
+                    <th style="width: 12%;">Rate</th>
+                    <th style="width: 10%;">Taxable Value</th>
+                    <th style="width: 12%;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in invoice.invoice_items %}
+                <tr>
+                    <td class="text-center">{{ loop.index }}</td>
+                    <td>
+                        <strong>{{ item.item_name }}</strong>
+                        {% if item.item_code %}<br><small>Code: {{ item.item_code }}</small>{% endif %}
+                    </td>
+                    <td class="text-center">{{ item.hsn_code or '-' }}</td>
+                    <td class="text-center">{{ "%.2f"|format(item.quantity) }}</td>
+                    <td class="text-center">{{ item.unit }}</td>
+                    <td class="text-right">{{ "%.2f"|format(item.rate) }}</td>
+                    <td class="text-right">{{ "%.2f"|format(item.line_total) }}</td>
+                    <td class="text-right">
+                        <strong>{{ "%.2f"|format(item.line_total + (item.line_total * item.gst_rate / 100)) }}</strong>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center">No items in this invoice</td>
+                </tr>
+                {% endfor %}
+                
+                <!-- Blank rows for spacing (Tally style) -->
+                {% for i in range(3) %}
+                <tr>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Tax Summary Table -->
+        <div class="totals-section">
+            <table class="totals-table">
+                <tr>
+                    <td style="width: 60%; font-weight: bold;">Tax Summary</td>
+                    <td style="width: 15%; text-align: center; font-weight: bold;">Taxable Value</td>
+                    <td style="width: 12%; text-align: center; font-weight: bold;">Tax Amount</td>
+                    <td style="width: 13%; text-align: center; font-weight: bold;">Total</td>
+                </tr>
+                
+                {% set total_taxable = invoice.subtotal or 0 %}
+                {% set total_tax = invoice.total_tax or 0 %}
+                
+                {% if invoice.cgst_amount and invoice.cgst_amount > 0 %}
+                <tr>
+                    <td>CGST</td>
+                    <td class="text-right">{{ "%.2f"|format(total_taxable) }}</td>
+                    <td class="text-right">{{ "%.2f"|format(invoice.cgst_amount) }}</td>
+                    <td class="text-right">{{ "%.2f"|format(total_taxable + invoice.cgst_amount) }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if invoice.sgst_amount and invoice.sgst_amount > 0 %}
+                <tr>
+                    <td>SGST</td>
+                    <td class="text-right">{{ "%.2f"|format(total_taxable) }}</td>
+                    <td class="text-right">{{ "%.2f"|format(invoice.sgst_amount) }}</td>
+                    <td class="text-right">{{ "%.2f"|format(total_taxable + invoice.sgst_amount) }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if invoice.igst_amount and invoice.igst_amount > 0 %}
+                <tr>
+                    <td>IGST</td>
+                    <td class="text-right">{{ "%.2f"|format(total_taxable) }}</td>
+                    <td class="text-right">{{ "%.2f"|format(invoice.igst_amount) }}</td>
+                    <td class="text-right">{{ "%.2f"|format(total_taxable + invoice.igst_amount) }}</td>
+                </tr>
+                {% endif %}
+                
+                <tr class="total-row">
+                    <td><strong>TOTAL</strong></td>
+                    <td class="text-right"><strong>{{ "%.2f"|format(total_taxable) }}</strong></td>
+                    <td class="text-right"><strong>{{ "%.2f"|format(total_tax) }}</strong></td>
+                    <td class="text-right"><strong>Rs. {{ "%.2f"|format(invoice.total_amount or 0) }}</strong></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Amount in Words -->
+        <div class="amount-in-words">
+            <strong>Amount in Words:</strong> 
+            <span id="amountInWords">Rupees {{ invoice.total_amount|int|title }} and {{ ((invoice.total_amount or 0) % 1 * 100)|int }} Paise Only</span>
+        </div>
+
+        <!-- Terms and Conditions -->
+        <div class="terms-conditions">
+            <strong>Terms & Conditions:</strong><br>
+            1. Payment is due within {{ (invoice.due_date - invoice.invoice_date).days if invoice.due_date else 30 }} days from invoice date.<br>
+            2. Interest @ 18% per annum will be charged on overdue amounts.<br>
+            3. Subject to {{ invoice.place_of_supply or 'Local' }} jurisdiction only.<br>
+            4. Goods once sold will not be taken back.<br>
+            5. Payment should be made by cheque/DD in favor of "{{ company.company_name if company else 'Company Name' }}"
+        </div>
+
+        <!-- Declaration -->
+        <div class="declaration">
+            <strong>Declaration:</strong> We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.
+        </div>
+
+        <!-- Footer Section -->
+        <div class="footer-section">
+            <div class="footer-left">
+                <strong>Bank Details:</strong><br>
+                Bank Name: {{ company.bank_name if company and company.bank_name else 'Bank Name' }}<br>
+                A/c No: {{ company.account_number if company and company.account_number else 'Account Number' }}<br>
+                IFSC Code: {{ company.ifsc_code if company and company.ifsc_code else 'IFSC Code' }}<br>
+                Branch: {{ company.branch if company and company.branch else 'Branch Name' }}
+            </div>
+            <div class="footer-right">
+                <strong>For {{ company.company_name if company else 'Company Name' }}</strong>
+                <div class="signature-line"></div>
+                <div style="margin-top: 5px;">
+                    <strong>Authorized Signatory</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Number to words conversion (simplified)
+        function numberToWords(num) {
+            if (num === 0) return "Zero";
+            
+            const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
+            const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+            const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+            
+            function convertTens(num) {
+                if (num < 10) return ones[num];
+                else if (num >= 10 && num < 20) return teens[num - 10];
+                else return tens[Math.floor(num / 10)] + " " + ones[num % 10];
+            }
+            
+            function convertHundreds(num) {
+                if (num > 99) {
+                    return ones[Math.floor(num / 100)] + " Hundred " + convertTens(num % 100);
+                } else {
+                    return convertTens(num);
+                }
+            }
+            
+            if (num < 1000) return convertHundreds(num);
+            else if (num < 100000) {
+                return convertHundreds(Math.floor(num / 1000)) + " Thousand " + convertHundreds(num % 1000);
+            } else if (num < 10000000) {
+                return convertHundreds(Math.floor(num / 100000)) + " Lakh " + convertHundreds((num % 100000));
+            } else {
+                return convertHundreds(Math.floor(num / 10000000)) + " Crore " + convertHundreds((num % 10000000));
+            }
+        }
+        
+        // Update amount in words on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const totalAmount = {{ invoice.total_amount or 0 }};
+            const rupees = Math.floor(totalAmount);
+            const paise = Math.round((totalAmount - rupees) * 100);
+            
+            let amountText = "Rupees " + numberToWords(rupees);
+            if (paise > 0) {
+                amountText += " and " + numberToWords(paise) + " Paise";
+            }
+            amountText += " Only";
+            
+            document.getElementById('amountInWords').textContent = amountText;
+        });
+    </script>
+</body>
+</html>

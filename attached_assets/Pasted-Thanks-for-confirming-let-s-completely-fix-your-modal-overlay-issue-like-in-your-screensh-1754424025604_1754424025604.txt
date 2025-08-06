@@ -1,0 +1,133 @@
+Thanks for confirming — let’s **completely fix** your **modal overlay issue** (like in your screenshot) with a **clean, bulletproof solution** for Bootstrap 5 in Flask.
+
+---
+
+## ✅ Problem Recap
+
+You're seeing:
+
+* Modal overlaps **wrong elements**
+* **Black overlay persists**
+* **Multiple backdrops** or broken UI
+* Buttons may stop working inside modal
+
+This usually happens due to:
+
+* Incorrect z-index layering
+* Multiple `.modal-backdrop` divs
+* JavaScript not closing previous modals
+
+---
+
+## 🛠️ Step-by-Step Fix
+
+### ✅ 1. **Correct Modal HTML (Bootstrap 5)**
+
+Ensure your modal structure is exactly like this:
+
+```html
+<!-- Reset Modal -->
+<div class="modal fade" id="resetModal" tabindex="-1" aria-labelledby="resetModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="resetModalLabel">Reset Selected Sections</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to reset the selected sections? This action cannot be undone.
+        <div class="form-check mt-3">
+          <input type="checkbox" class="form-check-input" id="confirmResetCheckbox">
+          <label class="form-check-label" for="confirmResetCheckbox">I understand this action cannot be undone</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmResetBtn" disabled>Reset Selected Sections</button>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+---
+
+### ✅ 2. **Minimal Custom CSS Fix**
+
+Add to your `custom.css`:
+
+```css
+.modal-backdrop {
+  z-index: 1040 !important;
+}
+.modal {
+  z-index: 1050 !important;
+}
+body.modal-open {
+  overflow: hidden;
+}
+```
+
+---
+
+### ✅ 3. **JavaScript Fix (Prevent Multiple Backdrops)**
+
+Place this JS in your template or include as external JS:
+
+```html
+<script>
+  // Fix modal logic
+  document.addEventListener('DOMContentLoaded', function () {
+    // Enable reset only after confirming checkbox
+    document.getElementById('confirmResetCheckbox').addEventListener('change', function () {
+      document.getElementById('confirmResetBtn').disabled = !this.checked;
+    });
+
+    // Clear any open modals/backdrops
+    document.getElementById('resetModal').addEventListener('show.bs.modal', () => {
+      // Manually remove any leftover backdrop
+      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    });
+
+    // Clean up after hide
+    document.getElementById('resetModal').addEventListener('hidden.bs.modal', () => {
+      document.body.classList.remove('modal-open');
+    });
+  });
+</script>
+```
+
+---
+
+### ✅ 4. **Trigger Modal Cleanly**
+
+To show the modal from a button:
+
+```html
+<button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#resetModal">
+  Reset Selected Sections
+</button>
+```
+
+---
+
+## 🔍 Final Check
+
+After these fixes, verify:
+
+* Only 1 `.modal-backdrop` exists
+* Clicking close or "Cancel" properly removes the modal
+* No dark screen persists behind other elements
+* Button enables only on checkbox click
+
+---
+
+### ✅ Bonus: Full Bootstrap 5 Template with Modal
+
+Would you like a full working `Flask` page template with this modal integrated into your `settings.html` layout?
+
+I can send you a ready-to-use `.html` block to drop in your `templates/settings/dashboard.html` and JS for `static/js/reset_modal.js`.
+
+Just say **"Yes, give me full modal template"**.
+
+Let me know what else is breaking and I’ll fix it for you.

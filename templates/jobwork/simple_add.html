@@ -1,0 +1,544 @@
+{% extends "base.html" %}
+
+{% block title %}Add Job Work - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-tools"></i> Add Job Work</h1>
+            <p class="text-muted">Create a new job work order</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Job Works
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-plus-circle"></i> Job Work Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="jobWorkForm" onsubmit="return prepareFormSubmission()">
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-info-circle"></i> Basic Information
+                                </h6>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Job Number</label>
+                                <input type="text" class="form-control" id="job_number" name="job_number" readonly>
+                                <small class="text-muted">Job number will be automatically generated</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Work Type</label>
+                                <select class="form-select" id="work_type" name="work_type" required>
+                                    <option value="">Select Work Type</option>
+                                    <option value="in_house">In-House</option>
+                                    <option value="outsourced">Outsourced</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+
+                        
+                        <!-- Item Selection -->
+                        <div class="row mb-4" id="regular_item_section">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Item</label>
+                                <select class="form-select" id="item_id" name="item_id">
+                                    <option value="">Select Item</option>
+                                    {% for item in items %}
+                                    <option value="{{ item.id }}">{{ item.code }} - {{ item.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Select the item for job work processing</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Job Work Type</label>
+                                <select class="form-select" id="job_work_type" name="job_work_type">
+                                    <option value="single">Single Process</option>
+                                    <option value="multi">Multi-Process</option>
+                                </select>
+                                <small class="text-muted">Choose single or multiple manufacturing processes</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Single Process Section -->
+                        <div id="single_process_section" class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Process</label>
+                                <select class="form-select" id="process" name="process">
+                                    <option value="">Select Process</option>
+                                    <option value="Cutting">Cutting</option>
+                                    <option value="Bending">Bending</option>
+                                    <option value="Welding">Welding</option>
+                                    <option value="Zinc">Zinc Plating</option>
+                                    <option value="Painting">Painting</option>
+                                    <option value="Assembly">Assembly</option>
+                                    <option value="Machining">Machining</option>
+                                    <option value="Polishing">Polishing</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Multi-Process Section -->
+                        <div id="multi_process_section" style="display: none;" class="mb-4">
+                            <div class="card border-info">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="fas fa-cogs"></i> Multi-Process Configuration</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="processes_container">
+                                        <!-- Dynamic processes will be added here -->
+                                    </div>
+                                    <button type="button" class="btn btn-success btn-sm" id="add_process_btn">
+                                        <i class="fas fa-plus"></i> Add Process
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Customer Name (Outsourced only) -->
+                        <div class="row mb-4" id="customer_section" style="display: none;">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Customer Name</label>
+                                <select class="form-select" id="customer_name" name="customer_name">
+                                    <option value="">Select Customer</option>
+                                    {% for supplier in suppliers %}
+                                    <option value="{{ supplier.name }}">{{ supplier.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Rate per Unit</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" id="rate_per_unit" name="rate_per_unit" step="0.01" min="0">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Department (In-House only) -->
+                        <div class="row mb-4" id="department_section" style="display: none;">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Department</label>
+                                <select class="form-select" id="department" name="department">
+                                    <option value="">Select Department</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.name }}">{{ dept.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4" id="quantity_section">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Quantity Sent</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="quantity_sent" name="quantity_sent" step="0.01" min="0">
+                                    <span class="input-group-text" id="quantity_unit">pcs</span>
+                                </div>
+                                <small class="text-muted" id="quantity_help">For regular job work only</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Sent Date</label>
+                                <input type="date" class="form-control" id="sent_date" name="sent_date" required>
+                            </div>
+                        </div>
+                        
+
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Expected Return Date</label>
+                                <input type="date" class="form-control" id="expected_return" name="expected_return">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Notes</label>
+                                <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Additional notes or instructions"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Create Job Work
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Generate job number when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Set today's date as default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('sent_date').value = today;
+    
+    // Generate job number
+    generateJobNumber();
+    
+
+    
+    // Setup multi-process handlers
+    setupMultiProcessHandlers();
+});
+
+// Multi-Process Functions
+function setupMultiProcessHandlers() {
+    const jobWorkTypeSelect = document.getElementById('job_work_type');
+    const addProcessBtn = document.getElementById('add_process_btn');
+    
+    jobWorkTypeSelect.addEventListener('change', handleJobWorkTypeChange);
+    addProcessBtn.addEventListener('click', addNewProcess);
+    
+    // Add first process by default for multi-process
+    if (jobWorkTypeSelect.value === 'multi') {
+        addNewProcess();
+    }
+}
+
+function handleJobWorkTypeChange() {
+    const jobWorkType = document.getElementById('job_work_type').value;
+    const singleProcessSection = document.getElementById('single_process_section');
+    const multiProcessSection = document.getElementById('multi_process_section');
+    
+    if (jobWorkType === 'single') {
+        singleProcessSection.style.display = 'block';
+        multiProcessSection.style.display = 'none';
+        // Clear multi-process data
+        document.getElementById('processes_container').innerHTML = '';
+    } else {
+        singleProcessSection.style.display = 'none';
+        multiProcessSection.style.display = 'block';
+        // Add first process if none exist
+        if (document.getElementById('processes_container').children.length === 0) {
+            addNewProcess();
+        }
+    }
+}
+
+let processCounter = 0;
+
+function addNewProcess() {
+    const container = document.getElementById('processes_container');
+    const processDiv = document.createElement('div');
+    processDiv.className = 'card mb-3 border-secondary';
+    processDiv.innerHTML = `
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Process ${processCounter + 1}</h6>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeProcess(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Process Name</label>
+                    <select class="form-select" name="processes[${processCounter}][process_name]" required>
+                        <option value="">Select Process</option>
+                        <option value="Cutting">Cutting</option>
+                        <option value="Bending">Bending</option>
+                        <option value="Welding">Welding</option>
+                        <option value="Zinc">Zinc Plating</option>
+                        <option value="Painting">Painting</option>
+                        <option value="Assembly">Assembly</option>
+                        <option value="Machining">Machining</option>
+                        <option value="Polishing">Polishing</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Sequence Number</label>
+                    <input type="number" class="form-control" name="processes[${processCounter}][sequence_number]" value="${processCounter + 1}" min="1" required>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Quantity Input</label>
+                    <input type="number" class="form-control" name="processes[${processCounter}][quantity_input]" step="0.01" min="0" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Work Type</label>
+                    <select class="form-select" name="processes[${processCounter}][work_type]" required>
+                        <option value="in_house">In-House</option>
+                        <option value="outsourced">Outsourced</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Output Product</label>
+                    <select class="form-select" name="processes[${processCounter}][output_item_id]" onchange="loadItemsForProcess(this)">
+                        <option value="">Select Output Product</option>
+                    </select>
+                    <small class="text-muted">What this process produces</small>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Expected Output Quantity</label>
+                    <input type="number" class="form-control" name="processes[${processCounter}][output_quantity]" step="0.01" min="0">
+                    <small class="text-muted">Quantity this process will produce</small>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Expected Scrap %</label>
+                    <input type="number" class="form-control" name="processes[${processCounter}][scrap_percent]" step="0.01" min="0" max="100" placeholder="0.00">
+                    <small class="text-muted">Expected scrap percentage for this process</small>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Process Rate (₹)</label>
+                    <input type="number" class="form-control" name="processes[${processCounter}][rate_per_unit]" step="0.01" min="0" placeholder="0.00">
+                    <small class="text-muted">Cost per unit for this process</small>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Department/Vendor</label>
+                    <select class="form-select" name="processes[${processCounter}][department_or_vendor]">
+                        <option value="">Select Department/Vendor</option>
+                    </select>
+                    <small class="text-muted">Who will handle this process</small>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Expected Duration (days)</label>
+                    <input type="number" class="form-control" name="processes[${processCounter}][expected_duration]" min="1" placeholder="1">
+                    <small class="text-muted">How long this process will take</small>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <label class="form-label">Process Notes</label>
+                    <textarea class="form-control" name="processes[${processCounter}][notes]" rows="2" placeholder="Special instructions or notes for this process"></textarea>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(processDiv);
+    
+    // Populate dropdowns for the new process
+    const outputProductSelect = processDiv.querySelector(`select[name="processes[${processCounter}][output_item_id]"]`);
+    const departmentVendorSelect = processDiv.querySelector(`select[name="processes[${processCounter}][department_or_vendor]"]`);
+    
+    if (outputProductSelect) {
+        populateOutputProductDropdown(outputProductSelect);
+    }
+    if (departmentVendorSelect) {
+        populateDepartmentVendorDropdown(departmentVendorSelect);
+    }
+    
+    processCounter++;
+}
+
+function removeProcess(btn) {
+    if (document.getElementById('processes_container').children.length > 1) {
+        btn.closest('.card').remove();
+    } else {
+        alert('At least one process is required for multi-process job work.');
+    }
+}
+
+
+
+
+
+// Show/hide fields based on work type
+document.getElementById('work_type').addEventListener('change', function() {
+    const workType = this.value;
+    const customerSection = document.getElementById('customer_section');
+    const departmentSection = document.getElementById('department_section');
+    const customerName = document.getElementById('customer_name');
+    const ratePerUnit = document.getElementById('rate_per_unit');
+    const department = document.getElementById('department');
+    
+    if (workType === 'outsourced') {
+        customerSection.style.display = 'block';
+        departmentSection.style.display = 'none';
+        customerName.required = true;
+        ratePerUnit.required = true;
+        department.required = false;
+    } else if (workType === 'in_house') {
+        customerSection.style.display = 'none';
+        departmentSection.style.display = 'block';
+        customerName.required = false;
+        ratePerUnit.required = false;
+        department.required = true;
+        // Set rate to 0 for in-house work
+        ratePerUnit.value = 0;
+    } else {
+        customerSection.style.display = 'none';
+        departmentSection.style.display = 'none';
+        customerName.required = false;
+        ratePerUnit.required = false;
+        department.required = false;
+    }
+});
+
+function generateJobNumber() {
+    fetch('/api/generate-job-number')
+        .then(response => response.json())
+        .then(data => {
+            if (data.job_number) {
+                document.getElementById('job_number').value = data.job_number;
+            }
+        })
+        .catch(error => {
+            console.error('Error generating job number:', error);
+        });
+}
+
+// Global variables to store dropdown options
+let globalItems = [];
+let globalDepartments = [];
+let globalSuppliers = [];
+
+// Load dropdown options when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadDropdownOptions();
+});
+
+function loadDropdownOptions() {
+    // Load items
+    fetch('/api/items')
+        .then(response => response.json())
+        .then(data => {
+            globalItems = data.items || [];
+        })
+        .catch(error => console.error('Error loading items:', error));
+    
+    // Load departments
+    fetch('/api/departments')
+        .then(response => response.json())
+        .then(data => {
+            globalDepartments = data.departments || [];
+        })
+        .catch(error => console.error('Error loading departments:', error));
+    
+    // Load suppliers
+    fetch('/api/suppliers')
+        .then(response => response.json())
+        .then(data => {
+            globalSuppliers = data.suppliers || [];
+        })
+        .catch(error => console.error('Error loading suppliers:', error));
+}
+
+function populateOutputProductDropdown(selectElement) {
+    // Clear existing options
+    selectElement.innerHTML = '<option value="">Select Output Product</option>';
+    
+    // Add items
+    globalItems.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = `${item.code} - ${item.name}`;
+        selectElement.appendChild(option);
+    });
+}
+
+function populateDepartmentVendorDropdown(selectElement) {
+    // Clear existing options
+    selectElement.innerHTML = '<option value="">Select Department/Vendor</option>';
+    
+    // Add departments
+    globalDepartments.forEach(dept => {
+        const option = document.createElement('option');
+        option.value = dept.name;
+        option.textContent = `${dept.name} (Department)`;
+        selectElement.appendChild(option);
+    });
+    
+    // Add suppliers/vendors
+    globalSuppliers.forEach(supplier => {
+        const option = document.createElement('option');
+        option.value = supplier.name;
+        option.textContent = `${supplier.name} (Vendor)`;
+        selectElement.appendChild(option);
+    });
+}
+
+function prepareFormSubmission() {
+    const jobWorkType = document.getElementById('job_work_type').value;
+    
+    if (jobWorkType === 'multi') {
+        // Collect all process data and format it as JSON
+        const processesContainer = document.getElementById('processes_container');
+        const processCards = processesContainer.querySelectorAll('.card');
+        const processesData = [];
+        
+        if (processCards.length === 0) {
+            alert('Please add at least one process for multi-process job work.');
+            return false;
+        }
+        
+        processCards.forEach((card, index) => {
+            const processData = {
+                process_name: card.querySelector(`select[name*="[process_name]"]`)?.value || '',
+                sequence_number: parseInt(card.querySelector(`input[name*="[sequence_number]"]`)?.value) || (index + 1),
+                quantity_input: parseFloat(card.querySelector(`input[name*="[quantity_input]"]`)?.value) || 0,
+                work_type: card.querySelector(`select[name*="[work_type]"]`)?.value || 'in_house',
+                output_item_id: card.querySelector(`select[name*="[output_item_id]"]`)?.value || '',
+                output_quantity: parseFloat(card.querySelector(`input[name*="[output_quantity]"]`)?.value) || 0,
+                scrap_percent: parseFloat(card.querySelector(`input[name*="[scrap_percent]"]`)?.value) || 0,
+                rate_per_unit: parseFloat(card.querySelector(`input[name*="[rate_per_unit]"]`)?.value) || 0,
+                department_or_vendor: card.querySelector(`select[name*="[department_or_vendor]"]`)?.value || '',
+                expected_duration: parseInt(card.querySelector(`input[name*="[expected_duration]"]`)?.value) || 1,
+                notes: card.querySelector(`textarea[name*="[notes]"]`)?.value || ''
+            };
+            
+            // Validation
+            if (!processData.process_name) {
+                alert(`Process ${index + 1}: Please select a process name.`);
+                return false;
+            }
+            if (processData.quantity_input <= 0) {
+                alert(`Process ${index + 1}: Please enter a valid quantity input.`);
+                return false;
+            }
+            
+            processesData.push(processData);
+        });
+        
+        // Add hidden input with processes data
+        const existingProcessInput = document.getElementById('processes_json_data');
+        if (existingProcessInput) {
+            existingProcessInput.remove();
+        }
+        
+        const processInput = document.createElement('input');
+        processInput.type = 'hidden';
+        processInput.id = 'processes_json_data';
+        processInput.name = 'processes_json';
+        processInput.value = JSON.stringify(processesData);
+        
+        document.getElementById('jobWorkForm').appendChild(processInput);
+    }
+    
+    return true; // Allow form submission
+}
+</script>
+{% endblock %}

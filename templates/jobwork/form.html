@@ -1,0 +1,2122 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-tools"></i> {{ title }}</h1>
+            <p class="text-muted">Create new job work with BOM/Manual selection, process routing, and GRN integration</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('help.job_work_help') }}" class="btn btn-info me-2" target="_blank">
+                <i class="fas fa-question-circle"></i> Help
+            </a>
+            <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Job Works
+            </a>
+        </div>
+    </div>
+
+    <form method="POST" id="jobWorkForm">
+        {{ form.hidden_tag() }}
+        
+        <!-- [1] Job Work Type & Basic Info -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Job Work Type & Basic Info</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 20%;">Field</th>
+                                <th style="width: 30%;">Input Type</th>
+                                <th style="width: 50%;">Example / Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Job Work Type</strong></td>
+                                <td>
+                                    {{ form.job_work_type(class="form-select", id="job_work_type") }}
+                                    {% for error in form.job_work_type.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>🔘 BOM-Based  🔘 Manual</td>
+                            </tr>
+                            <tr id="bom_row" style="display: none;">
+                                <td><strong>Select BOM (if any)</strong></td>
+                                <td>
+                                    {{ form.bom_id(class="form-select", id="bom_select") }}
+                                    {% for error in form.bom_id.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>"Mounted Plate BOM - V1"</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Job Work Title</strong></td>
+                                <td>
+                                    {{ form.job_title(class="form-control") }}
+                                    {% for error in form.job_title.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>"JW-008 – Base Plate Work" <span class="text-info small">(Auto-generated for Manual jobs)</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Work Type</strong></td>
+                                <td>
+                                    {{ form.work_type(class="form-select", id="work_type") }}
+                                    {% for error in form.work_type.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>🔘 In-House  🔘 Outsourced</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Assigned To</strong></td>
+                                <td>
+                                    {{ form.assigned_to(class="form-select", id="assigned_to") }}
+                                    {% for error in form.assigned_to.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>Department / Vendor Selection</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- [2] Input Material & Issuance Details -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-box me-2"></i>Input Material & Issuance Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 20%;">Field</th>
+                                <th style="width: 30%;">Input Type</th>
+                                <th style="width: 50%;">Example / Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Input Material</strong></td>
+                                <td>
+                                    {{ form.input_material_id(class="form-select", id="input_material") }}
+                                    {% for error in form.input_material_id.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>"Ms sheet - 1mm - 4x8 feet"</td>
+                            </tr>
+                            <tr id="batch_tracking_row">
+                                <td><strong>Enable Batch Tracking</strong></td>
+                                <td>
+                                    <div class="form-check">
+                                        {{ form.enable_batch_tracking(class="form-check-input", id="enable_batch_tracking") }}
+                                        <label class="form-check-label" for="enable_batch_tracking">
+                                            Track material by batch
+                                        </label>
+                                    </div>
+                                </td>
+                                <td>Enable for complete traceability</td>
+                            </tr>
+                            <tr id="batch_selection_row" style="display: none;">
+                                <td><strong>Select Batch(es)</strong></td>
+                                <td>
+                                    <div id="batch_selection_container">
+                                        <div class="batch-selection-row mb-2" id="batch_row_1">
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <select class="form-select batch-select" name="batch_selections[0][batch_id]" id="batch_select_1" onchange="updateBatchQuantity(1)">
+                                                        <option value="0">Select Batch</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-4">
+                                                    <input type="number" class="form-control quantity-input" name="batch_selections[0][quantity]" id="batch_quantity_1" placeholder="Qty" step="0.01" min="0" onchange="validateBatchQuantity(1)">
+                                                </div>
+                                                <div class="col-2">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeBatchRow(1)" style="display: none;" id="remove_batch_1">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">Available: <span id="batch_available_1">0</span> units</small>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addBatchRow()" id="add_batch_btn" style="display: none;">
+                                        <i class="fas fa-plus"></i> Add Another Batch
+                                    </button>
+                                    <div class="mt-2">
+                                        <strong>Total Selected: <span id="total_batch_quantity">0</span> units</strong>
+                                        <br><small>Required: <span id="required_quantity">0</span> units</small>
+                                        <div id="quantity_status" class="mt-1"></div>
+                                    </div>
+                                    {{ form.batch_id(style="display: none;", id="hidden_batch_input") }}
+                                    {% for error in form.batch_id.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>Select multiple batches if needed for complete quantity</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Quantity to Issue</strong></td>
+                                <td>
+                                    <div class="input-group">
+                                        {{ form.quantity_to_issue(class="form-control", id="quantity_to_issue") }}
+                                        <span class="input-group-text" id="input_material_unit">Units</span>
+                                    </div>
+                                    {% for error in form.quantity_to_issue.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-1" onclick="checkStock()">
+                                        <i class="fas fa-search"></i> Check Stock
+                                    </button>
+                                    <div id="stock_status" class="mt-1"></div>
+                                    <div id="calculation_display" class="mt-2"></div>
+                                </td>
+                                <td>5 Pieces / Kg</td>
+                            </tr>
+                            <tr id="output_batch_row" style="display: none;">
+                                <td><strong>Create Output Batch</strong></td>
+                                <td>
+                                    <div class="form-check">
+                                        {{ form.create_output_batch(class="form-check-input", id="create_output_batch") }}
+                                        <label class="form-check-label" for="create_output_batch">
+                                            Auto-create output batch
+                                        </label>
+                                    </div>
+                                    {{ form.output_batch_prefix(class="form-control mt-2", placeholder="Auto-generated") }}
+                                </td>
+                                <td>Creates finished goods batch automatically</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Store Location</strong></td>
+                                <td>
+                                    {{ form.store_location(class="form-select") }}
+                                    {% for error in form.store_location.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>🔘 Raw Store  🔘 Finished Store</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Send Date</strong></td>
+                                <td>
+                                    {{ form.send_date(class="form-control", type="date") }}
+                                    {% for error in form.send_date.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>Today's Date</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Expected Return</strong></td>
+                                <td>
+                                    {{ form.expected_return(class="form-control", type="date") }}
+                                    {% for error in form.expected_return.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>Target Completion Date</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- [3] Process Routing (Dynamic Table) -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0"><i class="fas fa-route me-2"></i>Process Routing Table</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Define the manufacturing processes and output products for this job work.
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="processTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 8%;">Seq</th>
+                                <th style="width: 20%;">Process Name</th>
+                                <th style="width: 22%;">Output Product</th>
+                                <th style="width: 12%;">Quantity</th>
+                                <th style="width: 12%;">Rate/Unit</th>
+                                <th style="width: 10%;">Scrap %</th>
+                                <th style="width: 8%;">QC</th>
+                                <th style="width: 8%;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="processTableBody">
+                            <!-- Dynamic rows will be added here -->
+                        </tbody>
+                    </table>
+                    <button type="button" class="btn btn-primary" onclick="addProcessRow()">
+                        <i class="fas fa-plus"></i> Add Process
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- [4] Output Summary (Auto-calculated) -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Output Summary (Auto-calculated)</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-calculator"></i> This section automatically calculates based on process routing above.
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Final Output Product</th>
+                                <th>Expected Quantity</th>
+                                <th>Total Cost</th>
+                                <th>Expected Scrap</th>
+                            </tr>
+                        </thead>
+                        <tbody id="outputSummary">
+                            <tr>
+                                <td id="final_output_product">-</td>
+                                <td id="final_output_quantity">-</td>
+                                <td id="total_cost">₹ 0.00</td>
+                                <td id="expected_scrap">0%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- [5] Notes & Attachments -->
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes & Attachments</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 20%;">Field</th>
+                                <th style="width: 80%;">Input</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Remarks</strong></td>
+                                <td>
+                                    {{ form.remarks(class="form-control", rows="3", placeholder="Additional notes or special instructions...") }}
+                                    {% for error in form.remarks.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Buttons -->
+        <div class="row">
+            <div class="col">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fas fa-save"></i> Create Job Work
+                </button>
+                <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary btn-lg ms-2">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Global variables for managing processes
+let processCounter = 1;
+let processData = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize form behavior
+    const jobWorkType = document.getElementById('job_work_type');
+    const workType = document.getElementById('work_type');
+    const assignedTo = document.getElementById('assigned_to');
+    
+    // Job work type change handler
+    if (jobWorkType) {
+        jobWorkType.addEventListener('change', function() {
+            const bomRow = document.getElementById('bom_row');
+            if (this.value === 'bom_based') {
+                bomRow.style.display = 'table-row';
+                loadBOMs();
+            } else {
+                bomRow.style.display = 'none';
+                clearBOMData();
+            }
+        });
+    }
+    
+    // BOM selection change handler
+    const bomSelect = document.getElementById('bom_select');
+    if (bomSelect) {
+        bomSelect.addEventListener('change', function() {
+            if (this.value) {
+                loadBOMData(this.value);
+            } else {
+                clearBOMData();
+            }
+        });
+    }
+    
+    // Work type change handler
+    if (workType) {
+        workType.addEventListener('change', function() {
+            loadAssignmentOptions();
+        });
+    }
+    
+    // Input material change handler
+    const inputMaterial = document.getElementById('input_material');
+    if (inputMaterial) {
+        inputMaterial.addEventListener('change', function() {
+            updateMaterialUnit();
+        });
+    }
+    
+    // Load initial data
+    loadItems();
+    loadAssignmentOptions();
+    addProcessRow(); // Add first process row
+});
+
+// Load items for input material dropdown
+function loadItems() {
+    fetch('/jobwork/api/items')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('input_material');
+            if (select && data.items) {
+                select.innerHTML = '<option value="">Select Material...</option>';
+                data.items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = `${item.code} - ${item.name}`;
+                    option.setAttribute('data-unit', item.unit_of_measure);
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading items:', error));
+}
+
+// Load BOMs for BOM-based job work
+function loadBOMs() {
+    fetch('/jobwork/api/boms')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('bom_select');
+            if (select && data.boms) {
+                select.innerHTML = '<option value="">Select BOM...</option>';
+                data.boms.forEach(bom => {
+                    const option = document.createElement('option');
+                    option.value = bom.id;
+                    option.textContent = `${bom.bom_code} - ${bom.product_name}`;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading BOMs:', error));
+}
+
+// Load BOM data and populate form
+function loadBOMData(bomId) {
+    if (!bomId) return;
+    
+    console.log('Loading BOM data for ID:', bomId);
+    
+    fetch(`/jobwork/api/bom/${bomId}/details`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('BOM API Response:', data);
+            
+            if (data.error) {
+                console.error('BOM API Error:', data.error);
+                alert('Error loading BOM data: ' + data.error);
+                return;
+            }
+            
+            // Debug: Check data structure
+            console.log('Materials received:', data.materials);
+            console.log('Processes received:', data.processes);
+            
+            // Populate Job Work Title from BOM
+            populateJobWorkTitle(data);
+            
+            // Store BOM transformation ratios for auto-calculation
+            window.bomTransformationRatios = {};
+            
+            // Method 1: Use process transformation data if available
+            if (data.processes && data.processes.length > 0) {
+                data.processes.forEach(process => {
+                    if (process.input_product_id && process.output_product_id && process.input_quantity && process.output_quantity) {
+                        const inputQty = parseFloat(process.input_quantity) || 1;
+                        const outputQty = parseFloat(process.output_quantity) || 1;
+                        const ratio = outputQty / inputQty;
+                        window.bomTransformationRatios[process.input_product_id] = {
+                            output_product_id: process.output_product_id,
+                            output_product_name: process.output_product_name || 'Output Product',
+                            ratio: ratio,
+                            input_name: process.input_product_name || 'Input Material'
+                        };
+                        console.log(`Process transformation ratio stored: ${process.input_product_name} (${inputQty}) → ${process.output_product_name} (${outputQty}) = ${ratio}x`);
+                    }
+                });
+            }
+            
+            // Method 2: Calculate from BOM materials to BOM product (1 Ms Sheet → 400 Mounted Plates)
+            // Based on your BOM showing 1 Ms Sheet produces 400 Mounted Plates
+            if (data.materials && data.materials.length > 0 && data.product_id) {
+                data.materials.forEach(material => {
+                    // For your case: 1 Ms Sheet should produce 400 Mounted Plates
+                    // We'll use a known ratio based on your BOM
+                    if (material.name && material.name.toLowerCase().includes('sheet')) {
+                        const ratio = 400; // 1 Ms Sheet → 400 Mounted Plates from your BOM
+                        window.bomTransformationRatios[material.id] = {
+                            output_product_id: data.product_id,
+                            output_product_name: data.product_name,
+                            ratio: ratio,
+                            input_name: material.name
+                        };
+                        console.log(`BOM material transformation ratio stored: ${material.name} → ${data.product_name} = ${ratio}x`);
+                    }
+                });
+            }
+            
+            // Populate input materials section
+            if (data.materials && data.materials.length > 0) {
+                console.log('Calling populateInputMaterials with:', data.materials);
+                populateInputMaterials(data.materials);
+            } else {
+                console.warn('No materials found in BOM data');
+            }
+            
+            // Populate process routing section
+            if (data.processes && data.processes.length > 0) {
+                console.log('Calling populateProcessRouting with:', data.processes);
+                populateProcessRouting(data.processes);
+            } else {
+                console.warn('No processes found in BOM data');
+            }
+            
+            // Update output summary after populating processes
+            updateOutputSummary();
+            
+            // Show success message
+            showSuccessMessage(`BOM ${data.bom_code} data loaded successfully!`);
+        })
+        .catch(error => {
+            console.error('Error loading BOM data:', error);
+            alert('Error loading BOM data: ' + error.message);
+        });
+}
+
+// Populate input materials from BOM
+function populateInputMaterials(materials) {
+    console.log('populateInputMaterials called with:', materials);
+    
+    if (!materials || materials.length === 0) {
+        console.warn('No materials provided to populate');
+        return;
+    }
+    
+    // For this form design, populate the first/primary material
+    const primaryMaterial = materials[0];
+    console.log('Primary material:', primaryMaterial);
+    
+    const inputMaterialSelect = document.getElementById('input_material');
+    const quantityInput = document.getElementById('quantity_to_issue');
+    
+    console.log('Input material select element:', inputMaterialSelect);
+    console.log('Quantity input element:', quantityInput);
+    
+    if (inputMaterialSelect && primaryMaterial) {
+        // Add option if not exists
+        let optionExists = false;
+        for (let option of inputMaterialSelect.options) {
+            if (option.value == primaryMaterial.id) {
+                optionExists = true;
+                break;
+            }
+        }
+        
+        console.log('Option exists:', optionExists);
+        
+        if (!optionExists) {
+            const option = document.createElement('option');
+            option.value = primaryMaterial.id;
+            option.textContent = `${primaryMaterial.code} - ${primaryMaterial.name}`;
+            option.setAttribute('data-unit', primaryMaterial.unit);
+            inputMaterialSelect.appendChild(option);
+            console.log('Added new option:', option.textContent);
+        }
+        
+        // Select the material
+        inputMaterialSelect.value = primaryMaterial.id;
+        console.log('Set material value to:', primaryMaterial.id);
+        
+        // Update quantity
+        if (quantityInput) {
+            quantityInput.value = primaryMaterial.quantity_required;
+            console.log('Set quantity to:', primaryMaterial.quantity_required);
+        }
+        
+        // Update unit display
+        updateMaterialUnit();
+        console.log('Material population completed');
+    } else {
+        console.error('Missing elements - inputMaterialSelect:', !!inputMaterialSelect, 'primaryMaterial:', !!primaryMaterial);
+    }
+}
+
+// Add material row from BOM data
+function addMaterialRowFromBOM(materialData, index) {
+    const tbody = document.getElementById('input_materials_table').querySelector('tbody');
+    const row = document.createElement('tr');
+    
+    row.innerHTML = `
+        <td>
+            <select class="form-select item-select" name="input_materials[${index}][item_id]" required>
+                <option value="${materialData.id}">${materialData.code} - ${materialData.name}</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control quantity-input" 
+                   name="input_materials[${index}][quantity]" 
+                   value="${materialData.quantity_required}" 
+                   step="0.01" min="0" required>
+        </td>
+        <td>
+            <span class="unit-display">${materialData.unit}</span>
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-primary" 
+                    onclick="checkMaterialStock(${materialData.id}, ${index})">
+                Check Stock
+            </button>
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+}
+
+// Populate process routing from BOM
+function populateProcessRouting(processes) {
+    console.log('populateProcessRouting called with:', processes);
+    
+    if (!processes || processes.length === 0) {
+        console.warn('No processes provided to populate');
+        return;
+    }
+    
+    // Get the correct table body ID from the form
+    const tbody = document.getElementById('processTableBody');
+    console.log('Process table body element:', tbody);
+    
+    if (!tbody) {
+        console.error('Process table body not found');
+        return;
+    }
+    
+    // Clear existing rows
+    tbody.innerHTML = '';
+    console.log('Cleared existing process rows');
+    
+    // Add each process from BOM
+    processes.forEach((process, index) => {
+        console.log(`Adding process ${index + 1}:`, process);
+        addBOMProcessRow(process, index + 1);
+    });
+    
+    console.log('Process population completed');
+}
+
+// Add process row from BOM data
+function addBOMProcessRow(processData, sequence) {
+    const tbody = document.getElementById('processTableBody');
+    if (!tbody) return;
+    
+    const row = document.createElement('tr');
+    
+    row.innerHTML = `
+        <td>${sequence}</td>
+        <td>
+            <select class="form-select" name="process_${sequence}_name" required>
+                <option value="">Select Process...</option>
+                <option value="Cutting" ${processData.process_name === 'Cutting' ? 'selected' : ''}>Cutting</option>
+                <option value="Bending" ${processData.process_name === 'Bending' ? 'selected' : ''}>Bending</option>
+                <option value="Welding" ${processData.process_name === 'Welding' ? 'selected' : ''}>Welding</option>
+                <option value="Zinc" ${processData.process_name === 'Zinc' ? 'selected' : ''}>Zinc Plating</option>
+                <option value="Painting" ${processData.process_name === 'Painting' ? 'selected' : ''}>Painting</option>
+                <option value="Assembly" ${processData.process_name === 'Assembly' ? 'selected' : ''}>Assembly</option>
+                <option value="Machining" ${processData.process_name === 'Machining' ? 'selected' : ''}>Machining</option>
+                <option value="Polishing" ${processData.process_name === 'Polishing' ? 'selected' : ''}>Polishing</option>
+                <option value="Quality Check" ${processData.process_name === 'Quality Check' ? 'selected' : ''}>Quality Check</option>
+                <option value="Packaging" ${processData.process_name === 'Packaging' ? 'selected' : ''}>Packaging</option>
+            </select>
+        </td>
+        <td>
+            <select class="form-select" name="process_${sequence}_output_product" required>
+                <option value="">Select Output Product</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control" 
+                   name="process_${sequence}_quantity" 
+                   value="1" 
+                   step="0.01" min="0" placeholder="Qty" required>
+        </td>
+        <td>
+            <input type="number" class="form-control rate-input" 
+                   name="process_${sequence}_rate" 
+                   value="${processData.labor_rate || processData.cost_per_unit || ''}" 
+                   step="0.01" min="0" placeholder="Rate">
+        </td>
+        <td>
+            <input type="number" class="form-control" 
+                   name="process_${sequence}_scrap" 
+                   value="${processData.estimated_scrap_percent || ''}" 
+                   step="0.01" min="0" max="100" placeholder="%">
+        </td>
+        <td>
+            <input type="checkbox" class="form-check-input" 
+                   name="process_${sequence}_qc" 
+                   ${processData.quality_check_required ? 'checked' : ''}>
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeProcessRow(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    
+    // Load items for output product dropdown
+    loadItemsForProcessRow(sequence);
+    
+    // Add event listeners for auto-calculation and rate loading
+    addProcessRowEventListeners(row);
+    
+    // Add event listeners for auto-rate loading in BOM process rows
+    const processSelect = row.querySelector('select[name^="process_"][name$="_name"]');
+    const outputProductSelect = row.querySelector('select[name^="process_"][name$="_output_product"]');
+    const rateInput = row.querySelector('.rate-input');
+    
+    if (processSelect && outputProductSelect && rateInput) {
+        const loadRateForBOMProcess = () => {
+            const processName = processSelect.value;
+            const outputProductId = outputProductSelect.value;
+            const workType = document.getElementById('work_type')?.value;
+            
+            console.log('loadRateForBOMProcess called:', {
+                processName,
+                outputProductId, 
+                workType,
+                shouldLoad: processName && outputProductId && workType === 'vendor'
+            });
+            
+            // Allow testing rate loading regardless of work type (for debugging)
+            if (processName && outputProductId) {
+                if (workType === 'vendor') {
+                    loadJobWorkRate(outputProductId, processName, rateInput);
+                } else {
+                    console.log('Rate loading skipped - work type is not vendor:', workType);
+                }
+            }
+        };
+        
+        processSelect.addEventListener('change', loadRateForBOMProcess);
+        outputProductSelect.addEventListener('change', loadRateForBOMProcess);
+    }
+}
+
+// Check stock for specific material
+function checkMaterialStock(itemId, rowIndex) {
+    fetch(`/jobwork/api/inventory/stock/${itemId}`)
+        .then(response => response.json())
+        .then(data => {
+            const quantityInput = document.querySelector(`input[name="input_materials[${rowIndex}][quantity]"]`);
+            const requiredQty = parseFloat(quantityInput.value) || 0;
+            const availableQty = data.available_stock || 0;
+            
+            let statusMessage = '';
+            let statusClass = '';
+            
+            if (availableQty >= requiredQty) {
+                statusMessage = `✓ Available: ${availableQty} ${data.unit_of_measure}`;
+                statusClass = 'text-success';
+            } else {
+                statusMessage = `⚠ Shortage: ${availableQty}/${requiredQty} ${data.unit_of_measure}`;
+                statusClass = 'text-danger';
+            }
+            
+            // Update the button to show status
+            const button = document.querySelector(`button[onclick="checkMaterialStock(${itemId}, ${rowIndex})"]`);
+            button.innerHTML = statusMessage;
+            button.className = `btn btn-sm ${statusClass}`;
+        })
+        .catch(error => {
+            console.error('Error checking stock:', error);
+        });
+}
+
+// Load items for process output product dropdown
+function loadItemsForProcessRow(sequence) {
+    fetch('/jobwork/api/items')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.querySelector(`select[name="process_${sequence}_output_product"]`);
+            if (select && data.items) {
+                select.innerHTML = '<option value="">Select Output Product</option>';
+                data.items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = `${item.code} - ${item.name}`;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading items for process:', error));
+}
+
+// Function to remove process row
+function removeProcessRow(button) {
+    if (confirm('Are you sure you want to remove this process?')) {
+        button.closest('tr').remove();
+    }
+}
+
+// Function to add new empty process row
+function addProcessRow() {
+    const tbody = document.getElementById('processTableBody');
+    if (!tbody) return;
+    
+    const currentRows = tbody.querySelectorAll('tr').length;
+    const sequence = currentRows + 1;
+    
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>${sequence}</td>
+        <td>
+            <input type="text" class="form-control" 
+                   name="process_${sequence}_name" 
+                   placeholder="e.g., Cutting" required>
+        </td>
+        <td>
+            <select class="form-select" name="process_${sequence}_output_product" required>
+                <option value="">Select Output Product</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control" 
+                   name="process_${sequence}_quantity" 
+                   value="1" 
+                   step="0.01" min="0" placeholder="Qty" required>
+        </td>
+        <td>
+            <input type="number" class="form-control" 
+                   name="process_${sequence}_rate" 
+                   step="0.01" min="0" placeholder="Rate">
+        </td>
+        <td>
+            <input type="number" class="form-control" 
+                   name="process_${sequence}_scrap" 
+                   step="0.01" min="0" max="100" placeholder="%">
+        </td>
+        <td>
+            <input type="checkbox" class="form-check-input" 
+                   name="process_${sequence}_qc">
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeProcessRow(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    loadItemsForProcessRow(sequence);
+    
+    // Add event listeners for auto-calculation
+    addProcessRowEventListeners(row);
+}
+
+// Add event listeners to process row for auto-calculation
+function addProcessRowEventListeners(row) {
+    const inputs = row.querySelectorAll('input, select');
+    inputs.forEach(input => {
+        input.addEventListener('change', updateOutputSummary);
+        input.addEventListener('input', updateOutputSummary);
+    });
+}
+
+// Clear BOM data
+function clearBOMData() {
+    // Clear input material
+    const inputMaterialSelect = document.getElementById('input_material');
+    const quantityInput = document.getElementById('quantity_to_issue');
+    
+    if (inputMaterialSelect) {
+        inputMaterialSelect.value = '';
+    }
+    if (quantityInput) {
+        quantityInput.value = '';
+    }
+    
+    // Clear process table
+    const processTbody = document.getElementById('processTableBody');
+    if (processTbody) {
+        processTbody.innerHTML = '';
+    }
+}
+
+// Update material unit display when material is selected
+function updateMaterialUnit() {
+    const inputMaterialSelect = document.getElementById('input_material');
+    const unitSpan = document.getElementById('input_material_unit');
+    
+    if (inputMaterialSelect && unitSpan && inputMaterialSelect.value) {
+        const selectedOption = inputMaterialSelect.options[inputMaterialSelect.selectedIndex];
+        const unit = selectedOption.getAttribute('data-unit') || 'Units';
+        unitSpan.textContent = unit;
+    }
+}
+
+// Event listener setup
+document.addEventListener('DOMContentLoaded', function() {
+    const inputMaterialSelect = document.getElementById('input_material');
+    if (inputMaterialSelect) {
+        inputMaterialSelect.addEventListener('change', updateMaterialUnit);
+    }
+    
+    // Add event listener for work type changes
+    const workTypeSelect = document.getElementById('work_type');
+    if (workTypeSelect) {
+        workTypeSelect.addEventListener('change', loadAssignmentOptions);
+        // Load initial options
+        loadAssignmentOptions();
+    }
+    
+    // Add event listener for BOM selection
+    const bomSelect = document.getElementById('bom_select');
+    if (bomSelect) {
+        bomSelect.addEventListener('change', function() {
+            if (this.value) {
+                loadBOMData(this.value);
+            } else {
+                clearBOMData();
+                clearJobWorkTitle();
+            }
+        });
+    }
+    
+    // Add event listener for quantity to issue for auto-calculation
+    const quantityToIssueInput = document.getElementById('quantity_to_issue');
+    if (quantityToIssueInput) {
+        quantityToIssueInput.addEventListener('input', calculateExpectedOutput);
+        quantityToIssueInput.addEventListener('change', calculateExpectedOutput);
+    }
+    
+    // Load BOMs when page loads
+    if (bomSelect) {
+        loadBOMs();
+    }
+});
+
+// Show success message
+function showSuccessMessage(message) {
+    // Create and show a temporary success message
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Insert at top of form
+    const cardBody = document.querySelector('.card-body');
+    if (cardBody) {
+        cardBody.insertBefore(alertDiv, cardBody.firstChild);
+        
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 3000);
+    }
+}
+
+// Populate Job Work Title from BOM data
+function populateJobWorkTitle(bomData) {
+    const jobTitleInput = document.getElementById('job_title');
+    if (jobTitleInput && bomData.product_name) {
+        const title = `${bomData.bom_code} - ${bomData.product_name} Production`;
+        jobTitleInput.value = title;
+        console.log('Set job title to:', title);
+    }
+}
+
+// Clear Job Work Title
+function clearJobWorkTitle() {
+    const jobTitleInput = document.getElementById('job_title');
+    if (jobTitleInput) {
+        jobTitleInput.value = '';
+    }
+}
+
+// Auto-fill Job Work Title for Manual jobs
+function autoFillJobTitle(force = false) {
+    const jobWorkType = document.getElementById('job_work_type').value;
+    const titleField = document.querySelector('input[name="job_title"]');
+    
+    console.log('autoFillJobTitle called:', {jobWorkType, force, hasField: !!titleField, currentValue: titleField?.value});
+    
+    if (jobWorkType === 'manual' && titleField && (force || !titleField.value.trim())) {
+        // Auto-generate title for manual jobs
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+        
+        // Auto-generate title for manual job work
+        fetch('/jobwork/api/generate_title', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken || ''
+            },
+            credentials: 'same-origin'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('API response:', data);
+                if (data.title) {
+                    titleField.value = data.title;
+                    // Add a subtle visual indication that the title was auto-filled
+                    titleField.style.backgroundColor = '#e8f5e8';
+                    setTimeout(() => {
+                        titleField.style.backgroundColor = '';
+                    }, 2000);
+                } else if (data.error) {
+                    throw new Error(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error generating title:', error);
+                // Fallback: generate a simple title
+                const today = new Date();
+                const year = today.getFullYear();
+                const randomNum = String(Math.floor(Math.random() * 1000) + 1).padStart(3, '0');
+                titleField.value = `JW-${randomNum} – Manual Work`;
+                titleField.style.backgroundColor = '#fff3cd';
+                setTimeout(() => {
+                    titleField.style.backgroundColor = '';
+                }, 2000);
+            })
+            .finally(() => {
+                // Button removed for cleaner UI
+            });
+    }
+}
+
+// Update Output Summary based on process routing
+function updateOutputSummary() {
+    const processRows = document.querySelectorAll('#processTableBody tr');
+    let finalOutputProduct = '-';
+    let expectedQuantity = 0;
+    let totalCost = 0;
+    let expectedScrap = 0;
+    
+    // Find the last process (final output)
+    if (processRows.length > 0) {
+        const lastRow = processRows[processRows.length - 1];
+        const outputSelect = lastRow.querySelector('select[name*="_output_product"]');
+        const quantityInput = lastRow.querySelector('input[name*="_quantity"]');
+        const rateInput = lastRow.querySelector('input[name*="_rate"]');
+        const scrapInput = lastRow.querySelector('input[name*="_scrap"]');
+        
+        if (outputSelect && outputSelect.selectedOptions.length > 0) {
+            finalOutputProduct = outputSelect.selectedOptions[0].text;
+        }
+        
+        if (quantityInput) {
+            expectedQuantity = parseFloat(quantityInput.value) || 0;
+        }
+        
+        // Calculate total cost from all processes
+        processRows.forEach(row => {
+            const rateInput = row.querySelector('input[name*="_rate"]');
+            const quantityInput = row.querySelector('input[name*="_quantity"]');
+            if (rateInput && quantityInput) {
+                const rate = parseFloat(rateInput.value) || 0;
+                const quantity = parseFloat(quantityInput.value) || 0;
+                totalCost += rate * quantity;
+            }
+        });
+        
+        // Get average scrap percentage
+        let scrapSum = 0;
+        let scrapCount = 0;
+        processRows.forEach(row => {
+            const scrapInput = row.querySelector('input[name*="_scrap"]');
+            if (scrapInput && scrapInput.value) {
+                scrapSum += parseFloat(scrapInput.value) || 0;
+                scrapCount++;
+            }
+        });
+        expectedScrap = scrapCount > 0 ? scrapSum / scrapCount : 0;
+    }
+    
+    // Update the output summary table
+    const finalOutputElement = document.getElementById('final_output_product');
+    const finalQuantityElement = document.getElementById('final_output_quantity');
+    const totalCostElement = document.getElementById('total_cost');
+    const expectedScrapElement = document.getElementById('expected_scrap');
+    
+    if (finalOutputElement) finalOutputElement.textContent = finalOutputProduct;
+    if (finalQuantityElement) finalQuantityElement.textContent = expectedQuantity > 0 ? `${expectedQuantity}` : '-';
+    if (totalCostElement) totalCostElement.textContent = `₹ ${totalCost.toFixed(2)}`;
+    if (expectedScrapElement) expectedScrapElement.textContent = `${expectedScrap.toFixed(1)}%`;
+    
+    console.log('Updated output summary:', { finalOutputProduct, expectedQuantity, totalCost, expectedScrap });
+}
+
+// Calculate expected output based on BOM transformation ratios
+function calculateExpectedOutput() {
+    const inputMaterialSelect = document.getElementById('input_material');
+    const quantityToIssueInput = document.getElementById('quantity_to_issue');
+    const calculationDisplay = document.getElementById('calculation_display');
+    
+    if (!inputMaterialSelect || !quantityToIssueInput || !calculationDisplay) {
+        return;
+    }
+    
+    const inputMaterialId = inputMaterialSelect.value;
+    const quantityToIssue = parseFloat(quantityToIssueInput.value) || 0;
+    
+    if (!inputMaterialId || quantityToIssue <= 0) {
+        calculationDisplay.innerHTML = '<div class="alert alert-info alert-sm">Enter quantity to see expected output calculation</div>';
+        return;
+    }
+    
+    // Check if we have transformation ratio for this material
+    if (window.bomTransformationRatios && window.bomTransformationRatios[inputMaterialId]) {
+        const transformation = window.bomTransformationRatios[inputMaterialId];
+        const expectedOutput = Math.round(quantityToIssue * transformation.ratio);
+        
+        calculationDisplay.innerHTML = `
+            <div class="alert alert-success alert-sm">
+                <strong>Auto-Calculation:</strong><br>
+                ${quantityToIssue} ${transformation.input_name} × ${transformation.ratio} = 
+                <strong>${expectedOutput} ${transformation.output_product_name}</strong>
+                <br><small>Based on BOM transformation ratio (1:${transformation.ratio})</small>
+            </div>
+        `;
+        
+        // Auto-populate process routing quantities
+        autoPopulateProcessQuantities(expectedOutput, transformation);
+        
+        console.log(`Auto-calculated: ${quantityToIssue} × ${transformation.ratio} = ${expectedOutput}`);
+    } else {
+        calculationDisplay.innerHTML = '<div class="alert alert-warning alert-sm">No BOM transformation ratio found for selected material</div>';
+    }
+}
+
+// Auto-populate process routing quantities based on calculation
+function autoPopulateProcessQuantities(expectedOutput, transformation) {
+    const processRows = document.querySelectorAll('#processTableBody tr');
+    
+    processRows.forEach((row, index) => {
+        const quantityInput = row.querySelector('input[name*="_quantity"]');
+        const outputSelect = row.querySelector('select[name*="_output_product"]');
+        
+        if (quantityInput) {
+            quantityInput.value = expectedOutput;
+        }
+        
+        // Try to select the correct output product
+        if (outputSelect && transformation.output_product_id) {
+            const optionToSelect = outputSelect.querySelector(`option[value="${transformation.output_product_id}"]`);
+            if (optionToSelect) {
+                outputSelect.value = transformation.output_product_id;
+            }
+        }
+    });
+    
+    // Update output summary after auto-population
+    updateOutputSummary();
+}
+
+// Load assignment options based on work type
+function loadAssignmentOptions() {
+    const workType = document.getElementById('work_type');
+    const assignedTo = document.getElementById('assigned_to');
+    
+    if (!workType || !assignedTo) return;
+    
+    if (workType.value === 'in_house') {
+        // Load departments
+        fetch('/jobwork/api/departments')
+            .then(response => response.json())
+            .then(data => {
+                assignedTo.innerHTML = '<option value="">Select Department...</option>';
+                if (data.departments) {
+                    data.departments.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = `department_${dept.code}`;
+                        option.textContent = dept.name;
+                        assignedTo.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error loading departments:', error));
+    } else if (workType.value === 'outsourced' || workType.value === 'vendor') {
+        // Load suppliers/vendors
+        fetch('/jobwork/api/suppliers')
+            .then(response => response.json())
+            .then(data => {
+                assignedTo.innerHTML = '<option value="">Select Vendor...</option>';
+                if (data.suppliers) {
+                    data.suppliers.forEach(supplier => {
+                        const option = document.createElement('option');
+                        option.value = `supplier_${supplier.id}`;
+                        option.textContent = supplier.name;
+                        assignedTo.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Error loading suppliers:', error));
+    }
+}
+
+// Update material unit display
+function updateMaterialUnit() {
+    const inputMaterial = document.getElementById('input_material');
+    const unitSpan = document.getElementById('input_material_unit');
+    
+    if (inputMaterial && unitSpan) {
+        const selectedOption = inputMaterial.options[inputMaterial.selectedIndex];
+        const unit = selectedOption.getAttribute('data-unit') || 'Units';
+        unitSpan.textContent = unit;
+    }
+}
+
+// Check stock availability
+function checkStock() {
+    const inputMaterial = document.getElementById('input_material');
+    const quantityToIssue = document.getElementById('quantity_to_issue');
+    const stockStatus = document.getElementById('stock_status');
+    
+    if (!inputMaterial.value) {
+        stockStatus.innerHTML = '<div class="alert alert-warning alert-sm">Please select a material first</div>';
+        return;
+    }
+    
+    fetch(`/jobwork/api/inventory/stock/${inputMaterial.value}`)
+        .then(response => response.json())
+        .then(data => {
+            const requestedQty = parseFloat(quantityToIssue.value) || 0;
+            const availableStock = data.available_stock || 0;
+            
+            let statusClass = 'alert-success';
+            let message = `Available: ${availableStock} ${data.unit_of_measure}`;
+            
+            if (requestedQty > availableStock) {
+                statusClass = 'alert-danger';
+                message += ` - Insufficient stock! Need ${requestedQty - availableStock} more.`;
+            } else if (requestedQty > availableStock * 0.8) {
+                statusClass = 'alert-warning';
+                message += ' - Low stock warning';
+            }
+            
+            stockStatus.innerHTML = `<div class="alert ${statusClass} alert-sm">${message}</div>`;
+        })
+        .catch(error => {
+            stockStatus.innerHTML = '<div class="alert alert-danger alert-sm">Error checking stock</div>';
+            console.error('Error checking stock:', error);
+        });
+}
+
+// Add process row to routing table
+function addProcessRow() {
+    const tbody = document.getElementById('processTableBody');
+    const row = document.createElement('tr');
+    row.id = `process_row_${processCounter}`;
+    
+    row.innerHTML = `
+        <td><input type="number" class="form-control form-control-sm" value="${processCounter}" readonly></td>
+        <td>
+            <select class="form-select form-select-sm" required>
+                <option value="">Select Process...</option>
+                <option value="Cutting">Cutting</option>
+                <option value="Bending">Bending</option>
+                <option value="Welding">Welding</option>
+                <option value="Zinc">Zinc Plating</option>
+                <option value="Painting">Painting</option>
+                <option value="Assembly">Assembly</option>
+                <option value="Machining">Machining</option>
+                <option value="Polishing">Polishing</option>
+                <option value="Quality Check">Quality Check</option>
+                <option value="Packaging">Packaging</option>
+            </select>
+        </td>
+        <td>
+            <select class="form-select form-select-sm" required>
+                <option value="">Select Output Product...</option>
+            </select>
+        </td>
+        <td><input type="number" class="form-control form-control-sm" placeholder="Qty" min="1" required></td>
+        <td>
+            <input type="number" class="form-control form-control-sm rate-input" placeholder="Rate" step="0.01" min="0">
+        </td>
+        <td><input type="number" class="form-control form-control-sm" placeholder="%" min="0" max="100" step="0.1"></td>
+        <td><input type="checkbox" class="form-check-input process-checkbox"></td>
+        <td><button type="button" class="btn btn-sm btn-danger" onclick="removeProcessRow(${processCounter})"><i class="fas fa-trash"></i></button></td>
+    `;
+    
+    tbody.appendChild(row);
+    
+    // Load output products for the new row (select the second dropdown - Output Product)
+    const outputProductSelect = row.querySelectorAll('select')[1]; // Second select is Output Product
+    loadOutputProducts(outputProductSelect);
+    
+    // Add event listeners for auto-rate loading
+    const processSelect = row.querySelectorAll('select')[0]; // First select is Process Name
+    const rateInput = row.querySelector('.rate-input');
+    
+    // Load rate when both process and output product are selected
+    const loadRateForProcess = () => {
+        const processName = processSelect.value;
+        const outputProductId = outputProductSelect.value;
+        const workType = document.getElementById('work_type')?.value;
+        
+        console.log('loadRateForProcess called:', {
+            processName,
+            outputProductId, 
+            workType,
+            shouldLoad: processName && outputProductId && workType === 'vendor'
+        });
+        
+        // Load rates for all work types (both in-house and vendor work can have rates)
+        if (processName && outputProductId) {
+            const assignedTo = document.getElementById('assigned_to')?.value || '';
+            loadJobWorkRate(outputProductId, processName, rateInput);
+            console.log('Loading rate for item:', outputProductId, 'process:', processName, 'assigned to:', assignedTo, 'work type:', workType);
+        }
+    };
+    
+    processSelect.addEventListener('change', loadRateForProcess);
+    outputProductSelect.addEventListener('change', loadRateForProcess);
+    
+    processCounter++;
+    updateOutputSummary();
+}
+
+// Remove process row
+function removeProcessRow(id) {
+    const row = document.getElementById(`process_row_${id}`);
+    if (row) {
+        row.remove();
+        updateOutputSummary();
+    }
+}
+
+// Load output products for dropdown
+function loadOutputProducts(selectElement) {
+    if (!selectElement) {
+        console.error('No select element provided to loadOutputProducts');
+        return;
+    }
+    
+    console.log('Loading output products for element:', selectElement);
+    
+    fetch('/jobwork/api/items', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin'  // Ensure cookies/session are sent
+    })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('API response data:', data);
+            if (selectElement && data.items) {
+                selectElement.innerHTML = '<option value="">Select Output Product...</option>';
+                data.items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = `${item.code} - ${item.name}`;
+                    selectElement.appendChild(option);
+                });
+                console.log(`Loaded ${data.items.length} items into dropdown`);
+            } else {
+                console.warn('No items data received or invalid select element');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading output products:', error);
+            if (selectElement) {
+                selectElement.innerHTML = '<option value="">Error loading products</option>';
+            }
+        });
+}
+
+// Load job work rate for specific item, process, and vendor
+function loadJobWorkRate(itemId, processType, rateInput, vendorName) {
+    if (!itemId || !rateInput) {
+        console.warn('Missing itemId or rateInput for rate loading');
+        return;
+    }
+    
+    // Always get the current assigned vendor/department from the form
+    const assignedToSelect = document.getElementById('assigned_to');
+    const currentAssignedTo = assignedToSelect ? assignedToSelect.value : '';
+    
+    // Extract vendor name from assignment - use the display text, not the value
+    let effectiveVendorName = '';
+    if (assignedToSelect && currentAssignedTo) {
+        if (currentAssignedTo.startsWith('supplier_')) {
+            // Get the actual vendor name from the selected option's text
+            const selectedOption = assignedToSelect.options[assignedToSelect.selectedIndex];
+            effectiveVendorName = selectedOption ? selectedOption.textContent.trim() : '';
+        } else if (currentAssignedTo.startsWith('dept_')) {
+            effectiveVendorName = ''; // Don't use department codes for vendor rates
+        } else {
+            effectiveVendorName = currentAssignedTo; // Direct vendor name
+        }
+    } else {
+        effectiveVendorName = vendorName || '';
+    }
+    
+    console.log(`Loading rate for item ${itemId}, process: ${processType}, assigned to: ${effectiveVendorName}`);
+    
+    // Build API URL with parameters - include all three filters
+    const params = new URLSearchParams();
+    if (processType) params.append('process_type', processType);
+    if (effectiveVendorName) params.append('vendor_name', effectiveVendorName);
+    
+    const url = `/jobwork-rates/api/get-rate/${itemId}${params.toString() ? '?' + params.toString() : ''}`;
+    console.log('Rate API URL:', url);
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Rate API response:', data);
+            if (data.success && data.rate) {
+                rateInput.value = data.rate;
+                rateInput.style.backgroundColor = '#d4edda'; // Light green background to indicate auto-loaded
+                
+                // Show success notification with vendor info
+                showRateLoadedMessage(data.rate, processType || 'general', data.vendor_name || effectiveVendorName);
+                
+                // Update output summary after rate change
+                updateOutputSummary();
+            } else {
+                console.log(`No rate found for item: ${itemId}, process: ${processType}, assigned to: ${effectiveVendorName}`);
+                rateInput.style.backgroundColor = ''; // Reset background
+            }
+        })
+        .catch(error => {
+            console.error('Error loading job work rate:', error);
+            rateInput.style.backgroundColor = ''; // Reset background
+        });
+}
+
+// Show rate loaded notification
+function showRateLoadedMessage(rate, processType, vendorName) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 350px;';
+    
+    // Build notification message
+    let message = `Rate loaded: ₹${rate}`;
+    if (vendorName) {
+        message += ` (${vendorName}`;
+        if (processType && processType !== 'general') {
+            message += ` - ${processType})`;
+        } else {
+            message += ')';
+        }
+    } else if (processType && processType !== 'general') {
+        message += ` (${processType})`;
+    }
+    
+    notification.innerHTML = `
+        <small>
+            <i class="fas fa-check-circle"></i> 
+            ${message}
+        </small>
+        <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 3000);
+}
+
+// Event listener for work type and vendor changes to trigger rate loading
+document.addEventListener('DOMContentLoaded', function() {
+    const workTypeSelect = document.getElementById('work_type');
+    const assignedToSelect = document.getElementById('assigned_to');
+    
+    function triggerRateLoading() {
+        // Trigger rate loading for all existing process rows (both in-house and vendor work)
+        const processRows = document.querySelectorAll('#processTableBody tr');
+        processRows.forEach(row => {
+            const processSelect = row.querySelectorAll('select')[0]; // Process Name
+            const outputProductSelect = row.querySelectorAll('select')[1]; // Output Product
+            const rateInput = row.querySelector('.rate-input');
+            
+            if (processSelect && outputProductSelect && rateInput && 
+                processSelect.value && outputProductSelect.value) {
+                // Rate will be filtered by: Output Product + Process Name + Assigned To
+                loadJobWorkRate(outputProductSelect.value, processSelect.value, rateInput);
+                console.log('Refreshing rate for:', outputProductSelect.value, processSelect.value, 'assigned to:', assignedToSelect?.value || 'none');
+            }
+        });
+    }
+    
+    // Add event listeners
+    if (workTypeSelect) {
+        workTypeSelect.addEventListener('change', triggerRateLoading);
+    }
+    
+    if (assignedToSelect) {
+        assignedToSelect.addEventListener('change', triggerRateLoading);
+    }
+});
+
+
+
+// Update output summary based on process routing
+function updateOutputSummary() {
+    const rows = document.querySelectorAll('#processTableBody tr');
+    let totalCost = 0;
+    let finalProduct = '-';
+    let finalQuantity = '-';
+    let totalScrap = 0;
+    
+    rows.forEach((row, index) => {
+        const quantity = parseFloat(row.cells[3].querySelector('input').value) || 0;
+        const rate = parseFloat(row.cells[4].querySelector('input').value) || 0;
+        const scrap = parseFloat(row.cells[5].querySelector('input').value) || 0;
+        
+        totalCost += quantity * rate;
+        totalScrap += scrap;
+        
+        // Last process defines final output
+        if (index === rows.length - 1) {
+            const productSelect = row.cells[2].querySelector('select');
+            finalProduct = productSelect.options[productSelect.selectedIndex]?.text || '-';
+            finalQuantity = quantity > 0 ? `${quantity} Units` : '-';
+        }
+    });
+    
+    document.getElementById('final_output_product').textContent = finalProduct;
+    document.getElementById('final_output_quantity').textContent = finalQuantity;
+    document.getElementById('total_cost').textContent = `₹ ${totalCost.toFixed(2)}`;
+    document.getElementById('expected_scrap').textContent = rows.length > 0 ? `${(totalScrap / rows.length).toFixed(1)}%` : '0%';
+}
+
+// Initialize page and add event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener for job work type change
+    const jobWorkTypeSelect = document.getElementById('job_work_type');
+    if (jobWorkTypeSelect) {
+        jobWorkTypeSelect.addEventListener('change', function() {
+            autoFillJobTitle(); // Auto-fill when Manual is selected
+        });
+        
+        // Auto-fill on page load if Manual is already selected
+        if (jobWorkTypeSelect.value === 'manual') {
+            autoFillJobTitle();
+        }
+    }
+});
+
+// Form submission handler
+document.getElementById('jobWorkForm').addEventListener('submit', function(e) {
+    // Collect process data
+    const rows = document.querySelectorAll('#processTableBody tr');
+    processData = [];
+    
+    rows.forEach((row, index) => {
+        const processNameSelect = row.cells[1].querySelector('select');
+        const processName = processNameSelect.value;
+        const outputProductSelect = row.cells[2].querySelector('select');
+        const outputProductId = outputProductSelect.value;
+        const quantity = row.cells[3].querySelector('input').value;
+        const ratePerUnit = row.cells[4].querySelector('input').value;
+        const scrapPercent = row.cells[5].querySelector('input').value;
+        const qualityCheck = row.cells[6].querySelector('input').checked;
+        
+        if (processName && outputProductId && quantity) {
+            processData.push({
+                sequence: index + 1,
+                process_name: processName,
+                output_product_id: outputProductId,
+                quantity: quantity,
+                rate_per_unit: ratePerUnit || 0,
+                scrap_percent: scrapPercent || 0,
+                quality_check: qualityCheck,
+                notes: ''
+            });
+        }
+    });
+    
+    // Add process data to form (only if not already added)
+    if (!this.querySelector('input[name="process_data"]')) {
+        const processInput = document.createElement('input');
+        processInput.type = 'hidden';
+        processInput.name = 'process_data';
+        processInput.value = JSON.stringify(processData);
+        this.appendChild(processInput);
+    }
+    
+    // Allow normal form submission (don't call submit() again)
+    console.log('Form submitting with process data:', processData);
+});
+
+// Batch tracking functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const enableBatchTracking = document.getElementById('enable_batch_tracking');
+    const batchSelectionRow = document.getElementById('batch_selection_row');
+    const outputBatchRow = document.getElementById('output_batch_row');
+    const inputMaterial = document.getElementById('input_material');
+    // Note: batchSelect and batchAvailable are now part of multi-batch structure
+
+    // Toggle batch tracking rows
+    function toggleBatchTracking() {
+        if (enableBatchTracking.checked) {
+            batchSelectionRow.style.display = '';
+            outputBatchRow.style.display = '';
+            loadBatchesForMaterial();
+            updateTotalQuantity();
+        } else {
+            batchSelectionRow.style.display = 'none';
+            outputBatchRow.style.display = 'none';
+            clearAllBatchSelections();
+        }
+    }
+
+    // Global variables for batch functionality
+    window.availableBatches = [];
+    window.batchRowCounter = 1;
+
+    // Load available batches for selected material
+    function loadBatchesForMaterial() {
+        const materialId = inputMaterial.value;
+        if (!materialId || materialId === '0') {
+            clearAllBatchSelections();
+            return;
+        }
+
+        fetch(`/jobwork/api/batches/by-item/${materialId}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Batch API Response:', data); // Debug log
+                if (data.success && data.batches) {
+                    window.availableBatches = data.batches;
+                    console.log('Available batches:', data.batches); // Debug log
+                    populateBatchDropdowns();
+                    const addBatchBtn = document.getElementById('add_batch_btn');
+                    if (addBatchBtn) {
+                        addBatchBtn.style.display = data.batches.length > 0 ? 'block' : 'none';
+                    }
+                } else {
+                    clearAllBatchSelections();
+                    console.error('Error loading batches:', data.message || 'No batches found');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading batches:', error);
+                clearAllBatchSelections();
+            });
+    }
+
+    // Populate all batch dropdowns with available batches
+    function populateBatchDropdowns() {
+        const batchSelects = document.querySelectorAll('.batch-select');
+        batchSelects.forEach(select => {
+            const selectedValue = select.value;
+            select.innerHTML = '<option value="0">Select Batch</option>';
+            
+            window.availableBatches.forEach(batch => {
+                const option = document.createElement('option');
+                option.value = batch.id;
+                // Use the correct property name from API response
+                const availableQty = batch.available_quantity || batch.qty_available || 0;
+                option.textContent = `${batch.batch_number} - Available: ${availableQty}`;
+                option.setAttribute('data-available', availableQty);
+                option.setAttribute('data-location', batch.storage_location || 'Default');
+                console.log(`Setting batch option: ${batch.batch_number} with data-available=${availableQty}`);
+                select.appendChild(option);
+            });
+            
+            // Restore previous selection if valid
+            if (selectedValue && selectedValue !== '0') {
+                select.value = selectedValue;
+            }
+        });
+    }
+
+    // Clear all batch selections
+    function clearAllBatchSelections() {
+        const container = document.getElementById('batch_selection_container');
+        container.innerHTML = `
+            <div class="batch-selection-row mb-2" id="batch_row_1">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <select class="form-select batch-select" name="batch_selections[0][batch_id]" id="batch_select_1" onchange="updateBatchQuantity(1)">
+                            <option value="0">Select Material First</option>
+                        </select>
+                    </div>
+                    <div class="col-4">
+                        <input type="number" class="form-control quantity-input" name="batch_selections[0][quantity]" id="batch_quantity_1" placeholder="Qty" step="0.01" min="0" onchange="validateBatchQuantity(1)">
+                    </div>
+                    <div class="col-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeBatchRow(1)" style="display: none;" id="remove_batch_1">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <small class="text-muted">Available: <span id="batch_available_1">0</span> units</small>
+            </div>`;
+        window.batchRowCounter = 1;
+        updateTotalQuantity();
+        document.getElementById('add_batch_btn').style.display = 'none';
+    }
+
+    // Legacy function - no longer needed with multi-batch structure
+    function updateBatchInfo() {
+        // This function is kept for backward compatibility but not used
+        console.log('updateBatchInfo called - using multi-batch structure instead');
+    }
+
+
+
+    // Event listeners
+    if (enableBatchTracking) {
+        enableBatchTracking.addEventListener('change', toggleBatchTracking);
+        // Initialize state
+        toggleBatchTracking();
+    }
+
+    if (inputMaterial) {
+        inputMaterial.addEventListener('change', function() {
+            if (enableBatchTracking && enableBatchTracking.checked) {
+                loadBatchesForMaterial();
+            }
+        });
+    }
+
+    // Event listeners for multi-batch functionality are handled inline in HTML
+
+    // Add event listener for quantity to issue field to update batch calculations
+    const quantityToIssueField = document.getElementById('quantity_to_issue');
+    if (quantityToIssueField) {
+        quantityToIssueField.addEventListener('input', function() {
+            if (enableBatchTracking && enableBatchTracking.checked) {
+                checkQuantitySufficiency();
+            }
+        });
+    }
+
+    // Initialize batch tracking if needed
+    if (typeof updateTotalQuantity === 'function') {
+        updateTotalQuantity();
+    }
+});
+
+// Global functions for multi-batch functionality (accessible outside DOMContentLoaded)
+function updateTotalQuantity() {
+    const quantityInputs = document.querySelectorAll('.quantity-input');
+    let total = 0;
+    
+    quantityInputs.forEach(input => {
+        const value = parseFloat(input.value) || 0;
+        total += value;
+    });
+    
+    const totalSpan = document.getElementById('total_batch_quantity');
+    if (totalSpan) {
+        totalSpan.textContent = total;
+    }
+    
+    // Update the required quantity from main form
+    const requiredInput = document.getElementById('quantity_to_issue');
+    const required = parseFloat(requiredInput ? requiredInput.value : 0) || 0;
+    const requiredSpan = document.getElementById('required_quantity');
+    if (requiredSpan) {
+        requiredSpan.textContent = required;
+    }
+    
+    // Update hidden input for form submission
+    updateHiddenBatchInput();
+    
+    return total;
+}
+
+function checkQuantitySufficiency() {
+    const total = updateTotalQuantity();
+    const requiredInput = document.getElementById('quantity_to_issue');
+    const required = parseFloat(requiredInput ? requiredInput.value : 0) || 0;
+    const statusDiv = document.getElementById('quantity_status');
+    
+    if (!statusDiv) return;
+    
+    if (required === 0) {
+        statusDiv.innerHTML = '';
+        return;
+    }
+    
+    if (total >= required) {
+        statusDiv.innerHTML = '<span class="badge bg-success">✓ Sufficient quantity selected</span>';
+    } else if (total > 0) {
+        const shortage = required - total;
+        statusDiv.innerHTML = `<span class="badge bg-warning">⚠ Need ${shortage} more units</span>`;
+    } else {
+        statusDiv.innerHTML = '<span class="badge bg-danger">⚠ No batches selected</span>';
+    }
+}
+
+function updateHiddenBatchInput() {
+    const batchSelects = document.querySelectorAll('.batch-select');
+    const hiddenInput = document.getElementById('hidden_batch_input');
+    
+    if (!hiddenInput) return;
+    
+    // Use the first selected batch for backward compatibility
+    for (const select of batchSelects) {
+        if (select.value && select.value !== '0') {
+            hiddenInput.value = select.value;
+            break;
+        }
+    }
+}
+
+// Batch return form functionality (for separate batch return page)
+function loadJobWorkBatches(jobWorkId) {
+    const batchRecordSelect = document.getElementById('batch_record_id');
+    if (!batchRecordSelect) return;
+
+    if (!jobWorkId || jobWorkId === '0') {
+        batchRecordSelect.innerHTML = '<option value="0">Select Job Work First</option>';
+        return;
+    }
+
+    fetch(`/jobwork/api/job-work/${jobWorkId}/batches`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                batchRecordSelect.innerHTML = '<option value="0">Select Batch</option>';
+                data.batches.forEach(batch => {
+                    const option = document.createElement('option');
+                    option.value = batch.id;
+                    option.textContent = `${batch.process_name} - ${batch.input_batch_number} (${batch.quantity_issued} issued)`;
+                    batchRecordSelect.appendChild(option);
+                });
+            } else {
+                batchRecordSelect.innerHTML = '<option value="0">No active batches</option>';
+                console.error('Error loading job work batches:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading job work batches:', error);
+            batchRecordSelect.innerHTML = '<option value="0">Error loading batches</option>';
+        });
+}
+
+// Auto-generate output batch code
+function generateOutputBatchCode() {
+    const jobWorkSelect = document.getElementById('job_work_id');
+    const batchRecordSelect = document.getElementById('batch_record_id');
+    const outputBatchCodeInput = document.getElementById('output_batch_code');
+    
+    if (jobWorkSelect && batchRecordSelect && outputBatchCodeInput && !outputBatchCodeInput.value) {
+        const jobWorkText = jobWorkSelect.options[jobWorkSelect.selectedIndex].text;
+        const batchRecordText = batchRecordSelect.options[batchRecordSelect.selectedIndex].text;
+        
+        if (jobWorkText && batchRecordText && jobWorkSelect.value !== '0' && batchRecordSelect.value !== '0') {
+            const jobNumber = jobWorkText.split(' - ')[0];
+            const processName = batchRecordText.split(' - ')[0];
+            const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            
+            const outputBatchCode = `${jobNumber}-${processName}-${timestamp}`;
+            outputBatchCodeInput.value = outputBatchCode;
+        }
+    }
+}
+
+// Global functions for multi-batch functionality (accessible from HTML onchange events)
+function updateBatchQuantity(rowNum) {
+    const batchSelect = document.getElementById(`batch_select_${rowNum}`);
+    const quantityInput = document.getElementById(`batch_quantity_${rowNum}`);
+    const availableSpan = document.getElementById(`batch_available_${rowNum}`);
+    
+    console.log(`updateBatchQuantity called for row ${rowNum}, selected value: ${batchSelect ? batchSelect.value : 'null'}`);
+    
+    if (!batchSelect || batchSelect.value === '0') {
+        if (availableSpan) availableSpan.textContent = '0';
+        if (quantityInput) quantityInput.value = '';
+        updateTotalQuantity();
+        return;
+    }
+    
+    const selectedOption = batchSelect.options[batchSelect.selectedIndex];
+    const available = parseFloat(selectedOption.getAttribute('data-available')) || 0;
+    console.log(`Selected batch option data-available: ${selectedOption.getAttribute('data-available')}, parsed: ${available}`);
+    
+    if (availableSpan) {
+        availableSpan.textContent = available;
+    }
+    
+    // Auto-fill with available quantity if empty
+    if (quantityInput && !quantityInput.value && available > 0) {
+        quantityInput.value = available;
+    }
+    
+    updateTotalQuantity();
+    checkQuantitySufficiency();
+}
+
+function validateBatchQuantity(rowNum) {
+    const batchSelect = document.getElementById(`batch_select_${rowNum}`);
+    const quantityInput = document.getElementById(`batch_quantity_${rowNum}`);
+    
+    if (!batchSelect || batchSelect.value === '0') return;
+    
+    const selectedOption = batchSelect.options[batchSelect.selectedIndex];
+    const available = parseFloat(selectedOption.getAttribute('data-available')) || 0;
+    const entered = parseFloat(quantityInput.value) || 0;
+    
+    if (entered > available) {
+        quantityInput.value = available;
+        alert(`Maximum available quantity for this batch is ${available}`);
+    }
+    
+    updateTotalQuantity();
+    checkQuantitySufficiency();
+}
+
+function addBatchRow() {
+    window.batchRowCounter++;
+    const container = document.getElementById('batch_selection_container');
+    
+    const newRow = document.createElement('div');
+    newRow.className = 'batch-selection-row mb-2';
+    newRow.id = `batch_row_${window.batchRowCounter}`;
+    newRow.innerHTML = `
+        <div class="row g-2">
+            <div class="col-6">
+                <select class="form-select batch-select" name="batch_selections[${window.batchRowCounter - 1}][batch_id]" id="batch_select_${window.batchRowCounter}" onchange="updateBatchQuantity(${window.batchRowCounter})">
+                    <option value="0">Select Batch</option>
+                </select>
+            </div>
+            <div class="col-4">
+                <input type="number" class="form-control quantity-input" name="batch_selections[${window.batchRowCounter - 1}][quantity]" id="batch_quantity_${window.batchRowCounter}" placeholder="Qty" step="0.01" min="0" onchange="validateBatchQuantity(${window.batchRowCounter})">
+            </div>
+            <div class="col-2">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeBatchRow(${window.batchRowCounter})" id="remove_batch_${window.batchRowCounter}">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <small class="text-muted">Available: <span id="batch_available_${window.batchRowCounter}">0</span> units</small>
+    `;
+    
+    container.appendChild(newRow);
+    
+    // Populate the new dropdown with available batches
+    const newSelect = document.getElementById(`batch_select_${window.batchRowCounter}`);
+    if (window.availableBatches) {
+        window.availableBatches.forEach(batch => {
+            const option = document.createElement('option');
+            option.value = batch.id;
+            const availableQty = batch.available_quantity || batch.qty_available || 0;
+            option.textContent = `${batch.batch_number} - Available: ${availableQty}`;
+            option.setAttribute('data-available', availableQty);
+            option.setAttribute('data-location', batch.storage_location || 'Default');
+            console.log(`Adding batch option to new row: ${batch.batch_number} with qty=${availableQty}`);
+            newSelect.appendChild(option);
+        });
+    }
+    
+    updateRemoveButtons();
+}
+
+function removeBatchRow(rowNum) {
+    const row = document.getElementById(`batch_row_${rowNum}`);
+    if (row) {
+        row.remove();
+        updateTotalQuantity();
+        checkQuantitySufficiency();
+        updateRemoveButtons();
+    }
+}
+
+function updateRemoveButtons() {
+    const rows = document.querySelectorAll('.batch-selection-row');
+    rows.forEach((row, index) => {
+        const removeBtn = row.querySelector('[id^="remove_batch_"]');
+        if (removeBtn) {
+            removeBtn.style.display = rows.length > 1 ? 'block' : 'none';
+        }
+    });
+}
+
+function updateTotalQuantity() {
+    const quantityInputs = document.querySelectorAll('.quantity-input');
+    let total = 0;
+    
+    quantityInputs.forEach(input => {
+        const value = parseFloat(input.value) || 0;
+        total += value;
+    });
+    
+    const totalSpan = document.getElementById('total_batch_quantity');
+    if (totalSpan) {
+        totalSpan.textContent = total;
+    }
+    
+    // Update the required quantity from main form
+    const requiredInput = document.getElementById('quantity_to_issue');
+    const required = parseFloat(requiredInput ? requiredInput.value : 0) || 0;
+    const requiredSpan = document.getElementById('required_quantity');
+    if (requiredSpan) {
+        requiredSpan.textContent = required;
+    }
+    
+    // Update hidden input for form submission
+    updateHiddenBatchInput();
+    
+    return total;
+}
+
+function checkQuantitySufficiency() {
+    const total = updateTotalQuantity();
+    const requiredInput = document.getElementById('quantity_to_issue');
+    const required = parseFloat(requiredInput ? requiredInput.value : 0) || 0;
+    const statusDiv = document.getElementById('quantity_status');
+    
+    if (!statusDiv) return;
+    
+    if (required === 0) {
+        statusDiv.innerHTML = '';
+        return;
+    }
+    
+    if (total >= required) {
+        statusDiv.innerHTML = '<span class="badge bg-success">✓ Sufficient quantity selected</span>';
+    } else if (total > 0) {
+        const shortage = required - total;
+        statusDiv.innerHTML = `<span class="badge bg-warning">⚠ Need ${shortage} more units</span>`;
+    } else {
+        statusDiv.innerHTML = '<span class="badge bg-danger">⚠ No batches selected</span>';
+    }
+}
+
+function updateHiddenBatchInput() {
+    const batchSelects = document.querySelectorAll('.batch-select');
+    const hiddenInput = document.getElementById('hidden_batch_input');
+    
+    if (!hiddenInput) return;
+    
+    // Use the first selected batch for backward compatibility
+    for (const select of batchSelects) {
+        if (select.value && select.value !== '0') {
+            hiddenInput.value = select.value;
+            break;
+        }
+    }
+}
+</script>
+
+<style>
+.table th {
+    background-color: var(--bs-table-bg);
+    border-top: 1px solid var(--bs-border-color);
+    font-weight: 600;
+}
+
+.process-checkbox {
+    transform: scale(1.2);
+}
+
+#processTable input, #processTable select {
+    font-size: 0.9rem;
+}
+
+.alert i {
+    color: inherit;
+}
+
+.card-header h5 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.form-control-sm, .form-select-sm {
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

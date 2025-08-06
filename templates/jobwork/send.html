@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-paper-plane me-2"></i>{{ title }}</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Job Work Summary -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6><strong>Job Work Details:</strong></h6>
+                            <p><strong>Job Number:</strong> {{ job.job_number }}</p>
+                            <p><strong>Customer:</strong> {{ job.customer_name }}</p>
+                            <p><strong>Item:</strong> {{ job.item.name }}</p>
+                            <p><strong>Quantity Sent:</strong> {{ job.quantity_sent }} {{ job.item.unit_of_measure }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><strong>Job Information:</strong></h6>
+                            <p><strong>Rate per Unit:</strong> ₹{{ job.rate_per_unit }}</p>
+                            <p><strong>Total Value:</strong> ₹{{ job.quantity_sent * job.rate_per_unit }}</p>
+                            <p><strong>Sent Date:</strong> {{ job.sent_date }}</p>
+                            <p><strong>Expected Return:</strong> {{ job.expected_return or 'Not specified' }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Send Form -->
+                    <form method="POST">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="send_type" class="form-label">Send Via</label>
+                                <select name="send_type" id="send_type" class="form-select" required>
+                                    <option value="">Select Method</option>
+                                    <option value="email">Email</option>
+                                    <option value="whatsapp">WhatsApp</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="recipient" class="form-label">Recipient</label>
+                                <input type="text" name="recipient" id="recipient" class="form-control" 
+                                       placeholder="Enter email or phone number" required>
+                                <div class="form-text">
+                                    <span id="recipient-hint">Enter email address or phone number with country code</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Additional Message (Optional)</label>
+                            <textarea name="message" id="message" class="form-control" rows="4" 
+                                      placeholder="Add any additional instructions or notes for the job work..."></textarea>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            The Job Work order details will be automatically included in the message.
+                            <strong>Email will include a PDF attachment of the Job Work order.</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Job Works
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-1"></i>Send Job Work Order
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sendType = document.getElementById('send_type');
+    const recipient = document.getElementById('recipient');
+    const recipientHint = document.getElementById('recipient-hint');
+
+    sendType.addEventListener('change', function() {
+        if (this.value === 'email') {
+            recipient.placeholder = 'Enter email address';
+            recipientHint.textContent = 'Enter valid email address';
+        } else if (this.value === 'whatsapp') {
+            recipient.placeholder = 'Enter phone number with country code';
+            recipientHint.textContent = 'Enter phone number with country code (e.g., +91xxxxxxxxxx)';
+        }
+    });
+});
+</script>
+{% endblock %}

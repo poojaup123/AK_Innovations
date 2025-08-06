@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Record Payment - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-money-bill-wave"></i> Record Payment</h1>
+            <p class="text-muted">Create payment voucher for supplier or vendor</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('accounting.list_vouchers') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Vouchers
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-hand-holding-usd"></i> Payment Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.party_id.label.text }} <span class="text-danger">*</span></label>
+                                {{ form.party_id(class="form-select" + (" is-invalid" if form.party_id.errors else "")) }}
+                                {% if form.party_id.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.party_id.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Select supplier or vendor to pay</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.payment_date.label.text }} <span class="text-danger">*</span></label>
+                                {{ form.payment_date(class="form-control" + (" is-invalid" if form.payment_date.errors else "")) }}
+                                {% if form.payment_date.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.payment_date.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.payment_mode.label.text }} <span class="text-danger">*</span></label>
+                                {{ form.payment_mode(class="form-select" + (" is-invalid" if form.payment_mode.errors else ""), id="paymentMode") }}
+                                {% if form.payment_mode.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.payment_mode.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6" id="bankAccountDiv" style="display: none;">
+                                <label class="form-label">{{ form.bank_account_id.label.text }}</label>
+                                {{ form.bank_account_id(class="form-select") }}
+                                <small class="form-text text-muted">Select bank account for non-cash payments</small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.amount.label.text }} <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.amount(class="form-control" + (" is-invalid" if form.amount.errors else ""), step="0.01") }}
+                                    {% if form.amount.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.amount.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.reference_number.label.text }}</label>
+                                {{ form.reference_number(class="form-control") }}
+                                <small class="form-text text-muted">Cheque number, UPI reference, etc.</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.narration.label.text }}</label>
+                            {{ form.narration(class="form-control", rows="3", placeholder="Payment description or notes") }}
+                        </div>
+
+                        <!-- Payment Summary -->
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <h6><i class="fas fa-info-circle"></i> Payment Summary</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-1"><strong>Payment To:</strong> <span id="partyName">-</span></p>
+                                        <p class="mb-1"><strong>Payment Mode:</strong> <span id="modeName">-</span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-1"><strong>Amount:</strong> ₹<span id="amountDisplay">0.00</span></p>
+                                        <p class="mb-1"><strong>Date:</strong> <span id="dateDisplay">-</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-check"></i> Record Payment
+                                </button>
+                                <a href="{{ url_for('accounting.list_vouchers') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Outstanding Amounts Sidebar -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-exclamation-triangle"></i> Outstanding Amounts</h6>
+                </div>
+                <div class="card-body">
+                    <div id="outstandingAmounts">
+                        <p class="text-muted text-center">Select a party to view outstanding amounts</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Tips -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6><i class="fas fa-lightbulb"></i> Payment Tips</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> Always verify supplier details before payment</li>
+                        <li><i class="fas fa-check text-success"></i> Keep payment receipts and references</li>
+                        <li><i class="fas fa-check text-success"></i> For large amounts, prefer bank transfers</li>
+                        <li><i class="fas fa-check text-success"></i> Record accurate narration for tracking</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show/hide bank account based on payment mode
+    const paymentMode = document.getElementById('paymentMode');
+    const bankAccountDiv = document.getElementById('bankAccountDiv');
+    
+    paymentMode.addEventListener('change', function() {
+        if (this.value === 'cash') {
+            bankAccountDiv.style.display = 'none';
+        } else {
+            bankAccountDiv.style.display = 'block';
+        }
+        updateSummary();
+    });
+    
+    // Update party outstanding amounts
+    const partySelect = document.getElementById('party_id');
+    partySelect.addEventListener('change', function() {
+        const partyId = this.value;
+        if (partyId) {
+            // Update party name in summary
+            const partyName = this.options[this.selectedIndex].text;
+            document.getElementById('partyName').textContent = partyName;
+            
+            // Load outstanding amounts (this would be an API call in a real implementation)
+            loadOutstandingAmounts(partyId);
+        } else {
+            document.getElementById('partyName').textContent = '-';
+            document.getElementById('outstandingAmounts').innerHTML = 
+                '<p class="text-muted text-center">Select a party to view outstanding amounts</p>';
+        }
+        updateSummary();
+    });
+    
+    // Update amount in summary
+    const amountField = document.getElementById('amount');
+    amountField.addEventListener('input', function() {
+        updateSummary();
+    });
+    
+    // Update date in summary
+    const dateField = document.getElementById('payment_date');
+    dateField.addEventListener('change', function() {
+        updateSummary();
+    });
+    
+    // Initialize summary
+    updateSummary();
+});
+
+function updateSummary() {
+    const paymentMode = document.getElementById('paymentMode');
+    const amount = document.getElementById('amount');
+    const date = document.getElementById('payment_date');
+    
+    document.getElementById('modeName').textContent = 
+        paymentMode.options[paymentMode.selectedIndex].text || '-';
+    document.getElementById('amountDisplay').textContent = 
+        parseFloat(amount.value || 0).toFixed(2);
+    document.getElementById('dateDisplay').textContent = 
+        date.value ? new Date(date.value).toLocaleDateString() : '-';
+}
+
+function loadOutstandingAmounts(partyId) {
+    // In a real implementation, this would fetch data from the server
+    document.getElementById('outstandingAmounts').innerHTML = `
+        <div class="d-flex justify-content-between">
+            <span>Loading...</span>
+            <span class="text-muted">
+                <i class="fas fa-spinner fa-spin"></i>
+            </span>
+        </div>
+    `;
+    
+    // Simulate API call
+    setTimeout(() => {
+        document.getElementById('outstandingAmounts').innerHTML = `
+            <div class="d-flex justify-content-between mb-2">
+                <span>Invoice #2024-001</span>
+                <span class="text-danger">₹15,000</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span>Invoice #2024-002</span>
+                <span class="text-danger">₹8,500</span>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between">
+                <strong>Total Outstanding</strong>
+                <strong class="text-danger">₹23,500</strong>
+            </div>
+        `;
+    }, 1000);
+}
+
+// Auto-fill amount based on outstanding
+function fillAmount(amount) {
+    document.getElementById('amount').value = amount;
+    updateSummary();
+}
+</script>
+{% endblock %}

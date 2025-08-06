@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Document Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-file-alt me-2"></i>Document Management</h2>
+            <p class="text-muted">View and manage all uploaded documents across the system</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-outline-secondary" onclick="toggleFilters()">
+                <i class="fas fa-filter me-1"></i>Filters
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="card mb-4" id="filtersCard" style="display: none;">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('documents.document_list') }}">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label class="form-label">Transaction Type</label>
+                        <select name="transaction_type" class="form-select">
+                            <option value="">All Types</option>
+                            <option value="purchase_order" {{ 'selected' if transaction_type == 'purchase_order' }}>Purchase Orders</option>
+                            <option value="sales_order" {{ 'selected' if transaction_type == 'sales_order' }}>Sales Orders</option>
+                            <option value="job_work" {{ 'selected' if transaction_type == 'job_work' }}>Job Work</option>
+                            <option value="factory_expense" {{ 'selected' if transaction_type == 'factory_expense' }}>Factory Expenses</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Document Category</label>
+                        <select name="document_category" class="form-select">
+                            <option value="">All Categories</option>
+                            <option value="Invoice" {{ 'selected' if document_category == 'Invoice' }}>Invoice</option>
+                            <option value="Receipt" {{ 'selected' if document_category == 'Receipt' }}>Receipt</option>
+                            <option value="Contract" {{ 'selected' if document_category == 'Contract' }}>Contract</option>
+                            <option value="Supporting Document" {{ 'selected' if document_category == 'Supporting Document' }}>Supporting Document</option>
+                            <option value="Other" {{ 'selected' if document_category == 'Other' }}>Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">File Type</label>
+                        <select name="file_type" class="form-select">
+                            <option value="">All Types</option>
+                            <option value="pdf" {{ 'selected' if file_type == 'pdf' }}>PDF</option>
+                            <option value="jpg" {{ 'selected' if file_type == 'jpg' }}>JPG</option>
+                            <option value="png" {{ 'selected' if file_type == 'png' }}>PNG</option>
+                            <option value="doc" {{ 'selected' if file_type == 'doc' }}>DOC</option>
+                            <option value="docx" {{ 'selected' if file_type == 'docx' }}>DOCX</option>
+                            <option value="xls" {{ 'selected' if file_type == 'xls' }}>XLS</option>
+                            <option value="xlsx" {{ 'selected' if file_type == 'xlsx' }}>XLSX</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Search</label>
+                        <div class="input-group">
+                            <input type="text" name="search" class="form-control" placeholder="Search filename..." value="{{ search }}">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ total_documents }}</h3>
+                    <p class="mb-0">Total Documents</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-info">{{ total_size_mb }}MB</h3>
+                    <p class="mb-0">Total Storage</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ document_types_count }}</h3>
+                    <p class="mb-0">File Types</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning">{{ transactions_with_docs }}</h3>
+                    <p class="mb-0">Transactions with Docs</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documents Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-table me-2"></i>Documents</h5>
+        </div>
+        <div class="card-body">
+            {% if documents.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Document</th>
+                            <th>Transaction</th>
+                            <th>Category</th>
+                            <th>Size</th>
+                            <th>Uploaded</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for document in documents.items %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-file me-2 text-primary"></i>
+                                    <div>
+                                        <div class="fw-bold">{{ document.original_filename }}</div>
+                                        <small class="text-muted">{{ document.mime_type.upper() if document.mime_type else 'N/A' }}</small>
+                                        {% if document.description %}
+                                        <br><small class="text-muted">{{ document.description[:50] }}{% if document.description|length > 50 %}...{% endif %}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <span class="badge bg-secondary">{{ document.reference_type.replace('_', ' ').title() if document.reference_type else 'N/A' }}</span>
+                                    <br><small class="text-muted">ID: {{ document.reference_id or 'N/A' }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ document.document_type or 'N/A' }}</span>
+                            </td>
+                            <td>
+                                {{ (document.file_size / 1024 / 1024)|round(2) }} MB
+                            </td>
+                            <td>
+                                <div>
+                                    {{ document.upload_date.strftime('%d/%m/%Y') }}
+                                    <br><small class="text-muted">{{ document.upload_date.strftime('%I:%M %p') }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('documents.download_document', document_id=document.id) }}" 
+                                       class="btn btn-outline-primary" title="Download">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    <a href="{{ url_for('documents.view_document', document_id=document.id) }}" 
+                                       class="btn btn-outline-secondary" target="_blank" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if document.reference_type == 'purchase_order' %}
+                                        <a href="{{ url_for('purchase.list_purchase_orders') }}" 
+                                           class="btn btn-outline-info" title="View Purchase Orders">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    {% elif document.reference_type == 'sales_order' %}
+                                        <a href="{{ url_for('sales.list_sales_orders') }}" 
+                                           class="btn btn-outline-info" title="View Sales Orders">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    {% elif document.reference_type == 'job_work' %}
+                                        <a href="{{ url_for('jobwork.list_job_works') }}" 
+                                           class="btn btn-outline-info" title="View Job Works">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    {% elif document.reference_type == 'factory_expense' %}
+                                        <a href="{{ url_for('expenses.expense_detail', id=document.reference_id) }}" 
+                                           class="btn btn-outline-info" title="View Expense">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if documents.pages > 1 %}
+            <nav aria-label="Document pagination">
+                <ul class="pagination justify-content-center">
+                    {% if documents.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('documents.document_list', page=documents.prev_num, transaction_type=transaction_type, document_category=document_category, file_type=file_type, search=search) }}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for page_num in documents.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != documents.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('documents.document_list', page=page_num, transaction_type=transaction_type, document_category=document_category, file_type=file_type, search=search) }}">{{ page_num }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">…</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if documents.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('documents.document_list', page=documents.next_num, transaction_type=transaction_type, document_category=document_category, file_type=file_type, search=search) }}">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                <h5>No Documents Found</h5>
+                <p class="text-muted">No documents match your current filters. Try adjusting your search criteria.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleFilters() {
+    const filtersCard = document.getElementById('filtersCard');
+    filtersCard.style.display = filtersCard.style.display === 'none' ? 'block' : 'none';
+}
+
+// Show filters if any filter is active
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasActiveFilter = urlParams.get('transaction_type') || urlParams.get('document_category') || 
+                           urlParams.get('file_type') || urlParams.get('search');
+    
+    if (hasActiveFilter) {
+        document.getElementById('filtersCard').style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

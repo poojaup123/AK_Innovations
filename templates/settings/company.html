@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Company Settings - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-building"></i> Company Settings</h1>
+            <p class="text-muted">Configure your company information for invoices and documents</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Company Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                {{ form.company_name.label(class="form-label") }}
+                                {{ form.company_name(class="form-control") }}
+                                {% if form.company_name.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.company_name.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.address_line1.label(class="form-label") }}
+                                {{ form.address_line1(class="form-control") }}
+                                {% if form.address_line1.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.address_line1.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.address_line2.label(class="form-label") }}
+                                {{ form.address_line2(class="form-control") }}
+                                {% if form.address_line2.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.address_line2.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.city.label(class="form-label") }}
+                                {{ form.city(class="form-control") }}
+                                {% if form.city.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.city.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.state.label(class="form-label") }}
+                                {{ form.state(class="form-control") }}
+                                {% if form.state.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.state.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.pin_code.label(class="form-label") }}
+                                {{ form.pin_code(class="form-control") }}
+                                {% if form.pin_code.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.pin_code.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.phone.label(class="form-label") }}
+                                {{ form.phone(class="form-control") }}
+                                {% if form.phone.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.phone.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.email.label(class="form-label") }}
+                                {{ form.email(class="form-control") }}
+                                {% if form.email.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.email.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.gst_number.label(class="form-label") }}
+                                {{ form.gst_number(class="form-control") }}
+                                {% if form.gst_number.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.gst_number.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.arn_number.label(class="form-label") }}
+                                {{ form.arn_number(class="form-control") }}
+                                {% if form.arn_number.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.arn_number.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                {{ form.website.label(class="form-label") }}
+                                {{ form.website(class="form-control") }}
+                                {% if form.website.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.website.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Settings
+                                </button>
+                                <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Preview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="border p-3 bg-light">
+                        <h6><strong>{{ settings.company_name }}</strong></h6>
+                        <p class="mb-1">{{ settings.address_line1 }}</p>
+                        {% if settings.address_line2 %}
+                        <p class="mb-1">{{ settings.address_line2 }}</p>
+                        {% endif %}
+                        <p class="mb-1">{{ settings.city }}, {{ settings.state }} - {{ settings.pin_code }}</p>
+                        <p class="mb-1">Phone: {{ settings.phone }}</p>
+                        {% if settings.email %}
+                        <p class="mb-1">Email: {{ settings.email }}</p>
+                        {% endif %}
+                        <p class="mb-1">GST No. {{ settings.gst_number }}</p>
+                        {% if settings.arn_number %}
+                        <p class="mb-1">ARN No. {{ settings.arn_number }}</p>
+                        {% endif %}
+                        {% if settings.website %}
+                        <p class="mb-0">{{ settings.website }}</p>
+                        {% endif %}
+                    </div>
+                    <small class="text-muted mt-2 d-block">This is how your company information will appear on invoices and documents.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

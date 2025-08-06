@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-cogs"></i> {{ title }}</h1>
+            <p class="text-muted">Inspect each process separately for multi-process job work</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('material_inspection.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Job Work Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Job Work Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <h6>Job Number</h6>
+                            <p class="mb-0 fw-bold">{{ job_work.job_number }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Item</h6>
+                            <p class="mb-0">{{ job_work.item.name }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Total Quantity</h6>
+                            <p class="mb-0">{{ job_work.quantity_sent }} {{ job_work.item.unit_of_measure }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Total Processes</h6>
+                            <p class="mb-0">{{ processes|length }} processes</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Process Inspections -->
+    <div class="row">
+        <div class="col-12">
+            <h5><i class="fas fa-search"></i> Process Inspections</h5>
+            <p class="text-muted">Each process can be inspected independently when completed by the vendor</p>
+        </div>
+    </div>
+
+    {% for process in processes %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-{{ 'success' if process.status == 'completed' else 'warning' if process.status == 'in_progress' else 'secondary' }}">
+                    <h6 class="mb-0 text-white">
+                        <i class="fas fa-cog"></i> Process {{ loop.index }}: {{ process.process_name }}
+                        <span class="badge bg-light text-dark ms-2">{{ process.status.replace('_', ' ').title() }}</span>
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <h6>Customer</h6>
+                            <p class="mb-0">{{ process.customer_name }}</p>
+                        </div>
+                        <div class="col-md-2">
+                            <h6>Work Type</h6>
+                            <p class="mb-0">{{ process.work_type.title() }}</p>
+                        </div>
+                        <div class="col-md-2">
+                            <h6>Input Quantity</h6>
+                            <p class="mb-0">{{ process.quantity_input }} {{ job_work.item.unit_of_measure }}</p>
+                        </div>
+                        <div class="col-md-2">
+                            <h6>Rate</h6>
+                            <p class="mb-0">₹{{ process.rate_per_unit }}/unit</p>
+                        </div>
+                        <div class="col-md-2">
+                            <h6>Process Cost</h6>
+                            <p class="mb-0 fw-bold text-primary">₹{{ process.process_cost }}</p>
+                        </div>
+                        <div class="col-md-2">
+                            <h6>Action</h6>
+                            {% if process.status == 'completed' %}
+                                <button class="btn btn-success btn-sm" disabled>
+                                    <i class="fas fa-check"></i> Completed
+                                </button>
+                            {% else %}
+                                <a href="{{ url_for('material_inspection.inspect_process', process_id=process.id) }}" 
+                                   class="btn btn-warning btn-sm">
+                                    <i class="fas fa-search"></i> Inspect Process
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if process.status != 'pending' %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="border-top pt-3">
+                                <h6>Process Progress</h6>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Quantity Output</label>
+                                        <div class="fs-6">{{ process.quantity_output or 0 }} {{ job_work.item.unit_of_measure }}</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Expected Completion</label>
+                                        <div class="fs-6">{{ process.expected_completion.strftime('%d %b %Y') if process.expected_completion else 'Not set' }}</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small">Process Notes</label>
+                                        <div class="fs-6">{{ process.notes or 'No notes' }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Overall Progress Summary -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6><i class="fas fa-chart-line"></i> Overall Progress Summary</h6>
+                    <div class="row">
+                        {% set completed_processes = processes|selectattr('status', 'equalto', 'completed')|list|length %}
+                        {% set in_progress_processes = processes|selectattr('status', 'equalto', 'in_progress')|list|length %}
+                        {% set pending_processes = processes|selectattr('status', 'equalto', 'pending')|list|length %}
+                        
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-success">{{ completed_processes }}</h4>
+                                <small class="text-muted">Completed</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-warning">{{ in_progress_processes }}</h4>
+                                <small class="text-muted">In Progress</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h4 class="text-secondary">{{ pending_processes }}</h4>
+                                <small class="text-muted">Pending</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                {% set progress_percentage = (completed_processes / processes|length * 100) if processes else 0 %}
+                                <h4 class="text-primary">{{ "%.0f"|format(progress_percentage) }}%</h4>
+                                <small class="text-muted">Overall Progress</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

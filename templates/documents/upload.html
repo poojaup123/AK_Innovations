@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Document - {{ transaction_name }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-cloud-upload-alt"></i> Upload Document</h1>
+            <p class="text-muted">Upload documents for {{ transaction_name }}</p>
+        </div>
+        <div class="col-auto">
+            {% if transaction_type == 'purchase_order' %}
+                <a href="{{ url_for('purchase.list_purchase_orders') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Purchase Orders
+                </a>
+            {% elif transaction_type == 'sales_order' %}
+                <a href="{{ url_for('sales.list_sales_orders') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Sales Orders
+                </a>
+            {% elif transaction_type == 'job_work' %}
+                <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Job Works
+                </a>
+            {% elif transaction_type == 'factory_expense' %}
+                <a href="{{ url_for('expenses.expense_detail', id=transaction.id) }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Expense
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Upload Form -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-upload"></i> Upload New Document</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.file.label(class="form-label") }}
+                            {{ form.file(class="form-control") }}
+                            {% if form.file.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.file.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Allowed formats: PDF, Word, Excel, Images, Text files. Max size: 10MB
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.document_category.label(class="form-label") }}
+                            {{ form.document_category(class="form-select") }}
+                            {% if form.document_category.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.document_category.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows="3") }}
+                            {% if form.description.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.description.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Existing Documents -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-file-alt"></i> Existing Documents ({{ existing_documents|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if existing_documents %}
+                        <div class="list-group list-group-flush">
+                            {% for doc in existing_documents %}
+                            <div class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-2 me-auto">
+                                    <div class="fw-bold">
+                                        <i class="{{ get_file_icon(doc.file_type) }}"></i>
+                                        {{ doc.original_filename }}
+                                    </div>
+                                    <small class="text-muted">
+                                        {{ doc.document_category.replace('_', ' ').title() }} • 
+                                        {{ format_file_size(doc.file_size) }} • 
+                                        {{ doc.uploaded_at.strftime('%d %b %Y') }}
+                                    </small>
+                                    {% if doc.description %}
+                                        <p class="mb-1 text-muted">{{ doc.description }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('documents.view_document', document_id=doc.id) }}" 
+                                       class="btn btn-outline-primary btn-sm" target="_blank">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('documents.download_document', document_id=doc.id) }}" 
+                                       class="btn btn-outline-success btn-sm">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    {% if current_user.is_admin() or doc.uploaded_by == current_user.id %}
+                                    <a href="{{ url_for('documents.edit_document', document_id=doc.id) }}" 
+                                       class="btn btn-outline-warning btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                            <h6>No Documents Yet</h6>
+                            <p class="text-muted">Upload your first document for this {{ transaction_type.replace('_', ' ').title() }}.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add file preview functionality
+document.getElementById('file').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const fileName = file.name;
+        const fileSize = (file.size / 1024 / 1024).toFixed(2);
+        console.log(`Selected: ${fileName} (${fileSize} MB)`);
+    }
+});
+</script>
+{% endblock %}

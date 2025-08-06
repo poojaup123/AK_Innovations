@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Notifications Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>
+                <i class="fas fa-bell"></i> 
+                Dashboard Notifications Settings
+            </h2>
+            <p class="text-muted">Customize what notifications and alerts appear on your dashboard</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog"></i> 
+                        Notification Preferences
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="notificationForm">
+                        {% for notification in notification_types %}
+                        <div class="row mb-3 align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-1">{{ notification.name }}</h6>
+                                <p class="text-muted small mb-0">{{ notification.description }}</p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" 
+                                           id="notification_{{ notification.id }}" 
+                                           name="{{ notification.id }}"
+                                           {{ 'checked' if notification.enabled else '' }}>
+                                    <label class="form-check-label" for="notification_{{ notification.id }}">
+                                        Enable
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        {% if not loop.last %}<hr>{% endif %}
+                        {% endfor %}
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Preferences
+                            </button>
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary ms-2">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle"></i> 
+                        About Notifications
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="small">These settings control what information appears in the notification sections of your dashboard.</p>
+                    
+                    <div class="alert alert-info small">
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>Tip:</strong> Enable notifications for the areas most important to your daily workflow.
+                    </div>
+                    
+                    <h6 class="small fw-bold">Notification Types:</h6>
+                    <ul class="small">
+                        <li><strong>Critical:</strong> Require immediate attention</li>
+                        <li><strong>Warning:</strong> Should be addressed soon</li>
+                        <li><strong>Info:</strong> General updates and summaries</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('notificationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const preferences = {};
+    
+    // Get all notification types and their enabled status
+    {% for notification in notification_types %}
+    preferences['{{ notification.id }}'] = formData.has('{{ notification.id }}');
+    {% endfor %}
+    
+    fetch('{{ url_for("dashboard_settings.save_notification_preferences") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(preferences)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Notification preferences saved successfully!', 'success');
+        } else {
+            showAlert('Error saving preferences: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert('Error saving preferences: ' + error, 'danger');
+    });
+});
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container-fluid');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+</script>
+{% endblock %}

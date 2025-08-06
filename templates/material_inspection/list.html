@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-list me-2"></i>{{ title }}</h2>
+                <div>
+                    <a href="{{ url_for('material_inspection.log_inspection') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Log New Inspection
+                    </a>
+                    <a href="{{ url_for('material_inspection.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-dashboard me-1"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    {% if inspections %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Inspection #</th>
+                                        <th>Source</th>
+                                        <th>Item</th>
+                                        <th>Classification</th>
+                                        <th>Received</th>
+                                        <th>Inspected</th>
+                                        <th>Passed</th>
+                                        <th>Rejected</th>
+                                        <th>Acceptance Rate</th>
+                                        <th>Inspector</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for inspection in inspections %}
+                                    <tr>
+                                        <td><strong>{{ inspection.inspection_number }}</strong></td>
+                                        <td>
+                                            {% if inspection.purchase_order %}
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-file-invoice me-1"></i>
+                                                    {{ inspection.purchase_order.po_number }}
+                                                </span>
+                                                <br><small class="text-muted">{{ inspection.purchase_order.supplier.name }}</small>
+                                            {% elif inspection.job_work %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-tools me-1"></i>
+                                                    {{ inspection.job_work.job_number }}
+                                                </span>
+                                                <br><small class="text-muted">{{ inspection.job_work.customer_name }}</small>
+                                            {% else %}
+                                                <span class="text-muted">Direct</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <strong>{{ inspection.item.name }}</strong>
+                                            <br><small class="text-muted">{{ inspection.item.code }}</small>
+                                        </td>
+                                        <td>
+                                            {% if inspection.material_classification == 'raw_material' %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-cubes me-1"></i>Raw Material
+                                                </span>
+                                            {% elif inspection.material_classification == 'production_use' %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-cogs me-1"></i>Production Use
+                                                </span>
+                                            {% elif inspection.material_classification == 'finished_goods' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-box me-1"></i>Finished Goods
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ inspection.material_classification|title }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ "%.2f"|format(inspection.received_quantity) }}</td>
+                                        <td>{{ "%.2f"|format(inspection.inspected_quantity) }}</td>
+                                        <td class="text-success">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            {{ "%.2f"|format(inspection.passed_quantity) }}
+                                        </td>
+                                        <td class="text-danger">
+                                            <i class="fas fa-times-circle me-1"></i>
+                                            {{ "%.2f"|format(inspection.rejected_quantity) }}
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 25px;">
+                                                <div class="progress-bar {% if inspection.acceptance_rate >= 95 %}bg-success{% elif inspection.acceptance_rate >= 85 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                     style="width: {{ inspection.acceptance_rate }}%">
+                                                    {{ "%.1f"|format(inspection.acceptance_rate) }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>{{ inspection.inspector.username }}</td>
+                                        <td>{{ inspection.inspection_date.strftime('%m/%d/%Y %I:%M %p') }}</td>
+                                        <td>
+                                            <a href="{{ url_for('material_inspection.view_inspection', inspection_id=inspection.id) }}" 
+                                               class="btn btn-sm btn-outline-primary" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5>No Material Inspections Found</h5>
+                            <p class="text-muted">No material inspections have been logged yet.</p>
+                            <a href="{{ url_for('material_inspection.log_inspection') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Log First Inspection
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

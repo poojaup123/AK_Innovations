@@ -1,0 +1,196 @@
+**Parent is PO or Job Work**, and **GRNs are created as you receive items**, here's how your **Parent-Child Table** and workflow should be designed:
+
+---
+
+## ✅ Conceptual Hierarchy
+
+```
+📦 Parent (PO / Job Work)
+   └── GRNs (Child rows)
+         └── Items (Batch-wise details)
+```
+Perfect — now that you're saying **Parent is PO or Job Work**, and **GRNs are created as you receive items**, here's how your **Parent-Child Table** and workflow should be designed:
+
+---
+
+## ✅ Conceptual Hierarchy
+
+```
+📦 Parent (PO / Job Work)
+   └── GRNs (Child rows)
+         └── Items (Batch-wise details)
+```
+
+---
+
+## 🧱 Parent-Child Table Design
+
+### 🔹 Parent Row (PO or Job Work Order)
+
+This shows the overall order (either a Purchase Order or a Job Work Order):
+
+| Parent Doc    | Date       | Type           | Vendor/Customer         | Status    | Total Qty  | GRNs Linked |
+| ------------- | ---------- | -------------- | ----------------------- | --------- | ---------- | ----------- |
+| PO-2025-0004  | 01/08/2025 | Purchase Order | ABC Steel Ltd           | Partial   | 200 sheets | 2 GRNs      |
+| JOB-2025-0002 | 31/07/2025 | Job Work       | Industrial Supplies Co. | Completed | 1000 pcs   | 1 GRN       |
+
+🔽 Clicking expands to show\...
+
+---
+
+### 🔸 Child Rows (GRNs generated for this Parent)
+
+This shows individual GRN(s) created when materials are received against the PO or Job Work:
+
+| GRN Number    | GRN Date   | Batch No | Item Name | Received Qty | Scrap | Status   |
+| ------------- | ---------- | -------- | --------- | ------------ | ----- | -------- |
+| GRN-2025-0010 | 01/08/2025 | MS-001   | MS Sheet  | 100 Nos      | 0     | Received |
+| GRN-2025-0011 | 01/08/2025 | MS-002   | MS Sheet  | 50 Nos       | 2     | Partial  |
+
+✅ You can add more batch-level details (QC passed, location, unit rate, remarks, etc.)
+
+---
+
+## 🔄 Workflow Summary (Step-by-Step)
+
+### 📌 1. **Create PO / Job Work**
+
+* This is your **Parent Document**
+* Contains expected items and quantities
+
+### 📌 2. **Receive Material → Create GRN**
+
+* For each batch received, a **GRN is created**
+* Each GRN links to:
+
+  * Parent PO/Job Work ID
+  * One or more items (with batch number)
+  * Received quantity, scrap, remarks
+
+### 📌 3. **Inventory Update**
+
+* On each GRN submission:
+
+  * Stock is added (by batch)
+  * WIP or Finished inventory is updated
+  * Linked to that batch
+  * GRN status: `Partial`, `Completed`, etc.
+
+### 📌 4. **Tracking**
+
+* From PO → you can expand to see all batches received via GRNs
+* From GRN → you can trace back to original PO
+* From inventory → you can see batch-wise stock flow
+
+---
+
+## 🧠 Why This Makes Sense?
+
+| Advantage                    | Reason                                               |
+| ---------------------------- | ---------------------------------------------------- |
+| Real-time batch traceability | Know which GRN and batch fulfilled which PO/Job work |
+| Clear audit trail            | Each GRN becomes a legal, trackable receiving entry  |
+| Supports partial receipts    | Track batches that are pending or partially received |
+| Ready for barcode/QR         | Each GRN batch can be tagged for physical tracking   |
+| Good for WIP/Production      | Track what batch was used in which process stage     |
+
+---
+
+## ⚙️ Integration Notes
+
+### 🔗 Relationships:
+
+* `PO → has many → GRNs`
+* `Job Work → has many → GRNs`
+* `GRN → has many → GRN Items (with Batch Nos)`
+* `Batch → stored in Inventory with batch metadata`
+
+---
+
+Would you like me to sketch a full visual layout or create a UI structure for this nested table?
+
+Also, do you want filters like "Show only Completed GRNs", "By Vendor", or "Show Batches with Scrap % > 0"?
+
+---
+
+## 🧱 Parent-Child Table Design
+
+### 🔹 Parent Row (PO or Job Work Order)
+
+This shows the overall order (either a Purchase Order or a Job Work Order):
+
+| Parent Doc    | Date       | Type           | Vendor/Customer         | Status    | Total Qty  | GRNs Linked |
+| ------------- | ---------- | -------------- | ----------------------- | --------- | ---------- | ----------- |
+| PO-2025-0004  | 01/08/2025 | Purchase Order | ABC Steel Ltd           | Partial   | 200 sheets | 2 GRNs      |
+| JOB-2025-0002 | 31/07/2025 | Job Work       | Industrial Supplies Co. | Completed | 1000 pcs   | 1 GRN       |
+
+🔽 Clicking expands to show\...
+
+---
+
+### 🔸 Child Rows (GRNs generated for this Parent)
+
+This shows individual GRN(s) created when materials are received against the PO or Job Work:
+
+| GRN Number    | GRN Date   | Batch No | Item Name | Received Qty | Scrap | Status   |
+| ------------- | ---------- | -------- | --------- | ------------ | ----- | -------- |
+| GRN-2025-0010 | 01/08/2025 | MS-001   | MS Sheet  | 100 Nos      | 0     | Received |
+| GRN-2025-0011 | 01/08/2025 | MS-002   | MS Sheet  | 50 Nos       | 2     | Partial  |
+
+✅ You can add more batch-level details (QC passed, location, unit rate, remarks, etc.)
+
+---
+
+## 🔄 Workflow Summary (Step-by-Step)
+
+### 📌 1. **Create PO / Job Work**
+
+* This is your **Parent Document**
+* Contains expected items and quantities
+
+### 📌 2. **Receive Material → Create GRN**
+
+* For each batch received, a **GRN is created**
+* Each GRN links to:
+
+  * Parent PO/Job Work ID
+  * One or more items (with batch number)
+  * Received quantity, scrap, remarks
+
+### 📌 3. **Inventory Update**
+
+* On each GRN submission:
+
+  * Stock is added (by batch)
+  * WIP or Finished inventory is updated
+  * Linked to that batch
+  * GRN status: `Partial`, `Completed`, etc.
+
+### 📌 4. **Tracking**
+
+* From PO → you can expand to see all batches received via GRNs
+* From GRN → you can trace back to original PO
+* From inventory → you can see batch-wise stock flow
+
+---
+
+## 🧠 Why This Makes Sense?
+
+| Advantage                    | Reason                                               |
+| ---------------------------- | ---------------------------------------------------- |
+| Real-time batch traceability | Know which GRN and batch fulfilled which PO/Job work |
+| Clear audit trail            | Each GRN becomes a legal, trackable receiving entry  |
+| Supports partial receipts    | Track batches that are pending or partially received |
+| Ready for barcode/QR         | Each GRN batch can be tagged for physical tracking   |
+| Good for WIP/Production      | Track what batch was used in which process stage     |
+
+---
+
+## ⚙️ Integration Notes
+
+### 🔗 Relationships:
+
+* `PO → has many → GRNs`
+* `Job Work → has many → GRNs`
+* `GRN → has many → GRN Items (with Batch Nos)`
+* `Batch → stored in Inventory with batch metadata`

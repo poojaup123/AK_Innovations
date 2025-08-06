@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+
+{% block title %}Create BOM - Component Scanning{% endblock %}
+
+{% block head %}
+<style>
+.bom-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.bom-table {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.bom-table th {
+    background: #f8f9fa;
+    border: none;
+    font-weight: 600;
+    padding: 15px;
+}
+
+.bom-table td {
+    padding: 12px 15px;
+    border: none;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.item-row:hover {
+    background: #f8f9fa;
+}
+
+.total-row {
+    background: #e7f3ff;
+    font-weight: bold;
+}
+
+.unmatched-section {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.action-panel {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 25px;
+    margin-top: 30px;
+}
+
+.cost-summary {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+}
+
+.editable-input {
+    border: none;
+    background: transparent;
+    width: 80px;
+    text-align: center;
+}
+
+.editable-input:focus {
+    background: white;
+    border: 1px solid #007bff;
+    border-radius: 4px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="bom-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h1><i class="fas fa-sitemap"></i> Create Bill of Materials</h1>
+                <p class="mb-2">Generated from Component Detection Session: {{ detection.session_id[:8] }}...</p>
+                <p class="mb-0">
+                    <i class="fas fa-cogs"></i> {{ bom_data.total_items }} Items
+                    <span class="ms-3"><i class="fas fa-rupee-sign"></i> ₹{{ "%.2f"|format(bom_data.total_cost) }} Total Cost</span>
+                </p>
+            </div>
+            <div class="col-auto">
+                <div class="cost-summary">
+                    <h3 class="mb-1">₹{{ "%.2f"|format(bom_data.total_cost) }}</h3>
+                    <small>Total Estimated Cost</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- BOM Table -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-list"></i> Bill of Materials</h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editMode()">
+                            <i class="fas fa-edit"></i> Edit Quantities
+                        </button>
+                        <button class="btn btn-sm btn-success" onclick="saveBOM()">
+                            <i class="fas fa-save"></i> Save BOM
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if bom_data.items %}
+                        <div class="table-responsive">
+                            <table class="table bom-table mb-0" id="bomTable">
+                                <thead>
+                                    <tr>
+                                        <th width="5%">#</th>
+                                        <th width="30%">Item Name</th>
+                                        <th width="15%">Item Code</th>
+                                        <th width="12%">Quantity</th>
+                                        <th width="15%">Unit Price</th>
+                                        <th width="15%">Total Cost</th>
+                                        <th width="8%">Stock</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in bom_data.items %}
+                                    <tr class="item-row" data-item-id="{{ item.item_id }}">
+                                        <td>{{ loop.index }}</td>
+                                        <td>
+                                            <strong>{{ item.item_name }}</strong>
+                                            <br><small class="text-muted">Detected from image</small>
+                                        </td>
+                                        <td>
+                                            <code>{{ item.item_code or 'N/A' }}</code>
+                                        </td>
+                                        <td>
+                                            <input type="number" class="editable-input quantity-input" 
+                                                   value="{{ item.quantity_required }}" min="1"
+                                                   data-original="{{ item.quantity_required }}"
+                                                   onchange="updateRowTotal(this)">
+                                        </td>
+                                        <td class="unit-price">₹{{ "%.2f"|format(item.unit_price) }}</td>
+                                        <td class="total-cost">₹{{ "%.2f"|format(item.total_cost) }}</td>
+                                        <td>
+                                            <span class="badge {% if item.quantity_required <= 10 %}bg-warning{% else %}bg-success{% endif %}">
+                                                {{ item.quantity_required }} units
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    
+                                    <!-- Total Row -->
+                                    <tr class="total-row">
+                                        <td colspan="5"><strong>Total</strong></td>
+                                        <td><strong id="grandTotal">₹{{ "%.2f"|format(bom_data.total_cost) }}</strong></td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-exclamation-circle fa-3x text-warning mb-3"></i>
+                            <h5>No Matched Components</h5>
+                            <p class="text-muted">None of the detected components could be matched with your inventory.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- BOM Details & Actions -->
+        <div class="col-lg-4">
+            <!-- Product Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-info-circle"></i> Product Information</h6>
+                </div>
+                <div class="card-body">
+                    <form id="productForm">
+                        <div class="mb-3">
+                            <label class="form-label">Product Name</label>
+                            <input type="text" class="form-control" id="productName" 
+                                   value="{{ product_name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Product Code</label>
+                            <input type="text" class="form-control" id="productCode" 
+                                   placeholder="Auto-generated">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="productDescription" rows="3" 
+                                      placeholder="Product description..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Category</label>
+                            <select class="form-select" id="productCategory">
+                                <option value="">Select Category</option>
+                                <option value="assembly">Assembly</option>
+                                <option value="subassembly">Sub-assembly</option>
+                                <option value="finished_good">Finished Good</option>
+                                <option value="prototype">Prototype</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Component Summary -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-chart-pie"></i> Component Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-success">{{ bom_data.total_items }}</h4>
+                            <small class="text-muted">Matched Items</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-warning">{{ bom_data.unmatched_components|length }}</h4>
+                            <small class="text-muted">Unmatched</small>
+                        </div>
+                    </div>
+                    
+                    {% if bom_data.total_items > 0 %}
+                        <div class="mt-3">
+                            <small class="text-muted">Average cost per component:</small>
+                            <div><strong>₹{{ "%.2f"|format(bom_data.total_cost / bom_data.total_items) }}</strong></div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Stock Availability -->
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-warehouse"></i> Stock Availability</h6>
+                </div>
+                <div class="card-body">
+                    {% set sufficient_stock = [] %}
+                    {% set low_stock = [] %}
+                    {% for item in bom_data.items %}
+                        {% if item.quantity_required <= 10 %}
+                            {% set _ = low_stock.append(item) %}
+                        {% else %}
+                            {% set _ = sufficient_stock.append(item) %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="text-success">
+                                <h5>{{ sufficient_stock|length }}</h5>
+                                <small>Sufficient Stock</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-warning">
+                                <h5>{{ low_stock|length }}</h5>
+                                <small>Low Stock</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if low_stock %}
+                        <div class="mt-3">
+                            <small class="text-warning">Items requiring reorder:</small>
+                            {% for item in low_stock %}
+                                <div class="small">• {{ item.item_name }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unmatched Components -->
+    {% if bom_data.unmatched_components %}
+    <div class="unmatched-section">
+        <h6><i class="fas fa-exclamation-triangle text-warning"></i> Unmatched Components</h6>
+        <p class="text-muted mb-3">The following components were detected but could not be matched with your inventory:</p>
+        
+        <div class="row">
+            {% for component in bom_data.unmatched_components %}
+            <div class="col-md-4 mb-3">
+                <div class="card border-warning">
+                    <div class="card-body p-3">
+                        <h6 class="card-title">{{ component.component_class|title }}</h6>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                Confidence: {{ "%.1f"|format(component.confidence * 100) }}%<br>
+                                Dimensions: {{ "%.1f"|format(component.estimated_width_mm) }} × {{ "%.1f"|format(component.estimated_height_mm) }} mm
+                            </small>
+                        </p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="createNewItem('{{ component.component_class }}')">
+                            <i class="fas fa-plus"></i> Create Item
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Action Panel -->
+    <div class="action-panel">
+        <div class="row">
+            <div class="col-md-6">
+                <h6><i class="fas fa-cogs"></i> BOM Actions</h6>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" onclick="saveBOM()">
+                        <i class="fas fa-save"></i> Save BOM to Database
+                    </button>
+                    <button class="btn btn-success" onclick="exportBOM()">
+                        <i class="fas fa-file-export"></i> Export to Excel
+                    </button>
+                    <button class="btn btn-info" onclick="window.print()">
+                        <i class="fas fa-print"></i> Print BOM
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="fas fa-share"></i> Share & Continue</h6>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('production.add_production') }}?bom_from_scan=true" class="btn btn-warning">
+                        <i class="fas fa-play"></i> Start Production
+                    </a>
+                    <a href="{{ url_for('component_scanning.view_results', session_id=detection.session_id) }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Results
+                    </a>
+                    <a href="{{ url_for('component_scanning.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-home"></i> Scanning Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateRowTotal(input) {
+    const row = input.closest('tr');
+    const quantity = parseFloat(input.value) || 0;
+    const unitPriceText = row.querySelector('.unit-price').textContent;
+    const unitPrice = parseFloat(unitPriceText.replace('₹', '').replace(',', ''));
+    
+    const newTotal = quantity * unitPrice;
+    row.querySelector('.total-cost').textContent = `₹${newTotal.toFixed(2)}`;
+    
+    updateGrandTotal();
+}
+
+function updateGrandTotal() {
+    let grandTotal = 0;
+    document.querySelectorAll('.total-cost').forEach(cell => {
+        if (!cell.closest('tr').classList.contains('total-row')) {
+            const amount = parseFloat(cell.textContent.replace('₹', '').replace(',', ''));
+            grandTotal += amount;
+        }
+    });
+    
+    document.getElementById('grandTotal').textContent = `₹${grandTotal.toFixed(2)}`;
+}
+
+function editMode() {
+    const inputs = document.querySelectorAll('.quantity-input');
+    inputs.forEach(input => {
+        input.style.background = 'white';
+        input.style.border = '1px solid #007bff';
+        input.focus();
+    });
+}
+
+function saveBOM() {
+    const productName = document.getElementById('productName').value;
+    const productCode = document.getElementById('productCode').value;
+    const description = document.getElementById('productDescription').value;
+    const category = document.getElementById('productCategory').value;
+    
+    if (!productName) {
+        alert('Please enter a product name');
+        return;
+    }
+    
+    // Collect BOM data
+    const bomItems = [];
+    document.querySelectorAll('.item-row').forEach(row => {
+        const itemId = row.dataset.itemId;
+        const quantity = row.querySelector('.quantity-input').value;
+        const unitPrice = parseFloat(row.querySelector('.unit-price').textContent.replace('₹', ''));
+        const totalCost = parseFloat(row.querySelector('.total-cost').textContent.replace('₹', ''));
+        
+        bomItems.push({
+            item_id: itemId,
+            quantity_required: quantity,
+            unit_price: unitPrice,
+            total_cost: totalCost
+        });
+    });
+    
+    // Here you would typically send this data to your backend
+    console.log('Saving BOM:', {
+        product_name: productName,
+        product_code: productCode,
+        description: description,
+        category: category,
+        items: bomItems
+    });
+    
+    alert('BOM saved successfully! (Demo mode - would actually save to database)');
+}
+
+function exportBOM() {
+    // Generate CSV data
+    let csv = 'Item Name,Item Code,Quantity,Unit Price,Total Cost\n';
+    
+    document.querySelectorAll('.item-row').forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const itemName = cells[1].querySelector('strong').textContent;
+        const itemCode = cells[2].textContent.trim();
+        const quantity = cells[3].querySelector('input').value;
+        const unitPrice = cells[4].textContent;
+        const totalCost = cells[5].textContent;
+        
+        csv += `"${itemName}","${itemCode}","${quantity}","${unitPrice}","${totalCost}"\n`;
+    });
+    
+    // Download CSV
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `BOM_${document.getElementById('productName').value}_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function createNewItem(componentClass) {
+    // This would typically open a modal or redirect to item creation form
+    const confirmed = confirm(`Create a new inventory item for "${componentClass}"?`);
+    if (confirmed) {
+        // Redirect to item creation with pre-filled data
+        window.open(`/inventory/add-item?name=${encodeURIComponent(componentClass)}&source=component_scan`, '_blank');
+    }
+}
+</script>
+
+<style>
+@media print {
+    .action-panel, .card-header .btn, nav, .unmatched-section {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+    }
+    
+    .bom-table {
+        box-shadow: none !important;
+    }
+}
+</style>
+{% endblock %}

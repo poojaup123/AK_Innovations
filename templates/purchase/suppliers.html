@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Suppliers - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-handshake"></i> Business Partners</h1>
+            <p class="text-muted">Manage suppliers, customers, and business contacts</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('purchase.add_supplier') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Business Partner
+            </a>
+        </div>
+    </div>
+
+    <!-- Search Form -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <form method="GET" class="d-flex">
+                <input type="text" name="search" class="form-control" placeholder="Search suppliers..." value="{{ search }}">
+                <button type="submit" class="btn btn-outline-secondary ms-2">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Suppliers Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if suppliers.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Business Partner Details</th>
+                                <th>Contact Information</th>
+                                <th>Location</th>
+                                <th>Compliance</th>
+                                <th>Type & Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for supplier in suppliers.items %}
+                            <tr>
+                                <td>
+                                    <strong>{{ supplier.name }}</strong><br>
+                                    <small class="text-muted">{{ supplier.contact_person or 'No contact person' }}</small>
+                                </td>
+                                <td>
+                                    {% if supplier.phone %}
+                                        <div><i class="fas fa-phone text-primary"></i> {{ supplier.phone }}</div>
+                                    {% endif %}
+                                    {% if supplier.email %}
+                                        <div><i class="fas fa-envelope text-info"></i> {{ supplier.email }}</div>
+                                    {% endif %}
+                                    {% if not supplier.phone and not supplier.email %}
+                                        <span class="text-muted">No contact info</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if supplier.city or supplier.state %}
+                                        <div><i class="fas fa-map-marker-alt text-warning"></i> 
+                                            {{ supplier.city or '' }}{% if supplier.city and supplier.state %}, {% endif %}{{ supplier.state or '' }}
+                                        </div>
+                                    {% endif %}
+                                    {% if supplier.pin_code %}
+                                        <small class="text-muted">PIN: {{ supplier.pin_code }}</small>
+                                    {% endif %}
+                                    {% if not supplier.city and not supplier.state and not supplier.pin_code %}
+                                        <span class="text-muted">No location info</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if supplier.gst_number %}
+                                        <div class="badge bg-success mb-1">GST: {{ supplier.gst_number[:6] }}...{{ supplier.gst_number[-3:] if supplier.gst_number|length > 9 else supplier.gst_number }}</div>
+                                    {% endif %}
+                                    {% if supplier.pan_number %}
+                                        <div class="badge bg-info">PAN: {{ supplier.pan_number }}</div>
+                                    {% endif %}
+                                    {% if not supplier.gst_number and not supplier.pan_number %}
+                                        <span class="text-muted">No compliance info</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="mb-1">
+                                        {% if supplier.partner_type == 'supplier' %}
+                                            <span class="badge bg-primary">Supplier</span>
+                                        {% elif supplier.partner_type == 'customer' %}
+                                            <span class="badge bg-info">Customer</span>
+                                        {% elif supplier.partner_type == 'vendor' %}
+                                            <span class="badge bg-warning">Vendor</span>
+                                        {% elif supplier.partner_type == 'transporter' %}
+                                            <span class="badge bg-secondary">Transporter</span>
+                                        {% elif supplier.partner_type == 'both' %}
+                                            <span class="badge bg-success">Both</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if supplier.partner_type in ['transporter', 'both'] and supplier.freight_rate_per_unit and supplier.freight_rate_per_unit > 0 %}
+                                        <div class="small text-info">
+                                            <i class="fas fa-truck"></i> ₹{{ "%.2f"|format(supplier.freight_rate_per_unit) }} 
+                                            {{ {
+                                                'per_km': '/KM',
+                                                'per_kg': '/Kg',
+                                                'per_box': '/Box',
+                                                'per_carton': '/Carton',
+                                                'per_ton': '/Ton'
+                                            }[supplier.freight_unit_type] }}
+                                        </div>
+                                    {% endif %}
+                                    {% if supplier.is_active %}
+                                        <span class="badge bg-success"><i class="fas fa-check"></i> Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary"><i class="fas fa-times"></i> Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('purchase.edit_supplier', id=supplier.id) }}" class="btn btn-outline-primary btn-sm" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ url_for('purchase.delete_supplier', id=supplier.id) }}" class="btn btn-outline-danger btn-sm" 
+                                           onclick="return confirm('Are you sure you want to delete this supplier?')" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if suppliers.pages > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        {% if suppliers.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('purchase.list_suppliers', page=suppliers.prev_num, search=search) }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in suppliers.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != suppliers.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('purchase.list_suppliers', page=page_num, search=search) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if suppliers.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('purchase.list_suppliers', page=suppliers.next_num, search=search) }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-truck fa-3x text-muted mb-3"></i>
+                    <h5>No suppliers found</h5>
+                    <p class="text-muted">Start by adding your first supplier.</p>
+                    <a href="{{ url_for('purchase.add_supplier') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add First Supplier
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

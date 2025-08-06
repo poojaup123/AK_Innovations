@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Error - Component Scanning{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="text-center py-5">
+                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                <h2>Processing Error</h2>
+                <p class="text-muted mb-4">{{ error_message or "An error occurred while processing your request." }}</p>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <a href="{{ url_for('component_scanning.upload_image') }}" class="btn btn-primary">
+                        <i class="fas fa-camera"></i> Upload Another Image
+                    </a>
+                    <a href="{{ url_for('component_scanning.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-tachometer-alt"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

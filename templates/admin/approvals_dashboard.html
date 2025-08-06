@@ -1,0 +1,551 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Approvals Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-clipboard-check text-warning"></i> Admin Approvals Dashboard</h2>
+                <div class="badge-container">
+                    <span class="badge bg-warning text-dark fs-6">{{ pending_pos|length }} Pending POs</span>
+                    <span class="badge bg-info text-dark fs-6">{{ pending_productions|length }} Pending Productions</span>
+                    <span class="badge bg-danger text-dark fs-6">{{ pending_expenses|length }} Pending Expenses</span>
+                    <span class="badge bg-success text-dark fs-6">{{ pending_sales|length }} Pending Sales</span>
+                    <span class="badge bg-secondary text-dark fs-6">{{ pending_jobwork|length }} Pending Job Work</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Purchase Orders -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-shopping-cart text-primary"></i> 
+                Pending Purchase Order Approvals 
+                <span class="badge bg-warning text-dark">{{ pending_pos|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if pending_pos %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>PO Number</th>
+                                <th>Supplier</th>
+                                <th>Order Date</th>
+                                <th>Total Amount</th>
+                                <th>Prepared By</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for po in pending_pos %}
+                            <tr>
+                                <td><strong>{{ po.po_number }}</strong></td>
+                                <td>{{ po.supplier.name }}</td>
+                                <td>{{ po.order_date.strftime('%d/%m/%Y') }}</td>
+                                <td>₹{{ "%.2f"|format(po.total_amount or 0) }}</td>
+                                <td>{{ po.prepared_by or 'Not Set' }}</td>
+                                <td>
+                                    <span class="badge bg-warning text-dark">Pending Approval</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('purchase.edit_purchase_order', id=po.id) }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Review
+                                        </a>
+                                        <button class="btn btn-sm btn-success" 
+                                                onclick="approveOrderDirect('purchase', {{ po.id }}, '{{ po.po_number }}')">
+                                            <i class="fas fa-check"></i> Approve
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" 
+                                                onclick="rejectOrderDirect('purchase', {{ po.id }}, '{{ po.po_number }}')">
+                                            <i class="fas fa-times"></i> Reject
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No pending Purchase Order approvals.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pending Production Orders -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-cogs text-info"></i> 
+                Pending Production Order Approvals 
+                <span class="badge bg-info text-dark">{{ pending_productions|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if pending_productions %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Production No.</th>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Start Date</th>
+                                <th>Created By</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for prod in pending_productions %}
+                            <tr>
+                                <td><strong>{{ prod.production_number }}</strong></td>
+                                <td>{{ prod.item.name }}</td>
+                                <td>{{ prod.quantity_to_produce }}</td>
+                                <td>{{ prod.start_date.strftime('%d/%m/%Y') if prod.start_date else 'Not Set' }}</td>
+                                <td>{{ prod.creator.username if prod.creator else 'Unknown' }}</td>
+                                <td>
+                                    <span class="badge bg-warning text-dark">Pending Approval</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('production.edit_production', id=prod.id) }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Review
+                                        </a>
+                                        <button class="btn btn-sm btn-success" 
+                                                onclick="approveOrderDirect('production', {{ prod.id }}, '{{ prod.production_number }}')">
+                                            <i class="fas fa-check"></i> Approve
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" 
+                                                onclick="rejectOrderDirect('production', {{ prod.id }}, '{{ prod.production_number }}')">
+                                            <i class="fas fa-times"></i> Reject
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No pending Production Order approvals.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pending Job Work Orders -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-tools text-secondary"></i> 
+                Pending Job Work Approvals 
+                <span class="badge bg-secondary text-white">{{ pending_jobwork|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if pending_jobwork %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Job Work No.</th>
+                                <th>Type</th>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Vendor</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for jobwork in pending_jobwork %}
+                            <tr>
+                                <td><strong>{{ jobwork.jobwork_number }}</strong></td>
+                                <td>
+                                    <span class="badge bg-{{ 'info' if jobwork.job_type == 'outsourced' else 'primary' }}">
+                                        {{ jobwork.job_type.title() }}
+                                    </span>
+                                </td>
+                                <td>{{ jobwork.item.name if jobwork.item else 'N/A' }}</td>
+                                <td>{{ jobwork.quantity or 0 }}</td>
+                                <td>{{ jobwork.vendor.name if jobwork.vendor else 'Internal' }}</td>
+                                <td>{{ jobwork.due_date.strftime('%d/%m/%Y') if jobwork.due_date else 'Not Set' }}</td>
+                                <td>
+                                    <span class="badge bg-warning text-dark">{{ jobwork.status.title() }}</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('jobwork.edit_jobwork', id=jobwork.id) }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Review
+                                        </a>
+                                        <button class="btn btn-sm btn-success" 
+                                                onclick="approveOrderDirect('jobwork', {{ jobwork.id }}, '{{ jobwork.jobwork_number }}')">
+                                            <i class="fas fa-check"></i> Approve
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" 
+                                                onclick="rejectOrderDirect('jobwork', {{ jobwork.id }}, '{{ jobwork.jobwork_number }}')">
+                                            <i class="fas fa-times"></i> Reject
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No pending Job Work approvals.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pending Sales Orders -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-shopping-bag text-success"></i> 
+                Pending Sales Order Approvals 
+                <span class="badge bg-success text-white">{{ pending_sales|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if pending_sales %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>SO Number</th>
+                                <th>Customer</th>
+                                <th>Order Date</th>
+                                <th>Total Amount</th>
+                                <th>Prepared By</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for so in pending_sales %}
+                            <tr>
+                                <td><strong>{{ so.so_number }}</strong></td>
+                                <td>{{ so.customer.name if so.customer else 'N/A' }}</td>
+                                <td>{{ so.order_date.strftime('%d/%m/%Y') }}</td>
+                                <td>₹{{ "%.2f"|format(so.total_amount or 0) }}</td>
+                                <td>{{ so.prepared_by or 'Not Set' }}</td>
+                                <td>
+                                    <span class="badge bg-warning text-dark">{{ so.status.title() }}</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('sales.edit_sales_order', id=so.id) }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Review
+                                        </a>
+                                        <button class="btn btn-sm btn-success" 
+                                                onclick="approveOrderDirect('sales', {{ so.id }}, '{{ so.so_number }}')">
+                                            <i class="fas fa-check"></i> Approve
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" 
+                                                onclick="rejectOrderDirect('sales', {{ so.id }}, '{{ so.so_number }}')">
+                                            <i class="fas fa-times"></i> Reject
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No pending Sales Order approvals.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pending Expenses -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-receipt text-danger"></i> 
+                Pending Factory Expense Approvals 
+                <span class="badge bg-danger text-white">{{ pending_expenses|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if pending_expenses %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Expense No.</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                                <th>Requested By</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for expense in pending_expenses %}
+                            <tr>
+                                <td><strong>{{ expense.expense_number }}</strong></td>
+                                <td>{{ expense.description[:50] }}{% if expense.description|length > 50 %}...{% endif %}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ expense.category }}</span>
+                                    {% if expense.subcategory %}
+                                        <br><small class="text-muted">{{ expense.subcategory }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>₹{{ "%.2f"|format(expense.total_amount or 0) }}</td>
+                                <td>{{ expense.expense_date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ expense.requested_by.username if expense.requested_by else 'Unknown' }}</td>
+                                <td>
+                                    <span class="badge bg-warning text-dark">Pending Approval</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('expenses.expense_detail', id=expense.id) }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Review
+                                        </a>
+                                        <button class="btn btn-sm btn-success" 
+                                                onclick="approveExpense({{ expense.id }}, '{{ expense.expense_number }}')">
+                                            <i class="fas fa-check"></i> Approve
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" 
+                                                onclick="rejectExpense({{ expense.id }}, '{{ expense.expense_number }}')">
+                                            <i class="fas fa-times"></i> Reject
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No pending Factory Expense approvals.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-history text-secondary"></i> Recent Approval Activity
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if recent_approvals %}
+                <div class="timeline">
+                    {% for approval in recent_approvals %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-{{ 'success' if approval.action == 'approved' else 'danger' }}"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">{{ approval.order_type }} {{ approval.order_number }}</h6>
+                            <p class="mb-1">
+                                <strong>{{ approval.action|title }}</strong> by {{ approval.approved_by }}
+                            </p>
+                            <small class="text-muted">{{ approval.timestamp.strftime('%d/%m/%Y %H:%M') }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No recent approval activity.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- No modal needed - direct approvals -->
+
+<script>
+// Direct approval functions without modal
+function approveOrderDirect(orderType, orderId, orderNumber) {
+    // Send approval request directly
+    fetch(`/admin/approval/approve`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            order_type: orderType,
+            order_id: orderId,
+            comments: ''
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message and reload
+            showSuccessMessage(`${orderType.charAt(0).toUpperCase() + orderType.slice(1)} Order ${orderNumber} approved successfully!`);
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while approving the order.');
+    });
+}
+
+function rejectOrderDirect(orderType, orderId, orderNumber) {
+    // Send rejection request directly
+    fetch(`/admin/approval/reject`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            order_type: orderType,
+            order_id: orderId,
+            comments: ''
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message and reload
+            showSuccessMessage(`${orderType.charAt(0).toUpperCase() + orderType.slice(1)} Order ${orderNumber} rejected.`);
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while rejecting the order.');
+    });
+}
+
+function showSuccessMessage(message) {
+    // Create and show a temporary success message
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        <i class="fas fa-check-circle"></i> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 3000);
+}
+
+function approveExpense(expenseId, expenseNumber) {
+    // Send approval request directly to expense route
+    fetch(`/expenses/approve/${expenseId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Refresh the page to show updated status
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while approving the expense.');
+    });
+}
+
+function rejectExpense(expenseId, expenseNumber) {
+    // Send rejection request directly to expense route
+    fetch(`/expenses/reject/${expenseId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Refresh the page to show updated status
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while rejecting the expense.');
+    });
+}
+
+// No modal event listeners needed for direct approvals
+</script>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -35px;
+    top: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: -31px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.badge-container {
+    display: flex;
+    gap: 10px;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">{{ title }}</h2>
+            <p class="text-muted">
+                <i class="fas fa-cogs"></i> {{ bom.bom_code }} - {{ bom.product.name if bom.product else 'Unknown Product' }}
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('production.edit_bom', id=bom.id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to BOM
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-cog"></i> Process Details
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                
+                <div class="row">
+                    <!-- Step Number -->
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.step_number.label(class="form-label") }}
+                            {{ form.step_number(class="form-control") }}
+                            {% if form.step_number.errors %}
+                                <div class="text-danger">{{ form.step_number.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Process Name -->
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.process_name.label(class="form-label") }}
+                            {{ form.process_name(class="form-control") }}
+                            {% if form.process_name.errors %}
+                                <div class="text-danger">{{ form.process_name.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Process Code -->
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.process_code.label(class="form-label") }}
+                            {{ form.process_code(class="form-control") }}
+                            {% if form.process_code.errors %}
+                                <div class="text-danger">{{ form.process_code.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Operation Description -->
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.operation_description.label(class="form-label") }}
+                            {{ form.operation_description(class="form-control") }}
+                            {% if form.operation_description.errors %}
+                                <div class="text-danger">{{ form.operation_description.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timing Section -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <i class="fas fa-clock"></i> Timing & Costs
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.setup_time_minutes.label(class="form-label") }}
+                                    {{ form.setup_time_minutes(class="form-control") }}
+                                    {% if form.setup_time_minutes.errors %}
+                                        <div class="text-danger">{{ form.setup_time_minutes.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.run_time_minutes.label(class="form-label") }}
+                                    {{ form.run_time_minutes(class="form-control") }}
+                                    {% if form.run_time_minutes.errors %}
+                                        <div class="text-danger">{{ form.run_time_minutes.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.labor_rate_per_hour.label(class="form-label") }}
+                                    {{ form.labor_rate_per_hour(class="form-control") }}
+                                    {% if form.labor_rate_per_hour.errors %}
+                                        <div class="text-danger">{{ form.labor_rate_per_hour.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.cost_per_unit.label(class="form-label") }}
+                                    {{ form.cost_per_unit(class="form-control") }}
+                                    {% if form.cost_per_unit.errors %}
+                                        <div class="text-danger">{{ form.cost_per_unit.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.estimated_scrap_percent.label(class="form-label") }}
+                                    {{ form.estimated_scrap_percent(class="form-control") }}
+                                    {% if form.estimated_scrap_percent.errors %}
+                                        <div class="text-danger">{{ form.estimated_scrap_percent.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resource Assignment -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <i class="fas fa-users"></i> Resource Assignment
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.machine_id.label(class="form-label") }}
+                                    {{ form.machine_id(class="form-select") }}
+                                    {% if form.machine_id.errors %}
+                                        <div class="text-danger">{{ form.machine_id.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.department_id.label(class="form-label") }}
+                                    {{ form.department_id(class="form-select") }}
+                                    {% if form.department_id.errors %}
+                                        <div class="text-danger">{{ form.department_id.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    {{ form.is_outsourced(class="form-check-input") }}
+                                    {{ form.is_outsourced.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.vendor_id.label(class="form-label") }}
+                                    {{ form.vendor_id(class="form-select") }}
+                                    {% if form.vendor_id.errors %}
+                                        <div class="text-danger">{{ form.vendor_id.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quality & Notes -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <i class="fas fa-check-circle"></i> Quality & Additional Information
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    {{ form.quality_check_required(class="form-check-input") }}
+                                    {{ form.quality_check_required.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.parallel_processes.label(class="form-label") }}
+                                    {{ form.parallel_processes(class="form-control") }}
+                                    {% if form.parallel_processes.errors %}
+                                        <div class="text-danger">{{ form.parallel_processes.errors[0] }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.predecessor_processes.label(class="form-label") }}
+                            {{ form.predecessor_processes(class="form-control") }}
+                            {% if form.predecessor_processes.errors %}
+                                <div class="text-danger">{{ form.predecessor_processes.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control", rows="3") }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger">{{ form.notes.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Process Transformation -->
+                <div class="card mt-3">
+                    <div class="card-header bg-info text-white">
+                        <i class="fas fa-exchange-alt"></i> Process Transformation <span class="badge badge-light ms-2">NEW</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Define Input-to-Output Transformation:</strong> Specify how this process transforms one product into another (e.g., Ms Sheet → Mounted Plate through Cutting).
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.input_product_id.label(class="form-label") }}
+                                    {{ form.input_product_id(class="form-select") }}
+                                    {% if form.input_product_id.errors %}
+                                        <div class="text-danger">{{ form.input_product_id.errors[0] }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Material/product that enters this process</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.output_product_id.label(class="form-label") }}
+                                    {{ form.output_product_id(class="form-select") }}
+                                    {% if form.output_product_id.errors %}
+                                        <div class="text-danger">{{ form.output_product_id.errors[0] }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Material/product that exits this process</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.input_quantity.label(class="form-label") }}
+                                    {{ form.input_quantity(class="form-control", step="0.001") }}
+                                    {% if form.input_quantity.errors %}
+                                        <div class="text-danger">{{ form.input_quantity.errors[0] }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Quantity required as input</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.output_quantity.label(class="form-label") }}
+                                    {{ form.output_quantity(class="form-control", step="0.001") }}
+                                    {% if form.output_quantity.errors %}
+                                        <div class="text-danger">{{ form.output_quantity.errors[0] }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Quantity produced as output</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.transformation_type.label(class="form-label") }}
+                                    {{ form.transformation_type(class="form-select") }}
+                                    {% if form.transformation_type.errors %}
+                                        <div class="text-danger">{{ form.transformation_type.errors[0] }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Type of transformation</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Transformation Preview -->
+                        <div class="row" id="transformation-preview" style="display: none;">
+                            <div class="col-12">
+                                <div class="alert alert-success">
+                                    <i class="fas fa-magic"></i>
+                                    <strong>Transformation Preview:</strong>
+                                    <span id="preview-text">Select input and output products to see transformation</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('production.edit_bom', id=bom.id) }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Process
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inputProductSelect = document.getElementById('input_product_id');
+    const outputProductSelect = document.getElementById('output_product_id');
+    const inputQuantityInput = document.getElementById('input_quantity');
+    const outputQuantityInput = document.getElementById('output_quantity');
+    const transformationTypeSelect = document.getElementById('transformation_type');
+    const previewDiv = document.getElementById('transformation-preview');
+    const previewText = document.getElementById('preview-text');
+    
+    function updateTransformationPreview() {
+        const inputProductText = inputProductSelect.options[inputProductSelect.selectedIndex].text;
+        const outputProductText = outputProductSelect.options[outputProductSelect.selectedIndex].text;
+        const inputQuantity = inputQuantityInput.value || '1';
+        const outputQuantity = outputQuantityInput.value || '1';
+        const transformationType = transformationTypeSelect.options[transformationTypeSelect.selectedIndex].text;
+        
+        if (inputProductSelect.value > 0 && outputProductSelect.value > 0) {
+            previewText.innerHTML = `
+                <strong>${inputQuantity}</strong> units of <strong>${inputProductText.split(' - ')[1] || inputProductText}</strong> 
+                <i class="fas fa-arrow-right mx-2"></i> 
+                <strong>${outputQuantity}</strong> units of <strong>${outputProductText.split(' - ')[1] || outputProductText}</strong>
+                <br><small class="text-muted">Transformation: ${transformationType}</small>
+            `;
+            previewDiv.style.display = 'block';
+        } else {
+            previewDiv.style.display = 'none';
+        }
+    }
+    
+    // Add event listeners
+    if (inputProductSelect) inputProductSelect.addEventListener('change', updateTransformationPreview);
+    if (outputProductSelect) outputProductSelect.addEventListener('change', updateTransformationPreview);
+    if (inputQuantityInput) inputQuantityInput.addEventListener('input', updateTransformationPreview);
+    if (outputQuantityInput) outputQuantityInput.addEventListener('input', updateTransformationPreview);
+    if (transformationTypeSelect) transformationTypeSelect.addEventListener('change', updateTransformationPreview);
+    
+    // Initial update
+    updateTransformationPreview();
+    
+    // Auto-generate process code from process name
+    const processNameInput = document.getElementById('process_name');
+    const processCodeInput = document.getElementById('process_code');
+    
+    if (processNameInput && processCodeInput) {
+        processNameInput.addEventListener('input', function() {
+            if (!processCodeInput.value || processCodeInput.dataset.autoGenerated === 'true') {
+                const code = this.value
+                    .toUpperCase()
+                    .replace(/[^A-Z\s]/g, '')
+                    .split(' ')
+                    .map(word => word.substring(0, 4))
+                    .join('')
+                    .substring(0, 8);
+                
+                processCodeInput.value = code;
+                processCodeInput.dataset.autoGenerated = 'true';
+            }
+        });
+        
+        processCodeInput.addEventListener('input', function() {
+            this.dataset.autoGenerated = 'false';
+        });
+    }
+});
+</script>
+{% endblock %}

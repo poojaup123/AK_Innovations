@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Traceability - {{ traceability_data.batch.batch_code }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.traceability-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.timeline-container {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.timeline-item {
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border-left: 5px solid #007bff;
+    background: white;
+}
+
+.timeline-item.received { border-left-color: #28a745; }
+.timeline-item.processing { border-left-color: #ffc107; }
+.timeline-item.completed { border-left-color: #17a2b8; }
+.timeline-item.shipped { border-left-color: #6f42c1; }
+
+.process-badge {
+    display: inline-block;
+    padding: 0.4rem 0.8rem;
+    margin: 0.2rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+}
+
+.process-raw { background-color: #28a745; }
+.process-cutting { background-color: #dc3545; }
+.process-bending { background-color: #fd7e14; }
+.process-welding { background-color: #ffc107; color: #000; }
+.process-zinc { background-color: #20c997; }
+.process-painting { background-color: #6f42c1; }
+.process-assembly { background-color: #e83e8c; }
+.process-machining { background-color: #17a2b8; }
+.process-polishing { background-color: #6c757d; }
+.process-finished { background-color: #198754; }
+
+.movement-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Traceability Header -->
+    <div class="traceability-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-0">
+                    <i class="fas fa-route mr-3"></i>
+                    Batch Traceability Report
+                </h1>
+                <p class="mb-0 mt-2 opacity-75">
+                    <strong>{{ traceability_data.batch.batch_code }}</strong> - {{ traceability_data.batch.item.name if traceability_data.batch.item else 'N/A' }}
+                </p>
+            </div>
+            <div class="col-md-4 text-right">
+                <a href="{{ url_for('batch_tracking.batch_detail', batch_id=batch_id) }}" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> Back to Batch Details
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Timeline Section -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history"></i> Complete Batch Journey
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline-container">
+                        {% if traceability_data.movements %}
+                            {% for movement in traceability_data.movements %}
+                            <div class="timeline-item {{ 'received' if movement.ref_type == 'GRN' else 'processing' if movement.ref_type in ['JobWork', 'Production'] else 'completed' if movement.to_state == 'Finished' else 'processing' }}">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h6 class="mb-1">
+                                            <strong>{{ movement.movement_description }}</strong>
+                                            {% if movement.ref_number %}
+                                                - {{ movement.ref_number }}
+                                            {% endif %}
+                                        </h6>
+                                        <p class="mb-2 text-muted">
+                                            <strong>{{ movement.ref_type }}</strong>
+                                            {% if movement.vendor and movement.vendor.name %}
+                                                via <span class="badge badge-info">{{ movement.vendor.name }}</span>
+                                            {% endif %}
+                                        </p>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p class="mb-1">
+                                                    <strong>Quantity:</strong> {{ movement.quantity }} {{ movement.unit_of_measure }}
+                                                </p>
+                                                <p class="mb-1">
+                                                    <small class="text-muted">{{ movement.movement_date.strftime('%d/%m/%Y') }}</small>
+                                                </p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                {% if movement.cost_per_unit %}
+                                                <p class="mb-1">
+                                                    <strong>Cost:</strong> ₹{{ "%.2f"|format(movement.cost_per_unit) }}/unit
+                                                </p>
+                                                {% endif %}
+                                                {% if movement.storage_location %}
+                                                <p class="mb-1">
+                                                    <strong>Location:</strong> {{ movement.storage_location }}
+                                                </p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% if movement.notes %}
+                                        <p class="mb-1">
+                                            <em class="text-muted">{{ movement.notes }}</em>
+                                        </p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-4 text-right">
+                                        <span class="badge badge-{{ 'success' if movement.to_state == 'Finished' else 'info' if movement.to_state == 'Raw' else 'warning' if movement.to_state == 'Inspection' else 'primary' }}">
+                                            {{ movement.to_state.replace('_', ' ').title() }}
+                                        </span>
+                                        {% if movement.quality_status and movement.quality_status != 'good' %}
+                                        <br><small class="badge badge-warning mt-1">{{ movement.quality_status.title() }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                                <h5>No Movement History</h5>
+                                <p class="text-muted">This batch has no recorded movements yet.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Sidebar -->
+        <div class="col-lg-4">
+            <!-- Batch Summary -->
+            <div class="card movement-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-info-circle"></i> Batch Summary
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-6">Batch Code:</dt>
+                        <dd class="col-sm-6">{{ traceability_data.batch.batch_code }}</dd>
+                        
+                        <dt class="col-sm-6">Item:</dt>
+                        <dd class="col-sm-6">{{ traceability_data.batch.item.name if traceability_data.batch.item else 'N/A' }}</dd>
+                        
+                        <dt class="col-sm-6">Total Quantity:</dt>
+                        <dd class="col-sm-6">{{ traceability_data.batch.total_quantity }} {{ traceability_data.batch.item.uom.name if traceability_data.batch.item and traceability_data.batch.item.uom else '' }}</dd>
+                        
+                        <dt class="col-sm-6">Current State:</dt>
+                        <dd class="col-sm-6">
+                            {% if traceability_data.batch.qty_finished and traceability_data.batch.qty_finished > 0 %}
+                                <span class="process-badge process-finished">Finished ({{ traceability_data.batch.qty_finished }})</span>
+                            {% elif traceability_data.batch.qty_wip and traceability_data.batch.qty_wip > 0 %}
+                                <span class="process-badge process-wip bg-primary">WIP ({{ traceability_data.batch.qty_wip }})</span>
+                            {% elif traceability_data.batch.qty_raw and traceability_data.batch.qty_raw > 0 %}
+                                <span class="process-badge process-raw">Raw Material ({{ traceability_data.batch.qty_raw }})</span>
+                            {% elif traceability_data.batch.qty_inspection and traceability_data.batch.qty_inspection > 0 %}
+                                <span class="process-badge process-inspection bg-warning">Inspection ({{ traceability_data.batch.qty_inspection }})</span>
+                            {% else %}
+                                <span class="process-badge bg-secondary">No Active Qty</span>
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-6">Inspection Status:</dt>
+                        <dd class="col-sm-6">
+                            <span class="badge badge-{{ 'success' if traceability_data.batch.inspection_status == 'passed' else 'warning' if traceability_data.batch.inspection_status == 'pending' else 'danger' }}">
+                                {{ traceability_data.batch.inspection_status.replace('_', ' ').title() if traceability_data.batch.inspection_status else 'N/A' }}
+                            </span>
+                        </dd>
+                        
+                        <dt class="col-sm-6">Location:</dt>
+                        <dd class="col-sm-6">{{ traceability_data.batch.location or 'N/A' }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Related Documents -->
+            {% if traceability_data.related_documents %}
+            <div class="card movement-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-file-alt"></i> Related Documents
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for doc in traceability_data.related_documents %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <small class="font-weight-bold">{{ doc.type }}</small><br>
+                            <small class="text-muted">{{ doc.number }}</small>
+                        </div>
+                        <a href="{{ doc.url }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Current Process Breakdown -->
+            <div class="card movement-card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-industry"></i> Current Process Breakdown
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap">
+                        {% if traceability_data.batch.qty_inspection and traceability_data.batch.qty_inspection > 0 %}
+                            <span class="process-badge process-inspection bg-warning">Inspection: {{ traceability_data.batch.qty_inspection }}</span>
+                        {% endif %}
+                        
+                        {% if traceability_data.batch.qty_raw and traceability_data.batch.qty_raw > 0 %}
+                            <span class="process-badge process-raw bg-info">Raw: {{ traceability_data.batch.qty_raw }}</span>
+                        {% endif %}
+                        
+                        {% if traceability_data.batch.qty_wip and traceability_data.batch.qty_wip > 0 %}
+                            <span class="process-badge process-wip bg-primary">WIP: {{ traceability_data.batch.qty_wip }}</span>
+                        {% endif %}
+                        
+                        {% if traceability_data.batch.qty_finished and traceability_data.batch.qty_finished > 0 %}
+                            <span class="process-badge process-finished bg-success">Finished: {{ traceability_data.batch.qty_finished }}</span>
+                        {% endif %}
+                        
+                        {% if traceability_data.batch.qty_scrap and traceability_data.batch.qty_scrap > 0 %}
+                            <span class="process-badge process-scrap bg-danger">Scrap: {{ traceability_data.batch.qty_scrap }}</span>
+                        {% endif %}
+                        
+                        {% if not (traceability_data.batch.qty_inspection or traceability_data.batch.qty_raw or traceability_data.batch.qty_wip or traceability_data.batch.qty_finished or traceability_data.batch.qty_scrap) %}
+                            <p class="text-muted">No quantities in any state.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

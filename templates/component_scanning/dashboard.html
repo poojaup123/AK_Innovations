@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Component Scanning Dashboard - Factory Management System{% endblock %}
+
+{% block head %}
+<style>
+.stats-card {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+
+.stats-icon {
+    font-size: 2.5rem;
+    opacity: 0.7;
+}
+
+.upload-zone {
+    border: 2px dashed #007bff;
+    border-radius: 10px;
+    padding: 40px;
+    text-align: center;
+    background: #f8f9fa;
+    transition: all 0.3s;
+}
+
+.upload-zone:hover {
+    border-color: #0056b3;
+    background: #e7f3ff;
+}
+
+.session-card {
+    border-left: 4px solid #007bff;
+    transition: transform 0.2s;
+}
+
+.session-card:hover {
+    transform: translateX(5px);
+}
+
+.status-badge {
+    font-size: 0.8rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-search"></i> Component Scanning Dashboard</h1>
+            <p class="text-muted">AI-powered component detection and inventory matching</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('component_scanning.upload_image') }}" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Upload Image
+                </a>
+                <a href="{{ url_for('component_scanning.detection_history') }}" class="btn btn-info">
+                    <i class="fas fa-history"></i> Detection History
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card border-primary">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Total Sessions</h6>
+                            <h4 class="text-primary">{{ stats.total_sessions }}</h4>
+                        </div>
+                        <i class="fas fa-camera stats-icon text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-success">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Successful Detections</h6>
+                            <h4 class="text-success">{{ stats.successful_sessions }}</h4>
+                        </div>
+                        <i class="fas fa-check-circle stats-icon text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-info">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Components Detected</h6>
+                            <h4 class="text-info">{{ stats.total_components_detected }}</h4>
+                        </div>
+                        <i class="fas fa-cogs stats-icon text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-warning">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Avg. Processing Time</h6>
+                            <h4 class="text-warning">{{ "%.1f"|format(stats.average_processing_time or 0) }}s</h4>
+                        </div>
+                        <i class="fas fa-clock stats-icon text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Upload Section -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-upload"></i> Quick Component Detection</h5>
+                </div>
+                <div class="card-body">
+                    <div class="upload-zone" onclick="window.location.href='{{ url_for('component_scanning.upload_image') }}'">
+                        <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                        <h5>Upload Product Image</h5>
+                        <p class="text-muted">
+                            Drop your image here or click to browse<br>
+                            <small>Supports: PNG, JPG, JPEG, BMP, TIFF (Max: 16MB)</small>
+                        </p>
+                        <button class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Choose Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Feature Overview -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> How It Works</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 30px; height: 30px; margin-right: 10px;">
+                            1
+                        </div>
+                        <small>AI detects components in your image</small>
+                    </div>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width: 30px; height: 30px; margin-right: 10px;">
+                            2
+                        </div>
+                        <small>Matches with inventory database</small>
+                    </div>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="rounded-circle bg-info text-white d-flex align-items-center justify-content-center" style="width: 30px; height: 30px; margin-right: 10px;">
+                            3
+                        </div>
+                        <small>Generates layout with dimensions</small>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center" style="width: 30px; height: 30px; margin-right: 10px;">
+                            4
+                        </div>
+                        <small>Creates BOM and exports SVG</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Detection Sessions -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-history"></i> Recent Detection Sessions</h5>
+                    <a href="{{ url_for('component_scanning.detection_history') }}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_sessions %}
+                        <div class="row">
+                            {% for session in recent_sessions %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card session-card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="card-title">Session {{ session.session_id[:8] }}</h6>
+                                                <p class="card-text">
+                                                    <small class="text-muted">
+                                                        {{ session.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                                    </small>
+                                                </p>
+                                                <p class="card-text">
+                                                    <strong>{{ session.total_components_detected or 0 }}</strong> components detected
+                                                    {% if session.processing_time %}
+                                                        in {{ "%.1f"|format(session.processing_time) }}s
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                {% if session.status == 'completed' %}
+                                                    <span class="badge bg-success status-badge">Completed</span>
+                                                {% elif session.status == 'processing' %}
+                                                    <span class="badge bg-warning status-badge">Processing</span>
+                                                {% elif session.status == 'failed' %}
+                                                    <span class="badge bg-danger status-badge">Failed</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary status-badge">{{ session.status|title }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        {% if session.status == 'completed' %}
+                                            <div class="mt-2">
+                                                <a href="{{ url_for('component_scanning.view_results', session_id=session.session_id) }}" 
+                                                   class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-eye"></i> View Results
+                                                </a>
+                                                {% if session.svg_layout_path %}
+                                                    <a href="{{ url_for('component_scanning.download_layout', session_id=session.session_id) }}" 
+                                                       class="btn btn-sm btn-success">
+                                                        <i class="fas fa-download"></i> Download SVG
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        {% elif session.status == 'failed' and session.error_message %}
+                                            <div class="mt-2">
+                                                <small class="text-danger">{{ session.error_message[:50] }}...</small>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Detection Sessions Yet</h5>
+                            <p class="text-muted">Upload your first image to start detecting components!</p>
+                            <a href="{{ url_for('component_scanning.upload_image') }}" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> Upload Image
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

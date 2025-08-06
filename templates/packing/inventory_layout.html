@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Layout Optimization{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title"><i class="fas fa-warehouse"></i> Inventory Layout Optimization</h1>
+    <p class="page-subtitle">Optimize warehouse storage layout for maximum space utilization</p>
+</div>
+
+<div class="row">
+    <!-- Configuration Panel -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Storage Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form id="layoutForm">
+                    <!-- Storage Area Dimensions -->
+                    <div class="mb-3">
+                        <label class="form-label">Storage Area Dimensions (m)</label>
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="number" class="form-control" id="storageWidth" value="10" placeholder="Width">
+                                <small class="text-muted">Width (m)</small>
+                            </div>
+                            <div class="col-6">
+                                <input type="number" class="form-control" id="storageHeight" value="8" placeholder="Height">
+                                <small class="text-muted">Height (m)</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Layout Type -->
+                    <div class="mb-3">
+                        <label class="form-label">Layout Type</label>
+                        <select class="form-select" id="layoutType">
+                            <option value="optimal">Optimal Packing</option>
+                            <option value="accessible">Accessibility First</option>
+                            <option value="categories">Category Grouping</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Stack Settings -->
+                    <div class="mb-3">
+                        <label class="form-label">Maximum Stack Height (m)</label>
+                        <input type="number" class="form-control" id="maxStackHeight" value="3" min="1" step="0.1">
+                    </div>
+                    
+                    <button type="button" class="btn btn-success w-100" onclick="runLayoutOptimization()">
+                        <i class="fas fa-play"></i> Optimize Layout
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Layout Statistics -->
+        <div class="card mt-3" id="layoutStats" style="display: none;">
+            <div class="card-header">
+                <h6 class="card-title">Layout Statistics</h6>
+            </div>
+            <div class="card-body">
+                <div id="statsContent">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Items Selection -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title">Inventory Items</h5>
+                <div>
+                    <button class="btn btn-outline-primary btn-sm" onclick="selectInStock()">
+                        <i class="fas fa-check-square"></i> Select In Stock
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="clearSelection()">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th width="50">Select</th>
+                                <th>Item</th>
+                                <th>Code</th>
+                                <th width="80">Stock</th>
+                                <th width="80">Length</th>
+                                <th width="80">Width</th>
+                                <th width="80">Height</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsTable">
+                            {% for item in items %}
+                            <tr>
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input item-checkbox" type="checkbox" 
+                                               data-item-id="{{ item.id }}"
+                                               data-item-name="{{ item.name }}"
+                                               data-stock="{{ item.current_stock or 0 }}">
+                                    </div>
+                                </td>
+                                <td>{{ item.name }}</td>
+                                <td><code>{{ item.code }}</code></td>
+                                <td>
+                                    <span class="badge {% if item.current_stock and item.current_stock > 0 %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {{ item.current_stock or 0 }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm length-input" 
+                                           value="1.0" min="0.1" step="0.1">
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm width-input" 
+                                           value="0.5" min="0.1" step="0.1">
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm height-input" 
+                                           value="0.3" min="0.1" step="0.1">
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ item.item_type|title }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Layout Results -->
+<div id="layoutResults" class="row mt-4" style="display: none;">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title">Layout Optimization Results</h5>
+                <div>
+                    <button class="btn btn-outline-primary btn-sm" onclick="exportLayout()">
+                        <i class="fas fa-download"></i> Export Layout
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" onclick="print3DView()">
+                        <i class="fas fa-cube"></i> 3D View
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Layout Visualization -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6>Storage Layout (Top View)</h6>
+                        <div id="layoutVisualization" class="border" style="position: relative; width: 100%; height: 400px; background: #f8f9fa;">
+                            <!-- SVG layout will be generated here -->
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Items Placement</h6>
+                        <div id="itemPlacementList" style="max-height: 400px; overflow-y: auto;">
+                            <!-- Items list will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-success mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5>Optimizing Layout...</h5>
+                <p class="text-muted">Calculating optimal inventory placement...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let layoutResults = null;
+
+function selectInStock() {
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    checkboxes.forEach(checkbox => {
+        const stock = parseInt(checkbox.dataset.stock);
+        checkbox.checked = stock > 0;
+    });
+}
+
+function clearSelection() {
+    document.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = false);
+    document.getElementById('layoutResults').style.display = 'none';
+    document.getElementById('layoutStats').style.display = 'none';
+}
+
+function runLayoutOptimization() {
+    const selectedItems = getSelectedItems();
+    
+    if (selectedItems.length === 0) {
+        alert('Please select at least one item with stock for layout optimization.');
+        return;
+    }
+    
+    const layoutData = {
+        items: selectedItems,
+        storage_width: parseFloat(document.getElementById('storageWidth').value),
+        storage_height: parseFloat(document.getElementById('storageHeight').value),
+        layout_type: document.getElementById('layoutType').value,
+        max_stack_height: parseFloat(document.getElementById('maxStackHeight').value)
+    };
+    
+    $('#loadingModal').modal('show');
+    
+    fetch('/packing/api/optimize-inventory-layout', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(layoutData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        $('#loadingModal').modal('hide');
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            layoutResults = data;
+            displayLayoutResults(data);
+        }
+    })
+    .catch(error => {
+        $('#loadingModal').modal('hide');
+        console.error('Error:', error);
+        alert('Layout optimization failed: ' + error.message);
+    });
+}
+
+function getSelectedItems() {
+    const items = [];
+    const checkboxes = document.querySelectorAll('.item-checkbox:checked');
+    
+    checkboxes.forEach(checkbox => {
+        const row = checkbox.closest('tr');
+        const length = parseFloat(row.querySelector('.length-input').value);
+        const width = parseFloat(row.querySelector('.width-input').value);
+        const height = parseFloat(row.querySelector('.height-input').value);
+        
+        items.push({
+            selected: true,
+            id: checkbox.dataset.itemId,
+            name: checkbox.dataset.itemName,
+            stock: parseInt(checkbox.dataset.stock),
+            length: length,
+            width: width,
+            height: height
+        });
+    });
+    
+    return items;
+}
+
+function displayLayoutResults(data) {
+    if (!data.success) {
+        alert('Layout optimization failed: ' + (data.error || 'Unknown error'));
+        return;
+    }
+    
+    document.getElementById('layoutResults').style.display = 'block';
+    document.getElementById('layoutStats').style.display = 'block';
+    
+    // Display statistics
+    const statsHtml = `
+        <div class="row">
+            <div class="col-12">
+                <div class="mb-2">
+                    <strong>Space Utilization:</strong> 
+                    <span class="badge bg-success">${data.utilization_percentage}%</span>
+                </div>
+                <div class="mb-2">
+                    <strong>Items Placed:</strong> ${data.items_placed} / ${data.items_total}
+                </div>
+                <div class="mb-2">
+                    <strong>Storage Area:</strong> ${data.storage_dimensions.width}m × ${data.storage_dimensions.height}m
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('statsContent').innerHTML = statsHtml;
+    
+    // Display layout visualization (simplified)
+    generateLayoutVisualization(data);
+    
+    // Display items placement list
+    let itemsListHtml = '<ul class="list-group list-group-flush">';
+    data.layout.forEach(item => {
+        itemsListHtml += `
+            <li class="list-group-item">
+                <strong>${item.item_name}</strong><br>
+                <small>Position: (${item.position.x.toFixed(1)}, ${item.position.y.toFixed(1)})</small><br>
+                <small>Size: ${item.dimensions.width.toFixed(1)}×${item.dimensions.height.toFixed(1)}m</small><br>
+                <small>Quantity: ${item.quantity}</small>
+            </li>
+        `;
+    });
+    itemsListHtml += '</ul>';
+    
+    document.getElementById('itemPlacementList').innerHTML = itemsListHtml;
+}
+
+function generateLayoutVisualization(data) {
+    const container = document.getElementById('layoutVisualization');
+    const containerWidth = container.offsetWidth;
+    const containerHeight = container.offsetHeight;
+    
+    // Calculate scale
+    const scaleX = containerWidth / data.storage_dimensions.width;
+    const scaleY = containerHeight / data.storage_dimensions.height;
+    const scale = Math.min(scaleX, scaleY) * 0.9; // 90% to leave margin
+    
+    // Create SVG
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+    svg.style.position = 'absolute';
+    svg.style.top = '0';
+    svg.style.left = '0';
+    
+    // Draw storage area outline
+    const storageRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    storageRect.setAttribute('x', '20');
+    storageRect.setAttribute('y', '20');
+    storageRect.setAttribute('width', data.storage_dimensions.width * scale);
+    storageRect.setAttribute('height', data.storage_dimensions.height * scale);
+    storageRect.setAttribute('fill', 'none');
+    storageRect.setAttribute('stroke', '#333');
+    storageRect.setAttribute('stroke-width', '2');
+    svg.appendChild(storageRect);
+    
+    // Draw items
+    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE'];
+    data.layout.forEach((item, index) => {
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', 20 + item.position.x * scale);
+        rect.setAttribute('y', 20 + item.position.y * scale);
+        rect.setAttribute('width', item.dimensions.width * scale);
+        rect.setAttribute('height', item.dimensions.height * scale);
+        rect.setAttribute('fill', colors[index % colors.length]);
+        rect.setAttribute('stroke', '#333');
+        rect.setAttribute('stroke-width', '1');
+        rect.setAttribute('opacity', '0.7');
+        
+        // Add tooltip
+        rect.innerHTML = `<title>${item.item_name} (${item.quantity} units)</title>`;
+        
+        svg.appendChild(rect);
+        
+        // Add label if item is large enough
+        if (item.dimensions.width * scale > 60 && item.dimensions.height * scale > 30) {
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', 20 + (item.position.x + item.dimensions.width/2) * scale);
+            text.setAttribute('y', 20 + (item.position.y + item.dimensions.height/2) * scale);
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('dominant-baseline', 'middle');
+            text.setAttribute('font-size', '10');
+            text.setAttribute('fill', '#333');
+            text.textContent = item.item_name.substring(0, 8) + (item.item_name.length > 8 ? '...' : '');
+            svg.appendChild(text);
+        }
+    });
+    
+    // Clear and add SVG
+    container.innerHTML = '';
+    container.appendChild(svg);
+}
+
+function exportLayout() {
+    if (!layoutResults) {
+        alert('No layout results to export.');
+        return;
+    }
+    
+    const dataStr = JSON.stringify(layoutResults, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `inventory_layout_${new Date().toISOString().slice(0,10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+function print3DView() {
+    alert('3D View: This feature would show a three-dimensional visualization of the warehouse layout.');
+}
+</script>
+{% endblock %}

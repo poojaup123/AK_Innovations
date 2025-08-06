@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}Rectpack Demo - Packing Optimization{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title"><i class="fas fa-cubes"></i> Rectpack Library Demo</h1>
+    <p class="page-subtitle">Live demonstration of rectangle packing algorithms for manufacturing optimization</p>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Demo Settings</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Sheet Size (mm)</label>
+                    <div class="row">
+                        <div class="col-6">
+                            <input type="number" class="form-control" id="demoSheetWidth" value="1200">
+                            <small>Width</small>
+                        </div>
+                        <div class="col-6">
+                            <input type="number" class="form-control" id="demoSheetHeight" value="800">
+                            <small>Height</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Algorithm</label>
+                    <select class="form-select" id="demoAlgorithm">
+                        <option value="skyline">Skyline (Balanced)</option>
+                        <option value="maxrects">MaxRects (Best Quality)</option>
+                        <option value="guillotine">Guillotine (Fastest)</option>
+                    </select>
+                </div>
+                
+                <button class="btn btn-primary w-100" onclick="runDemo()">
+                    <i class="fas fa-play"></i> Run Demo
+                </button>
+                
+                <button class="btn btn-outline-info w-100 mt-2" onclick="compareAlgorithms()">
+                    <i class="fas fa-chart-bar"></i> Compare All Algorithms
+                </button>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="card-title">Demo Parts</h6>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <strong>Large Panel:</strong> 200×100mm (4 pcs)<br>
+                    <strong>Medium Panel:</strong> 150×75mm (6 pcs)<br>
+                    <strong>Small Panel:</strong> 100×50mm (8 pcs)<br>
+                    <strong>Square Panel:</strong> 75×75mm (6 pcs)<br>
+                    <strong>Long Strip:</strong> 250×60mm (3 pcs)
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Demo Results</h5>
+            </div>
+            <div class="card-body">
+                <div id="demoResults" class="text-center text-muted">
+                    <i class="fas fa-play-circle fa-3x mb-3"></i>
+                    <p>Click "Run Demo" to see Rectpack optimization in action</p>
+                </div>
+                
+                <div id="algorithmComparison" style="display: none;">
+                    <h6>Algorithm Performance Comparison:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Algorithm</th>
+                                    <th>Sheets Used</th>
+                                    <th>Efficiency</th>
+                                    <th>Waste Area</th>
+                                    <th>Performance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comparisonTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Benefits Section -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Manufacturing Benefits of Rectpack Integration</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="badge bg-success p-3 mb-3">
+                                <i class="fas fa-cut fa-2x"></i>
+                            </div>
+                            <h6>Material Cutting Optimization</h6>
+                            <ul class="text-start small">
+                                <li>Sheet metal nesting</li>
+                                <li>Wood panel optimization</li>
+                                <li>Glass cutting patterns</li>
+                                <li>Fabric layout optimization</li>
+                                <li>5-15% material savings typical</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="badge bg-info p-3 mb-3">
+                                <i class="fas fa-warehouse fa-2x"></i>
+                            </div>
+                            <h6>Warehouse Layout</h6>
+                            <ul class="text-start small">
+                                <li>Storage space optimization</li>
+                                <li>Inventory arrangement</li>
+                                <li>Accessibility planning</li>
+                                <li>Load distribution</li>
+                                <li>Space utilization maximization</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="badge bg-warning p-3 mb-3">
+                                <i class="fas fa-cogs fa-2x"></i>
+                            </div>
+                            <h6>Production Planning</h6>
+                            <ul class="text-start small">
+                                <li>BOM-based cutting plans</li>
+                                <li>Purchase order optimization</li>
+                                <li>CNC programming export</li>
+                                <li>Cost analysis and reporting</li>
+                                <li>Automated pattern generation</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function runDemo() {
+    const algorithm = document.getElementById('demoAlgorithm').value;
+    const resultsDiv = document.getElementById('demoResults');
+    
+    resultsDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Running ' + algorithm + ' algorithm...</p></div>';
+    
+    fetch('/packing/api/demo-optimization')
+        .then(response => response.json())
+        .then(data => {
+            displaySingleResult(data.results[algorithm], algorithm);
+        })
+        .catch(error => {
+            resultsDiv.innerHTML = '<div class="alert alert-danger">Demo failed: ' + error.message + '</div>';
+        });
+}
+
+function compareAlgorithms() {
+    const resultsDiv = document.getElementById('demoResults');
+    const comparisonDiv = document.getElementById('algorithmComparison');
+    
+    resultsDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-success" role="status"></div><p class="mt-2">Comparing all algorithms...</p></div>';
+    
+    fetch('/packing/api/demo-optimization')
+        .then(response => response.json())
+        .then(data => {
+            displayComparison(data.results);
+            comparisonDiv.style.display = 'block';
+        })
+        .catch(error => {
+            resultsDiv.innerHTML = '<div class="alert alert-danger">Comparison failed: ' + error.message + '</div>';
+        });
+}
+
+function displaySingleResult(result, algorithm) {
+    const resultsDiv = document.getElementById('demoResults');
+    
+    let html = `
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h4>${result.sheets_used}</h4>
+                        <small>Sheets Used</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h4>${result.efficiency_percentage}%</h4>
+                        <small>Efficiency</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body text-center">
+                        <h4>${Math.round(result.waste_area)}</h4>
+                        <small>Waste Area (mm²)</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <h4>${algorithm.toUpperCase()}</h4>
+                        <small>Algorithm</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-start">
+            <h6>Cutting Layout:</h6>
+            <div class="alert alert-info">
+                <strong>Demo successful!</strong> The ${algorithm} algorithm packed ${result.layouts.length > 0 ? result.layouts[0].parts.length : 0} parts 
+                across ${result.sheets_used} sheets with ${result.efficiency_percentage}% efficiency.
+            </div>
+    `;
+    
+    if (result.layouts && result.layouts.length > 0) {
+        html += '<div class="accordion" id="layoutAccordion">';
+        result.layouts.forEach((layout, index) => {
+            html += `
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button ${index > 0 ? 'collapsed' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">
+                            Sheet ${layout.sheet_number} - ${layout.parts.length} parts
+                        </button>
+                    </h2>
+                    <div id="collapse${index}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" data-bs-parent="#layoutAccordion">
+                        <div class="accordion-body">
+                            <ul class="list-group list-group-flush">
+            `;
+            
+            layout.parts.forEach(part => {
+                html += `
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>${part.item_name} #${part.instance}</span>
+                        <small>${part.dimensions.width}×${part.dimensions.height} at (${part.position.x}, ${part.position.y})</small>
+                    </li>
+                `;
+            });
+            
+            html += '</ul></div></div></div>';
+        });
+        html += '</div>';
+    }
+    
+    html += '</div>';
+    resultsDiv.innerHTML = html;
+}
+
+function displayComparison(results) {
+    const resultsDiv = document.getElementById('demoResults');
+    const comparisonTable = document.getElementById('comparisonTable');
+    
+    // Performance characteristics
+    const algorithmInfo = {
+        skyline: { performance: 'Balanced', color: 'primary' },
+        maxrects: { performance: 'Best Quality', color: 'success' },
+        guillotine: { performance: 'Fastest', color: 'warning' }
+    };
+    
+    let tableHtml = '';
+    Object.entries(results).forEach(([algorithm, result]) => {
+        const info = algorithmInfo[algorithm];
+        tableHtml += `
+            <tr>
+                <td><span class="badge bg-${info.color}">${algorithm.toUpperCase()}</span></td>
+                <td>${result.sheets_used}</td>
+                <td>${result.efficiency_percentage}%</td>
+                <td>${Math.round(result.waste_area)} mm²</td>
+                <td>${info.performance}</td>
+            </tr>
+        `;
+    });
+    
+    comparisonTable.innerHTML = tableHtml;
+    
+    resultsDiv.innerHTML = `
+        <div class="alert alert-success">
+            <h5><i class="fas fa-check-circle"></i> Algorithm Comparison Complete</h5>
+            <p>All three packing algorithms have been tested with the same set of demo parts. 
+            See the comparison table below for detailed performance metrics.</p>
+        </div>
+    `;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,196 @@
+Here’s a **complete high-level blueprint** of how your entire **Factory Management App** will work with **Batch-Wise Tracking** — module by module, showing how everything is connected and flows together.
+
+---
+
+## 🏭 **AK Innovations Factory Management App (With Batch-Wise Tracking)**
+
+---
+
+### 🧱 **CORE ENTITIES INVOLVED**
+
+| Entity            | Purpose                                        |
+| ----------------- | ---------------------------------------------- |
+| `Item Master`     | Holds item details, default UOM, batch flag    |
+| `UOM Table`       | Unit conversion, standard base for calculation |
+| `Inventory Batch` | Every raw/output item tracked by batch         |
+| `Job Work`        | Tracks material sent and returned              |
+| `Production`      | Tracks internal manufacturing                  |
+| `GRN`             | Captures received materials (with batch)       |
+| `Dispatch/Sales`  | Sends output products (by batch)               |
+| `Scrap`           | Tracks defectives or unusable stock            |
+
+---
+
+## 🔁 **COMPLETE APP FLOW (End-to-End with Batch)**
+
+---
+
+### 🔹 1. **Item Creation (Master)**
+
+* Create item: e.g., *MS Sheet*, *Mounted Plate*
+* Define:
+
+  * Default UOM (e.g., sheet, pcs)
+  * Batch Required: ✅ Yes/No
+
+---
+
+### 🔹 2. **GRN (Goods Receipt Note)**
+
+* Receive items from vendors
+* For each item:
+
+  * Create Batch Code (e.g., `MS-001`)
+  * UOM + Qty (e.g., 20 sheets)
+  * State = `Raw`
+
+✅ **Inventory Batch created** with:
+`MS-001 → 20 sheets → Raw`
+
+---
+
+### 🔹 3. **Inventory Dashboard**
+
+Shows for each item:
+
+| Item          | Batch Code | Qty | UOM   | State              |
+| ------------- | ---------- | --- | ----- | ------------------ |
+| MS Sheet      | MS-001     | 20  | Sheet | Raw                |
+| -             | -          | 5   | Sheet | WIP (issued to JW) |
+| Mounted Plate | FG-001     | 500 | Pcs   | Finished           |
+
+You can track state-wise breakdown: Raw, WIP, Finished, Scrap
+
+---
+
+### 🔹 4. **Job Work - Issue**
+
+* Select item: *MS Sheet*
+* Select batch: `MS-001`
+* Issue qty: 5 sheets
+* Select vendor
+
+✅ System action:
+
+* Deduct 5 from `Raw`
+* Add 5 to `WIP` under same batch
+
+---
+
+### 🔹 5. **Job Work - Return**
+
+* Job Work ID: JW-1001
+* Output:
+
+  * Product: *Mounted Plate*
+  * Output Batch: `FG-001`
+  * Produced: 500 pcs
+  * Scrap: 20 pcs
+  * Unused Raw Returned: 2 sheets
+
+✅ System action:
+
+* Create new batch `FG-001` → 500 pcs → `Finished`
+* Scrap batch `SCRAP-JW1001` → 20 pcs → `Scrap`
+* Add 2 sheets back to `MS-001` → `Raw`
+
+---
+
+### 🔹 6. **Production (Optional or Parallel to Job Work)**
+
+* Select raw batch
+* Record finished product batch (FG)
+* Record scrap + unused
+
+Same logic as Job Work, but internal.
+
+---
+
+### 🔹 7. **Dispatch (Sales Order Fulfillment)**
+
+* Select output item (e.g., Mounted Plate)
+* System shows:
+
+  * Available batch: `FG-001`, 500 pcs
+* Select qty (e.g., 300 pcs)
+* Dispatch
+
+✅ System deducts from Finished batch.
+
+---
+
+### 🔹 8. **Scrap Handling**
+
+* Track scrap batches per job/production
+* Separate section for reprocessing or disposal
+
+---
+
+### 🔹 9. **Batch Movement Ledger**
+
+Every action creates a movement log:
+
+| Ref Type  | Ref ID  | From State | To State | Item          | Batch  | Qty |
+| --------- | ------- | ---------- | -------- | ------------- | ------ | --- |
+| GRN       | GRN-001 | None       | Raw      | MS Sheet      | MS-001 | 20  |
+| Job Work  | JW-1001 | Raw        | WIP      | MS Sheet      | MS-001 | 5   |
+| JW Return | JW-1001 | WIP        | Finished | Mounted Plate | FG-001 | 500 |
+
+---
+
+## 📊 **REPORTING INTEGRATION**
+
+| Report                 | Uses Batch Data      |
+| ---------------------- | -------------------- |
+| Batch Consumption      | ✅                    |
+| Job Work Yield Report  | ✅                    |
+| Vendor-wise Scrap %    | ✅                    |
+| Raw Material Aging     | ✅                    |
+| FIFO Batch Utilization | ✅                    |
+| Inventory Valuation    | ✅ (batch-level cost) |
+
+---
+
+## 🔐 **ROLES & PERMISSIONS**
+
+| Role        | Batch Access Level             |
+| ----------- | ------------------------------ |
+| Admin       | Full CRUD                      |
+| Storekeeper | View/Add in GRN/Dispatch       |
+| Production  | Batch use for manufacturing    |
+| QA/QC       | View only                      |
+| Vendor      | N/A (only via external report) |
+
+---
+
+## 🔁 MODULE-WISE CONNECTION WITH BATCH
+
+| Module     | Uses Batch? | How it interacts                                 |
+| ---------- | ----------- | ------------------------------------------------ |
+| GRN        | ✅           | Creates new batch                                |
+| Inventory  | ✅           | Views/updates batch state/quantity               |
+| Job Work   | ✅           | Issues from input batch, returns to output batch |
+| Production | ✅           | Consumes input batch, generates output batch     |
+| Dispatch   | ✅           | Picks from finished batch                        |
+| Scrap      | ✅           | Tagged against jobwork or production batch       |
+| Reporting  | ✅           | Filters, traceability, audits                    |
+
+---
+
+## 🧭 FLOW DIAGRAM (Text Format)
+
+```
+GRN → Inventory [Raw Batch]
+           ↓
+     Job Work/Production (Issue from batch)
+           ↓
+     Inventory [WIP → Finished + Scrap + Return unused]
+           ↓
+       Dispatch [Batch picked]
+           ↓
+        Ledger/Reports
+```
+
+---
+
+

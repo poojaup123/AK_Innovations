@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Multi-State Inventory Tracking{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-layer-group me-2"></i>Multi-State Inventory Tracking</h2>
+                <div>
+                    <a href="{{ url_for('inventory.unified_view') }}" class="btn btn-success">
+                        <i class="fas fa-table me-1"></i>Unified View
+                    </a>
+                    <a href="{{ url_for('inventory.list_items') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-list me-1"></i>Standard View
+                    </a>
+                    <a href="{{ url_for('inventory.add_item') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Add Item
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Info -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h5><i class="fas fa-info-circle me-2"></i>Multi-State Inventory Workflow</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>Raw Material:</strong> Initial stock ready for processing
+                    </div>
+                    <div class="col-md-3">
+                        <strong>WIP (Work in Progress):</strong> Materials sent for job work
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Finished Goods:</strong> Completed materials received back
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Scrap:</strong> Rejected or damaged materials
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-table me-2"></i>Inventory State Breakdown</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Item Code</th>
+                                    <th>Item Name</th>
+                                    <th class="text-primary">Raw Material</th>
+                                    <th class="text-warning">WIP</th>
+                                    <th class="text-success">Finished</th>
+                                    <th class="text-danger">Scrap</th>
+                                    <th class="text-info">Total</th>
+                                    <th class="text-secondary">Available</th>
+                                    <th>UOM</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td><strong>{{ item.code }}</strong></td>
+                                    <td>{{ item.name }}</td>
+                                    <td class="text-primary">
+                                        <strong>{{ "%.2f"|format(item.qty_raw or 0) }}</strong>
+                                    </td>
+                                    <td class="text-warning">
+                                        <strong>{{ "%.2f"|format(item.total_wip or 0) }}</strong>
+                                        {% if item.total_wip > 0 %}
+                                        <i class="fas fa-tools ms-1" title="In production"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-success">
+                                        <strong>{{ "%.2f"|format(item.qty_finished or 0) }}</strong>
+                                        {% if item.qty_finished > 0 %}
+                                        <i class="fas fa-check-circle ms-1" title="Ready for use"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-danger">
+                                        <strong>{{ "%.2f"|format(item.qty_scrap or 0) }}</strong>
+                                        {% if item.qty_scrap > 0 %}
+                                        <i class="fas fa-exclamation-triangle ms-1" title="Scrap material"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-info">
+                                        <strong>{{ "%.2f"|format(item.total_stock) }}</strong>
+                                    </td>
+                                    <td class="text-secondary">
+                                        <strong>{{ "%.2f"|format(item.available_stock) }}</strong>
+                                        {% if item.available_stock <= item.minimum_stock %}
+                                        <span class="badge bg-danger ms-1">Low</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.unit_of_measure }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('inventory.edit_item', id=item.id) }}" 
+                                               class="btn btn-outline-primary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ "%.0f"|format(total_raw) }}</h3>
+                    <p class="card-text">Total Raw Material</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning">{{ "%.0f"|format(total_wip) }}</h3>
+                    <p class="card-text">Total WIP</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ "%.0f"|format(total_finished) }}</h3>
+                    <p class="card-text">Total Finished</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-danger">{{ "%.0f"|format(total_scrap) }}</h3>
+                    <p class="card-text">Total Scrap</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

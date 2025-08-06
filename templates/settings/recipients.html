@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Recipients - AK Innovations Factory{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('settings.dashboard') }}">Settings</a></li>
+                    <li class="breadcrumb-item active">Recipients</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-users"></i> Notification Recipients</h2>
+                    <p class="text-muted">Manage who receives notifications</p>
+                </div>
+                <a href="{{ url_for('settings.add_recipient') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Recipient
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    {% if recipients %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Contact</th>
+                                        <th>Notification Types</th>
+                                        <th>Event Types</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for recipient in recipients %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ recipient.name }}</strong>
+                                            </td>
+                                            <td>
+                                                {% if recipient.email %}
+                                                    <div><i class="fas fa-envelope"></i> {{ recipient.email }}</div>
+                                                {% endif %}
+                                                {% if recipient.phone %}
+                                                    <div><i class="fas fa-phone"></i> {{ recipient.phone }}</div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if recipient.notification_types %}
+                                                    {% for type in recipient.notification_types.split(',') %}
+                                                        {% if type == 'email' %}
+                                                            <span class="badge bg-primary me-1">Email</span>
+                                                        {% elif type == 'sms' %}
+                                                            <span class="badge bg-success me-1">SMS</span>
+                                                        {% elif type == 'whatsapp' %}
+                                                            <span class="badge bg-info me-1">WhatsApp</span>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if recipient.event_types %}
+                                                    {% for event in recipient.event_types.split(',') %}
+                                                        {% if event == 'low_stock' %}
+                                                            <span class="badge bg-warning text-dark me-1">Low Stock</span>
+                                                        {% elif event == 'order_update' %}
+                                                            <span class="badge bg-secondary me-1">Orders</span>
+                                                        {% elif event == 'production_complete' %}
+                                                            <span class="badge bg-success me-1">Production</span>
+                                                        {% elif event == 'system_alert' %}
+                                                            <span class="badge bg-danger me-1">System</span>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if recipient.is_active %}
+                                                    <span class="badge bg-success">Active</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Inactive</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ url_for('settings.edit_recipient', id=recipient.id) }}" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                            onclick="deleteRecipient({{ recipient.id }}, '{{ recipient.name }}')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-users fa-4x text-muted mb-3"></i>
+                            <h4>No Recipients Yet</h4>
+                            <p class="text-muted">Add recipients to start sending notifications</p>
+                            <a href="{{ url_for('settings.add_recipient') }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add First Recipient
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete recipient <strong id="recipientName"></strong>?</p>
+                <p class="text-danger small">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteRecipient(id, name) {
+    document.getElementById('recipientName').textContent = name;
+    document.getElementById('deleteForm').action = '/settings/recipients/' + id + '/delete';
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

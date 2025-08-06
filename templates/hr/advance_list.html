@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Employee Advances - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-hand-holding-usd"></i> Employee Advances</h1>
+            <p class="text-muted">Manage employee advance requests and repayments</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('hr.add_advance') }}" class="btn btn-warning">
+                <i class="fas fa-plus"></i> Add Advance Request
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card bg-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Total Advances</h5>
+                            <h3>₹{{ "{:,.0f}".format(total_amount) }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-hand-holding-usd fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card bg-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Remaining Balance</h5>
+                            <h3>₹{{ "{:,.0f}".format(total_remaining) }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-piggy-bank fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="search" class="form-control" value="{{ search }}" 
+                           placeholder="Employee name or code">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="approved" {% if status == 'approved' %}selected{% endif %}>Approved</option>
+                        <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="completed" {% if status == 'completed' %}selected{% endif %}>Completed</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                    <a href="{{ url_for('hr.advance_list') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Advances Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if advances.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Advance Number</th>
+                                <th>Employee</th>
+                                <th>Amount</th>
+                                <th>Remaining</th>
+                                <th>Reason</th>
+                                <th>Repayment</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for advance in advances.items %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('hr.advance_detail', id=advance.id) }}" class="text-decoration-none">
+                                        <strong>{{ advance.advance_number }}</strong>
+                                    </a>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ advance.employee.name }}</strong><br>
+                                        <small class="text-muted">{{ advance.employee.employee_code }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="text-warning">₹{{ "{:,.0f}".format(advance.amount) }}</span>
+                                </td>
+                                <td>
+                                    {% if advance.remaining_amount > 0 %}
+                                        <span class="text-danger">₹{{ "{:,.0f}".format(advance.remaining_amount) }}</span>
+                                    {% else %}
+                                        <span class="text-success">₹0</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ advance.reason[:30] }}{% if advance.reason|length > 30 %}...{% endif %}</small>
+                                </td>
+                                <td>
+                                    <small>
+                                        {{ advance.repayment_months }} months<br>
+                                        <span class="text-muted">₹{{ "{:,.0f}".format(advance.monthly_deduction) }}/month</span>
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if advance.status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif advance.status == 'approved' %}
+                                        <span class="badge bg-info">Approved</span>
+                                    {% elif advance.status == 'active' %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% elif advance.status == 'completed' %}
+                                        <span class="badge bg-primary">Completed</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ advance.status.title() }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ advance.advance_date.strftime('%d %b %Y') }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('hr.advance_detail', id=advance.id) }}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if advance.status == 'pending' and current_user.is_admin() %}
+                                            <a href="{{ url_for('hr.approve_advance', id=advance.id) }}" 
+                                               class="btn btn-outline-success btn-sm"
+                                               onclick="return confirm('Approve this advance request?')">
+                                                <i class="fas fa-check"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if advances.pages > 1 %}
+                <nav aria-label="Advances pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if advances.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('hr.advance_list', page=advances.prev_num, search=search, status=status) }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        {% for page_num in advances.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != advances.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('hr.advance_list', page=page_num, search=search, status=status) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if advances.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('hr.advance_list', page=advances.next_num, search=search, status=status) }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-hand-holding-usd fa-3x text-muted mb-3"></i>
+                    <h5>No Employee Advances Found</h5>
+                    <p class="text-muted">
+                        {% if search or status %}
+                            No advance requests match your current filters.
+                        {% else %}
+                            Start by adding your first employee advance request.
+                        {% endif %}
+                    </p>
+                    <a href="{{ url_for('hr.add_advance') }}" class="btn btn-warning">
+                        <i class="fas fa-plus"></i> Add First Advance Request
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

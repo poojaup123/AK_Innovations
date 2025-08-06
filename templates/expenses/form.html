@@ -1,0 +1,634 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-receipt me-2"></i>{{ title }}</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('expenses.expense_list') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" novalidate id="expenseForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- OCR Receipt Processing Section -->
+                        <div class="mb-4">
+                            <h5 class="card-title text-success border-bottom pb-2">
+                                <i class="fas fa-camera-retro me-2"></i>Smart Receipt Processing
+                                <span class="badge bg-success ms-2">NEW</span>
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <label for="receiptImage" class="form-label">
+                                            <i class="fas fa-upload me-1"></i>Upload Receipt/Invoice Image
+                                        </label>
+                                        <input type="file" class="form-control" id="receiptImage" name="receiptImage" accept="image/*,.pdf" capture="camera">
+                                        <div class="form-text">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Upload receipt/invoice image or PDF to automatically extract data (Date, Amount, Vendor, GST, etc.)
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" class="btn btn-success w-100 mt-4" id="processOCR" disabled>
+                                        <i class="fas fa-magic me-1"></i>Process Receipt
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- OCR Results Display -->
+                            <div id="ocrResults" class="mt-3" style="display: none;">
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-robot me-1"></i>Extracted Information:</h6>
+                                    <div class="row">
+                                        <div class="col-md-6" id="ocrDataLeft"></div>
+                                        <div class="col-md-6" id="ocrDataRight"></div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-primary" id="applyOCRData">
+                                            <i class="fas fa-check me-1"></i>Apply to Form
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" id="clearOCRData">
+                                            <i class="fas fa-times me-1"></i>Clear
+                                        </button>
+                                        <span class="ms-3">
+                                            <small class="text-muted">
+                                                <i class="fas fa-lightbulb me-1"></i>
+                                                <strong>Review extracted data carefully before applying!</strong>
+                                            </small>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- OCR Processing Status -->
+                            <div id="ocrLoading" class="mt-3" style="display: none;">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>Processing receipt image...
+                                    <div class="progress mt-2">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Basic Information Section -->
+                        <div class="mb-4">
+                            <h5 class="card-title text-primary border-bottom pb-2">
+                                <i class="fas fa-info-circle me-2"></i>Basic Information
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.expense_date.label(class="form-label") }}
+                                        {{ form.expense_date(class="form-control") }}
+                                        {% if form.expense_date.errors %}
+                                            {% for error in form.expense_date.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.category.label(class="form-label") }}
+                                        {{ form.category(class="form-select") }}
+                                        {% if form.category.errors %}
+                                            {% for error in form.category.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.subcategory.label(class="form-label") }}
+                                        {{ form.subcategory(class="form-control") }}
+                                        {% if form.subcategory.errors %}
+                                            {% for error in form.subcategory.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.department.label(class="form-label") }}
+                                        {{ form.department(class="form-select") }}
+                                        {% if form.department.errors %}
+                                            {% for error in form.department.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                        <small class="text-muted">Optional: Department responsible for this expense</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.payment_method.label(class="form-label") }}
+                                        {{ form.payment_method(class="form-select") }}
+                                        {% if form.payment_method.errors %}
+                                            {% for error in form.payment_method.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.paid_by.label(class="form-label") }}
+                                        {{ form.paid_by(class="form-control") }}
+                                        {% if form.paid_by.errors %}
+                                            {% for error in form.paid_by.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                        <small class="text-muted">Optional: Name of person/entity who made the payment</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                {{ form.description.label(class="form-label") }}
+                                {{ form.description(class="form-control", rows="3") }}
+                                {% if form.description.errors %}
+                                    {% for error in form.description.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Financial Details Section -->
+                        <div class="mb-4">
+                            <h5 class="card-title text-success border-bottom pb-2">
+                                <i class="fas fa-rupee-sign me-2"></i>Financial Details
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        {{ form.amount.label(class="form-label") }}
+                                        <div class="input-group">
+                                            <span class="input-group-text">₹</span>
+                                            {{ form.amount(class="form-control", step="0.01") }}
+                                        </div>
+                                        {% if form.amount.errors %}
+                                            {% for error in form.amount.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        {{ form.tax_amount.label(class="form-label") }}
+                                        <div class="input-group">
+                                            <span class="input-group-text">₹</span>
+                                            {{ form.tax_amount(class="form-control", step="0.01") }}
+                                        </div>
+                                        {% if form.tax_amount.errors %}
+                                            {% for error in form.tax_amount.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="total_amount" class="form-label">Total Amount</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">₹</span>
+                                            <input type="text" class="form-control" id="total_amount" readonly placeholder="0.00">
+                                        </div>
+                                        <small class="text-muted">Auto-calculated</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Vendor Details Section -->
+                        <div class="mb-4">
+                            <h5 class="card-title text-info border-bottom pb-2">
+                                <i class="fas fa-building me-2"></i>Vendor/Supplier Details <small class="text-muted">(Optional)</small>
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.vendor_name.label(class="form-label") }}
+                                        {{ form.vendor_name(class="form-control") }}
+                                        {% if form.vendor_name.errors %}
+                                            {% for error in form.vendor_name.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.vendor_contact.label(class="form-label") }}
+                                        {{ form.vendor_contact(class="form-control") }}
+                                        {% if form.vendor_contact.errors %}
+                                            {% for error in form.vendor_contact.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.invoice_number.label(class="form-label") }}
+                                        {{ form.invoice_number(class="form-control") }}
+                                        {% if form.invoice_number.errors %}
+                                            {% for error in form.invoice_number.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.invoice_date.label(class="form-label") }}
+                                        {{ form.invoice_date(class="form-control") }}
+                                        {% if form.invoice_date.errors %}
+                                            {% for error in form.invoice_date.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recurring and Notes Section -->
+                        <div class="mb-4">
+                            <h5 class="card-title text-warning border-bottom pb-2">
+                                <i class="fas fa-sync me-2"></i>Additional Information
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        {{ form.is_recurring(class="form-check-input") }}
+                                        {{ form.is_recurring.label(class="form-check-label") }}
+                                        {% if form.is_recurring.errors %}
+                                            {% for error in form.is_recurring.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.recurring_frequency.label(class="form-label") }}
+                                        {{ form.recurring_frequency(class="form-select", disabled=True) }}
+                                        {% if form.recurring_frequency.errors %}
+                                            {% for error in form.recurring_frequency.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                {{ form.notes.label(class="form-label") }}
+                                {{ form.notes(class="form-control", rows="3") }}
+                                {% if form.notes.errors %}
+                                    {% for error in form.notes.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Document Upload Section -->
+                        <div class="mb-4">
+                            <h5 class="card-title text-success border-bottom pb-2">
+                                <i class="fas fa-file-upload me-2"></i>Supporting Documents <small class="text-muted">(Optional)</small>
+                            </h5>
+                            <div class="mb-3">
+                                <label for="documentFiles" class="form-label">Upload Documents</label>
+                                <input type="file" class="form-control" id="documentFiles" name="documentFiles" multiple 
+                                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" 
+                                       onchange="handleDocumentUpload(event)">
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Supported formats: PDF, Images (JPG, PNG), Word, Excel. Max 10MB per file.
+                                </div>
+                            </div>
+                            
+                            <!-- Document Preview Area -->
+                            <div id="documentPreview" class="mb-3" style="display: none;">
+                                <div class="border rounded p-3 bg-light">
+                                    <h6 class="mb-2"><i class="fas fa-paperclip me-1"></i>Selected Documents:</h6>
+                                    <div id="documentList"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('expenses.expense_list') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>
+                                {% if expense %}Update Expense{% else %}Create Expense{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help/Instructions -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-question-circle me-2"></i>Instructions</h6>
+                </div>
+                <div class="card-body">
+                    <small>
+                        <h6>Categories:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Utilities:</strong> Electricity, water, gas, internet</li>
+                            <li><strong>Maintenance:</strong> Equipment repairs, facility maintenance</li>
+                            <li><strong>Salary:</strong> Employee salaries, benefits, overtime</li>
+                            <li><strong>Materials:</strong> Raw materials, consumables</li>
+                            <li><strong>Overhead:</strong> Factory overhead costs</li>
+                            <li><strong>Transport:</strong> Transportation and logistics</li>
+                            <li><strong>Others:</strong> Miscellaneous expenses</li>
+                        </ul>
+
+                        <h6>Recurring Expenses:</h6>
+                        <p>Check "Recurring Expense" for regular monthly/quarterly/yearly costs like rent, utilities, etc.</p>
+
+                        <h6>Approval Process:</h6>
+                        <p>All expenses require admin approval before payment processing.</p>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-calculate total amount
+function calculateTotal() {
+    const amount = parseFloat(document.getElementById('amount').value) || 0;
+    const taxAmount = parseFloat(document.getElementById('tax_amount').value) || 0;
+    const total = amount + taxAmount;
+    document.getElementById('total_amount').value = total.toFixed(2);
+}
+
+let selectedFiles = [];
+
+function handleDocumentUpload(event) {
+    const files = Array.from(event.target.files);
+    const documentPreview = document.getElementById('documentPreview');
+    const documentList = document.getElementById('documentList');
+    
+    if (files.length > 0) {
+        selectedFiles = files;
+        documentPreview.style.display = 'block';
+        documentList.innerHTML = '';
+        
+        files.forEach((file, index) => {
+            const fileSize = (file.size / 1024 / 1024).toFixed(2);
+            const fileItem = document.createElement('div');
+            fileItem.className = 'mb-2 p-2 border rounded bg-white d-flex justify-content-between align-items-center';
+            fileItem.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-file me-2 text-primary"></i>
+                    <div>
+                        <div class="fw-bold">${file.name}</div>
+                        <small class="text-muted">${fileSize} MB</small>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFile(${index})">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            documentList.appendChild(fileItem);
+        });
+    } else {
+        documentPreview.style.display = 'none';
+        selectedFiles = [];
+    }
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    
+    // Create new FileList and update input
+    const dt = new DataTransfer();
+    selectedFiles.forEach(file => dt.items.add(file));
+    document.getElementById('documentFiles').files = dt.files;
+    
+    // Update preview
+    const event = { target: { files: selectedFiles } };
+    handleDocumentUpload(event);
+}
+
+// Add event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    const amountField = document.getElementById('amount');
+    const taxAmountField = document.getElementById('tax_amount');
+    const recurringCheckbox = document.getElementById('is_recurring');
+    const frequencySelect = document.getElementById('recurring_frequency');
+    
+    if (amountField) amountField.addEventListener('input', calculateTotal);
+    if (taxAmountField) taxAmountField.addEventListener('input', calculateTotal);
+    
+    // Enable/disable frequency based on recurring checkbox
+    if (recurringCheckbox && frequencySelect) {
+        recurringCheckbox.addEventListener('change', function() {
+            frequencySelect.disabled = !this.checked;
+            if (!this.checked) {
+                frequencySelect.value = '';
+            }
+        });
+        
+        // Initial state
+        frequencySelect.disabled = !recurringCheckbox.checked;
+    }
+    
+    // Calculate initial total
+    calculateTotal();
+});
+
+// OCR Functionality
+let ocrData = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const receiptInput = document.getElementById('receiptImage');
+    const processButton = document.getElementById('processOCR');
+    const ocrResults = document.getElementById('ocrResults');
+    const ocrLoading = document.getElementById('ocrLoading');
+    const applyButton = document.getElementById('applyOCRData');
+    const clearButton = document.getElementById('clearOCRData');
+    
+    // Enable process button when file is selected
+    receiptInput.addEventListener('change', function() {
+        processButton.disabled = !this.files.length;
+    });
+    
+    // Process OCR
+    processButton.addEventListener('click', function() {
+        const file = receiptInput.files[0];
+        if (!file) {
+            alert('Please select an image or PDF file first.');
+            return;
+        }
+        
+        // Show loading
+        ocrLoading.style.display = 'block';
+        ocrResults.style.display = 'none';
+        processButton.disabled = true;
+        
+        // Create FormData
+        const formData = new FormData();
+        formData.append('receipt_image', file);
+        
+        // Send to OCR endpoint
+        fetch('{{ url_for("expenses.process_ocr") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            ocrLoading.style.display = 'none';
+            processButton.disabled = false;
+            
+            if (data.success) {
+                ocrData = data.data;
+                displayOCRResults(data.data);
+                ocrResults.style.display = 'block';
+            } else {
+                alert('OCR Processing Error: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('OCR Error:', error);
+            ocrLoading.style.display = 'none';
+            processButton.disabled = false;
+            alert('Error processing receipt: ' + error.message);
+        });
+    });
+    
+    // Apply OCR data to form
+    applyButton.addEventListener('click', function() {
+        if (!ocrData) return;
+        
+        // Apply extracted data to form fields
+        if (ocrData.date) {
+            document.getElementById('expense_date').value = ocrData.date;
+        }
+        if (ocrData.amount) {
+            document.getElementById('amount').value = ocrData.base_amount || ocrData.amount;
+        }
+        if (ocrData.tax_amount) {
+            document.getElementById('tax_amount').value = ocrData.tax_amount;
+        }
+        if (ocrData.vendor) {
+            document.getElementById('vendor_name').value = ocrData.vendor;
+        }
+        if (ocrData.invoice_number) {
+            document.getElementById('invoice_number').value = ocrData.invoice_number;
+        }
+        if (ocrData.date) {
+            document.getElementById('invoice_date').value = ocrData.date;
+        }
+        if (ocrData.category) {
+            const categorySelect = document.getElementById('category');
+            const categoryOption = Array.from(categorySelect.options).find(option => 
+                option.text.toLowerCase().includes(ocrData.category.toLowerCase())
+            );
+            if (categoryOption) {
+                categorySelect.value = categoryOption.value;
+            }
+        }
+        if (ocrData.department) {
+            document.getElementById('department').value = ocrData.department;
+        }
+        
+        // Trigger total calculation
+        calculateTotal();
+        
+        // Show success message
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-success alert-dismissible fade show';
+        alert.innerHTML = `
+            <i class="fas fa-check me-1"></i>
+            OCR data applied successfully! Please review and verify all fields.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        ocrResults.appendChild(alert);
+        
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            alert.remove();
+        }, 3000);
+    });
+    
+    // Clear OCR results
+    clearButton.addEventListener('click', function() {
+        ocrResults.style.display = 'none';
+        ocrData = null;
+        receiptInput.value = '';
+        processButton.disabled = true;
+    });
+});
+
+function displayOCRResults(data) {
+    const leftCol = document.getElementById('ocrDataLeft');
+    const rightCol = document.getElementById('ocrDataRight');
+    
+    // Left column data
+    leftCol.innerHTML = `
+        <strong>Financial Data:</strong><br>
+        ${data.amount ? `<span class="badge bg-success">Amount: ₹${data.amount}</span><br>` : ''}
+        ${data.base_amount ? `<span class="badge bg-info">Base: ₹${data.base_amount}</span><br>` : ''}
+        ${data.tax_amount ? `<span class="badge bg-warning">Tax: ₹${data.tax_amount}</span><br>` : ''}
+        ${data.gst_rate ? `<span class="badge bg-secondary">GST: ${data.gst_rate}%</span><br>` : ''}
+        <br>
+        <strong>Business Data:</strong><br>
+        ${data.vendor ? `<span class="text-primary">Vendor: ${data.vendor}</span><br>` : ''}
+        ${data.invoice_number ? `<span class="text-info">Invoice: ${data.invoice_number}</span><br>` : ''}
+    `;
+    
+    // Right column data
+    rightCol.innerHTML = `
+        <strong>Document Data:</strong><br>
+        ${data.date ? `<span class="badge bg-primary">Date: ${data.date}</span><br>` : ''}
+        ${data.category ? `<span class="badge bg-dark">Category: ${data.category}</span><br>` : ''}
+        ${data.department ? `<span class="badge bg-warning">Department: ${data.department.replace('_', ' ').toUpperCase()}</span><br>` : ''}
+        ${data.gstin ? `<span class="text-muted">GSTIN: ${data.gstin}</span><br>` : ''}
+        <br>
+        <strong>Confidence:</strong><br>
+        <div class="progress" style="height: 20px;">
+            <div class="progress-bar ${data.confidence > 70 ? 'bg-success' : data.confidence > 50 ? 'bg-warning' : 'bg-danger'}" 
+                 style="width: ${data.confidence}%">
+                ${data.confidence}%
+            </div>
+        </div>
+        <small class="text-muted">Processing accuracy</small>
+    `;
+}
+</script>
+{% endblock %}

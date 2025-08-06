@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Settings{% endblock %}
+
+{% block extra_css %}
+<style>
+.settings-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #007bff;
+}
+
+.form-switch .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+}
+
+.setting-description {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.company-selector {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-boxes"></i> Inventory Settings</h2>
+        <a href="{{ url_for('settings_advanced.settings_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Settings
+        </a>
+    </div>
+
+    <!-- Company Selector -->
+    <div class="company-selector">
+        <h5 class="mb-3">Select Company</h5>
+        <select class="form-select" id="companySelect" onchange="loadCompanySettings()">
+            <option value="">Global Settings</option>
+            {% for company in companies %}
+            <option value="{{ company.id }}" 
+                    {% if company.id == selected_company_id %}selected{% endif %}>
+                {{ company.name }}
+            </option>
+            {% endfor %}
+        </select>
+        <small class="text-white-50 mt-2 d-block">
+            Select a company to configure company-specific settings or leave blank for global settings
+        </small>
+    </div>
+
+    <form id="inventorySettingsForm">
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Inventory Behavior Settings -->
+                <div class="settings-section">
+                    <h5><i class="fas fa-cog"></i> Inventory Behavior</h5>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="shared_inventory" name="shared_inventory"
+                                   {% if settings and settings.shared_inventory %}checked{% endif %}>
+                            <label class="form-check-label" for="shared_inventory">
+                                <strong>Shared Inventory</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Enable to share inventory across all companies. Disable for company-specific inventory.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="stock_valuation_method" class="form-label">
+                            <strong>Stock Valuation Method</strong>
+                        </label>
+                        <select class="form-select" id="stock_valuation_method" name="stock_valuation_method">
+                            <option value="FIFO" {% if settings and settings.stock_valuation_method == 'FIFO' %}selected{% endif %}>
+                                FIFO (First In, First Out)
+                            </option>
+                            <option value="LIFO" {% if settings and settings.stock_valuation_method == 'LIFO' %}selected{% endif %}>
+                                LIFO (Last In, First Out)
+                            </option>
+                            <option value="MAVG" {% if settings and settings.stock_valuation_method == 'MAVG' %}selected{% endif %}>
+                                Moving Average
+                            </option>
+                        </select>
+                        <div class="setting-description">
+                            Method used to calculate inventory valuation and cost of goods sold
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="enable_multi_uom" name="enable_multi_uom"
+                                   {% if not settings or settings.enable_multi_uom %}checked{% endif %}>
+                            <label class="form-check-label" for="enable_multi_uom">
+                                <strong>Enable Multi-UOM</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Allow items to be managed in multiple units of measure (kg → pcs, etc.)
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="enable_batch_tracking" name="enable_batch_tracking"
+                                   {% if not settings or settings.enable_batch_tracking %}checked{% endif %}>
+                            <label class="form-check-label" for="enable_batch_tracking">
+                                <strong>Enable Batch Tracking</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Track raw materials and finished goods batch-wise for complete traceability
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="warn_negative_stock" name="warn_negative_stock"
+                                   {% if not settings or settings.warn_negative_stock %}checked{% endif %}>
+                            <label class="form-check-label" for="warn_negative_stock">
+                                <strong>Warn on Negative Stock</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Show alerts when trying to issue more stock than available
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="auto_generate_batch" name="auto_generate_batch"
+                                   {% if not settings or settings.auto_generate_batch %}checked{% endif %}>
+                            <label class="form-check-label" for="auto_generate_batch">
+                                <strong>Auto Generate Batch Numbers</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Automatically generate batch numbers for new inventory receipts
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stock Control Settings -->
+                <div class="settings-section">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Stock Alerts</h5>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="minimum_stock_alert" name="minimum_stock_alert"
+                                   {% if not settings or settings.minimum_stock_alert %}checked{% endif %}>
+                            <label class="form-check-label" for="minimum_stock_alert">
+                                <strong>Minimum Stock Alerts</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Send alerts when stock falls below minimum level
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="reorder_level_alert" name="reorder_level_alert"
+                                   {% if not settings or settings.reorder_level_alert %}checked{% endif %}>
+                            <label class="form-check-label" for="reorder_level_alert">
+                                <strong>Reorder Level Alerts</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Send alerts when stock reaches reorder point
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="expiry_alert_days" class="form-label">
+                            <strong>Expiry Alert Days</strong>
+                        </label>
+                        <input type="number" class="form-control" id="expiry_alert_days" name="expiry_alert_days" 
+                               value="{{ settings.expiry_alert_days if settings else 30 }}" min="1" max="365">
+                        <div class="setting-description">
+                            Number of days before expiry to send alerts
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary me-2" onclick="resetForm()">Reset</button>
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Settings Guide</h6>
+                    </div>
+                    <div class="card-body">
+                        <h6>Stock Valuation Methods:</h6>
+                        <ul class="list-unstyled small">
+                            <li><strong>FIFO:</strong> First items purchased are first to be consumed</li>
+                            <li><strong>LIFO:</strong> Last items purchased are first to be consumed</li>
+                            <li><strong>Moving Average:</strong> Average cost of all items in stock</li>
+                        </ul>
+
+                        <h6 class="mt-3">Batch Tracking:</h6>
+                        <p class="small text-muted">
+                            Enable to track materials from purchase to finished goods. 
+                            Essential for quality control and traceability.
+                        </p>
+
+                        <h6 class="mt-3">Multi-UOM:</h6>
+                        <p class="small text-muted">
+                            Allows items to be purchased in one unit (kg) and consumed in another (pcs). 
+                            Useful for manufacturing environments.
+                        </p>
+
+                        <div class="alert alert-info mt-3">
+                            <small>
+                                <i class="fas fa-info-circle"></i>
+                                Changes to these settings will affect all future transactions. 
+                                Existing data will not be modified.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function loadCompanySettings() {
+    const companyId = document.getElementById('companySelect').value;
+    const url = new URL(window.location.href);
+    if (companyId) {
+        url.searchParams.set('company_id', companyId);
+    } else {
+        url.searchParams.delete('company_id');
+    }
+    window.location.href = url.toString();
+}
+
+function resetForm() {
+    if (confirm('Reset all settings to default values?')) {
+        document.getElementById('inventorySettingsForm').reset();
+    }
+}
+
+document.getElementById('inventorySettingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const companyId = document.getElementById('companySelect').value;
+    const formData = new FormData(this);
+    
+    const data = {
+        company_id: companyId || null,
+        shared_inventory: formData.has('shared_inventory'),
+        stock_valuation_method: formData.get('stock_valuation_method'),
+        enable_multi_uom: formData.has('enable_multi_uom'),
+        enable_batch_tracking: formData.has('enable_batch_tracking'),
+        warn_negative_stock: formData.has('warn_negative_stock'),
+        auto_generate_batch: formData.has('auto_generate_batch'),
+        minimum_stock_alert: formData.has('minimum_stock_alert'),
+        reorder_level_alert: formData.has('reorder_level_alert'),
+        expiry_alert_days: parseInt(formData.get('expiry_alert_days'))
+    };
+    
+    fetch('/settings/inventory/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Settings saved successfully!');
+        } else {
+            alert('Error saving settings: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error saving settings');
+    });
+});
+</script>
+{% endblock %}

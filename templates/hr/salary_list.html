@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Salary Records - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-money-bill-wave"></i> Salary Records</h1>
+            <p class="text-muted">Manage employee salary payments and records</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('hr.add_salary') }}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Add Salary Record
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card bg-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Total Gross</h5>
+                            <h3>₹{{ "{:,.0f}".format(total_gross) }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-money-bill-wave fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card bg-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Total Net</h5>
+                            <h3>₹{{ "{:,.0f}".format(total_net) }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-hand-holding-usd fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="search" class="form-control" value="{{ search }}" 
+                           placeholder="Employee name or code">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="approved" {% if status == 'approved' %}selected{% endif %}>Approved</option>
+                        <option value="paid" {% if status == 'paid' %}selected{% endif %}>Paid</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Month</label>
+                    <input type="month" name="month" class="form-control" value="{{ month }}">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                    <a href="{{ url_for('hr.salary_list') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Salary Records Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if salaries.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Salary Number</th>
+                                <th>Employee</th>
+                                <th>Pay Period</th>
+                                <th>Gross Amount</th>
+                                <th>Net Amount</th>
+                                <th>Status</th>
+                                <th>Created Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for salary in salaries.items %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('hr.salary_detail', id=salary.id) }}" class="text-decoration-none">
+                                        <strong>{{ salary.salary_number }}</strong>
+                                    </a>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ salary.employee.name }}</strong><br>
+                                        <small class="text-muted">{{ salary.employee.employee_code }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    {{ salary.pay_period_start.strftime('%d %b') }} - 
+                                    {{ salary.pay_period_end.strftime('%d %b %Y') }}
+                                </td>
+                                <td>
+                                    <span class="text-success">₹{{ "{:,.0f}".format(salary.gross_amount) }}</span>
+                                </td>
+                                <td>
+                                    <span class="text-primary">₹{{ "{:,.0f}".format(salary.net_amount) }}</span>
+                                </td>
+                                <td>
+                                    {% if salary.status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif salary.status == 'approved' %}
+                                        <span class="badge bg-success">Approved</span>
+                                    {% elif salary.status == 'paid' %}
+                                        <span class="badge bg-primary">Paid</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ salary.status.title() }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ salary.created_at.strftime('%d %b %Y') }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('hr.salary_detail', id=salary.id) }}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if salary.status == 'pending' and current_user.is_admin() %}
+                                            <a href="{{ url_for('hr.approve_salary', id=salary.id) }}" 
+                                               class="btn btn-outline-success btn-sm"
+                                               onclick="return confirm('Approve this salary record?')">
+                                                <i class="fas fa-check"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if salaries.pages > 1 %}
+                <nav aria-label="Salary records pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if salaries.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('hr.salary_list', page=salaries.prev_num, search=search, status=status, month=month) }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        {% for page_num in salaries.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != salaries.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('hr.salary_list', page=page_num, search=search, status=status, month=month) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if salaries.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('hr.salary_list', page=salaries.next_num, search=search, status=status, month=month) }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-money-bill-wave fa-3x text-muted mb-3"></i>
+                    <h5>No Salary Records Found</h5>
+                    <p class="text-muted">
+                        {% if search or status or month %}
+                            No salary records match your current filters.
+                        {% else %}
+                            Start by adding your first salary record.
+                        {% endif %}
+                    </p>
+                    <a href="{{ url_for('hr.add_salary') }}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Add First Salary Record
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}{{ employee.name }} - Employee Details - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-user"></i> {{ employee.name }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('hr.dashboard') }}">HR Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('hr.list_employees') }}">Employees</a></li>
+                    <li class="breadcrumb-item active">{{ employee.name }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group">
+                <a href="{{ url_for('hr.list_employees') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+                <a href="{{ url_for('hr.edit_employee', id=employee.id) }}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit Employee
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Quick Actions for Salary and Advance -->
+        <div class="col-12">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for('hr.add_salary') }}?employee_id={{ employee.id }}" 
+                                   class="btn btn-outline-success btn-lg">
+                                    <i class="fas fa-money-bill-wave"></i> Create Salary Record
+                                    <br><small class="text-muted">Generate salary for this employee</small>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for('hr.add_advance') }}?employee_id={{ employee.id }}" 
+                                   class="btn btn-outline-warning btn-lg">
+                                    <i class="fas fa-hand-holding-usd"></i> Create Advance Request
+                                    <br><small class="text-muted">Process advance for this employee</small>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for('hr.add_attendance') }}?employee_id={{ employee.id }}" 
+                                   class="btn btn-outline-info btn-lg">
+                                    <i class="fas fa-calendar-check"></i> Mark Attendance
+                                    <br><small class="text-muted">Record attendance for this employee</small>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for('hr.attendance_list') }}?employee_id={{ employee.id }}" 
+                                   class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-history"></i> View Attendance History
+                                    <br><small class="text-muted">See all attendance records</small>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Employee Information -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-id-card"></i> Employee Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <td><strong>Employee Code:</strong></td>
+                            <td>{{ employee.employee_code }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Name:</strong></td>
+                            <td>{{ employee.name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Department:</strong></td>
+                            <td>
+                                {% if employee.department %}
+                                    <span class="badge bg-primary">{{ employee.department.name }}</span>
+                                {% else %}
+                                    <span class="text-muted">Not assigned</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Position:</strong></td>
+                            <td>{{ employee.position or 'Not specified' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Mobile:</strong></td>
+                            <td>{{ employee.mobile_number or 'Not provided' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Email:</strong></td>
+                            <td>{{ employee.email or 'Not provided' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Hire Date:</strong></td>
+                            <td>
+                                {% if employee.hire_date %}
+                                    <span class="badge bg-info">{{ employee.hire_date.strftime('%B %d, %Y') }}</span>
+                                {% else %}
+                                    <span class="text-muted">Not specified</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Salary Type:</strong></td>
+                            <td>{{ employee.salary_type.replace('_', ' ').title() if employee.salary_type else 'Not specified' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                {% if employee.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Salary History -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-money-bill-wave"></i> Recent Salaries</h5>
+                    <a href="{{ url_for('hr.add_salary') }}?employee_id={{ employee.id }}" 
+                       class="btn btn-success btn-sm">
+                        <i class="fas fa-plus"></i> Add Salary
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_salaries %}
+                        {% for salary in recent_salaries %}
+                            <div class="border-bottom pb-2 mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <strong>{{ salary.salary_number }}</strong>
+                                    <span class="badge bg-{{ 'success' if salary.status == 'paid' else 'warning' if salary.status == 'approved' else 'secondary' }}">
+                                        {{ salary.status.title() }}
+                                    </span>
+                                </div>
+                                <small class="text-muted">
+                                    {{ salary.pay_period_start.strftime('%b %d') }} - {{ salary.pay_period_end.strftime('%b %d, %Y') }}
+                                </small>
+                                <div class="text-success">
+                                    <strong>₹{{ "%.2f"|format(salary.net_amount) }}</strong>
+                                </div>
+                                <a href="{{ url_for('hr.salary_detail', id=salary.id) }}" 
+                                   class="btn btn-outline-primary btn-sm">View Details</a>
+                            </div>
+                        {% endfor %}
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('hr.salary_list') }}?employee={{ employee.id }}" 
+                               class="btn btn-outline-secondary btn-sm">View All Salaries</a>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
+                            <p>No salary records yet</p>
+                            <a href="{{ url_for('hr.add_salary') }}?employee_id={{ employee.id }}" 
+                               class="btn btn-success btn-sm">Create First Salary</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Advance History -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-hand-holding-usd"></i> Recent Advances</h5>
+                    <a href="{{ url_for('hr.add_advance') }}?employee_id={{ employee.id }}" 
+                       class="btn btn-warning btn-sm">
+                        <i class="fas fa-plus"></i> Add Advance
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_advances %}
+                        {% for advance in recent_advances %}
+                            <div class="border-bottom pb-2 mb-2">
+                                <div class="d-flex justify-content-between">
+                                    <strong>{{ advance.advance_number }}</strong>
+                                    <span class="badge bg-{{ 'success' if advance.status == 'paid' else 'warning' if advance.status == 'approved' else 'info' if advance.status == 'active' else 'secondary' }}">
+                                        {{ advance.status.title() }}
+                                    </span>
+                                </div>
+                                <small class="text-muted">{{ advance.advance_date.strftime('%B %d, %Y') }}</small>
+                                <div class="text-warning">
+                                    <strong>₹{{ "%.2f"|format(advance.amount) }}</strong>
+                                </div>
+                                {% if advance.status == 'active' and advance.remaining_amount > 0 %}
+                                    <small class="text-danger">Remaining: ₹{{ "%.2f"|format(advance.remaining_amount) }}</small>
+                                {% endif %}
+                                <a href="{{ url_for('hr.advance_detail', id=advance.id) }}" 
+                                   class="btn btn-outline-primary btn-sm">View Details</a>
+                            </div>
+                        {% endfor %}
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('hr.advance_list') }}?employee={{ employee.id }}" 
+                               class="btn btn-outline-secondary btn-sm">View All Advances</a>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-hand-holding-usd fa-2x mb-2"></i>
+                            <p>No advance records yet</p>
+                            <a href="{{ url_for('hr.add_advance') }}?employee_id={{ employee.id }}" 
+                               class="btn btn-warning btn-sm">Create First Advance</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Summary -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie"></i> Financial Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h4 class="text-success">₹{{ "%.2f"|format(total_advances) }}</h4>
+                                    <small class="text-muted">Total Advances</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h4 class="text-warning">₹{{ "%.2f"|format(remaining_advances) }}</h4>
+                                    <small class="text-muted">Remaining Balance</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h4 class="text-info">{{ recent_salaries|length }}</h4>
+                                    <small class="text-muted">Salary Records</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h4 class="text-primary">{{ recent_advances|length }}</h4>
+                                    <small class="text-muted">Advance Records</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

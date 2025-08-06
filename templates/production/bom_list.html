@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Bill of Materials - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-sitemap"></i> Bill of Materials (BOM)</h1>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('production.bom_tree_view') }}" class="btn btn-outline-success">
+                    <i class="fas fa-sitemap"></i> Tree View
+                </a>
+                <a href="{{ url_for('production.add_bom') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add New BOM
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOMs Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if boms.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Product Code</th>
+                                <th>Version</th>
+                                <th>Output Qty</th>
+                                <th>Status</th>
+                                <th>Created Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bom in boms.items %}
+                            <tr>
+                                <td><strong>{{ bom.product.name }}</strong></td>
+                                <td>{{ bom.product.code }}</td>
+                                <td>{{ bom.version }}</td>
+                                <td><span class="badge bg-info">{{ bom.output_quantity or 1.0 }} units</span></td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if bom.is_active else 'secondary' }}">
+                                        {{ 'Active' if bom.is_active else 'Inactive' }}
+                                    </span>
+                                </td>
+                                <td>{{ bom.created_at.strftime('%m/%d/%Y') if bom.created_at else 'N/A' }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('production.edit_bom', id=bom.id) }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <a href="{{ url_for('production.edit_bom', id=bom.id) }}" class="btn btn-outline-secondary btn-sm">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <a href="{{ url_for('production.delete_bom', id=bom.id) }}" 
+                                           class="btn btn-outline-danger btn-sm" 
+                                           onclick="return confirm('Are you sure you want to delete this BOM? This action cannot be undone.')">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if boms.pages > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        {% if boms.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('production.list_bom', page=boms.prev_num) }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in boms.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != boms.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('production.list_bom', page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if boms.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('production.list_bom', page=boms.next_num) }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-sitemap fa-3x text-muted mb-3"></i>
+                    <h5>No Bill of Materials found</h5>
+                    <p class="text-muted">Start by creating your first BOM for a product.</p>
+                    <a href="{{ url_for('production.add_bom') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create First BOM
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

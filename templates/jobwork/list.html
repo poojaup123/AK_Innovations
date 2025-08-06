@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}Job Works - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-tools"></i> Job Works</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('jobwork.batch_tracking') }}" class="btn btn-info me-2">
+                <i class="fas fa-boxes"></i> Batch Tracking
+            </a>
+            <a href="{{ url_for('jobwork.add_job_work') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Job Work
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <form method="GET" class="d-flex">
+                <select name="status" class="form-select me-2" onchange="this.form.submit()">
+                    <option value="">All Status</option>
+                    <option value="sent" {{ 'selected' if status_filter == 'sent' }}>Sent</option>
+                    <option value="partial_received" {{ 'selected' if status_filter == 'partial_received' }}>Partial Received</option>
+                    <option value="completed" {{ 'selected' if status_filter == 'completed' }}>Completed</option>
+                    <option value="cancelled" {{ 'selected' if status_filter == 'cancelled' }}>Cancelled</option>
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <!-- Job Works Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if jobs.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Job Number</th>
+                                <th>Customer</th>
+                                <th>Sent Date</th>
+                                <th>Expected Return</th>
+                                <th>Quantity Progress</th>
+                                <th>Status</th>
+                                <th>Created By</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for job in jobs.items %}
+                            <tr>
+                                <td><strong>{{ job.job_number }}</strong></td>
+                                <td>{{ job.customer_name }}</td>
+                                <td>{{ job.sent_date.strftime('%m/%d/%Y') if job.sent_date else '-' }}</td>
+                                <td>{{ job.expected_return.strftime('%m/%d/%Y') if job.expected_return else '-' }}</td>
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <small>{{ job.quantity_received }}/{{ job.quantity_sent }} {{ job.item.unit_of_measure }}</small>
+                                        <small class="text-primary fw-bold">{{ job.total_cost_display }}</small>
+                                        {% if job.work_type == 'in_house' and job.department %}
+                                        <small class="text-muted">Dept: {{ job.department.replace('_', ' ').title() }}</small>
+                                        {% endif %}
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-{{ 'success' if job.status == 'completed' else 'danger' if job.status == 'cancelled' else 'warning' if job.status == 'partial_received' else 'primary' }}" 
+                                                 style="width: {{ (job.quantity_received / job.quantity_sent * 100) if job.quantity_sent > 0 and job.status != 'cancelled' else 100 if job.status == 'cancelled' else 0 }}%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="badge bg-{{ 'success' if job.status == 'completed' else 'danger' if job.status == 'cancelled' else 'warning' if job.status == 'partial_received' else 'primary' }}">
+                                            {{ job.status.replace('_', ' ').title() }}
+                                        </span>
+                                        <span class="badge {{ job.work_type_badge_class }} badge-sm">
+                                            {{ job.work_type_display }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>{{ job.creator.username }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('jobwork.detail', id=job.id) }}" class="btn btn-outline-info btn-sm" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('jobwork.edit_job_work', id=job.id) }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ url_for('jobwork.send_job_work', job_id=job.id) }}" class="btn btn-outline-success btn-sm" title="Send via Email/WhatsApp">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </a>
+                                        <a href="{{ url_for('jobwork.generate_challan', job_id=job.id) }}" class="btn btn-outline-info btn-sm" title="Generate Job Work Challan" target="_blank">
+                                            <i class="fas fa-file-invoice"></i>
+                                        </a>
+                                        <a href="{{ url_for('documents.upload_document', transaction_type='job_work', transaction_id=job.id) }}" class="btn btn-outline-warning btn-sm" title="Upload Documents">
+                                            <i class="fas fa-paperclip"></i>
+                                        </a>
+                                        <!-- Delete/Cancel Actions -->
+                                        {% if job.status in ['sent', 'partial_received'] %}
+                                        <button type="button" class="btn btn-outline-warning btn-sm" title="Cancel Job Work" 
+                                                onclick="cancelJobWork({{ job.id }}, '{{ job.job_number }}')">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                        {% endif %}
+                                        {% if job.status != 'cancelled' %}
+                                        <button type="button" class="btn btn-outline-danger btn-sm" title="Delete Job Work" 
+                                                onclick="if(confirm('Are you sure you want to delete job work {{ job.job_number }}? This action cannot be undone.')) { window.location.href='{{ url_for('jobwork.delete_job_work', job_id=job.id) }}'; }">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Cancelled Job</span>
+                                        {% endif %}
+                                        {% if job.work_type in ['outsourced', 'multi_process', 'unified'] and job.has_pending_quantity %}
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}" class="btn btn-outline-success btn-sm" title="Quick Receive Materials">
+                                                <i class="fas fa-truck"></i> Quick Receive
+                                            </a>
+                                            <button class="btn btn-outline-success btn-sm dropdown-toggle dropdown-toggle-split" type="button" data-bs-toggle="dropdown">
+                                                <span class="visually-hidden">Toggle Dropdown</span>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}">
+                                                    <i class="fas fa-bolt me-2"></i>Quick Receive
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="{{ url_for('grn.create_grn', job_work_id=job.id) }}">
+                                                    <i class="fas fa-receipt me-2"></i>Create Full GRN
+                                                </a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item" href="{{ url_for('grn.dashboard') }}">
+                                                    <i class="fas fa-tachometer-alt me-2"></i>GRN Dashboard
+                                                </a></li>
+                                            </ul>
+                                        </div>
+                                        {% elif job.work_type in ['outsourced', 'multi_process', 'unified'] and not job.has_pending_quantity %}
+                                        <span class="badge bg-success">All Materials Received</span>
+                                        {% endif %}
+                                        {% if job.work_type == 'in_house' and job.status != 'completed' %}
+                                        <a href="{{ url_for('jobwork.update_quantity', id=job.id) }}" class="btn btn-outline-success btn-sm" title="Update Quantity">
+                                            <i class="fas fa-plus-circle"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if jobs.pages > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        {% if jobs.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('jobwork.list_job_works', page=jobs.prev_num, status=status_filter) }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in jobs.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != jobs.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('jobwork.list_job_works', page=page_num, status=status_filter) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if jobs.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('jobwork.list_job_works', page=jobs.next_num, status=status_filter) }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-tools fa-3x text-muted mb-3"></i>
+                    <h5>No job works found</h5>
+                    <p class="text-muted">Start by creating your first job work order.</p>
+                    <a href="{{ url_for('jobwork.add_job_work') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create First Job Work
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Job Work Modal -->
+<div class="modal fade" id="cancelJobWorkModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-ban me-2"></i>Cancel Job Work</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel job work <strong id="cancelJobNumber"></strong>?</p>
+                <p class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>This will mark the job as cancelled but preserve the record for audit purposes.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-warning" id="confirmCancelBtn">Cancel Job Work</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+let currentJobId = null;
+
+function cancelJobWork(jobId, jobNumber) {
+    // Clear any existing modals first
+    const existingModals = document.querySelectorAll('.modal.show');
+    existingModals.forEach(modal => {
+        bootstrap.Modal.getInstance(modal)?.hide();
+    });
+    
+    currentJobId = jobId;
+    document.getElementById('cancelJobNumber').textContent = jobNumber;
+    setTimeout(() => {
+        new bootstrap.Modal(document.getElementById('cancelJobWorkModal')).show();
+    }, 100);
+}
+
+
+
+// Cancel job work
+document.getElementById('confirmCancelBtn').addEventListener('click', function() {
+    if (currentJobId) {
+        fetch(`/jobwork/cancel/${currentJobId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error cancelling job work: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error cancelling job work. Please try again.');
+        });
+    }
+});
+
+
+
+// Clear any stuck modals on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Hide all modal backdrops and modals
+    const modals = document.querySelectorAll('.modal');
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    
+    modals.forEach(modal => {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        modal.removeAttribute('aria-modal');
+        modal.removeAttribute('role');
+    });
+    
+    backdrops.forEach(backdrop => {
+        backdrop.remove();
+    });
+    
+    // Reset body classes
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+});
+
+// Add escape key handler to close modals
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const openModals = document.querySelectorAll('.modal.show');
+        openModals.forEach(modal => {
+            const modalInstance = bootstrap.Modal.getInstance(modal);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

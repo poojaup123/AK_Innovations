@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-search me-2"></i>Material Inspection Dashboard</h2>
+                <div>
+                    <a href="{{ url_for('material_inspection.log_inspection') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Log Inspection
+                    </a>
+                    <a href="{{ url_for('material_inspection.list_inspections') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-list me-1"></i>All Inspections
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Update Alert -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-warning border-start border-warning border-4" role="alert">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Updated Workflow Notice</h5>
+                <p class="mb-2">
+                    <strong>Material inspection is now integrated directly into the GRN (Goods Receipt) system.</strong>
+                    This streamlined approach eliminates the need for separate inspection steps.
+                </p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-arrow-right text-success me-1"></i>New Streamlined Process:</h6>
+                        <ol class="mb-0">
+                            <li>Materials arrive → <strong>GRN Quick Receive</strong> (includes inspection)</li>
+                            <li>Inspection results recorded during receipt</li>
+                            <li>Inventory automatically updated</li>
+                        </ol>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('grn.dashboard') }}" class="btn btn-success">
+                                <i class="fas fa-truck me-1"></i>Use GRN System Instead
+                            </a>
+                            <a href="{{ url_for('purchase.list_purchase_orders') }}" class="btn btn-outline-info">
+                                <i class="fas fa-shopping-cart me-1"></i>View Purchase Orders
+                            </a>
+                            <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-outline-info">
+                                <i class="fas fa-tools me-1"></i>View Job Works
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legacy Information Alert -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Legacy System:</strong> This page shows historical inspections. For new material receipts, 
+                use the GRN system which includes automatic inspection during receipt process.
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter and Search Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filter & Search Inspections</h6>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('material_inspection.dashboard') }}" id="filterForm">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Search PO/Job Number</label>
+                                <input type="text" class="form-control" name="search" value="{{ request.args.get('search', '') }}" 
+                                       placeholder="PO-2025-0001 or JOB-2025-0001">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Customer/Supplier</label>
+                                <input type="text" class="form-control" name="customer" value="{{ request.args.get('customer', '') }}" 
+                                       placeholder="Search customer or supplier">
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">Status</label>
+                                <select name="status" class="form-select">
+                                    <option value="">All Status</option>
+                                    <option value="pending" {{ 'selected' if request.args.get('status') == 'pending' }}>Pending</option>
+                                    <option value="partial" {{ 'selected' if request.args.get('status') == 'partial' }}>Partial</option>
+                                    <option value="completed" {{ 'selected' if request.args.get('status') == 'completed' }}>Completed</option>
+                                    <option value="sent" {{ 'selected' if request.args.get('status') == 'sent' }}>Sent</option>
+                                    <option value="partial_received" {{ 'selected' if request.args.get('status') == 'partial_received' }}>Partial Received</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">Type</label>
+                                <select name="type" class="form-select">
+                                    <option value="">All Types</option>
+                                    <option value="po" {{ 'selected' if request.args.get('type') == 'po' }}>Purchase Orders</option>
+                                    <option value="job" {{ 'selected' if request.args.get('type') == 'job' }}>Job Works</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-search"></i> Filter
+                                    </button>
+                                    <a href="{{ url_for('material_inspection.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-times"></i> Clear
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.pending_inspections }}</h4>
+                            <p class="mb-0">Pending Inspections</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.this_month_inspections }}</h4>
+                            <p class="mb-0">This Month</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-calendar fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.damage_rate }}%</h4>
+                            <p class="mb-0">Damage Rate</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.acceptance_rate }}%</h4>
+                            <p class="mb-0">Acceptance Rate</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Pending Purchase Order Inspections -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5><i class="fas fa-file-invoice text-primary me-2"></i>Available PO Inspections</h5>
+                        <small class="text-muted">All Purchase Orders with items that may need inspection</small>
+                    </div>
+                    <span class="badge bg-primary">{{ pending_po_inspections|length }} found</span>
+                </div>
+                <div class="card-body">
+                    {% if pending_po_inspections %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>PO Number</th>
+                                        <th>Supplier</th>
+                                        <th>Status</th>
+                                        <th>Items</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for po in pending_po_inspections %}
+                                    <tr>
+                                        <td><strong>{{ po.po_number }}</strong></td>
+                                        <td>{{ po.supplier.name }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if po.status == 'closed' else 'warning' if po.status == 'partial' else 'danger' if po.status == 'cancelled' else 'secondary' if po.status == 'draft' else 'primary' }}">
+                                                {{ po.status.title() }}
+                                            </span>
+                                        </td>
+                                        <td>{{ po.items|length }} items</td>
+                                        <td>
+                                            {% if po.status in ['draft'] %}
+                                                <span class="text-muted small">Send PO first</span>
+                                            {% elif po.inspection_status == 'completed' and po.status != 'partial' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% else %}
+                                                <a href="{{ url_for('material_inspection.log_inspection') }}?po_id={{ po.id }}" 
+                                                   class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-search me-1"></i>{% if po.status == 'partial' and po.inspection_status == 'completed' %}Inspect More{% else %}Inspect{% endif %}
+                                                </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-3">No Purchase Orders with items found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Job Work Inspections -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5><i class="fas fa-tools text-success me-2"></i>Available Job Work Inspections</h5>
+                        <small class="text-muted">All outsourced Job Works that may need inspection</small>
+                    </div>
+                    <span class="badge bg-success">{{ pending_job_inspections|length }} found</span>
+                </div>
+                <div class="card-body">
+                    {% if pending_job_inspections %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Job Number</th>
+                                        <th>Customer</th>
+                                        <th>Status</th>
+                                        <th>Item</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for job in pending_job_inspections %}
+                                    <tr>
+                                        <td><strong>{{ job.job_number }}</strong></td>
+                                        <td>{{ job.customer_name }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' if job.status == 'sent' else 'secondary' }}">
+                                                {{ job.status.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>{{ job.item.name }}</td>
+                                        <td>
+                                            {% if job.inspection_status == 'completed' and job.status != 'partial_received' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% else %}
+                                                <a href="{{ url_for('material_inspection.log_inspection') }}?job_id={{ job.id }}" 
+                                                   class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-search me-1"></i>{% if job.status == 'partial_received' and job.inspection_status == 'completed' %}Inspect More{% else %}Inspect{% endif %}
+                                                </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-3">No outsourced or multi-process job works pending inspection.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- In-House Daily Entries Inspection Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-day me-2"></i>In-House Daily Entries Requiring Inspection</h5>
+                    <small>Daily work entries from in-house job works that need quality inspection</small>
+                </div>
+                <div class="card-body">
+                    {% if pending_daily_entries %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Job Number</th>
+                                        <th>Worker</th>
+                                        <th>Work Date</th>
+                                        <th>Completed Qty</th>
+                                        <th>Scrap Qty</th>
+                                        <th>Quality Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for entry in pending_daily_entries %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ entry.job_work.job_number }}</strong><br>
+                                            <small class="text-muted">{{ entry.job_work.item.name }}</small>
+                                        </td>
+                                        <td>{{ entry.worker_name }}</td>
+                                        <td>{{ entry.work_date.strftime('%d %b %Y') }}</td>
+                                        <td>{{ entry.quantity_completed }} {{ entry.job_work.item.unit_of_measure }}</td>
+                                        <td>{{ entry.scrap_quantity or 0 }} {{ entry.job_work.item.unit_of_measure }}</td>
+                                        <td>
+                                            <span class="badge {{ entry.quality_badge_class }}">
+                                                {{ entry.quality_status.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('material_inspection.inspect_daily_entry', entry_id=entry.id) }}" 
+                                               class="btn btn-sm btn-success">
+                                                <i class="fas fa-search"></i> Inspect
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <p class="text-muted">No in-house daily entries require inspection.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Inspections -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-history me-2"></i>Recent Inspections</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_inspections %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Inspection #</th>
+                                        <th>Source</th>
+                                        <th>Item</th>
+                                        <th>Received</th>
+                                        <th>Passed</th>
+                                        <th>Damaged</th>
+                                        <th>Acceptance Rate</th>
+                                        <th>Inspector</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for inspection in recent_inspections %}
+                                    <tr>
+                                        <td><strong>{{ inspection.inspection_number }}</strong></td>
+                                        <td>
+                                            {% if inspection.purchase_order %}
+                                                <span class="badge bg-primary">PO: {{ inspection.purchase_order.po_number }}</span>
+                                            {% elif inspection.job_work %}
+                                                <span class="badge bg-success">JOB: {{ inspection.job_work.job_number }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ inspection.item.name }}</td>
+                                        <td>{{ "%.2f"|format(inspection.received_quantity) }}</td>
+                                        <td class="text-success">{{ "%.2f"|format(inspection.passed_quantity) }}</td>
+                                        <td class="text-danger">{{ "%.2f"|format(inspection.damaged_quantity) }}</td>
+                                        <td>
+                                            <span class="badge {% if inspection.acceptance_rate >= 95 %}bg-success{% elif inspection.acceptance_rate >= 85 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                {{ "%.1f"|format(inspection.acceptance_rate) }}%
+                                            </span>
+                                        </td>
+                                        <td>{{ inspection.inspector.username }}</td>
+                                        <td>{{ inspection.inspection_date.strftime('%m/%d/%Y') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5>No Inspections Recorded</h5>
+                            <p class="text-muted">Start logging material inspections to track incoming quality.</p>
+                            <a href="{{ url_for('material_inspection.log_inspection') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Log First Inspection
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

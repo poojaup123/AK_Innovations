@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-exclamation-triangle me-2"></i>Quality Issue Details</h2>
+                <div>
+                    <a href="{{ url_for('quality.edit_issue', id=issue.id) }}" class="btn btn-warning">
+                        <i class="fas fa-edit me-1"></i>Edit Issue
+                    </a>
+                    <a href="{{ url_for('quality.list_issues') }}" class="btn btn-secondary">
+                        <i class="fas fa-list me-1"></i>All Issues
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Issue Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Issue Number:</strong>
+                            <p>{{ issue.issue_number }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Production Order:</strong>
+                            <p>
+                                {% if issue.production %}
+                                    <a href="{{ url_for('production.view', id=issue.production.id) }}">
+                                        {{ issue.production.production_number }}
+                                    </a>
+                                {% else %}
+                                    Not linked to production
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Item:</strong>
+                            <p>{{ issue.item.code }} - {{ issue.item.name }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Issue Type:</strong>
+                            <p><span class="badge bg-info fs-6">{{ issue.issue_type.title() }}</span></p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>Severity:</strong>
+                            <p>
+                                <span class="badge fs-6
+                                    {% if issue.severity == 'critical' %}bg-danger
+                                    {% elif issue.severity == 'high' %}bg-warning
+                                    {% elif issue.severity == 'medium' %}bg-primary
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ issue.severity.title() }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Quantity Affected:</strong>
+                            <p>{{ "%.2f"|format(issue.quantity_affected) }} {{ issue.item.unit_of_measure }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Cost Impact:</strong>
+                            <p>₹{{ "%.2f"|format(issue.cost_impact) }}</p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>Description:</strong>
+                            <p class="bg-light p-3 rounded">{{ issue.description }}</p>
+                        </div>
+                    </div>
+
+                    {% if issue.root_cause %}
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>Root Cause Analysis:</strong>
+                            <p class="bg-light p-3 rounded">{{ issue.root_cause }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="row">
+                        {% if issue.corrective_action %}
+                        <div class="col-md-6">
+                            <strong>Corrective Action:</strong>
+                            <p class="bg-light p-3 rounded">{{ issue.corrective_action }}</p>
+                        </div>
+                        {% endif %}
+                        {% if issue.preventive_action %}
+                        <div class="col-md-6">
+                            <strong>Preventive Action:</strong>
+                            <p class="bg-light p-3 rounded">{{ issue.preventive_action }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Issue Status & Assignment</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Current Status:</strong>
+                        <p>
+                            <span class="badge fs-6
+                                {% if issue.status == 'open' %}bg-warning
+                                {% elif issue.status == 'investigating' %}bg-info
+                                {% elif issue.status == 'resolved' %}bg-success
+                                {% else %}bg-secondary{% endif %}">
+                                {{ issue.status.title() }}
+                            </span>
+                        </p>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong>Detected By:</strong>
+                        <p>{{ issue.detector.username }}</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong>Assigned To:</strong>
+                        <p>
+                            {% if issue.assignee %}
+                                {{ issue.assignee.username }}
+                            {% else %}
+                                <span class="text-muted">Unassigned</span>
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong>Detection Date:</strong>
+                        <p>{{ issue.detected_date.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                    </div>
+
+                    {% if issue.resolved_date %}
+                    <div class="mb-3">
+                        <strong>Resolution Date:</strong>
+                        <p>{{ issue.resolved_date.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <strong>Created:</strong>
+                        <p>{{ issue.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                    </div>
+                </div>
+            </div>
+
+            {% if issue.production %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5>Related Production</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Production Number:</strong> {{ issue.production.production_number }}</p>
+                    <p><strong>Item:</strong> {{ issue.production.produced_item.name }}</p>
+                    <p><strong>Planned Quantity:</strong> {{ "%.2f"|format(issue.production.quantity_planned) }}</p>
+                    <p><strong>Produced Quantity:</strong> {{ "%.2f"|format(issue.production.quantity_produced) }}</p>
+                    <p><strong>Status:</strong> <span class="badge bg-info">{{ issue.production.status.title() }}</span></p>
+                    
+                    <div class="mt-3">
+                        <a href="{{ url_for('production.view', id=issue.production.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-external-link-alt me-1"></i>View Production
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

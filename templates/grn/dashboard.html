@@ -1,0 +1,537 @@
+{% extends "base.html" %}
+
+{% block title %}GRN Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' if category == 'error' else 'warning' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-receipt me-2"></i>GRN Dashboard</h2>
+                <div>
+                    <div class="dropdown">
+                        <button class="btn btn-primary me-2 dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-plus me-1"></i>Create GRN
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('jobwork.list_job_works') }}">
+                                <i class="fas fa-tools me-2"></i>From Job Work
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('purchase.list_purchase_orders') }}">
+                                <i class="fas fa-shopping-cart me-2"></i>From Purchase Order
+                            </a></li>
+                        </ul>
+                    </div>
+                    <a href="{{ url_for('grn_workflow.dashboard') }}" class="btn btn-info me-2">
+                        <i class="fas fa-stream me-1"></i>GRN Workflow
+                    </a>
+                    <a href="{{ url_for('grn.list_grns') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-list me-1"></i>All GRNs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filter GRNs</h6>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('grn.dashboard') }}">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Search GRN/Job Number</label>
+                                <input type="text" class="form-control" name="search" value="{{ request.args.get('search', '') }}" 
+                                       placeholder="GRN-2025-0001 or JOB-2025-0001">
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">GRN Status</label>
+                                <select name="status" class="form-select">
+                                    <option value="">All Status</option>
+                                    <option value="draft" {{ 'selected' if request.args.get('status') == 'draft' }}>Draft</option>
+                                    <option value="received" {{ 'selected' if request.args.get('status') == 'received' }}>Received</option>
+                                    <option value="partial" {{ 'selected' if request.args.get('status') == 'partial' }}>Partial</option>
+                                    <option value="inspected" {{ 'selected' if request.args.get('status') == 'inspected' }}>Inspected</option>
+                                    <option value="completed" {{ 'selected' if request.args.get('status') == 'completed' }}>Completed</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">Source Type</label>
+                                <select name="source_type" class="form-select">
+                                    <option value="">All Sources</option>
+                                    <option value="job_work" {{ 'selected' if request.args.get('source_type') == 'job_work' }}>Job Work</option>
+                                    <option value="purchase_order" {{ 'selected' if request.args.get('source_type') == 'purchase_order' }}>Purchase Order</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">From Date</label>
+                                <input type="date" class="form-control" name="date_from" value="{{ request.args.get('date_from', '') }}">
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">To Date</label>
+                                <input type="date" class="form-control" name="date_to" value="{{ request.args.get('date_to', '') }}">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-search"></i> Filter
+                                    </button>
+                                    <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-times"></i> Clear
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.total_grns }}</h4>
+                            <p class="mb-0">Total GRNs</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-receipt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.pending_inspection }}</h4>
+                            <p class="mb-0">Pending Inspection</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.completed_today }}</h4>
+                            <p class="mb-0">Completed Today</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ monthly_grns }}</h4>
+                            <p class="mb-0">This Month</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-calendar fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Quick Access -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-stream me-2"></i>GRN Workflow Center</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <p class="mb-2">Manage the complete Purchase → GRN → Invoice → Payment workflow</p>
+                            <small class="text-muted">Track material receipt, create vendor invoices, and process payments in one streamlined workflow</small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="{{ url_for('grn_workflow.dashboard') }}" class="btn btn-info">
+                                <i class="fas fa-external-link-alt me-1"></i>Open GRN Workflow Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parent-Child GRN Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Parent-Child GRN Structure</h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow">
+                            <a class="dropdown-item" href="{{ url_for('grn.list_grns') }}">View All GRNs</a>
+                            <a class="dropdown-item" href="#">Export Report</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if parent_child_data %}
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="parentChildTable">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th><i class="fas fa-expand-arrows-alt me-1"></i></th>
+                                        <th>Order/Job Number</th>
+                                        <th>Date</th>
+                                        <th>Vendor/Customer</th>
+                                        <th>Status</th>
+                                        <th>Total Qty</th>
+                                        <th>GRN Count</th>
+                                        <th>Item Details</th>
+                                        <th>Quantities</th>
+                                        <th>GRN Status</th>
+                                        <th>Inspection</th>
+                                        <th>Inventory</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for parent in parent_child_data %}
+                                    <!-- Parent Row -->
+                                    <tr class="parent-row" style="cursor: pointer;" data-parent-id="{{ parent.parent_id }}">
+                                        <td>
+                                            <i class="fas fa-chevron-right expand-icon" style="transition: transform 0.3s;"></i>
+                                        </td>
+                                        <td>
+                                            <strong class="text-primary">{{ parent.parent_doc }}</strong>
+                                            <br><small class="text-muted">{{ parent.type }}</small>
+                                        </td>
+                                        <td>{{ parent.date.strftime('%d/%m/%Y') }}</td>
+                                        <td>{{ parent.vendor_customer }}</td>
+                                        <td>
+                                            {% if parent.status == 'Completed' %}
+                                            <span class="badge bg-success">{{ parent.status }}</span>
+                                            {% elif parent.status == 'Partial' %}
+                                            <span class="badge bg-warning">{{ parent.status }}</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">{{ parent.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ parent.total_qty }}</td>
+                                        <td>{{ parent.grn_count }} GRNs</td>
+                                        <td colspan="6" class="text-muted text-center">
+                                            <small><i class="fas fa-chevron-down"></i> Click to expand GRN details</small>
+                                        </td>
+                                    </tr>
+                                    
+                                    <!-- Child GRN Rows (Initially Hidden) -->
+                                    {% for grn in parent.child_grns %}
+                                    <tr class="child-row" data-parent-id="{{ parent.parent_id }}" style="display: none; background-color: #f8f9fc;">
+                                        <td></td>
+                                        <td style="padding-left: 30px;">
+                                            <strong>{{ grn.grn_number }}</strong>
+                                            <br><small class="text-muted">{{ grn.source_type }}</small>
+                                        </td>
+                                        <td>{{ grn.grn_date.strftime('%d/%m/%Y') }}</td>
+                                        <td>
+                                            <small class="text-muted">{{ grn.source_document }}</small>
+                                        </td>
+                                        <td>
+                                            {% if grn.status == 'Completed' %}
+                                            <span class="badge bg-success text-white">{{ grn.status }}</span>
+                                            {% elif grn.status == 'Received' %}
+                                            <span class="badge bg-info text-white">{{ grn.status }}</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary text-white">{{ grn.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>-</td>
+                                        <td>-</td>
+                                        <td>
+                                            <small class="text-muted">{{ grn.item_details }}</small>
+                                        </td>
+                                        <td>
+                                            <small>
+                                                <span class="text-success">Rec: {{ grn.received_qty }}</span>
+                                                {% if grn.scrap_qty > 0 %}
+                                                <br><span class="text-danger">Rej: {{ grn.scrap_qty }}</span>
+                                                {% endif %}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            {% if grn.status == 'Completed' %}
+                                            <span class="badge bg-success text-white">{{ grn.status }}</span>
+                                            {% elif grn.status == 'Received' %}
+                                            <span class="badge bg-info text-white">{{ grn.status }}</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary text-white">{{ grn.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if grn.inspection_status == 'Completed' %}
+                                            <span class="badge bg-success text-white">{{ grn.inspection_status }}</span>
+                                            {% elif grn.inspection_status == 'Pending' %}
+                                            <span class="badge bg-warning text-dark">{{ grn.inspection_status }}</span>
+                                            {% else %}
+                                            <span class="badge bg-info text-white">{{ grn.inspection_status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if grn.inventory_updated %}
+                                            <span class="badge bg-success text-white"><i class="fas fa-check"></i> Yes</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary text-white"><i class="fas fa-times"></i> No</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('grn.detail', grn_id=grn.grn_id) }}" class="btn btn-outline-primary btn-sm" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('grn.view_grn_batches', grn_id=grn.grn_id) }}" class="btn btn-outline-info btn-sm" title="View Batches">
+                                                    <i class="fas fa-layer-group"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No GRNs Found</h5>
+                            <p class="text-muted">GRNs will appear here once you create them from Purchase Orders or Job Works.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for Parent-Child Table Interaction -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Parent-Child Table Toggle
+        const parentRows = document.querySelectorAll('.parent-row');
+        
+        parentRows.forEach(row => {
+            row.addEventListener('click', function() {
+                const parentId = this.getAttribute('data-parent-id');
+                const childRows = document.querySelectorAll(`.child-row[data-parent-id="${parentId}"]`);
+                const expandIcon = this.querySelector('.expand-icon');
+                
+                const isExpanded = childRows[0] && childRows[0].style.display !== 'none';
+                
+                childRows.forEach(childRow => {
+                    childRow.style.display = isExpanded ? 'none' : 'table-row';
+                });
+                
+                // Rotate the expand icon
+                if (expandIcon) {
+                    expandIcon.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(90deg)';
+                }
+            });
+        });
+    });
+    </script>
+
+    <div class="row">
+        <!-- Summary Information -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-chart-pie me-2"></i>GRN Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-file-alt me-2"></i>By Document Type</h6>
+                            <ul class="list-unstyled">
+                                <li><span class="badge bg-success me-2">PO</span> Purchase Orders: <strong>{{ parent_child_data|selectattr('type', 'equalto', 'Purchase Order')|list|length }}</strong></li>
+                                <li><span class="badge bg-info me-2">JW</span> Job Works: <strong>{{ parent_child_data|selectattr('type', 'equalto', 'Job Work')|list|length }}</strong></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-chart-bar me-2"></i>By Status</h6>
+                            <ul class="list-unstyled">
+                                <li><span class="badge bg-success me-2">Completed</span> {{ parent_child_data|selectattr('status', 'equalto', 'Completed')|list|length }}</li>
+                                <li><span class="badge bg-warning me-2">Partial</span> {{ parent_child_data|selectattr('status', 'equalto', 'Partial')|list|length }}</li>
+                                <li><span class="badge bg-secondary me-2">Pending</span> {{ parent_child_data|selectattr('status', 'equalto', 'Pending')|list|length }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Material Receipt -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-truck me-2"></i>Pending Material Receipt</h5>
+                    <span class="badge bg-warning">{{ (pending_job_works|length + pending_purchase_orders|length) }} items</span>
+                </div>
+                <div class="card-body">
+                    {% if pending_job_works or pending_purchase_orders %}
+                        <div class="list-group list-group-flush">
+                            <!-- Job Works -->
+                            {% for job in pending_job_works %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <span class="badge bg-info me-2">Job Work</span>
+                                        <h6 class="mb-1">{{ job.job_number }}</h6>
+                                        <p class="mb-1 text-muted small">{{ job.item.name }}</p>
+                                        <p class="mb-1 small">
+                                            <span class="text-muted">Pending Receipt:</span> 
+                                            <strong>{{ job.pending_receipt_display }}</strong>
+                                        </p>
+                                        <span class="badge bg-{{ 'warning' if job.status == 'partial_received' else 'primary' }}">
+                                            {{ job.status.replace('_', ' ').title() }}
+                                        </span>
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            Action
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}">
+                                                    <i class="fas fa-plus me-2"></i>Quick Receive
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('grn.create_grn', job_work_id=job.id) }}">
+                                                    <i class="fas fa-receipt me-2"></i>Create Full GRN
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('jobwork.detail', id=job.id) }}">
+                                                    <i class="fas fa-eye me-2"></i>View Job Work
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            <!-- Purchase Orders -->
+                            {% for po in pending_purchase_orders %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <span class="badge bg-success me-2">Purchase Order</span>
+                                        <h6 class="mb-1">{{ po.po_number }}</h6>
+                                        <p class="mb-1 text-muted small">{{ po.supplier.name }}</p>
+                                        
+                                        <!-- Show pending quantities for items -->
+                                        {% for po_item in po.items %}
+                                        {% if po_item.pending_quantity > 0 %}
+                                        <p class="mb-1 small">
+                                            <span class="text-muted">{{ po_item.item.name }}:</span> 
+                                            <strong>{{ po_item.pending_quantity }} {{ po_item.uom or po_item.item.unit_of_measure }}</strong>
+                                        </p>
+                                        {% endif %}
+                                        {% endfor %}
+                                        
+                                        <span class="badge bg-{{ 'warning' if po.status == 'partial' else 'success' }}">
+                                            {{ po.status.title() }}
+                                        </span>
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            Action
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            {% if po.items|length == 1 %}
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('grn.quick_receive_po', purchase_order_id=po.id, item_id=po.items[0].item_id) }}">
+                                                    <i class="fas fa-plus me-2"></i>Quick Receive
+                                                </a>
+                                            </li>
+                                            {% else %}
+                                            <li>
+                                                <h6 class="dropdown-header">Quick Receive:</h6>
+                                            </li>
+                                            {% for item in po.items[:3] %}
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('grn.quick_receive_po', purchase_order_id=po.id, item_id=item.item_id) }}">
+                                                    <i class="fas fa-plus me-2"></i>{{ item.item.name[:15] }}{{ '...' if item.item.name|length > 15 else '' }}
+                                                </a>
+                                            </li>
+                                            {% endfor %}
+                                            {% if po.items|length > 3 %}
+                                            <li>
+                                                <span class="dropdown-item-text small text-muted">{{ po.items|length - 3 }} more items...</span>
+                                            </li>
+                                            {% endif %}
+                                            {% endif %}
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('grn.create_grn_for_po', purchase_order_id=po.id) }}">
+                                                    <i class="fas fa-receipt me-2"></i>Create Full GRN
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('purchase.edit_purchase_order', id=po.id) }}">
+                                                    <i class="fas fa-eye me-2"></i>View Purchase Order
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                            <p class="mb-0 text-muted">All items are up to date!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

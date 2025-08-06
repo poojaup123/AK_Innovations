@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-exclamation-triangle me-2"></i>{{ title }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.issue_number.label(class="form-label") }}
+                                    {{ form.issue_number(class="form-control", readonly=true) }}
+                                    {% for error in form.issue_number.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.production_id.label(class="form-label") }}
+                                    {{ form.production_id(class="form-select") }}
+                                    {% for error in form.production_id.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.item_id.label(class="form-label") }}
+                                    {{ form.item_id(class="form-select") }}
+                                    {% for error in form.item_id.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.issue_type.label(class="form-label") }}
+                                    {{ form.issue_type(class="form-select") }}
+                                    {% for error in form.issue_type.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.severity.label(class="form-label") }}
+                                    {{ form.severity(class="form-select") }}
+                                    {% for error in form.severity.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.quantity_affected.label(class="form-label") }}
+                                    {{ form.quantity_affected(class="form-control", step="0.01") }}
+                                    {% for error in form.quantity_affected.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.cost_impact.label(class="form-label") }}
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        {{ form.cost_impact(class="form-control", step="0.01") }}
+                                    </div>
+                                    {% for error in form.cost_impact.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows="3", placeholder="Describe the quality issue in detail...") }}
+                            {% for error in form.description.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.root_cause.label(class="form-label") }}
+                            {{ form.root_cause(class="form-control", rows="3", placeholder="Analyze the root cause of this issue...") }}
+                            {% for error in form.root_cause.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.corrective_action.label(class="form-label") }}
+                                    {{ form.corrective_action(class="form-control", rows="3", placeholder="What immediate actions were taken?") }}
+                                    {% for error in form.corrective_action.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.preventive_action.label(class="form-label") }}
+                                    {{ form.preventive_action(class="form-control", rows="3", placeholder="How can we prevent this in the future?") }}
+                                    {% for error in form.preventive_action.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.status.label(class="form-label") }}
+                                    {{ form.status(class="form-select") }}
+                                    {% for error in form.status.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.assigned_to.label(class="form-label") }}
+                                    {{ form.assigned_to(class="form-select") }}
+                                    {% for error in form.assigned_to.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('quality.list_issues') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Issues
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Save Issue
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

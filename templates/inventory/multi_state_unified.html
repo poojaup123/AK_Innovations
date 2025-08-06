@@ -1,0 +1,419 @@
+{% extends "base.html" %}
+
+{% block title %}Unified Multi-State Inventory - AK Innovations Factory Management{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="page-title"><i class="fas fa-layer-group"></i> Unified Multi-State Inventory</h1>
+            <p class="page-subtitle">Track inventory across Raw, WIP, Finished, and Scrap states</p>
+        </div>
+        <div>
+            <a href="{{ url_for('inventory.dashboard') }}" class="btn btn-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <a href="{{ url_for('inventory.batch_wise_view') }}" class="btn btn-info me-2">
+                <i class="fas fa-barcode"></i> Batch-wise View
+            </a>
+            <a href="{{ url_for('inventory.export_unified_inventory') }}" class="btn btn-success">
+                <i class="fas fa-file-excel"></i> Export to Excel
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Items</h5>
+                    <h3>{{ summary.total_items }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Raw Material</h5>
+                    <h3>{{ "%.1f"|format(summary.total_raw) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">WIP</h5>
+                    <h3>{{ "%.1f"|format(summary.total_wip) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Finished</h5>
+                    <h3>{{ "%.1f"|format(summary.total_finished) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Scrap</h5>
+                    <h3>{{ "%.1f"|format(summary.total_scrap) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <div class="card bg-dark text-white">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Available</h5>
+                    <h3>{{ "%.1f"|format(summary.total_available) }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parent-Child Multi-State Inventory Table -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-sitemap"></i> Parent-Child Inventory Structure
+                </h5>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="expandAllItems()">
+                        <i class="fas fa-plus-square"></i> Expand All
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="collapseAllItems()">
+                        <i class="fas fa-minus-square"></i> Collapse All
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="parentChildTable">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th width="40px"></th>
+                            <th>Item/Batch Code</th>
+                            <th>Item Name</th>
+                            <th>Type</th>
+                            <th>UOM</th>
+                            <th class="text-center">Raw</th>
+                            <th class="text-center">WIP</th>
+                            <th class="text-center">Finished</th>
+                            <th class="text-center">Scrap</th>
+                            <th class="text-center">Total</th>
+                            <th class="text-center">Available</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in inventory_data %}
+                        <!-- Parent Row: Item Summary -->
+                        <tr class="parent-row" data-item-code="{{ item.item_code }}" style="cursor: pointer;">
+                            <td class="text-center">
+                                <i class="fas fa-chevron-right expand-icon" data-item="{{ item.item_code }}"></i>
+                            </td>
+                            <td><strong>{{ item.item_code }}</strong></td>
+                            <td><strong>{{ item.item_name }}</strong></td>
+                            <td>
+                                <span class="badge bg-secondary">{{ item.item_type }}</span>
+                            </td>
+                            <td><strong>{{ item.uom }}</strong></td>
+                            <td class="text-center">
+                                <span class="badge bg-primary fw-bold">{{ "%.1f"|format(item.raw) }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-warning fw-bold">{{ "%.1f"|format(item.wip) }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-success fw-bold">{{ "%.1f"|format(item.finished) }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-danger fw-bold">{{ "%.1f"|format(item.scrap) }}</span>
+                            </td>
+                            <td class="text-center">
+                                <strong class="fs-6">{{ "%.1f"|format(item.total) }}</strong>
+                            </td>
+                            <td class="text-center">
+                                <strong class="text-primary fs-6">{{ "%.1f"|format(item.available) }}</strong>
+                            </td>
+                            <td class="text-center">
+                                {% if item.status == 'Out of Stock' %}
+                                    <span class="badge bg-danger">{{ item.status }}</span>
+                                {% elif item.status == 'Low Stock' %}
+                                    <span class="badge bg-warning">{{ item.status }}</span>
+                                {% else %}
+                                    <span class="badge bg-success">{{ item.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('inventory.list_items') }}#{{ item.item_code }}" 
+                                       class="btn btn-sm btn-outline-primary" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('batch_tracking.dashboard') }}?item={{ item.item_code }}" 
+                                       class="btn btn-sm btn-outline-info" title="View Batches">
+                                        <i class="fas fa-barcode"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Child Row: Batch Details (Initially Hidden) -->
+                        <tr class="child-row" data-parent="{{ item.item_code }}" style="display: none;">
+                            <td colspan="13" class="p-0">
+                                <div class="batch-details-container bg-light">
+                                    <div class="p-3">
+                                        <h6 class="text-muted mb-3">
+                                            <i class="fas fa-layer-group"></i> Batch Details for {{ item.item_code }}
+                                        </h6>
+                                        <div id="batch-content-{{ item.item_code }}" class="batch-content">
+                                            <div class="text-center py-3">
+                                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                                <p class="mt-2 text-muted">Loading batch details...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="13" class="text-center">
+                                <div class="py-4">
+                                    <i class="fas fa-box-open fa-3x text-muted"></i>
+                                    <p class="mt-3 text-muted">No inventory data available</p>
+                                    <a href="{{ url_for('inventory.add_item') }}" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Add First Item
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Parent-Child Table Functionality using vanilla JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Parent-Child functionality loaded');
+    const parentRows = document.querySelectorAll('.parent-row');
+    console.log('Found parent rows:', parentRows.length);
+    
+    // Add click handlers to parent rows
+    parentRows.forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            console.log('Parent row clicked');
+            const itemCode = this.getAttribute('data-item-code');
+            console.log('Item code:', itemCode);
+            
+            const childRow = document.querySelector('.child-row[data-parent="' + itemCode + '"]');
+            const expandIcon = this.querySelector('.expand-icon');
+            
+            console.log('Child row found:', childRow ? 'yes' : 'no');
+            
+            if (childRow) {
+                const isVisible = childRow.style.display !== 'none' && window.getComputedStyle(childRow).display !== 'none';
+                
+                if (isVisible) {
+                    // Collapse
+                    childRow.style.display = 'none';
+                    expandIcon.classList.remove('fa-chevron-down');
+                    expandIcon.classList.add('fa-chevron-right');
+                    console.log('Collapsed item:', itemCode);
+                } else {
+                    // Expand
+                    childRow.style.display = 'table-row';
+                    expandIcon.classList.remove('fa-chevron-right');
+                    expandIcon.classList.add('fa-chevron-down');
+                    console.log('Expanded item:', itemCode);
+                    
+                    // Load batch details if not already loaded
+                    loadBatchDetails(itemCode);
+                }
+            }
+        });
+    });
+    
+    // Add click handlers to expand icons
+    document.querySelectorAll('.expand-icon').forEach(function(icon) {
+        icon.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const parentRow = this.closest('.parent-row');
+            if (parentRow) {
+                parentRow.click();
+            }
+        });
+    });
+});
+
+// Load batch details via AJAX using vanilla JavaScript
+function loadBatchDetails(itemCode) {
+    const contentDiv = document.getElementById(`batch-content-${itemCode}`);
+    
+    // Check if already loaded
+    if (contentDiv && contentDiv.dataset.loaded === 'true') {
+        return;
+    }
+    
+    // Make AJAX request to get batch details
+    console.log('Loading batch details for:', itemCode);
+    fetch(`/inventory/api/item-batch-details/${itemCode}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(function(response) {
+        console.log('Batch details response:', response);
+            if (response.success && response.batches && response.batches.length > 0) {
+                let batchHtml = `
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless mb-0">
+                            <thead class="table-secondary">
+                                <tr>
+                                    <th>Batch Code</th>
+                                    <th>Location</th>
+                                    <th class="text-center">Raw Qty</th>
+                                    <th class="text-center">WIP Qty</th>
+                                    <th class="text-center">Finished Qty</th>
+                                    <th class="text-center">Scrap Qty</th>
+                                    <th class="text-center">Total Qty</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                response.batches.forEach(batch => {
+                    batchHtml += `
+                        <tr>
+                            <td><code>${batch.batch_code}</code></td>
+                            <td><span class="badge bg-info">${batch.location}</span></td>
+                            <td class="text-center">${parseFloat(batch.qty_raw || 0).toFixed(1)}</td>
+                            <td class="text-center">${parseFloat(batch.qty_wip || 0).toFixed(1)}</td>
+                            <td class="text-center">${parseFloat(batch.qty_finished || 0).toFixed(1)}</td>
+                            <td class="text-center">${parseFloat(batch.qty_scrap || 0).toFixed(1)}</td>
+                            <td class="text-center"><strong>${parseFloat(batch.total_qty || 0).toFixed(1)}</strong></td>
+                            <td class="text-center"><span class="badge bg-success">${batch.status}</span></td>
+                            <td class="text-center"><small>${batch.created_date}</small></td>
+                        </tr>
+                    `;
+                });
+                
+                batchHtml += '</tbody></table></div>';
+                contentDiv.innerHTML = batchHtml;
+            } else {
+                contentDiv.innerHTML = `
+                    <div class="text-center py-3">
+                        <i class="fas fa-box fa-2x text-muted"></i>
+                        <p class="mt-2 text-muted">No batch details available for this item</p>
+                        <a href="/batch_tracking/create?item=${itemCode}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus"></i> Create First Batch
+                        </a>
+                    </div>
+                `;
+            }
+            contentDiv.dataset.loaded = 'true';
+        })
+        .catch(function(error) {
+            console.error('Error loading batch details:', error);
+            contentDiv.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                    <p class="mt-2 text-muted">Error loading batch details</p>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadBatchDetails('${itemCode}')">
+                        <i class="fas fa-redo"></i> Retry
+                    </button>
+                </div>
+            `;
+        });
+}
+
+// Expand all items
+function expandAllItems() {
+    const parentRows = document.querySelectorAll('.parent-row');
+    parentRows.forEach(function(row) {
+        const itemCode = row.getAttribute('data-item-code');
+        const childRow = document.querySelector(`.child-row[data-parent="${itemCode}"]`);
+        const expandIcon = row.querySelector('.expand-icon');
+        
+        if (childRow && (childRow.style.display === 'none' || window.getComputedStyle(childRow).display === 'none')) {
+            childRow.style.display = 'table-row';
+            expandIcon.classList.remove('fa-chevron-right');
+            expandIcon.classList.add('fa-chevron-down');
+            loadBatchDetails(itemCode);
+        }
+    });
+}
+
+// Collapse all items
+function collapseAllItems() {
+    const childRows = document.querySelectorAll('.child-row');
+    const expandIcons = document.querySelectorAll('.expand-icon');
+    
+    childRows.forEach(function(row) {
+        row.style.display = 'none';
+    });
+    
+    expandIcons.forEach(function(icon) {
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-right');
+    });
+}
+
+// Search functionality
+function filterItems() {
+    const searchInput = document.getElementById('itemSearch');
+    if (!searchInput) return;
+    
+    const searchTerm = searchInput.value.toLowerCase();
+    const parentRows = document.querySelectorAll('.parent-row');
+    
+    parentRows.forEach(function(row) {
+        const itemCode = row.cells[1].textContent.toLowerCase(); // Item code column
+        const itemName = row.cells[2].textContent.toLowerCase(); // Item name column
+        const itemCodeAttr = row.getAttribute('data-item-code');
+        
+        if (itemCode.includes(searchTerm) || itemName.includes(searchTerm)) {
+            row.style.display = 'table-row';
+            const childRow = document.querySelector(`.child-row[data-parent="${itemCodeAttr}"]`);
+            if (childRow) {
+                childRow.style.display = 'table-row';
+            }
+        } else {
+            row.style.display = 'none';
+            const childRow = document.querySelector(`.child-row[data-parent="${itemCodeAttr}"]`);
+            if (childRow) {
+                childRow.style.display = 'none';
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

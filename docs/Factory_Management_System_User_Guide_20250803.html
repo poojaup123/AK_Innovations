@@ -1,0 +1,1478 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Factory Management System - Complete User Guide</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #007bff;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .toc {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .toc h2 {
+            color: #495057;
+            margin-top: 0;
+        }
+        
+        .toc ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .toc li {
+            padding: 5px 0;
+            border-bottom: 1px dotted #dee2e6;
+        }
+        
+        .section {
+            page-break-before: auto;
+            margin-bottom: 40px;
+        }
+        
+        .section h2 {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            font-size: 1.8em;
+        }
+        
+        .section h3 {
+            color: #495057;
+            font-size: 1.4em;
+            margin-top: 25px;
+        }
+        
+        .section h4 {
+            color: #6c757d;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+        
+        .workflow-box {
+            background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+            border: 1px solid #90caf9;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .workflow-step {
+            background: white;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .accounting-entry {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        
+        .screenshot-placeholder {
+            background: #e9ecef;
+            border: 2px dashed #adb5bd;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            color: #6c757d;
+            margin: 20px 0;
+            font-style: italic;
+        }
+        
+        .feature-highlight {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .warning-box {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .badge-success { background: #28a745; color: white; }
+        .badge-warning { background: #ffc107; color: #212529; }
+        .badge-info { background: #17a2b8; color: white; }
+        .badge-danger { background: #dc3545; color: white; }
+        
+        @media print {
+            body { font-size: 12px; }
+            .header { page-break-after: always; }
+            .section { page-break-before: always; }
+            .workflow-box { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>Factory Management System</h1>
+        <h2>Complete User Guide & Documentation</h2>
+        <p><strong>Version 2.0</strong> | Generated on August 03, 2025</p>
+        <p>Comprehensive ERP Solution with 3-Step GRN Workflow</p>
+    </div>
+
+    <!-- Table of Contents -->
+    <div class="toc">
+        <h2>📋 Table of Contents</h2>
+        <ul>
+            <li><strong>1.</strong> System Overview & Architecture</li>
+            <li><strong>2.</strong> Getting Started - Setup & Login</li>
+            <li><strong>3.</strong> Master Data Management</li>
+            <li><strong>4.</strong> Purchase Management</li>
+            <li><strong>5.</strong> 3-Step GRN Workflow (Complete Guide)</li>
+            <li><strong>6.</strong> Inventory Management</li>
+            <li><strong>7.</strong> Production Planning</li>
+            <li><strong>8.</strong> Accounting Integration</li>
+            <li><strong>9.</strong> Reports & Analytics</li>
+            <li><strong>10.</strong> Advanced Features</li>
+            <li><strong>11.</strong> Troubleshooting & FAQ</li>
+        </ul>
+    </div>
+
+    <!-- Section 1: System Overview -->
+    <div class="section">
+        <h2>1. System Overview & Architecture</h2>
+        
+        <h3>🎯 What is Factory Management System?</h3>
+        <p>A comprehensive manufacturing ERP solution designed for small to medium enterprises. The system integrates all aspects of manufacturing operations from procurement to production, with advanced accounting automation and complete material traceability.</p>
+        
+        <div class="feature-highlight">
+            <h4>🔑 Key Capabilities</h4>
+            <ul>
+                <li><strong>3-Step GRN Workflow:</strong> Professional procurement process with clearing accounts</li>
+                <li><strong>Real-time Inventory:</strong> Multi-state tracking (Raw, WIP, Finished, Scrap)</li>
+                <li><strong>BOM-driven Production:</strong> Material planning with cost calculations</li>
+                <li><strong>Accounting Automation:</strong> Double-entry bookkeeping with GST compliance</li>
+                <li><strong>Batch Tracking:</strong> Complete traceability from supplier to customer</li>
+                <li><strong>Advanced Reports:</strong> PO fulfillment, vendor aging, cost analysis</li>
+            </ul>
+        </div>
+        
+        <h3>🏗️ System Architecture</h3>
+        
+        <div class="workflow-box">
+            <h4>Core Modules Integration</h4>
+            <div class="workflow-step">
+                <strong>Master Data</strong> → Items, Suppliers, Customers, BOMs, Departments
+            </div>
+            <div class="workflow-step">
+                <strong>Procurement</strong> → Purchase Orders → GRNs → Invoices → Payments
+            </div>
+            <div class="workflow-step">
+                <strong>Production</strong> → Job Work → Manufacturing → Quality Control
+            </div>
+            <div class="workflow-step">
+                <strong>Inventory</strong> → Multi-state tracking → Batch management → Valuation
+            </div>
+            <div class="workflow-step">
+                <strong>Accounting</strong> → Auto vouchers → Financial reports → GST compliance
+            </div>
+        </div>
+        
+        <h3>💼 Business Benefits</h3>
+        <table>
+            <tr>
+                <th>Business Area</th>
+                <th>Key Benefits</th>
+                <th>ROI Impact</th>
+            </tr>
+            <tr>
+                <td>Procurement</td>
+                <td>Better vendor management, cost control</td>
+                <td>15-25% cost reduction</td>
+            </tr>
+            <tr>
+                <td>Inventory</td>
+                <td>Real-time visibility, waste reduction</td>
+                <td>20-30% inventory optimization</td>
+            </tr>
+            <tr>
+                <td>Production</td>
+                <td>Efficient planning, quality tracking</td>
+                <td>10-20% productivity increase</td>
+            </tr>
+            <tr>
+                <td>Accounting</td>
+                <td>Automated entries, compliance</td>
+                <td>80% reduction in manual work</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Section 2: Getting Started -->
+    <div class="section">
+        <h2>2. Getting Started - Setup & Login</h2>
+        
+        <h3>🚀 Initial Setup</h3>
+        
+        <div class="workflow-step">
+            <h4>Step 1: System Access</h4>
+            <p>Open your web browser and navigate to your Factory Management System URL.</p>
+            <div class="screenshot-placeholder">
+                [Screenshot: Login page with username/password fields]
+            </div>
+        </div>
+        
+        <div class="workflow-step">
+            <h4>Step 2: Login Credentials</h4>
+            <p>Use your administrator credentials provided during system setup:</p>
+            <div class="code-block">
+                Username: admin<br>
+                Password: [Your assigned password]
+            </div>
+        </div>
+        
+        <div class="workflow-step">
+            <h4>Step 3: Dashboard Overview</h4>
+            <p>After login, you'll see the main dashboard with key metrics and quick actions.</p>
+            <div class="screenshot-placeholder">
+                [Screenshot: Main dashboard showing modules and statistics]
+            </div>
+        </div>
+        
+        <h3>🔧 Initial Configuration</h3>
+        
+        <div class="warning-box">
+            <strong>⚠️ Important:</strong> Complete these setup steps before using the system for production data.
+        </div>
+        
+        <h4>Company Settings</h4>
+        <ol>
+            <li>Navigate to <strong>Settings → Company Settings</strong></li>
+            <li>Enter your company details:
+                <ul>
+                    <li>Company name and address</li>
+                    <li>GST number and registration details</li>
+                    <li>Contact information</li>
+                    <li>Financial year settings</li>
+                </ul>
+            </li>
+        </ol>
+        
+        <h4>Accounting Configuration</h4>
+        <ol>
+            <li>Go to <strong>Accounting → Settings</strong></li>
+            <li>Configure:
+                <ul>
+                    <li>Chart of accounts structure</li>
+                    <li>GST rates and tax settings</li>
+                    <li>Inventory valuation method</li>
+                    <li>Auto-voucher posting rules</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+
+    <!-- Section 3: Master Data Management -->
+    <div class="section">
+        <h2>3. Master Data Management</h2>
+        
+        <h3>📦 Item Master</h3>
+        
+        <h4>Creating Items</h4>
+        <div class="workflow-step">
+            <strong>Step 1:</strong> Navigate to <strong>Masters → Items</strong>
+        </div>
+        <div class="workflow-step">
+            <strong>Step 2:</strong> Click <strong>"Add New Item"</strong>
+        </div>
+        <div class="workflow-step">
+            <strong>Step 3:</strong> Fill required details:
+            <ul>
+                <li><strong>Item Name:</strong> Descriptive name</li>
+                <li><strong>Item Code:</strong> Unique identifier (auto-generated if blank)</li>
+                <li><strong>Category:</strong> Raw Material, Finished Goods, etc.</li>
+                <li><strong>Unit of Measure:</strong> KG, PCS, MTR, etc.</li>
+                <li><strong>HSN Code:</strong> For GST compliance</li>
+                <li><strong>Reorder Level:</strong> Minimum stock alert level</li>
+            </ul>
+        </div>
+        
+        <div class="screenshot-placeholder">
+            [Screenshot: Item creation form with all fields]
+        </div>
+        
+        <h4>Item Categories</h4>
+        <table>
+            <tr>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Usage</th>
+            </tr>
+            <tr>
+                <td>Raw Material</td>
+                <td>Basic materials for production</td>
+                <td>Purchase orders, inventory tracking</td>
+            </tr>
+            <tr>
+                <td>Semi-Finished</td>
+                <td>Work-in-progress items</td>
+                <td>Job work, production tracking</td>
+            </tr>
+            <tr>
+                <td>Finished Goods</td>
+                <td>Ready-to-sell products</td>
+                <td>Sales orders, customer delivery</td>
+            </tr>
+            <tr>
+                <td>Consumables</td>
+                <td>Supporting materials</td>
+                <td>Factory expenses, maintenance</td>
+            </tr>
+        </table>
+        
+        <h3>🏢 Supplier Management</h3>
+        
+        <h4>Adding Suppliers</h4>
+        <div class="workflow-step">
+            <strong>Navigation:</strong> <strong>Masters → Suppliers</strong>
+        </div>
+        
+        <h4>Required Information</h4>
+        <ul>
+            <li><strong>Basic Details:</strong> Name, contact person, phone, email</li>
+            <li><strong>Address:</strong> Complete address with PIN code</li>
+            <li><strong>GST Details:</strong> GSTIN, state code, supplier type</li>
+            <li><strong>Payment Terms:</strong> Credit days, payment method preferences</li>
+            <li><strong>Bank Details:</strong> For electronic payments</li>
+        </ul>
+        
+        <div class="feature-highlight">
+            <strong>💡 Pro Tip:</strong> Enable "Active" status only after verifying all supplier documents and completing vendor registration process.
+        </div>
+        
+        <h3>🏭 Department Setup</h3>
+        
+        <p>Departments are used for cost center allocation and expense tracking.</p>
+        
+        <h4>Standard Departments</h4>
+        <ul>
+            <li><strong>Production:</strong> Main manufacturing activities</li>
+            <li><strong>Quality Control:</strong> Testing and inspection</li>
+            <li><strong>Maintenance:</strong> Equipment upkeep</li>
+            <li><strong>Administration:</strong> Office and overhead expenses</li>
+            <li><strong>R&D:</strong> Research and development</li>
+        </ul>
+        
+        <div class="screenshot-placeholder">
+            [Screenshot: Department list with cost centers and budgets]
+        </div>
+    </div>
+
+    <!-- Section 4: Purchase Management -->
+    <div class="section">
+        <h2>4. Purchase Management</h2>
+        
+        <h3>📋 Purchase Order Creation</h3>
+        
+        <div class="workflow-box">
+            <h4>Purchase Order Workflow</h4>
+            <div class="workflow-step">
+                <strong>1. Requirement Identification</strong> → Based on reorder levels or production needs
+            </div>
+            <div class="workflow-step">
+                <strong>2. Vendor Selection</strong> → Choose appropriate supplier
+            </div>
+            <div class="workflow-step">
+                <strong>3. PO Creation</strong> → Generate purchase order
+            </div>
+            <div class="workflow-step">
+                <strong>4. Approval</strong> → Management approval if required
+            </div>
+            <div class="workflow-step">
+                <strong>5. Send to Vendor</strong> → Email or print PO
+            </div>
+        </div>
+        
+        <h4>Creating a Purchase Order</h4>
+        
+        <div class="workflow-step">
+            <strong>Step 1:</strong> Navigate to <strong>Purchase → Purchase Orders</strong>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Step 2:</strong> Click <strong>"Create New PO"</strong>
+            <div class="screenshot-placeholder">
+                [Screenshot: PO creation form header]
+            </div>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Step 3:</strong> Fill PO Header Details
+            <ul>
+                <li><strong>Supplier:</strong> Select from dropdown</li>
+                <li><strong>Order Date:</strong> Current date (editable)</li>
+                <li><strong>Expected Delivery:</strong> Required delivery date</li>
+                <li><strong>Payment Terms:</strong> Net 30, Net 15, etc.</li>
+                <li><strong>Delivery Address:</strong> Your factory location</li>
+            </ul>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Step 4:</strong> Add Line Items
+            <div class="screenshot-placeholder">
+                [Screenshot: PO line items table with add/remove buttons]
+            </div>
+            <p>For each item:</p>
+            <ul>
+                <li>Select item from dropdown</li>
+                <li>Enter quantity required</li>
+                <li>Specify unit price (if known)</li>
+                <li>Add any special instructions</li>
+            </ul>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Step 5:</strong> Review and Save
+            <ul>
+                <li>Verify all details are correct</li>
+                <li>Check total amount calculation</li>
+                <li>Save as Draft or Submit for approval</li>
+            </ul>
+        </div>
+        
+        <h3>📊 PO Status Tracking</h3>
+        
+        <table>
+            <tr>
+                <th>Status</th>
+                <th>Description</th>
+                <th>Next Actions</th>
+            </tr>
+            <tr>
+                <td><span class="badge badge-warning">Draft</span></td>
+                <td>PO created but not finalized</td>
+                <td>Edit, Submit for approval</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-info">Approved</span></td>
+                <td>Ready to send to vendor</td>
+                <td>Email to vendor, await delivery</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-success">Sent</span></td>
+                <td>Vendor has received PO</td>
+                <td>Track delivery, create GRN</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-success">Completed</span></td>
+                <td>All items received and invoiced</td>
+                <td>Close PO, analyze performance</td>
+            </tr>
+        </table>
+        
+        <div class="feature-highlight">
+            <strong>🔍 Tracking Tip:</strong> Use the PO Dashboard to monitor delivery status, pending items, and overdue orders.
+        </div>
+    </div>
+
+    <!-- Section 5: 3-Step GRN Workflow -->
+    <div class="section">
+        <h2>5. 3-Step GRN Workflow (Complete Guide)</h2>
+        
+        <div class="feature-highlight">
+            <h3>🎯 Why 3-Step Workflow?</h3>
+            <p>The 3-step workflow separates material receipt, invoice processing, and payment - providing better financial control, audit trails, and compliance with accounting standards.</p>
+        </div>
+        
+        <div class="workflow-box">
+            <h3>📈 Complete Workflow Overview</h3>
+            <div class="workflow-step">
+                <strong>Step 1: GRN Creation (Material Receipt)</strong>
+                <br>📦 Goods received → Inventory updated → GRN Clearing Account used
+                <div class="accounting-entry">
+                    Dr. Inventory Account<br>
+                    Cr. GRN Clearing Account
+                </div>
+            </div>
+            
+            <div class="workflow-step">
+                <strong>Step 2: Invoice Processing</strong>
+                <br>📄 Vendor invoice received → Liability created → Clearing account cleared
+                <div class="accounting-entry">
+                    Dr. GRN Clearing Account (base amount)<br>
+                    Dr. GST Input Tax (tax amount)<br>
+                    Dr. Freight Account (if applicable)<br>
+                    Cr. Vendor Payable Account (total)
+                </div>
+            </div>
+            
+            <div class="workflow-step">
+                <strong>Step 3: Payment Processing</strong>
+                <br>💰 Payment made → Vendor liability cleared → Cash/Bank reduced
+                <div class="accounting-entry">
+                    Dr. Vendor Payable Account<br>
+                    Cr. Bank/Cash Account
+                </div>
+            </div>
+        </div>
+        
+        <h3>📦 Step 1: Creating GRN (Goods Receipt Note)</h3>
+        
+        <h4>When to Create GRN</h4>
+        <ul>
+            <li>Materials received against a Purchase Order</li>
+            <li>Quality inspection completed (if applicable)</li>
+            <li>Quantity verified and accepted</li>
+        </ul>
+        
+        <h4>GRN Creation Process</h4>
+        
+        <div class="workflow-step">
+            <strong>Navigation:</strong> Go to <strong>Purchase → GRN → Create New</strong>
+            <div class="screenshot-placeholder">
+                [Screenshot: GRN creation page with PO selection]
+            </div>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Step 1.1:</strong> Select Purchase Order
+            <ul>
+                <li>Choose PO from dropdown</li>
+                <li>System loads PO details automatically</li>
+                <li>View pending quantities for each item</li>
+            </ul>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Step 1.2:</strong> Enter Receipt Details
+            <div class="screenshot-placeholder">
+                [Screenshot: GRN form with receipt details]
+            </div>
+            <ul>
+                <li><strong>Receipt Date:</strong> When goods were received</li>
+                <li><strong>Vehicle Number:</strong> Transport details</li>
+                <li><strong>Challan Number:</strong> Delivery challan reference</li>
+                <li><strong>Received By:</strong> Person who accepted delivery</li>
+            </ul>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Step 1.3:</strong> Item-wise Receipt Entry
+            <table style="font-size: 0.9em;">
+                <tr>
+                    <th>Field</th>
+                    <th>Description</th>
+                    <th>Example</th>
+                </tr>
+                <tr>
+                    <td>Ordered Qty</td>
+                    <td>From PO (read-only)</td>
+                    <td>100 KG</td>
+                </tr>
+                <tr>
+                    <td>Received Qty</td>
+                    <td>Actual quantity received</td>
+                    <td>95 KG</td>
+                </tr>
+                <tr>
+                    <td>Unit Price</td>
+                    <td>From PO (editable if needed)</td>
+                    <td>₹50.00</td>
+                </tr>
+                <tr>
+                    <td>Total Value</td>
+                    <td>Auto-calculated</td>
+                    <td>₹4,750</td>
+                </tr>
+                <tr>
+                    <td>Batch Number</td>
+                    <td>For traceability</td>
+                    <td>B202501001</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Step 1.4:</strong> Quality Notes (Optional)
+            <ul>
+                <li>Any quality observations</li>
+                <li>Damage or shortage notes</li>
+                <li>Special handling instructions</li>
+            </ul>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Step 1.5:</strong> Save and Post GRN
+            <p>When you save the GRN, the system automatically:</p>
+            <ul>
+                <li>✅ Updates inventory quantities</li>
+                <li>✅ Creates accounting voucher (Dr. Inventory, Cr. GRN Clearing)</li>
+                <li>✅ Updates PO fulfillment status</li>
+                <li>✅ Triggers workflow status tracking</li>
+            </ul>
+        </div>
+        
+        <div class="screenshot-placeholder">
+            [Screenshot: Completed GRN with workflow status indicators]
+        </div>
+        
+        <h3>📄 Step 2: Invoice Processing</h3>
+        
+        <div class="feature-highlight">
+            <strong>📌 Important:</strong> Invoice processing should be done only after GRN is created and materials are received.
+        </div>
+        
+        <h4>Accessing Invoice Processing</h4>
+        
+        <div class="workflow-step">
+            <strong>Navigation:</strong> <strong>GRN Workflow → Dashboard</strong>
+            <div class="screenshot-placeholder">
+                [Screenshot: GRN Workflow dashboard showing pending invoices]
+            </div>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Method 1:</strong> From GRN Workflow Dashboard
+            <ul>
+                <li>View "Pending Invoices" section</li>
+                <li>Click <strong>"Create Invoice"</strong> next to relevant GRN</li>
+            </ul>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Method 2:</strong> Direct Invoice Creation
+            <ul>
+                <li>Go to <strong>GRN Workflow → Invoices → Create New</strong></li>
+                <li>Select GRN to link with invoice</li>
+            </ul>
+        </div>
+        
+        <h4>Invoice Creation Process</h4>
+        
+        <div class="workflow-step">
+            <strong>Step 2.1:</strong> Invoice Header Details
+            <div class="screenshot-placeholder">
+                [Screenshot: Invoice creation form with vendor and date fields]
+            </div>
+            <ul>
+                <li><strong>Invoice Number:</strong> Vendor's invoice number</li>
+                <li><strong>Invoice Date:</strong> Date on vendor invoice</li>
+                <li><strong>Vendor:</strong> Auto-selected from GRN</li>
+            </ul>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Step 2.2:</strong> Amount Breakdown
+            <div class="screenshot-placeholder">
+                [Screenshot: Invoice amount breakdown form]
+            </div>
+            <table>
+                <tr>
+                    <th>Component</th>
+                    <th>Description</th>
+                    <th>Example</th>
+                </tr>
+                <tr>
+                    <td>Base Amount</td>
+                    <td>Material cost (pre-filled from GRN)</td>
+                    <td>₹4,750</td>
+                </tr>
+                <tr>
+                    <td>GST Amount</td>
+                    <td>Tax as per invoice</td>
+                    <td>₹855 (18%)</td>
+                </tr>
+                <tr>
+                    <td>Freight</td>
+                    <td>Transportation charges</td>
+                    <td>₹200</td>
+                </tr>
+                <tr>
+                    <td>Other Charges</td>
+                    <td>Handling, packing, etc.</td>
+                    <td>₹100</td>
+                </tr>
+                <tr>
+                    <td><strong>Total Amount</strong></td>
+                    <td><strong>Auto-calculated</strong></td>
+                    <td><strong>₹5,905</strong></td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Step 2.3:</strong> Document Upload
+            <ul>
+                <li>Upload vendor invoice PDF/image</li>
+                <li>Supported formats: PDF, JPG, PNG</li>
+                <li>Helps in audit and verification</li>
+            </ul>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Step 2.4:</strong> Process Invoice
+            <p>When you click <strong>"Create Invoice & Process"</strong>, the system:</p>
+            <ul>
+                <li>✅ Creates vendor invoice record</li>
+                <li>✅ Links invoice to GRN</li>
+                <li>✅ Generates accounting voucher</li>
+                <li>✅ Updates vendor outstanding balance</li>
+                <li>✅ Updates workflow status</li>
+            </ul>
+            
+            <div class="accounting-entry">
+                <strong>Accounting Entry Created:</strong><br>
+                Dr. GRN Clearing Account: ₹4,750<br>
+                Dr. GST Input Tax: ₹855<br>
+                Dr. Freight & Transportation: ₹300<br>
+                Cr. [Vendor Name] - Payable: ₹5,905
+            </div>
+        </div>
+        
+        <h3>💰 Step 3: Payment Processing</h3>
+        
+        <h4>Payment Methods Supported</h4>
+        <ul>
+            <li><strong>Cash Payment:</strong> Direct cash payment</li>
+            <li><strong>Bank Transfer:</strong> NEFT, RTGS, IMPS</li>
+            <li><strong>UPI Payment:</strong> Digital payments</li>
+            <li><strong>Cheque:</strong> Traditional cheque payment</li>
+        </ul>
+        
+        <h4>Creating Payment Voucher</h4>
+        
+        <div class="workflow-step">
+            <strong>Navigation:</strong> <strong>GRN Workflow → Dashboard → Outstanding Payments</strong>
+            <div class="screenshot-placeholder">
+                [Screenshot: Outstanding payments section with pay buttons]
+            </div>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Step 3.1:</strong> Select Invoice for Payment
+            <ul>
+                <li>Click <strong>"Record Payment"</strong> next to invoice</li>
+                <li>System pre-fills vendor and outstanding amount</li>
+            </ul>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Step 3.2:</strong> Payment Details
+            <div class="screenshot-placeholder">
+                [Screenshot: Payment form with method selection and bank details]
+            </div>
+            <ul>
+                <li><strong>Payment Date:</strong> When payment was made</li>
+                <li><strong>Payment Method:</strong> Select from dropdown</li>
+                <li><strong>Payment Amount:</strong> Can be partial or full</li>
+                <li><strong>Bank Account:</strong> For non-cash payments</li>
+                <li><strong>Reference Number:</strong> Cheque no., UTR, etc.</li>
+            </ul>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Step 3.3:</strong> Invoice Allocation
+            <p>If vendor has multiple outstanding invoices:</p>
+            <ul>
+                <li>System shows all pending invoices</li>
+                <li>Allocate payment amount across invoices</li>
+                <li>Can make partial payments</li>
+            </ul>
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Step 3.4:</strong> Record Payment
+            <p>System automatically:</p>
+            <ul>
+                <li>✅ Creates payment voucher</li>
+                <li>✅ Updates invoice outstanding amounts</li>
+                <li>✅ Generates accounting entry</li>
+                <li>✅ Completes workflow status</li>
+            </ul>
+            
+            <div class="accounting-entry">
+                <strong>Accounting Entry:</strong><br>
+                Dr. [Vendor Name] - Payable: ₹5,905<br>
+                Cr. Bank Account: ₹5,905
+            </div>
+        </div>
+        
+        <h3>📊 Workflow Monitoring</h3>
+        
+        <h4>GRN Workflow Dashboard</h4>
+        <div class="screenshot-placeholder">
+            [Screenshot: Complete workflow dashboard with all statistics and pending items]
+        </div>
+        
+        <h4>Workflow Status Indicators</h4>
+        <table>
+            <tr>
+                <th>Status</th>
+                <th>Badge</th>
+                <th>Meaning</th>
+                <th>Next Action</th>
+            </tr>
+            <tr>
+                <td>Material Received</td>
+                <td><span class="badge badge-info">Awaiting Invoice</span></td>
+                <td>GRN created, invoice pending</td>
+                <td>Process vendor invoice</td>
+            </tr>
+            <tr>
+                <td>Invoice Processed</td>
+                <td><span class="badge badge-warning">Awaiting Payment</span></td>
+                <td>Invoice received, payment pending</td>
+                <td>Record payment</td>
+            </tr>
+            <tr>
+                <td>Payment Made</td>
+                <td><span class="badge badge-success">Complete</span></td>
+                <td>Full workflow completed</td>
+                <td>No action needed</td>
+            </tr>
+        </table>
+        
+        <div class="feature-highlight">
+            <strong>🎯 Best Practices:</strong>
+            <ul>
+                <li>Create GRN immediately upon material receipt</li>
+                <li>Process invoices within 24-48 hours of receipt</li>
+                <li>Schedule payments according to vendor terms</li>
+                <li>Regular monitoring of pending workflows</li>
+                <li>Reconcile vendor statements monthly</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Section 6: Inventory Management -->
+    <div class="section">
+        <h2>6. Inventory Management</h2>
+        
+        <h3>📦 Multi-State Inventory Tracking</h3>
+        
+        <div class="workflow-box">
+            <h4>Inventory States</h4>
+            <div class="workflow-step">
+                <strong>Raw Material</strong> → Materials purchased for production
+            </div>
+            <div class="workflow-step">
+                <strong>Work in Progress (WIP)</strong> → Materials in production process
+            </div>
+            <div class="workflow-step">
+                <strong>Finished Goods</strong> → Completed products ready for sale
+            </div>
+            <div class="workflow-step">
+                <strong>Scrap</strong> → Waste materials with possible recovery value
+            </div>
+        </div>
+        
+        <h3>🔍 Real-time Inventory Monitoring</h3>
+        
+        <h4>Inventory Dashboard</h4>
+        <div class="screenshot-placeholder">
+            [Screenshot: Inventory dashboard showing current stock levels by category]
+        </div>
+        
+        <h4>Key Metrics Displayed</h4>
+        <ul>
+            <li><strong>Current Stock:</strong> Real-time quantity on hand</li>
+            <li><strong>Stock Value:</strong> Current valuation using selected method</li>
+            <li><strong>Reorder Alerts:</strong> Items below minimum level</li>
+            <li><strong>Fast/Slow Moving:</strong> Based on consumption patterns</li>
+            <li><strong>Aging Analysis:</strong> Stock age and turnover rates</li>
+        </ul>
+        
+        <h3>📊 Inventory Reports</h3>
+        
+        <h4>Stock Summary Report</h4>
+        <table>
+            <tr>
+                <th>Item</th>
+                <th>Current Stock</th>
+                <th>Reorder Level</th>
+                <th>Last Receipt</th>
+                <th>Status</th>
+            </tr>
+            <tr>
+                <td>Steel Rod 12mm</td>
+                <td>45.5 KG</td>
+                <td>50 KG</td>
+                <td>15-Jan-2025</td>
+                <td><span class="badge badge-warning">Low Stock</span></td>
+            </tr>
+            <tr>
+                <td>Welding Electrode</td>
+                <td>125 PCS</td>
+                <td>100 PCS</td>
+                <td>20-Jan-2025</td>
+                <td><span class="badge badge-success">Good</span></td>
+            </tr>
+        </table>
+        
+        <h4>Valuation Methods</h4>
+        <ul>
+            <li><strong>FIFO (First In, First Out):</strong> Oldest stock valued first</li>
+            <li><strong>LIFO (Last In, First Out):</strong> Latest stock valued first</li>
+            <li><strong>Moving Average:</strong> Weighted average of all receipts</li>
+            <li><strong>Standard Cost:</strong> Pre-determined standard rates</li>
+        </ul>
+        
+        <div class="feature-highlight">
+            <strong>💡 Valuation Impact:</strong> Different methods affect cost of goods sold and profitability calculations. Choose based on your accounting requirements and business nature.
+        </div>
+    </div>
+
+    <!-- Section 7: Production Planning -->
+    <div class="section">
+        <h2>7. Production Planning</h2>
+        
+        <h3>🔧 Bill of Materials (BOM)</h3>
+        
+        <h4>BOM Structure</h4>
+        <div class="workflow-box">
+            <div class="workflow-step">
+                <strong>Finished Product</strong> → Final item to be manufactured
+            </div>
+            <div class="workflow-step">
+                <strong>Raw Materials</strong> → Required input materials with quantities
+            </div>
+            <div class="workflow-step">
+                <strong>Labor Operations</strong> → Manufacturing processes and time
+            </div>
+            <div class="workflow-step">
+                <strong>Overhead Costs</strong> → Machine time, utilities, overheads
+            </div>
+        </div>
+        
+        <h4>Creating BOM</h4>
+        <div class="workflow-step">
+            <strong>Navigation:</strong> <strong>Production → BOM → Create New</strong>
+        </div>
+        
+        <div class="screenshot-placeholder">
+            [Screenshot: BOM creation form with material list and quantities]
+        </div>
+        
+        <h3>👷 Job Work Management</h3>
+        
+        <h4>Job Work Types</h4>
+        <ul>
+            <li><strong>In-house Job Work:</strong> Internal production processes</li>
+            <li><strong>Outsourced Job Work:</strong> External vendor processing</li>
+            <li><strong>Multi-process Job Work:</strong> Complex multi-step operations</li>
+        </ul>
+        
+        <h4>Job Work Workflow</h4>
+        <div class="workflow-step">
+            <strong>Step 1:</strong> Create job work order with material requirements
+        </div>
+        <div class="workflow-step">
+            <strong>Step 2:</strong> Issue materials (Raw → WIP state change)
+        </div>
+        <div class="workflow-step">
+            <strong>Step 3:</strong> Track production progress and labor costs
+        </div>
+        <div class="workflow-step">
+            <strong>Step 4:</strong> Receive finished goods (WIP → Finished state)
+        </div>
+        <div class="workflow-step">
+            <strong>Step 5:</strong> Account for scrap and wastage
+        </div>
+        
+        <div class="screenshot-placeholder">
+            [Screenshot: Job work form showing material issue and receipt sections]
+        </div>
+    </div>
+
+    <!-- Section 8: Accounting Integration -->
+    <div class="section">
+        <h2>8. Accounting Integration</h2>
+        
+        <h3>💼 Automated Double-Entry Bookkeeping</h3>
+        
+        <div class="feature-highlight">
+            <strong>🎯 Key Benefit:</strong> Every transaction automatically creates proper accounting entries, eliminating manual voucher creation and reducing errors.
+        </div>
+        
+        <h4>Auto-Generated Vouchers</h4>
+        <table>
+            <tr>
+                <th>Transaction</th>
+                <th>Voucher Type</th>
+                <th>Accounting Entry</th>
+            </tr>
+            <tr>
+                <td>GRN Creation</td>
+                <td>Material Receipt</td>
+                <td>Dr. Inventory, Cr. GRN Clearing</td>
+            </tr>
+            <tr>
+                <td>Invoice Processing</td>
+                <td>Purchase Invoice</td>
+                <td>Dr. GRN Clearing + GST, Cr. Vendor</td>
+            </tr>
+            <tr>
+                <td>Payment Made</td>
+                <td>Payment Voucher</td>
+                <td>Dr. Vendor, Cr. Bank/Cash</td>
+            </tr>
+            <tr>
+                <td>Job Work</td>
+                <td>Material Issue</td>
+                <td>Dr. WIP, Cr. Raw Material</td>
+            </tr>
+            <tr>
+                <td>Production</td>
+                <td>Production Receipt</td>
+                <td>Dr. Finished Goods, Cr. WIP</td>
+            </tr>
+        </table>
+        
+        <h3>🏦 Chart of Accounts</h3>
+        
+        <h4>Standard Account Structure</h4>
+        <div class="code-block">
+        Assets
+        ├── Current Assets
+        │   ├── Cash in Hand
+        │   ├── Bank Accounts
+        │   ├── Inventory - Raw Material
+        │   ├── Inventory - WIP
+        │   ├── Inventory - Finished Goods
+        │   └── GST Input Tax
+        ├── Fixed Assets
+        │   ├── Plant & Machinery
+        │   └── Furniture & Fixtures
+        
+        Liabilities
+        ├── Current Liabilities
+        │   ├── Sundry Creditors
+        │   ├── GRN Clearing Account
+        │   └── GST Output Tax
+        ├── Long-term Liabilities
+        │   └── Term Loans
+        
+        Income
+        ├── Sales Revenue
+        └── Other Income
+        
+        Expenses
+        ├── Direct Expenses
+        │   ├── Purchase Account
+        │   ├── Job Work Charges
+        │   └── Freight & Transportation
+        ├── Indirect Expenses
+        │   ├── Factory Overheads
+        │   └── Administrative Expenses
+        </div>
+        
+        <h3>📈 Financial Reports</h3>
+        
+        <h4>Available Reports</h4>
+        <ul>
+            <li><strong>Trial Balance:</strong> Account-wise balances</li>
+            <li><strong>Profit & Loss:</strong> Income and expense summary</li>
+            <li><strong>Balance Sheet:</strong> Assets and liabilities position</li>
+            <li><strong>Cash Flow:</strong> Cash movement analysis</li>
+            <li><strong>GST Returns:</strong> Tax compliance reports</li>
+            <li><strong>Vendor Aging:</strong> Outstanding payment analysis</li>
+        </ul>
+        
+        <div class="screenshot-placeholder">
+            [Screenshot: Financial dashboard showing key reports and metrics]
+        </div>
+        
+        <h3>🔧 Accounting Settings</h3>
+        
+        <h4>Configuration Options</h4>
+        <div class="screenshot-placeholder">
+            [Screenshot: Accounting settings page with toggles and options]
+        </div>
+        
+        <ul>
+            <li><strong>Auto-voucher Creation:</strong> Enable/disable for different transactions</li>
+            <li><strong>Inventory Valuation Method:</strong> FIFO, LIFO, Moving Average</li>
+            <li><strong>GST Settings:</strong> Tax rates, HSN codes, compliance rules</li>
+            <li><strong>Cost Centers:</strong> Department-wise expense allocation</li>
+            <li><strong>Payment Methods:</strong> Bank accounts, processing fees</li>
+        </ul>
+    </div>
+
+    <!-- Section 9: Reports & Analytics -->
+    <div class="section">
+        <h2>9. Reports & Analytics</h2>
+        
+        <h3>📊 GRN Workflow Reports</h3>
+        
+        <h4>PO Fulfillment Report</h4>
+        <div class="screenshot-placeholder">
+            [Screenshot: PO fulfillment report showing ordered vs received quantities]
+        </div>
+        
+        <p>This report helps track:</p>
+        <ul>
+            <li>Purchase orders and delivery status</li>
+            <li>Vendor performance metrics</li>
+            <li>Pending deliveries and delays</li>
+            <li>Partial vs complete deliveries</li>
+        </ul>
+        
+        <h4>Vendor Outstanding Report</h4>
+        <div class="screenshot-placeholder">
+            [Screenshot: Vendor aging analysis with 30-60-90 day buckets]
+        </div>
+        
+        <table>
+            <tr>
+                <th>Vendor</th>
+                <th>Total Outstanding</th>
+                <th>0-30 Days</th>
+                <th>31-60 Days</th>
+                <th>61-90 Days</th>
+                <th>90+ Days</th>
+            </tr>
+            <tr>
+                <td>ABC Suppliers</td>
+                <td>₹1,25,000</td>
+                <td>₹75,000</td>
+                <td>₹35,000</td>
+                <td>₹15,000</td>
+                <td>₹0</td>
+            </tr>
+            <tr>
+                <td>XYZ Materials</td>
+                <td>₹85,000</td>
+                <td>₹45,000</td>
+                <td>₹25,000</td>
+                <td>₹10,000</td>
+                <td>₹5,000</td>
+            </tr>
+        </table>
+        
+        <h3>📈 Production Reports</h3>
+        
+        <h4>Job Work Performance</h4>
+        <ul>
+            <li><strong>Efficiency Analysis:</strong> Planned vs actual time and costs</li>
+            <li><strong>Scrap Tracking:</strong> Waste generation by process</li>
+            <li><strong>Quality Metrics:</strong> Rejection rates and rework</li>
+            <li><strong>Cost Analysis:</strong> Material, labor, and overhead costs</li>
+        </ul>
+        
+        <h4>Inventory Movement</h4>
+        <div class="screenshot-placeholder">
+            [Screenshot: Inventory movement report showing stock in/out transactions]
+        </div>
+        
+        <h3>💰 Financial Analytics</h3>
+        
+        <h4>Key Performance Indicators</h4>
+        <ul>
+            <li><strong>Inventory Turnover:</strong> How quickly stock moves</li>
+            <li><strong>Gross Margin:</strong> Profitability analysis</li>
+            <li><strong>Working Capital:</strong> Cash flow management</li>
+            <li><strong>Vendor Payment Days:</strong> Average payment cycles</li>
+        </ul>
+        
+        <h4>Cost Center Analysis</h4>
+        <div class="screenshot-placeholder">
+            [Screenshot: Department-wise cost analysis with budget vs actual]
+        </div>
+        
+        <div class="feature-highlight">
+            <strong>📊 Dashboard Customization:</strong> All reports can be filtered by date range, department, vendor, or item category for focused analysis.
+        </div>
+    </div>
+
+    <!-- Section 10: Advanced Features -->
+    <div class="section">
+        <h2>10. Advanced Features</h2>
+        
+        <h3>🔍 Batch Tracking & Traceability</h3>
+        
+        <h4>Complete Supply Chain Visibility</h4>
+        <div class="workflow-box">
+            <div class="workflow-step">
+                <strong>Supplier Batch</strong> → Raw material batch from vendor
+            </div>
+            <div class="workflow-step">
+                <strong>Internal Batch</strong> → Your internal batch numbering
+            </div>
+            <div class="workflow-step">
+                <strong>Production Batch</strong> → Finished goods batch
+            </div>
+            <div class="workflow-step">
+                <strong>Customer Delivery</strong> → Batch delivered to customer
+            </div>
+        </div>
+        
+        <h4>Batch Information Tracked</h4>
+        <ul>
+            <li><strong>Manufacturing Date:</strong> When batch was produced</li>
+            <li><strong>Expiry Date:</strong> For perishable items</li>
+            <li><strong>Quality Parameters:</strong> Test results and certificates</li>
+            <li><strong>Quantity Tracking:</strong> Current available quantity</li>
+            <li><strong>Location:</strong> Storage location and bin details</li>
+        </ul>
+        
+        <h3>📧 Notification System</h3>
+        
+        <h4>Automated Alerts</h4>
+        <ul>
+            <li><strong>Low Stock Alerts:</strong> When inventory falls below reorder level</li>
+            <li><strong>PO Overdue:</strong> When delivery is delayed</li>
+            <li><strong>Payment Reminders:</strong> Before vendor payment due dates</li>
+            <li><strong>Quality Issues:</strong> When rejection rates exceed threshold</li>
+            <li><strong>Workflow Pending:</strong> Items waiting for next step</li>
+        </ul>
+        
+        <h4>Communication Channels</h4>
+        <ul>
+            <li><strong>Email Notifications:</strong> Detailed reports via email</li>
+            <li><strong>SMS Alerts:</strong> Critical alerts via SMS</li>
+            <li><strong>WhatsApp Updates:</strong> Status updates on WhatsApp</li>
+            <li><strong>In-app Notifications:</strong> Dashboard notifications</li>
+        </ul>
+        
+        <h3>🔐 User Management & Security</h3>
+        
+        <h4>Role-Based Access Control</h4>
+        <table>
+            <tr>
+                <th>Role</th>
+                <th>Permissions</th>
+                <th>Access Level</th>
+            </tr>
+            <tr>
+                <td>Administrator</td>
+                <td>Full system access, user management</td>
+                <td>All modules</td>
+            </tr>
+            <tr>
+                <td>Purchase Manager</td>
+                <td>PO creation, vendor management, GRN</td>
+                <td>Purchase, GRN Workflow</td>
+            </tr>
+            <tr>
+                <td>Production Manager</td>
+                <td>Job work, BOM, production planning</td>
+                <td>Production, Inventory</td>
+            </tr>
+            <tr>
+                <td>Accounts User</td>
+                <td>Invoice processing, payments, reports</td>
+                <td>Accounting, Reports</td>
+            </tr>
+            <tr>
+                <td>Store Keeper</td>
+                <td>Inventory updates, GRN creation</td>
+                <td>Inventory, GRN only</td>
+            </tr>
+        </table>
+        
+        <h3>🔧 System Integration</h3>
+        
+        <h4>Export/Import Capabilities</h4>
+        <ul>
+            <li><strong>Excel Export:</strong> All reports can be exported to Excel</li>
+            <li><strong>PDF Generation:</strong> Professional PDF reports</li>
+            <li><strong>Tally Integration:</strong> Export accounting data to Tally</li>
+            <li><strong>Email Integration:</strong> Send POs, reports via email</li>
+        </ul>
+        
+        <h4>API Access</h4>
+        <ul>
+            <li><strong>REST APIs:</strong> For third-party integration</li>
+            <li><strong>Webhook Support:</strong> Real-time data updates</li>
+            <li><strong>Custom Reports:</strong> Build custom dashboards</li>
+        </ul>
+    </div>
+
+    <!-- Section 11: Troubleshooting & FAQ -->
+    <div class="section">
+        <h2>11. Troubleshooting & FAQ</h2>
+        
+        <h3>❓ Frequently Asked Questions</h3>
+        
+        <h4>General System Questions</h4>
+        
+        <div class="workflow-step">
+            <strong>Q: Can I modify a GRN after it's created?</strong>
+            <br>A: GRNs can be modified before invoice processing. Once an invoice is linked, modifications require reversing the workflow steps.
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Q: What happens if I receive partial quantity against a PO?</strong>
+            <br>A: Create GRN for received quantity. System tracks pending quantities and allows multiple GRNs against single PO.
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Q: How do I handle invoice amount different from GRN amount?</strong>
+            <br>A: During invoice processing, you can adjust amounts. System handles price variances automatically through appropriate accounts.
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Q: Can I process partial payments?</strong>
+            <br>A: Yes, payment allocation allows partial payments. System tracks outstanding amounts and payment history.
+        </div>
+        
+        <h4>Workflow-Specific Questions</h4>
+        
+        <div class="workflow-step">
+            <strong>Q: What if vendor invoice is delayed?</strong>
+            <br>A: Material remains in inventory, but liability is in GRN Clearing Account until invoice is processed. This provides better cash flow visibility.
+        </div>
+        
+        <div class="workflow-step">
+            <strong>Q: How to handle returns or rejections?</strong>
+            <br>A: Create return GRN with negative quantities. System reverses inventory and accounting entries appropriately.
+        </div>
+        
+        <h3>🔧 Common Issues & Solutions</h3>
+        
+        <h4>Login Issues</h4>
+        <div class="warning-box">
+            <strong>Issue:</strong> Cannot login to system
+            <br><strong>Solution:</strong>
+            <ul>
+                <li>Verify username and password</li>
+                <li>Clear browser cache and cookies</li>
+                <li>Try different browser or incognito mode</li>
+                <li>Contact administrator for password reset</li>
+            </ul>
+        </div>
+        
+        <h4>Data Entry Issues</h4>
+        <div class="warning-box">
+            <strong>Issue:</strong> Form not saving or validation errors
+            <br><strong>Solution:</strong>
+            <ul>
+                <li>Check all required fields are filled</li>
+                <li>Verify data formats (dates, numbers)</li>
+                <li>Ensure sufficient user permissions</li>
+                <li>Check network connectivity</li>
+            </ul>
+        </div>
+        
+        <h4>Report Generation Issues</h4>
+        <div class="warning-box">
+            <strong>Issue:</strong> Reports showing no data or errors
+            <br><strong>Solution:</strong>
+            <ul>
+                <li>Verify date range selection</li>
+                <li>Check filter criteria</li>
+                <li>Ensure data exists for selected period</li>
+                <li>Clear browser cache and retry</li>
+            </ul>
+        </div>
+        
+        <h3>📞 Support & Help</h3>
+        
+        <h4>Getting Help</h4>
+        <ul>
+            <li><strong>System Administrator:</strong> For user access and permissions</li>
+            <li><strong>Technical Support:</strong> For system issues and bugs</li>
+            <li><strong>Training:</strong> For user training and process guidance</li>
+            <li><strong>Customization:</strong> For additional features and modifications</li>
+        </ul>
+        
+        <h4>Best Practices for Support</h4>
+        <ul>
+            <li><strong>Screenshot Issues:</strong> Provide screenshots of error messages</li>
+            <li><strong>Steps to Reproduce:</strong> Document exact steps that cause issues</li>
+            <li><strong>Browser Information:</strong> Mention browser type and version</li>
+            <li><strong>Data Context:</strong> Provide relevant PO numbers, dates, etc.</li>
+        </ul>
+        
+        <div class="feature-highlight">
+            <strong>📚 Additional Resources:</strong>
+            <ul>
+                <li>Video tutorials available in system help section</li>
+                <li>Process flowcharts for quick reference</li>
+                <li>Regular system updates and feature announcements</li>
+                <li>User community forum for discussions</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align: center; margin-top: 50px; padding: 20px; border-top: 1px solid #dee2e6; color: #6c757d;">
+        <p><strong>Factory Management System - User Guide</strong></p>
+        <p>Version 2.0 | Generated on August 03, 2025</p>
+        <p>© 2025 Factory Management Solutions. All rights reserved.</p>
+        <p><em>This guide covers the complete 3-step GRN workflow implementation with clearing accounts.</em></p>
+    </div>
+
+</body>
+</html>
+    

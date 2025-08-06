@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Process View - Batch Tracking{% endblock %}
+
+{% block extra_css %}
+<style>
+.process-header {
+    background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.process-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+    cursor: pointer;
+}
+
+.process-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+}
+
+.process-card.active {
+    border: 2px solid #007bff;
+    background: #f8f9fa;
+}
+
+.process-badge {
+    display: inline-block;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+    margin: 0.2rem;
+}
+
+.process-raw { background-color: #28a745; }
+.process-cutting { background-color: #dc3545; }
+.process-bending { background-color: #fd7e14; }
+.process-welding { background-color: #ffc107; color: #000; }
+.process-zinc { background-color: #20c997; }
+.process-painting { background-color: #6f42c1; }
+.process-assembly { background-color: #e83e8c; }
+.process-machining { background-color: #17a2b8; }
+.process-polishing { background-color: #6c757d; }
+.process-finished { background-color: #198754; }
+
+.batch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.batch-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.2s ease;
+}
+
+.batch-card:hover {
+    transform: translateY(-2px);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Process View Header -->
+    <div class="process-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-0">
+                    <i class="fas fa-industry mr-3"></i>
+                    Process View - Manufacturing Stages
+                </h1>
+                <p class="mb-0 mt-2 opacity-75">
+                    Monitor batches across all manufacturing process stages
+                </p>
+            </div>
+            <div class="col-md-4 text-right">
+                <a href="{{ url_for('batch_tracking.dashboard') }}" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Process Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="process-card {{ 'active' if current_process == 'raw' else '' }}" 
+                 onclick="location.href='{{ url_for('batch_tracking.process_view', process='raw') }}'">
+                <div class="card-body text-center">
+                    <div class="process-badge process-raw">{{ process_summary.get('raw', {}).get('total_batches', 0) }}</div>
+                    <h6 class="mt-2 mb-1">Raw Material</h6>
+                    <small class="text-muted">{{ process_summary.get('raw', {}).get('total_quantity', 0) }} units</small>
+                </div>
+            </div>
+        </div>
+        
+        {% for process in processes %}
+        <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="process-card {{ 'active' if current_process == process else '' }}" 
+                 onclick="location.href='{{ url_for('batch_tracking.process_view', process=process) }}'">
+                <div class="card-body text-center">
+                    <div class="process-badge process-{{ process }}">{{ process_summary.get(process, {}).get('total_batches', 0) }}</div>
+                    <h6 class="mt-2 mb-1">{{ process.title() }}</h6>
+                    <small class="text-muted">{{ process_summary.get(process, {}).get('total_quantity', 0) }} units</small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+            <div class="process-card {{ 'active' if current_process == 'finished' else '' }}" 
+                 onclick="location.href='{{ url_for('batch_tracking.process_view', process='finished') }}'">
+                <div class="card-body text-center">
+                    <div class="process-badge process-finished">{{ process_summary.get('finished', {}).get('total_batches', 0) }}</div>
+                    <h6 class="mt-2 mb-1">Finished</h6>
+                    <small class="text-muted">{{ process_summary.get('finished', {}).get('total_quantity', 0) }} units</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selected Process Batches -->
+    {% if current_process %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-boxes"></i> 
+                        Batches in {{ current_process.title() }} Stage
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if batches %}
+                        <div class="batch-grid">
+                            {% for batch in batches %}
+                            <div class="batch-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0">
+                                            <a href="{{ url_for('batch_tracking.batch_detail', batch_id=batch.id) }}">
+                                                {{ batch.batch_number }}
+                                            </a>
+                                        </h6>
+                                        <span class="badge badge-{{ 'success' if batch.quality_status == 'approved' else 'warning' }}">
+                                            {{ batch.quality_status.title() if batch.quality_status else 'Pending' }}
+                                        </span>
+                                    </div>
+                                    
+                                    <p class="card-text mb-2">
+                                        <strong>{{ batch.item.name }}</strong><br>
+                                        <small class="text-muted">{{ batch.item.code }}</small>
+                                    </p>
+                                    
+                                    <div class="mb-2">
+                                        <strong>Current Quantity:</strong>
+                                        {% if current_process == 'raw' %}
+                                            {{ batch.qty_raw or 0 }}
+                                        {% elif current_process == 'finished' %}
+                                            {{ batch.qty_finished or 0 }}
+                                        {% else %}
+                                            {{ batch['qty_wip_' + current_process] or 0 }}
+                                        {% endif %}
+                                        {{ batch.item.unit_of_measure }}
+                                    </div>
+                                    
+                                    <div class="mb-2">
+                                        <strong>Total Quantity:</strong> {{ batch.total_quantity }} {{ batch.item.unit_of_measure }}
+                                    </div>
+                                    
+                                    {% if batch.storage_location %}
+                                    <div class="mb-2">
+                                        <strong>Location:</strong> 
+                                        <span class="badge badge-info">{{ batch.storage_location }}</span>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="text-muted">
+                                        <small>
+                                            Created: {{ batch.created_at.strftime('%d/%m/%Y') }}
+                                            {% if batch.manufacture_date %}
+                                                | Mfg: {{ batch.manufacture_date.strftime('%d/%m/%Y') }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    
+                                    <!-- Action Buttons -->
+                                    <div class="btn-group w-100 mt-3">
+                                        <a href="{{ url_for('batch_tracking.batch_detail', batch_id=batch.id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i> Details
+                                        </a>
+                                        <a href="{{ url_for('batch_tracking.traceability_report', type='batch', batch_id=batch.id) }}" 
+                                           class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-route"></i> Trace
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                            <h5>No Batches in {{ current_process.title() }} Stage</h5>
+                            <p class="text-muted">No batches are currently in the {{ current_process }} process stage.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- No Process Selected -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-mouse-pointer fa-3x text-muted mb-3"></i>
+                    <h5>Select a Process Stage</h5>
+                    <p class="text-muted">Click on any process stage above to view batches in that manufacturing stage.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

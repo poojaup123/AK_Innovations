@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Factory Expenses Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2><i class="fas fa-receipt me-2"></i>Factory Expenses Dashboard</h2>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{{ url_for('expenses.add_expense') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Add Expense
+            </a>
+            <a href="{{ url_for('expenses.expense_list') }}" class="btn btn-outline-primary">
+                <i class="fas fa-list me-1"></i>View All
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">₹{{ "%.2f"|format(monthly_expenses) }}</h4>
+                            <p class="card-text">This Month</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-calendar-month fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">₹{{ "%.2f"|format(yearly_expenses) }}</h4>
+                            <p class="card-text">This Year</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-calendar-year fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ pending_approvals }}</h4>
+                            <p class="card-text">Pending Approvals</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ category_expenses|length }}</h4>
+                            <p class="card-text">Categories This Month</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-tags fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Category Breakdown -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie me-2"></i>Expenses by Category (Current Month)</h5>
+                </div>
+                <div class="card-body">
+                    {% if category_expenses %}
+                        {% for category, total in category_expenses %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <span class="badge bg-info me-2">
+                                    {% if category == 'utilities' %}Utilities & Infrastructure
+                                    {% elif category == 'maintenance' %}Maintenance & Repairs
+                                    {% elif category == 'salary' %}Salaries & Benefits
+                                    {% elif category == 'materials' %}Raw Materials & Supplies
+                                    {% elif category == 'overhead' %}Factory Overhead
+                                    {% elif category == 'transport' %}Transportation & Logistics
+                                    {% else %}Other Expenses
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <strong>₹{{ "%.2f"|format(total) }}</strong>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No expenses recorded for this month</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Expenses -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-clock me-2"></i>Recent Expenses</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_expenses %}
+                        {% for expense in recent_expenses %}
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                            <div>
+                                <strong>{{ expense.expense_number }}</strong><br>
+                                <small class="text-muted">{{ expense.description[:50] }}{% if expense.description|length > 50 %}...{% endif %}</small><br>
+                                <small class="text-muted">{{ expense.expense_date.strftime('%d/%m/%Y') }}</small>
+                            </div>
+                            <div class="text-end">
+                                <strong>₹{{ "%.2f"|format(expense.total_amount) }}</strong><br>
+                                <span class="badge {{ expense.status_badge_class }}">{{ expense.status.title() }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('expenses.expense_list') }}" class="btn btn-sm btn-outline-primary">View All Expenses</a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No expenses recorded yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Trend Chart -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-line me-2"></i>Monthly Expense Trend</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyTrendChart" width="400" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js for trend chart -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Monthly Trend Chart
+const ctx = document.getElementById('monthlyTrendChart').getContext('2d');
+const monthlyData = {{ monthly_trend | tojson }};
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: monthlyData.map(item => `${item.month} ${item.year}`),
+        datasets: [{
+            label: 'Monthly Expenses (₹)',
+            data: monthlyData.map(item => item.total),
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Factory Expenses Trend (Last 6 Months)'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '₹' + value.toLocaleString();
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

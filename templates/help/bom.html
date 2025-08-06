@@ -1,0 +1,348 @@
+{% extends "help/base_help.html" %}
+
+{% block title %}Bill of Materials Help - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="text-center mb-4">
+    <h1><i class="fas fa-list-alt"></i> Bill of Materials (BOM) Guide</h1>
+    <p class="lead">Complete guide to managing product BOMs and production planning</p>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-info-circle"></i> What is a BOM?</h3>
+    <p>A Bill of Materials (BOM) is a comprehensive list of raw materials, components, assemblies, and quantities required to manufacture a finished product. It serves as the backbone of production planning and costing.</p>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-layer-group"></i> BOM Structure</h3>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="category-card">
+                <div class="category-header text-primary">
+                    <i class="fas fa-sitemap"></i> Multi-Level BOM
+                </div>
+                <p>Supports complex product structures with sub-assemblies and nested components</p>
+                <div class="help-example">
+                    <strong>Example:</strong><br>
+                    Product A<br>
+                    ├── Sub-Assembly B (2 units)<br>
+                    │   ├── Component C (3 units)<br>
+                    │   └── Component D (1 unit)<br>
+                    └── Material E (5 units)
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="category-card">
+                <div class="category-header text-success">
+                    <i class="fas fa-route"></i> Process-Based BOM
+                </div>
+                <p>Defines manufacturing processes and their sequence</p>
+                <div class="help-example">
+                    <strong>Process Flow:</strong><br>
+                    1. Cutting → Raw Material<br>
+                    2. Bending → Semi-finished<br>
+                    3. Welding → Assembly<br>
+                    4. Painting → Finished Product
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-cogs"></i> BOM Components</h3>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="category-card">
+                <div class="category-header text-secondary">
+                    <i class="fas fa-cube"></i> Materials
+                </div>
+                <p>Raw materials consumed in production</p>
+                <ul class="small">
+                    <li>Steel sheets</li>
+                    <li>Bolts and screws</li>
+                    <li>Wire and cables</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="category-card">
+                <div class="category-header text-secondary">
+                    <i class="fas fa-puzzle-piece"></i> Components
+                </div>
+                <p>Purchased parts and sub-assemblies</p>
+                <ul class="small">
+                    <li>Motors</li>
+                    <li>Bearings</li>
+                    <li>Electronic components</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="category-card">
+                <div class="category-header text-secondary">
+                    <i class="fas fa-fire"></i> Consumables
+                </div>
+                <p>Items used but not part of final product</p>
+                <ul class="small">
+                    <li>Welding gas</li>
+                    <li>Cutting oil</li>
+                    <li>Sandpaper</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-calculator"></i> BOM Costing</h3>
+    <p>Automatic cost calculation includes:</p>
+    <ul>
+        <li><strong>Material Cost:</strong> Based on current purchase rates and quantities</li>
+        <li><strong>Labor Cost:</strong> Process-wise labor allocation</li>
+        <li><strong>Overhead Cost:</strong> Manufacturing overhead allocation</li>
+        <li><strong>Scrap Allowance:</strong> Wastage factor for each material</li>
+        <li><strong>Process Cost:</strong> Job work or in-house processing costs</li>
+    </ul>
+    
+    <div class="help-example">
+        <strong>Cost Breakdown Example:</strong>
+        <table class="table table-sm">
+            <tr><td>Material Cost</td><td>₹1,000</td></tr>
+            <tr><td>Labor Cost</td><td>₹300</td></tr>
+            <tr><td>Overhead (15%)</td><td>₹195</td></tr>
+            <tr><td>Scrap Allowance (5%)</td><td>₹50</td></tr>
+            <tr class="table-success"><td><strong>Total Cost</strong></td><td><strong>₹1,545</strong></td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-chart-gantt"></i> Production Planning</h3>
+    <p>BOM drives production planning by:</p>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="help-tip">
+                <strong>Material Requirements Planning (MRP):</strong> Calculate exact material needs for production orders
+            </div>
+            <div class="help-tip">
+                <strong>Inventory Allocation:</strong> Reserve materials for specific production jobs
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="help-tip">
+                <strong>Process Scheduling:</strong> Sequence manufacturing operations optimally
+            </div>
+            <div class="help-tip">
+                <strong>Capacity Planning:</strong> Ensure adequate resources for each process
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-check-square"></i> BOM Best Practices</h3>
+    <div class="help-warning">
+        <strong>Accuracy is Critical:</strong>
+        <ul>
+            <li>Double-check all quantities and units of measure</li>
+            <li>Include all materials, even small hardware items</li>
+            <li>Account for scrap and wastage factors</li>
+            <li>Regular review and updates as processes improve</li>
+        </ul>
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-sync-alt"></i> BOM Versions and Changes</h3>
+    <p>Version control ensures production consistency:</p>
+    <ul>
+        <li><strong>Engineering Changes:</strong> Track design modifications</li>
+        <li><strong>Effective Dates:</strong> Control when changes take effect</li>
+        <li><strong>Approval Workflow:</strong> Ensure authorized personnel approve changes</li>
+        <li><strong>Historical Tracking:</strong> Maintain records of all BOM versions</li>
+    </ul>
+</div>
+
+<div class="help-tip">
+    <strong>Integration Benefit:</strong> BOMs automatically integrate with inventory management, purchase planning, job work scheduling, and cost accounting for complete manufacturing control.
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-layer-group"></i> Multi-Level BOM Setup Guide</h3>
+    <p>Step-by-step guide to configure multi-level BOMs for complex products:</p>
+    
+    <div class="card mb-3">
+        <div class="card-header bg-primary text-white">
+            <h5><i class="fas fa-question-circle"></i> When to Use Multi-Level BOMs</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>🏭 **Top-Level BOMs** (Parent BOM = None)</h6>
+                    <ul>
+                        <li>Finished products sold to customers</li>
+                        <li>Complete assemblies</li>
+                        <li>Final manufactured items</li>
+                    </ul>
+                    <div class="help-example">
+                        <strong>Example:</strong> Complete Motor Assembly
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6>🔧 **Sub-Level BOMs** (Select Parent BOM)</h6>
+                    <ul>
+                        <li>Sub-assemblies used in final products</li>
+                        <li>Components made in-house</li>
+                        <li>Intermediate products</li>
+                    </ul>
+                    <div class="help-example">
+                        <strong>Example:</strong> Motor Housing, Rotor Assembly
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header bg-warning text-dark">
+            <h5><i class="fas fa-question-circle"></i> Common Questions & Examples</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><i class="fas fa-question"></i> "What if I'm making a simple product?"</h6>
+                    <div class="alert alert-light">
+                        <strong>Example: Castor Wheel</strong>
+                        <ul class="small">
+                            <li>Parent BOM: None (Top-level BOM)</li>
+                            <li>Phantom BOM: ❌ Unchecked (stored in inventory)</li>
+                            <li>Intermediate Product: ❌ Unchecked (final product)</li>
+                        </ul>
+                        <small class="text-muted">This is a finished product sold to customers.</small>
+                    </div>
+                    
+                    <h6><i class="fas fa-question"></i> "What if I'm making parts for another product?"</h6>
+                    <div class="alert alert-light">
+                        <strong>Example: Wheel Hub for Castor Wheel</strong>
+                        <ul class="small">
+                            <li>Parent BOM: Select "Castor Wheel BOM"</li>
+                            <li>Phantom BOM: ✅ Checked (goes directly into assembly)</li>
+                            <li>Intermediate Product: ✅ Checked (used in main product)</li>
+                        </ul>
+                        <small class="text-muted">This hub is made specifically for the castor wheel assembly.</small>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <h6><i class="fas fa-question"></i> "What if I make standard components?"</h6>
+                    <div class="alert alert-light">
+                        <strong>Example: Standard Bearing</strong>
+                        <ul class="small">
+                            <li>Parent BOM: None (can be used in multiple products)</li>
+                            <li>Phantom BOM: ❌ Unchecked (stored in inventory)</li>
+                            <li>Intermediate Product: ✅ Checked (used in multiple BOMs)</li>
+                        </ul>
+                        <small class="text-muted">This bearing can be used in various products.</small>
+                    </div>
+                    
+                    <h6><i class="fas fa-question"></i> "What about assembly-line products?"</h6>
+                    <div class="alert alert-light">
+                        <strong>Example: Welded Frame (not stored)</strong>
+                        <ul class="small">
+                            <li>Parent BOM: Select main product BOM</li>
+                            <li>Phantom BOM: ✅ Checked (goes directly to painting)</li>
+                            <li>Intermediate Product: ✅ Checked (part of larger assembly)</li>
+                        </ul>
+                        <small class="text-muted">Frame goes directly from welding to painting without storage.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header bg-success text-white">
+            <h5><i class="fas fa-lightbulb"></i> How to Fill Multi-Level BOM Fields</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><i class="fas fa-cog"></i> Field-by-Field Guide</h6>
+                    
+                    <div class="mb-3">
+                        <strong>1. Parent BOM (if sub-BOM)</strong>
+                        <ul class="small">
+                            <li><strong>For Final Products:</strong> Keep "None (Top-level BOM)" - products you sell to customers</li>
+                            <li><strong>For Sub-assemblies:</strong> Select existing BOM that uses this component</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>2. BOM Level</strong>
+                        <ul class="small">
+                            <li>Fills automatically - don't change</li>
+                            <li>Shows 0 for top-level, 1 for sub-level, etc.</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>3. Phantom BOM Checkbox</strong>
+                        <ul class="small">
+                            <li><span class="text-success">✅ Check when:</span> Product goes directly to next step, not stored</li>
+                            <li><span class="text-danger">❌ Don't check when:</span> Product is stored in inventory before use</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>4. Intermediate Product Checkbox</strong>
+                        <ul class="small">
+                            <li><span class="text-success">✅ Check when:</span> Product is used in other BOMs</li>
+                            <li><span class="text-danger">❌ Don't check when:</span> Final product only, not reused</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <h6><i class="fas fa-decision"></i> Quick Decision Guide</h6>
+                    
+                    <div class="alert alert-primary">
+                        <strong>Scenario 1: Final Product</strong><br>
+                        <small>(like "Motor Assembly")</small>
+                        <ul class="small mb-0">
+                            <li>Parent BOM: None</li>
+                            <li>Phantom BOM: ❌ Unchecked</li>
+                            <li>Intermediate Product: ❌ Unchecked</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <strong>Scenario 2: Sub-assembly</strong><br>
+                        <small>(like "Motor Housing" for "Motor Assembly")</small>
+                        <ul class="small mb-0">
+                            <li>Parent BOM: Select "Motor Assembly BOM"</li>
+                            <li>Phantom BOM: ✅ Check if goes directly into assembly</li>
+                            <li>Intermediate Product: ✅ Check if used in main product</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-secondary">
+                        <strong>Scenario 3: Reusable Component</strong><br>
+                        <small>(like "Standard Bearing")</small>
+                        <ul class="small mb-0">
+                            <li>Parent BOM: None (can be used anywhere)</li>
+                            <li>Phantom BOM: ❌ Unchecked (stored in inventory)</li>
+                            <li>Intermediate Product: ✅ Checked (used in multiple BOMs)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="alert alert-warning mt-3">
+                <strong><i class="fas fa-lightbulb"></i> Pro Tip:</strong> When in doubt, start with "None" for Parent BOM and leave both checkboxes unchecked. You can always modify the BOM later as your manufacturing process becomes clearer.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

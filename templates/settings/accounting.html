@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}Accounting Settings{% endblock %}
+
+{% block extra_css %}
+<style>
+.settings-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #007bff;
+}
+
+.form-switch .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+}
+
+.setting-description {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.company-selector {
+    background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-calculator"></i> Accounting Settings</h2>
+        <a href="{{ url_for('settings_advanced.settings_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Settings
+        </a>
+    </div>
+
+    <!-- Company Selector -->
+    <div class="company-selector">
+        <h5 class="mb-3">Select Company</h5>
+        <select class="form-select" id="companySelect" onchange="loadCompanySettings()">
+            <option value="">Global Settings</option>
+            {% for company in companies %}
+            <option value="{{ company.id }}" 
+                    {% if company.id == selected_company_id %}selected{% endif %}>
+                {{ company.name }}
+            </option>
+            {% endfor %}
+        </select>
+        <small class="text-white-50 mt-2 d-block">
+            Select a company to configure company-specific accounting settings
+        </small>
+    </div>
+
+    <form id="accountingSettingsForm">
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Automation Settings -->
+                <div class="settings-section">
+                    <h5><i class="fas fa-robot"></i> Accounting Automation</h5>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="auto_journal_entries" name="auto_journal_entries"
+                                   {% if not settings or settings.auto_journal_entries %}checked{% endif %}>
+                            <label class="form-check-label" for="auto_journal_entries">
+                                <strong>Auto Journal Entries</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Automatically create journal entries for transactions (GRN, Sales, Production)
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="auto_grn_accounting" name="auto_grn_accounting"
+                                   {% if not settings or settings.auto_grn_accounting %}checked{% endif %}>
+                            <label class="form-check-label" for="auto_grn_accounting">
+                                <strong>Auto GRN Accounting</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Automatically create accounting entries when GRN is posted
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="auto_sales_accounting" name="auto_sales_accounting"
+                                   {% if not settings or settings.auto_sales_accounting %}checked{% endif %}>
+                            <label class="form-check-label" for="auto_sales_accounting">
+                                <strong>Auto Sales Accounting</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Automatically create accounting entries for sales transactions
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="auto_production_accounting" name="auto_production_accounting"
+                                   {% if not settings or settings.auto_production_accounting %}checked{% endif %}>
+                            <label class="form-check-label" for="auto_production_accounting">
+                                <strong>Auto Production Accounting</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Automatically create accounting entries for production transactions
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Default Ledger Mapping -->
+                <div class="settings-section">
+                    <h5><i class="fas fa-link"></i> Default Ledger Mapping</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="default_sales_account_id" class="form-label">
+                                    <strong>Default Sales Account</strong>
+                                </label>
+                                <select class="form-select" id="default_sales_account_id" name="default_sales_account_id">
+                                    <option value="">Select Account</option>
+                                    {% for account in accounts %}
+                                    <option value="{{ account.id }}"
+                                            {% if settings and settings.default_sales_account_id == account.id %}selected{% endif %}>
+                                        {{ account.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="default_purchase_account_id" class="form-label">
+                                    <strong>Default Purchase Account</strong>
+                                </label>
+                                <select class="form-select" id="default_purchase_account_id" name="default_purchase_account_id">
+                                    <option value="">Select Account</option>
+                                    {% for account in accounts %}
+                                    <option value="{{ account.id }}"
+                                            {% if settings and settings.default_purchase_account_id == account.id %}selected{% endif %}>
+                                        {{ account.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="default_wip_account_id" class="form-label">
+                                    <strong>Default WIP Account</strong>
+                                </label>
+                                <select class="form-select" id="default_wip_account_id" name="default_wip_account_id">
+                                    <option value="">Select Account</option>
+                                    {% for account in accounts %}
+                                    <option value="{{ account.id }}"
+                                            {% if settings and settings.default_wip_account_id == account.id %}selected{% endif %}>
+                                        {{ account.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="default_cogs_account_id" class="form-label">
+                                    <strong>Default COGS Account</strong>
+                                </label>
+                                <select class="form-select" id="default_cogs_account_id" name="default_cogs_account_id">
+                                    <option value="">Select Account</option>
+                                    {% for account in accounts %}
+                                    <option value="{{ account.id }}"
+                                            {% if settings and settings.default_cogs_account_id == account.id %}selected{% endif %}>
+                                        {{ account.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GST Settings -->
+                <div class="settings-section">
+                    <h5><i class="fas fa-percent"></i> GST Configuration</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="default_cgst_rate" class="form-label">
+                                    <strong>Default CGST Rate (%)</strong>
+                                </label>
+                                <input type="number" class="form-control" id="default_cgst_rate" name="default_cgst_rate" 
+                                       step="0.01" min="0" max="50"
+                                       value="{{ settings.default_cgst_rate if settings else 9.0 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="default_sgst_rate" class="form-label">
+                                    <strong>Default SGST Rate (%)</strong>
+                                </label>
+                                <input type="number" class="form-control" id="default_sgst_rate" name="default_sgst_rate" 
+                                       step="0.01" min="0" max="50"
+                                       value="{{ settings.default_sgst_rate if settings else 9.0 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="default_igst_rate" class="form-label">
+                                    <strong>Default IGST Rate (%)</strong>
+                                </label>
+                                <input type="number" class="form-control" id="default_igst_rate" name="default_igst_rate" 
+                                       step="0.01" min="0" max="50"
+                                       value="{{ settings.default_igst_rate if settings else 18.0 }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="gst_calculation_method" class="form-label">
+                            <strong>GST Calculation Method</strong>
+                        </label>
+                        <select class="form-select" id="gst_calculation_method" name="gst_calculation_method">
+                            <option value="inclusive" {% if settings and settings.gst_calculation_method == 'inclusive' %}selected{% endif %}>
+                                Inclusive (Price includes GST)
+                            </option>
+                            <option value="exclusive" {% if settings and settings.gst_calculation_method == 'exclusive' %}selected{% endif %}>
+                                Exclusive (GST added to price)
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary me-2" onclick="resetForm()">Reset</button>
+                    <button type="submit" class="btn btn-warning">Save Settings</button>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Accounting Guide</h6>
+                    </div>
+                    <div class="card-body">
+                        <h6>Auto Journal Entries:</h6>
+                        <p class="small text-muted">
+                            When enabled, the system automatically creates proper double-entry 
+                            bookkeeping entries for all transactions.
+                        </p>
+
+                        <h6 class="mt-3">Ledger Mapping:</h6>
+                        <p class="small text-muted">
+                            Configure default accounts for automatic postings. 
+                            These can be overridden for specific transactions.
+                        </p>
+
+                        <h6 class="mt-3">GST Configuration:</h6>
+                        <ul class="list-unstyled small">
+                            <li><strong>CGST:</strong> Central GST (Intra-state)</li>
+                            <li><strong>SGST:</strong> State GST (Intra-state)</li>
+                            <li><strong>IGST:</strong> Integrated GST (Inter-state)</li>
+                        </ul>
+
+                        <div class="alert alert-warning mt-3">
+                            <small>
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Changes to automation settings will only affect new transactions.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function loadCompanySettings() {
+    const companyId = document.getElementById('companySelect').value;
+    const url = new URL(window.location.href);
+    if (companyId) {
+        url.searchParams.set('company_id', companyId);
+    } else {
+        url.searchParams.delete('company_id');
+    }
+    window.location.href = url.toString();
+}
+
+function resetForm() {
+    if (confirm('Reset all settings to default values?')) {
+        document.getElementById('accountingSettingsForm').reset();
+    }
+}
+
+document.getElementById('accountingSettingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    alert('Accounting settings save functionality coming soon!');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Tracking Dashboard - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-boxes"></i> Batch Tracking Dashboard</h1>
+            <p class="text-muted">Monitor material batches through job work processes with complete traceability</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('jobwork.batch_return') }}" class="btn btn-success">
+                <i class="fas fa-undo"></i> Process Batch Return
+            </a>
+            <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Job Works
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-1">{{ stats.active_batches }}</h4>
+                            <small>Active Batches</small>
+                        </div>
+                        <i class="fas fa-boxes fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-1">{{ stats.pending_returns }}</h4>
+                            <small>Pending Returns</small>
+                        </div>
+                        <i class="fas fa-clock fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-1">{{ stats.in_progress }}</h4>
+                            <small>In Progress</small>
+                        </div>
+                        <i class="fas fa-cogs fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-1">{{ stats.recent_returns }}</h4>
+                            <small>Recent Returns</small>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-1">{{ "%.1f"|format(stats.total_material_out) }}</h4>
+                            <small>Material Out</small>
+                        </div>
+                        <i class="fas fa-truck fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-dark text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-1">{{ "%.1f"|format(stats.avg_yield_rate) }}%</h4>
+                            <small>Avg Yield</small>
+                        </div>
+                        <i class="fas fa-percentage fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Batches -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-hourglass-half me-2"></i>Active Batches in Process</h5>
+        </div>
+        <div class="card-body">
+            {% if active_batches %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Batch ID</th>
+                            <th>Job Work</th>
+                            <th>Process</th>
+                            <th>Input Batch</th>
+                            <th>Quantity Issued</th>
+                            <th>Issue Date</th>
+                            <th>Days in Process</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for batch in active_batches %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('jobwork.batch_details', batch_id=batch.id) }}" class="text-decoration-none">
+                                    <strong>#{{ batch.id }}</strong>
+                                </a>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ batch.job_work.job_number if batch.job_work else 'N/A' }}</small><br>
+                                {{ batch.job_work.job_title if batch.job_work else 'Unknown Job' }}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ batch.process_name }}</span>
+                            </td>
+                            <td>
+                                {% if batch.input_batch %}
+                                    <span class="badge bg-secondary">{{ batch.input_batch.batch_number }}</span>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ batch.quantity_issued }}</strong>
+                                <small class="text-muted">units</small>
+                            </td>
+                            <td>
+                                <small>{{ batch.issue_date.strftime('%d %b %Y') if batch.issue_date else 'N/A' }}</small>
+                            </td>
+                            <td>
+                                {% set days = batch.days_in_process %}
+                                {% if days > 7 %}
+                                    <span class="badge bg-danger">{{ days }} days</span>
+                                {% elif days > 3 %}
+                                    <span class="badge bg-warning">{{ days }} days</span>
+                                {% else %}
+                                    <span class="badge bg-success">{{ days }} days</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if batch.status == 'issued' %}
+                                    <span class="badge bg-warning">Issued</span>
+                                {% elif batch.status == 'in_progress' %}
+                                    <span class="badge bg-info">In Progress</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('jobwork.batch_details', batch_id=batch.id) }}" 
+                                       class="btn btn-outline-primary" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('jobwork.batch_return') }}?batch_id={{ batch.id }}" 
+                                       class="btn btn-outline-success" title="Process Return">
+                                        <i class="fas fa-undo"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No active batches in process</p>
+                <a href="{{ url_for('jobwork.create_job_work') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create New Job Work
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Returns -->
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Recent Batch Returns (Last 30 Days)</h5>
+        </div>
+        <div class="card-body">
+            {% if recent_returns %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Batch ID</th>
+                            <th>Job Work</th>
+                            <th>Process</th>
+                            <th>Return Date</th>
+                            <th>Finished Qty</th>
+                            <th>Scrap Qty</th>
+                            <th>Yield %</th>
+                            <th>Quality Status</th>
+                            <th>Output Batch</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for batch in recent_returns %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('jobwork.batch_details', batch_id=batch.id) }}" class="text-decoration-none">
+                                    <strong>#{{ batch.id }}</strong>
+                                </a>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ batch.job_work.job_number if batch.job_work else 'N/A' }}</small><br>
+                                {{ batch.job_work.job_title if batch.job_work else 'Unknown Job' }}
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ batch.process_name }}</span>
+                            </td>
+                            <td>
+                                <small>{{ batch.return_date.strftime('%d %b %Y') if batch.return_date else 'N/A' }}</small>
+                            </td>
+                            <td>
+                                <strong class="text-success">{{ batch.quantity_finished or 0 }}</strong>
+                            </td>
+                            <td>
+                                <strong class="text-danger">{{ batch.quantity_scrap or 0 }}</strong>
+                            </td>
+                            <td>
+                                {% set yield_pct = batch.yield_percentage %}
+                                {% if yield_pct >= 90 %}
+                                    <span class="badge bg-success">{{ "%.1f"|format(yield_pct) }}%</span>
+                                {% elif yield_pct >= 75 %}
+                                    <span class="badge bg-warning">{{ "%.1f"|format(yield_pct) }}%</span>
+                                {% else %}
+                                    <span class="badge bg-danger">{{ "%.1f"|format(yield_pct) }}%</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if batch.quality_status == 'approved' %}
+                                    <span class="badge bg-success">Approved</span>
+                                {% elif batch.quality_status == 'rejected' %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                {% elif batch.quality_status == 'rework' %}
+                                    <span class="badge bg-warning">Rework</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ batch.quality_status or 'N/A' }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if batch.output_batch_code %}
+                                    <span class="badge bg-primary">{{ batch.output_batch_code }}</span>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('jobwork.batch_details', batch_id=batch.id) }}" 
+                                   class="btn btn-sm btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-3">
+                <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
+                <p class="text-muted">No recent batch returns</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.opacity-50 {
+    opacity: 0.5;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.table th {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.table td {
+    font-size: 0.9rem;
+    vertical-align: middle;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+</style>
+{% endblock %}

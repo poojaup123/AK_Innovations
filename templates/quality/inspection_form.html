@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-microscope me-2"></i>{{ title }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    {{ form.production_id.label(class="form-label") }}
+                                    {{ form.production_id(class="form-select") }}
+                                    {% for error in form.production_id.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.batch_number.label(class="form-label") }}
+                                    {{ form.batch_number(class="form-control", placeholder="Optional batch identifier") }}
+                                    {% for error in form.batch_number.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.total_inspected.label(class="form-label") }}
+                                    {{ form.total_inspected(class="form-control", step="0.01", id="totalInspected") }}
+                                    {% for error in form.total_inspected.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.passed_quantity.label(class="form-label") }}
+                                    {{ form.passed_quantity(class="form-control", step="0.01", id="passedQuantity") }}
+                                    {% for error in form.passed_quantity.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.failed_quantity.label(class="form-label") }}
+                                    {{ form.failed_quantity(class="form-control", step="0.01", id="failedQuantity") }}
+                                    {% for error in form.failed_quantity.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Inspection Summary:</strong>
+                                    <div id="inspectionSummary" class="mt-2">
+                                        <span class="me-3">Rejection Rate: <strong id="rejectionRate">0.0%</strong></span>
+                                        <span>Total Validated: <strong id="totalValidated">0.0</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.inspection_notes.label(class="form-label") }}
+                            {{ form.inspection_notes(class="form-control", rows="4", placeholder="Record inspection findings, quality observations, and any issues discovered...") }}
+                            {% for error in form.inspection_notes.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('quality.list_inspections') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Inspections
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-1"></i>Log Inspection
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const totalInspected = document.getElementById('totalInspected');
+    const passedQuantity = document.getElementById('passedQuantity');
+    const failedQuantity = document.getElementById('failedQuantity');
+    const rejectionRate = document.getElementById('rejectionRate');
+    const totalValidated = document.getElementById('totalValidated');
+
+    function calculateSummary() {
+        const total = parseFloat(totalInspected.value) || 0;
+        const passed = parseFloat(passedQuantity.value) || 0;
+        const failed = parseFloat(failedQuantity.value) || 0;
+        
+        const validated = passed + failed;
+        const rejection = total > 0 ? (failed / total * 100) : 0;
+        
+        rejectionRate.textContent = rejection.toFixed(1) + '%';
+        totalValidated.textContent = validated.toFixed(1);
+        
+        // Auto-calculate failed quantity if total and passed are entered
+        if (total > 0 && passed > 0 && failed === 0) {
+            failedQuantity.value = Math.max(0, total - passed).toFixed(2);
+        }
+        
+        // Auto-calculate passed quantity if total and failed are entered
+        if (total > 0 && failed > 0 && passed === 0) {
+            passedQuantity.value = Math.max(0, total - failed).toFixed(2);
+        }
+    }
+
+    totalInspected.addEventListener('input', calculateSummary);
+    passedQuantity.addEventListener('input', calculateSummary);
+    failedQuantity.addEventListener('input', calculateSummary);
+    
+    // Initial calculation
+    calculateSummary();
+});
+</script>
+{% endblock %}

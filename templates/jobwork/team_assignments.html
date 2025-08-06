@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Team Assignments - {{ job.job_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-users"></i> Team Assignments - {{ job.job_number }}</h2>
+                <div>
+                    <a href="{{ url_for('jobwork.detail', id=job.id) }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Job Work
+                    </a>
+                    {% if assignments|length < job.max_team_members %}
+                    <a href="{{ url_for('jobwork.assign_team_member', job_id=job.id) }}" class="btn btn-success">
+                        <i class="fas fa-user-plus"></i> Assign Team Member
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Job Work Info Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Job Work Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Item:</strong> {{ job.item.name }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Department:</strong> {{ job.department }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Total Quantity:</strong> {{ job.quantity_sent }} {{ job.item.unit_of_measure }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Team Limit:</strong> {{ assignments|length }}/{{ job.max_team_members }} members
+                        </div>
+                    </div>
+                    {% if job.notes %}
+                    <div class="row mt-2">
+                        <div class="col-md-12">
+                            <strong>Notes:</strong> {{ job.notes }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Team Assignments -->
+            {% if assignments %}
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> Team Members ({{ assignments|length }})</h5>
+                    <a href="{{ url_for('jobwork.update_team_progress', job_id=job.id) }}" class="btn btn-info btn-sm">
+                        <i class="fas fa-sync-alt"></i> Update Progress from Daily Work
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Employee Code</th>
+                                    <th>Assigned Quantity</th>
+                                    <th>Completed Quantity</th>
+                                    <th>Progress</th>
+                                    <th>Status</th>
+                                    <th>Assigned Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignment in assignments %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ assignment.employee.name }}</strong>
+                                        {% if assignment.employee.department %}
+                                        <br><small class="text-muted">{{ assignment.employee.department }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ assignment.employee.employee_code }}</td>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" 
+                                                   class="form-control" 
+                                                   value="{{ assignment.assigned_quantity }}" 
+                                                   min="0.01" 
+                                                   step="0.01"
+                                                   id="assigned-{{ assignment.id }}"
+                                                   onchange="updateAssignedQuantity({{ assignment.id }})">
+                                            <span class="input-group-text">{{ job.item.unit_of_measure }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" 
+                                                   class="form-control" 
+                                                   value="{{ (assignment.completion_percentage * assignment.assigned_quantity / 100) | round(2) }}" 
+                                                   min="0" 
+                                                   max="{{ assignment.assigned_quantity }}"
+                                                   step="0.01"
+                                                   id="completed-{{ assignment.id }}"
+                                                   onchange="updateAssignment({{ assignment.id }})">
+                                            <span class="input-group-text">{{ job.item.unit_of_measure }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% set progress = assignment.completion_percentage %}
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" 
+                                                 style="width: {{ progress }}%"
+                                                 role="progressbar">
+                                                {{ "%.1f"|format(progress) }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <select class="form-select form-select-sm" 
+                                                id="status-{{ assignment.id }}"
+                                                onchange="updateAssignment({{ assignment.id }})">
+                                            <option value="assigned" {% if assignment.status == 'assigned' %}selected{% endif %}>Assigned</option>
+                                            <option value="in_progress" {% if assignment.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                            <option value="completed" {% if assignment.status == 'completed' %}selected{% endif %}>Completed</option>
+                                            <option value="on_hold" {% if assignment.status == 'on_hold' %}selected{% endif %}>On Hold</option>
+                                        </select>
+                                    </td>
+                                    <td>{{ assignment.assigned_at.strftime('%d %b %Y') }}</td>
+                                    <td>
+                                        <button class="btn btn-danger btn-sm" 
+                                                onclick="confirmRemoveAssignment({{ assignment.id }}, '{{ assignment.employee.name }}')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Team Summary -->
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6><i class="fas fa-chart-bar"></i> Team Progress Summary</h6>
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <strong>Total Assigned:</strong> 
+                                            {{ assignments|sum(attribute='assigned_quantity') }} {{ job.item.unit_of_measure }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <strong>Total Completed:</strong> 
+                                            {{ assignments|sum(attribute='completed_quantity') }} {{ job.item.unit_of_measure }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <strong>Remaining:</strong> 
+                                            {{ (assignments|sum(attribute='assigned_quantity') - assignments|sum(attribute='completed_quantity')) }} {{ job.item.unit_of_measure }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <strong>Overall Progress:</strong>
+                                            {% set total_assigned = assignments|sum(attribute='assigned_quantity') %}
+                                            {% set total_completed = assignments|sum(attribute='completed_quantity') %}
+                                            {% set overall_progress = (total_completed / total_assigned * 100) if total_assigned > 0 else 0 %}
+                                            {{ "%.1f"|format(overall_progress) }}%
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="card">
+                <div class="card-body text-center">
+                    <i class="fas fa-users text-muted" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3">No Team Members Assigned</h4>
+                    <p class="text-muted">This job work is configured for team work but no members have been assigned yet.</p>
+                    <a href="{{ url_for('jobwork.assign_team_member', job_id=job.id) }}" class="btn btn-success">
+                        <i class="fas fa-user-plus"></i> Assign First Team Member
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmRemoveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Removal</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to remove <strong id="employeeName"></strong> from this team assignment?</p>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="confirmRemoveLink" class="btn btn-danger">Remove Member</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update assignment progress
+function updateAssignment(assignmentId) {
+    const completedQty = document.getElementById(`completed-${assignmentId}`).value;
+    const status = document.getElementById(`status-${assignmentId}`).value;
+    
+    fetch(`/jobwork/update-team-assignment/${assignmentId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            completed_quantity: completedQty,
+            status: status
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Refresh page to update progress bars and summary
+            location.reload();
+        } else {
+            alert('Error updating assignment: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating assignment');
+    });
+}
+
+// Update assigned quantity
+function updateAssignedQuantity(assignmentId) {
+    const assignedQty = document.getElementById(`assigned-${assignmentId}`).value;
+    
+    if (assignedQty <= 0) {
+        alert('Assigned quantity must be greater than 0');
+        location.reload();
+        return;
+    }
+    
+    fetch(`/jobwork/update-assigned-quantity/${assignmentId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            assigned_quantity: assignedQty
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Refresh page to update progress calculations and summary
+            location.reload();
+        } else {
+            alert('Error updating assigned quantity: ' + data.message);
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating assigned quantity');
+        location.reload();
+    });
+}
+
+// Confirm removal
+function confirmRemoveAssignment(assignmentId, employeeName) {
+    document.getElementById('employeeName').textContent = employeeName;
+    document.getElementById('confirmRemoveLink').href = `/jobwork/remove-team-assignment/${assignmentId}`;
+    new bootstrap.Modal(document.getElementById('confirmRemoveModal')).show();
+}
+</script>
+{% endblock %}

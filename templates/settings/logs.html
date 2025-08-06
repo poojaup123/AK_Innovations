@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Logs - AK Innovations Factory{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('settings.dashboard') }}">Settings</a></li>
+                    <li class="breadcrumb-item active">Logs</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-history"></i> Notification Logs</h2>
+                    <p class="text-muted">View notification history and delivery status</p>
+                </div>
+                <button class="btn btn-outline-danger" onclick="clearLogs()">
+                    <i class="fas fa-trash"></i> Clear Logs
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    {% if logs.items %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date/Time</th>
+                                        <th>Type</th>
+                                        <th>Recipient</th>
+                                        <th>Subject</th>
+                                        <th>Status</th>
+                                        <th>Response</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in logs.items %}
+                                        <tr>
+                                            <td>
+                                                <small>{{ log.sent_at.strftime('%Y-%m-%d') }}</small><br>
+                                                <small class="text-muted">{{ log.sent_at.strftime('%H:%M:%S') }}</small>
+                                            </td>
+                                            <td>
+                                                {% if log.type == 'email' %}
+                                                    <span class="badge bg-primary">
+                                                        <i class="fas fa-envelope"></i> Email
+                                                    </span>
+                                                {% elif log.type == 'sms' %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-sms"></i> SMS
+                                                    </span>
+                                                {% elif log.type == 'whatsapp' %}
+                                                    <span class="badge bg-info">
+                                                        <i class="fab fa-whatsapp"></i> WhatsApp
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <strong>{{ log.recipient }}</strong>
+                                                {% if log.event_type %}
+                                                    <br><small class="text-muted">{{ log.event_type }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if log.subject %}
+                                                    <span title="{{ log.subject }}">
+                                                        {{ log.subject[:50] }}{% if log.subject|length > 50 %}...{% endif %}
+                                                    </span>
+                                                {% else %}
+                                                    <em class="text-muted">No subject</em>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if log.success %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check"></i> Success
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">
+                                                        <i class="fas fa-times"></i> Failed
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if log.response %}
+                                                    <button class="btn btn-sm btn-outline-secondary" 
+                                                            type="button" 
+                                                            data-bs-toggle="tooltip" 
+                                                            title="{{ log.response }}">
+                                                        <i class="fas fa-info-circle"></i>
+                                                    </button>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if logs.pages > 1 %}
+                            <nav aria-label="Log pagination">
+                                <ul class="pagination justify-content-center mt-4">
+                                    {% if logs.has_prev %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('settings.notification_logs', page=logs.prev_num) }}">Previous</a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for page_num in logs.iter_pages() %}
+                                        {% if page_num %}
+                                            {% if page_num != logs.page %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="{{ url_for('settings.notification_logs', page=page_num) }}">{{ page_num }}</a>
+                                                </li>
+                                            {% else %}
+                                                <li class="page-item active">
+                                                    <span class="page-link">{{ page_num }}</span>
+                                                </li>
+                                            {% endif %}
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link">...</span>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if logs.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('settings.notification_logs', page=logs.next_num) }}">Next</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-history fa-4x text-muted mb-3"></i>
+                            <h4>No Logs Yet</h4>
+                            <p class="text-muted">Notification logs will appear here once notifications are sent</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+});
+
+function clearLogs() {
+    if (confirm('Are you sure you want to clear all notification logs? This action cannot be undone.')) {
+        fetch('{{ url_for("settings.clear_logs") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    }
+}
+</script>
+{% endblock %}

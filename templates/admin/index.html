@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Factory Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-cogs text-primary"></i> Admin Dashboard</h2>
+                <div>
+                    <a href="{{ url_for('tally_import.import_dashboard') }}" class="btn btn-info">
+                        <i class="fas fa-file-import"></i> Tally Import
+                    </a>
+                    <a href="{{ url_for('accounting.dashboard') }}" class="btn btn-success">
+                        <i class="fas fa-chart-line"></i> Accounting Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6>Total Users</h6>
+                                    <h4>{{ total_users }}</h4>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-users fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6>Accounts</h6>
+                                    <h4>{{ total_accounts }}</h4>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-book fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6>Vouchers</h6>
+                                    <h4>{{ total_vouchers }}</h4>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-receipt fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6>Items</h6>
+                                    <h4>{{ total_items }}</h4>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-boxes fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Actions Grid -->
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-file-import"></i> Data Import</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Import authentic data from external systems</p>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('tally_import.import_dashboard') }}" class="btn btn-primary">
+                                    <i class="fas fa-file-code"></i> Import Tally Data
+                                </a>
+                                <button class="btn btn-outline-secondary" disabled>
+                                    <i class="fas fa-file-excel"></i> Import Excel Data (Coming Soon)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-chart-line"></i> System Health</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Monitor system performance and health</p>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('accounting.dashboard') }}" class="btn btn-success">
+                                    <i class="fas fa-calculator"></i> Accounting Status
+                                </a>
+                                <a href="{{ url_for('admin.approvals_dashboard') }}" class="btn btn-info">
+                                    <i class="fas fa-tasks"></i> Pending Approvals
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-users-cog"></i> User Management</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Manage user accounts and permissions</p>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary" disabled>
+                                    <i class="fas fa-user-plus"></i> Create User (Coming Soon)
+                                </button>
+                                <button class="btn btn-outline-secondary" disabled>
+                                    <i class="fas fa-key"></i> Reset Passwords (Coming Soon)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-database"></i> System Maintenance</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>System backup and maintenance operations</p>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-warning" disabled>
+                                    <i class="fas fa-download"></i> Create Backup (Coming Soon)
+                                </button>
+                                <button class="btn btn-outline-danger" disabled>
+                                    <i class="fas fa-broom"></i> Clean System (Coming Soon)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-history"></i> Recent System Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>System Status:</strong> Your Factory Management System is running with authentic Tally-like accounting.
+                        <br>
+                        <small>All business transactions are using proper income/expense accounts with zero compromises on accounting precision.</small>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Accounting Health</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Double-entry bookkeeping active</li>
+                                <li><i class="fas fa-check text-success"></i> Income statement accounts configured</li>
+                                <li><i class="fas fa-check text-success"></i> Authentic Tally-like calculations</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Data Integration</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Tally XML import ready</li>
+                                <li><i class="fas fa-check text-success"></i> Multi-encoding support</li>
+                                <li><i class="fas fa-check text-success"></i> Account mapping configured</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

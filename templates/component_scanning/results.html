@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}Detection Results - Component Scanning{% endblock %}
+
+{% block head %}
+<style>
+.result-header {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.component-card {
+    border-left: 4px solid #007bff;
+    transition: all 0.3s;
+    margin-bottom: 15px;
+}
+
+.component-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.confidence-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: #e9ecef;
+    overflow: hidden;
+}
+
+.confidence-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s;
+}
+
+.match-badge {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+}
+
+.detection-image {
+    max-width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.component-thumbnail {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+}
+
+.stats-mini {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+}
+
+.action-buttons {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 20px;
+    margin-top: 20px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="result-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h1><i class="fas fa-search"></i> Component Detection Results</h1>
+                <p class="mb-2">Session: {{ detection.session_id[:8] }}...</p>
+                <p class="mb-0">
+                    <i class="fas fa-clock"></i> Processed in {{ "%.1f"|format(detection.processing_time or 0) }}s
+                    <span class="ms-3"><i class="fas fa-calendar"></i> {{ detection.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                </p>
+            </div>
+            <div class="col-auto">
+                <div class="text-end">
+                    <h2 class="mb-0">{{ detection.total_components_detected }}</h2>
+                    <small>Components Detected</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Detection Image -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-image"></i> Detection Visualization</h5>
+                    {% if detection.svg_layout_path %}
+                        <a href="{{ url_for('component_scanning.download_layout', session_id=detection.session_id) }}" 
+                           class="btn btn-sm btn-success">
+                            <i class="fas fa-download"></i> Download SVG Layout
+                        </a>
+                    {% endif %}
+                </div>
+                <div class="card-body text-center">
+                    {% if detection.result_image_path %}
+                        <img src="{{ url_for('static', filename=detection.result_image_path.replace('static/', '')) }}" 
+                             class="detection-image" alt="Detection Results">
+                    {% else %}
+                        <div class="text-muted py-4">
+                            <i class="fas fa-image fa-3x mb-3"></i>
+                            <p>Result image not available</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="row mt-4">
+                <div class="col-md-3">
+                    <div class="stats-mini">
+                        <h4 class="text-primary">{{ enhanced_components|length }}</h4>
+                        <small class="text-muted">Total Components</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-mini">
+                        <h4 class="text-success">{{ suggestions.matched_components }}</h4>
+                        <small class="text-muted">Matched to Inventory</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-mini">
+                        <h4 class="text-warning">{{ suggestions.unmatched_components }}</h4>
+                        <small class="text-muted">Unmatched</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stats-mini">
+                        <h4 class="text-info">₹{{ "%.0f"|format(suggestions.total_estimated_value) }}</h4>
+                        <small class="text-muted">Estimated Value</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Component Details -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> Detected Components</h5>
+                </div>
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    {% for component in components %}
+                        <div class="component-card card">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-start">
+                                    <div class="me-3">
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                                             style="width: 30px; height: 30px; font-size: 12px; font-weight: bold;">
+                                            {{ loop.index }}
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ component.component_class|title }}</h6>
+                                        
+                                        <!-- Confidence Bar -->
+                                        <div class="mb-2">
+                                            <small class="text-muted">Confidence: {{ "%.1f"|format(component.confidence * 100) }}%</small>
+                                            <div class="confidence-bar">
+                                                <div class="confidence-fill bg-{% if component.confidence > 0.8 %}success{% elif component.confidence > 0.6 %}warning{% else %}danger{% endif %}" 
+                                                     style="width: {{ component.confidence * 100 }}%"></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Dimensions -->
+                                        <div class="row text-center mb-2">
+                                            <div class="col-6">
+                                                <small class="text-muted">Width</small>
+                                                <div><strong>{{ "%.1f"|format(component.estimated_width_mm or 0) }}</strong> mm</div>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted">Height</small>
+                                                <div><strong>{{ "%.1f"|format(component.estimated_height_mm or 0) }}</strong> mm</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Inventory Match -->
+                                        {% if enhanced_components[loop.index0].matched_item_id %}
+                                            <div class="mt-2">
+                                                <span class="badge bg-success match-badge">
+                                                    <i class="fas fa-check"></i> Matched to Inventory
+                                                </span>
+                                                <div class="mt-1">
+                                                    <small class="text-muted">{{ enhanced_components[loop.index0].matched_item_name }}</small>
+                                                    <br>
+                                                    <small class="text-success">Stock: {{ enhanced_components[loop.index0].inventory_available }}</small>
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <span class="badge bg-warning match-badge">
+                                                <i class="fas fa-question"></i> No Match Found
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Suggestions -->
+    {% if suggestions.low_stock_warnings or suggestions.new_item_suggestions %}
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-lightbulb"></i> Inventory Suggestions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Low Stock Warnings -->
+                        {% if suggestions.low_stock_warnings %}
+                        <div class="col-md-6">
+                            <h6 class="text-warning"><i class="fas fa-exclamation-triangle"></i> Low Stock Warnings</h6>
+                            {% for warning in suggestions.low_stock_warnings %}
+                                <div class="alert alert-warning py-2">
+                                    <strong>{{ warning.item_name }}</strong><br>
+                                    <small>Current stock: {{ warning.current_stock }} units</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- New Item Suggestions -->
+                        {% if suggestions.new_item_suggestions %}
+                        <div class="col-md-6">
+                            <h6 class="text-info"><i class="fas fa-plus-circle"></i> New Item Suggestions</h6>
+                            {% for suggestion in suggestions.new_item_suggestions %}
+                                <div class="alert alert-info py-2">
+                                    <strong>{{ suggestion.detected_class|title }}</strong><br>
+                                    <small>{{ "%.1f"|format(suggestion.estimated_dimensions.width_mm or 0) }} × {{ "%.1f"|format(suggestion.estimated_dimensions.height_mm or 0) }} mm</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <div class="row">
+            <div class="col-md-6">
+                <h6><i class="fas fa-cogs"></i> Actions</h6>
+                <div class="btn-group-vertical w-100">
+                    <a href="{{ url_for('component_scanning.create_bom', session_id=detection.session_id) }}" 
+                       class="btn btn-primary">
+                        <i class="fas fa-sitemap"></i> Create Bill of Materials
+                    </a>
+                    {% if detection.svg_layout_path %}
+                        <a href="{{ url_for('component_scanning.download_layout', session_id=detection.session_id) }}" 
+                           class="btn btn-success">
+                            <i class="fas fa-download"></i> Download Layout (SVG)
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="fas fa-share"></i> Share & Export</h6>
+                <div class="btn-group-vertical w-100">
+                    <button class="btn btn-info" onclick="window.print()">
+                        <i class="fas fa-print"></i> Print Results
+                    </button>
+                    <a href="{{ url_for('component_scanning.dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .action-buttons, .card-header .btn, nav {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+    }
+}
+</style>
+{% endblock %}

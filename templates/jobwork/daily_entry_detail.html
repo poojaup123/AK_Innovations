@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Entry Details - {{ entry.worker_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-calendar-day"></i> Daily Entry Details</h1>
+            <p class="text-muted">View detailed information about this daily work entry</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('jobwork.daily_entries_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Daily Entries
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-hard-hat"></i> {{ entry.worker_name }} - {{ entry.work_date.strftime('%d/%m/%Y') }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Worker Information -->
+                        <div class="col-md-6">
+                            <h6 class="text-info border-bottom pb-2 mb-3">
+                                <i class="fas fa-user"></i> Worker Information
+                            </h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Worker Name:</strong></td>
+                                    <td>{{ entry.worker_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Work Date:</strong></td>
+                                    <td>{{ entry.work_date.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Hours Worked:</strong></td>
+                                    <td><span class="badge bg-info">{{ entry.hours_worked }} hours</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Logged At:</strong></td>
+                                    <td>{{ entry.created_at.strftime('%d/%m/%Y %I:%M %p') }}</td>
+                                </tr>
+                                {% if entry.logger %}
+                                <tr>
+                                    <td><strong>Logged By:</strong></td>
+                                    <td>{{ entry.logger.username }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+
+                        <!-- Job Work Information -->
+                        <div class="col-md-6">
+                            <h6 class="text-success border-bottom pb-2 mb-3">
+                                <i class="fas fa-tools"></i> Job Work Information
+                            </h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Job Work:</strong></td>
+                                    <td>
+                                        <a href="{{ url_for('jobwork.detail', id=entry.job_work.id) }}" class="text-decoration-none">
+                                            {{ entry.job_work.job_number }}
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Item:</strong></td>
+                                    <td>{{ entry.job_work.item.name }} <small class="text-muted">({{ entry.job_work.item.code }})</small></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Process:</strong></td>
+                                    <td>{{ entry.job_work.process }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Department:</strong></td>
+                                    <td>{{ entry.job_work.department or 'Not specified' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <!-- Work Progress -->
+                        <div class="col-md-6">
+                            <h6 class="text-warning border-bottom pb-2 mb-3">
+                                <i class="fas fa-chart-line"></i> Work Progress
+                            </h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Quantity Completed:</strong></td>
+                                    <td><span class="badge bg-success">{{ entry.quantity_completed }} units</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Quality Status:</strong></td>
+                                    <td><span class="badge {{ entry.quality_badge_class }}">{{ entry.quality_status.replace('_', ' ').title() }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Process Stage:</strong></td>
+                                    <td><span class="badge {{ entry.stage_badge_class }}">{{ entry.process_stage.replace('_', ' ').title() }}</span></td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- Additional Information -->
+                        <div class="col-md-6">
+                            <h6 class="text-secondary border-bottom pb-2 mb-3">
+                                <i class="fas fa-info-circle"></i> Additional Information
+                            </h6>
+                            {% if entry.notes %}
+                            <div class="mb-3">
+                                <strong>Work Notes:</strong>
+                                <div class="bg-light p-3 rounded mt-2">
+                                    {{ entry.notes }}
+                                </div>
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No additional notes for this entry.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="btn-group">
+                                <a href="{{ url_for('jobwork.detail', id=entry.job_work.id) }}" class="btn btn-primary">
+                                    <i class="fas fa-eye"></i> View Job Work Details
+                                </a>
+                                {% if entry.job_work.is_team_work %}
+                                <a href="{{ url_for('jobwork.team_assignments', job_id=entry.job_work.id) }}" class="btn btn-info">
+                                    <i class="fas fa-users"></i> View Team Assignments
+                                </a>
+                                {% endif %}
+                                <a href="{{ url_for('jobwork.daily_entries_list') }}" class="btn btn-secondary">
+                                    <i class="fas fa-list"></i> All Daily Entries
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

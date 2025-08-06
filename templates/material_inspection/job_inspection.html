@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-search me-2"></i>{{ title }}</h2>
+                <a href="{{ url_for('material_inspection.dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-tools text-success me-2"></i>Job Work Details</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Job Number:</strong></td>
+                            <td>{{ job_work.job_number }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Customer:</strong></td>
+                            <td>{{ job_work.customer_name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Sent Date:</strong></td>
+                            <td>{{ job_work.sent_date.strftime('%m/%d/%Y') }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                <span class="badge bg-info">{{ job_work.status.title() }}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Inspection Status:</strong></td>
+                            <td>
+                                <span class="badge bg-warning">{{ job_work.inspection_status.title() }}</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-cog me-2"></i>Item to Inspect</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Inspection Instructions:</strong> This job work involves returned materials from external processing. Inspect the returned items for quality and damage.
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Item:</strong></td>
+                                    <td>{{ job_work.item.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Item Code:</strong></td>
+                                    <td>{{ job_work.item.code }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Quantity Sent:</strong></td>
+                                    <td>{{ "%.2f"|format(job_work.quantity_sent) }} {{ job_work.item.unit_of_measure }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Quantity Received:</strong></td>
+                                    <td>{{ "%.2f"|format(job_work.quantity_received) }} {{ job_work.item.unit_of_measure }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Rate per Unit:</strong></td>
+                                    <td>₹{{ "%.2f"|format(job_work.rate_per_unit) }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Expected Return:</strong></td>
+                                    <td>
+                                        {% if job_work.expected_return %}
+                                            {{ job_work.expected_return.strftime('%m/%d/%Y') }}
+                                        {% else %}
+                                            <span class="text-muted">Not specified</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <a href="{{ url_for('material_inspection.log_inspection') }}?job_id={{ job_work.id }}&item_id={{ job_work.item.id }}" 
+                                   class="btn btn-success btn-lg">
+                                    <i class="fas fa-clipboard-check me-2"></i>Log Inspection
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if job_work.notes %}
+                    <div class="mt-4">
+                        <h6><i class="fas fa-sticky-note me-1"></i>Notes:</h6>
+                        <div class="alert alert-light">{{ job_work.notes }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

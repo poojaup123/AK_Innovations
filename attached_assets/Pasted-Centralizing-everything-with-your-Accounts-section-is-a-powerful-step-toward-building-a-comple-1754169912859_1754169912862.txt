@@ -1,0 +1,239 @@
+Centralizing everything with your **Accounts section** is a powerful step toward building a **complete ERP-like system**. Here’s a full breakdown of how your **centralized accounting module** will now **interact with other modules** like Inventory, Job Work, GRN, BOM, and Production:
+  
+### ✅ **1. Centralized Accounting: The Core**
+ 
+Everything now feeds into your **Accounts** module for:
+ 
+ 
+- **Ledger entries**
+ 
+- **Automatic journal vouchers**
+ 
+- **Real-time cost tracking**
+ 
+- **Profit & loss analysis**
+ 
+- **Tax/GST tracking**
+ 
+- **Vendor/customer balance tracking**
+ 
+
+  
+### 🔗 **2. Module-wise Integration with Accounts**
+ 
+#### 📦 **Inventory**
+ 
+ 
+- Purchases (via GRN) → triggers: 
+ 
+  - Inventory asset increase
+ 
+  - Purchase ledger debit
+ 
+  - Vendor payable credit
+ 
+
+ 
+ 
+- Stock issue (Job Work/Production) → triggers: 
+ 
+  - Inventory decrease
+ 
+  - WIP ledger debit
+ 
+  - Inventory credit (consumed)
+ 
+
+ 
+ 
+
+ 
+#### 🧾 **GRN (Goods Receipt Note)**
+ 
+ 
+- GRN receipt (PO/Job Work): 
+ 
+  - Debit: Inventory or WIP
+ 
+  - Credit: GRN clearing or supplier account
+ 
+  - Add freight/taxes to landed cost automatically
+ 
+
+ 
+ 
+
+ 
+#### ⚙️ **Job Work**
+ 
+ 
+- Job work sent → record: 
+ 
+  - Inventory transfer (not ownership)
+ 
+  - Track advance payments if paid
+ 
+
+ 
+ 
+- Job work received (via GRN): 
+ 
+  - Debit: Finished Goods/WIP
+ 
+  - Credit: Job Work Vendor
+ 
+  - Option to auto-book job work expense
+ 
+
+ 
+ 
+
+ 
+#### 🧰 **Production**
+ 
+ 
+- Production completed → trigger: 
+ 
+  - Debit: Finished Goods Inventory
+ 
+  - Credit: Raw Material/WIP
+ 
+  - Optional: Machine cost, labor cost → move to COGS ledger
+ 
+
+ 
+ 
+
+ 
+#### 📘 **BOM**
+ 
+ 
+- Used as a cost reference for: 
+ 
+  - Job Work planning
+ 
+  - Material costing (Inventory valuation)
+ 
+  - Machine & labor costing per product (Cost sheet generation)
+ 
+
+ 
+ 
+
+ 
+#### 🏷️ **Sales**
+ 
+ 
+- SO → Invoice: 
+ 
+  - Debit: Customer
+ 
+  - Credit: Sales, GST
+ 
+
+ 
+ 
+- Stock out: 
+ 
+  - Inventory ↓, COGS ↑
+ 
+
+ 
+ 
+
+ 
+#### 👥 **Payroll**
+ 
+ 
+- Salary processed: 
+ 
+  - Debit: Wages, Factory Overheads
+ 
+  - Credit: Cash/Bank, Advances
+ 
+
+ 
+ 
+
+  
+### 💰 Example: Job Work Accounting Flow
+ 
+  
+ 
+Stage
+ 
+Debit
+ 
+Credit
+ 
+   
+ 
+Send MS Sheet
+ 
+No accounting (internal move)
+ 
+ 
+ 
+ 
+GRN after Cutting
+ 
+WIP / Mounted Plate
+ 
+Job Work Vendor
+ 
+ 
+ 
+Zincing
+ 
+WIP (Zinc Plate)
+ 
+Job Work Vendor
+ 
+ 
+ 
+Final GRN (Assembly)
+ 
+Finished Goods Inventory
+ 
+Job Work Vendor
+ 
+ 
+ 
+Final Payment
+ 
+Job Work Vendor
+ 
+Bank / Cash
+ 
+  
+  
+### 📊 Dashboards You Can Enable
+ 
+ 
+- Trial Balance, Balance Sheet, P&L
+ 
+- Job Work costing vs invoiced summary
+ 
+- Inventory Valuation Report (Moving Average/FIFO)
+ 
+- Product-wise profitability from BOM vs sale
+ 
+- Vendor outstanding summary with due dates
+ 
+- GST summary (input/output)
+ 
+
+ 
+ 
+- ✅ Link every GRN and Production entry to a **Journal Voucher**
+ 
+- ✅ Let BOM define **estimated cost**, and GRN/Job Work update **actual cost**
+ 
+- ✅ Track **COGS per product** automatically using production history
+ 
+- ✅ Automate **customer/vendor aging reports**
+ 
+- ✅ Use accounting tags per department or cost center for advanced tracking
+ 
+
+  

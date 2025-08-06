@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Daily Work Entry{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-edit"></i> Edit Daily Work Entry</h1>
+            <p class="text-muted">Update daily job work progress and details</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('jobwork.daily_entries_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Daily Entries
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-edit"></i> Edit Daily Work Entry</h5>
+                    <small>Original Entry: {{ entry.work_date.strftime('%d/%m/%Y') }} - {{ entry.worker_name }}</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+
+                        <!-- Basic Information Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-info-circle"></i> Basic Information
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.job_work_id.label(class="form-label") }}
+                                {{ form.job_work_id(class="form-select") }}
+                                <small class="text-muted">Select the in-house job work order</small>
+                                {% if form.job_work_id.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.job_work_id.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.worker_name.label(class="form-label") }}
+                                {{ form.worker_name(class="form-control") }}
+                                <small class="text-muted">Worker name (auto-selected from employees)</small>
+                                {% if form.worker_name.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.worker_name.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Work Details Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-success border-bottom pb-2 mb-3">
+                                    <i class="fas fa-tools"></i> Work Details
+                                </h6>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.work_date.label(class="form-label") }}
+                                {{ form.work_date(class="form-control") }}
+                                {% if form.work_date.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.work_date.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.hours_worked.label(class="form-label") }}
+                                {{ form.hours_worked(class="form-control") }}
+                                <small class="text-muted">Hours spent on this work</small>
+                                {% if form.hours_worked.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.hours_worked.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.quantity_completed.label(class="form-label") }}
+                                {{ form.quantity_completed(class="form-control") }}
+                                <small class="text-muted">Units completed today</small>
+                                {% if form.quantity_completed.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quantity_completed.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Quality and Progress Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-warning border-bottom pb-2 mb-3">
+                                    <i class="fas fa-chart-line"></i> Quality & Progress
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.quality_status.label(class="form-label") }}
+                                {{ form.quality_status(class="form-select") }}
+                                <small class="text-muted">Quality of work performed</small>
+                                {% if form.quality_status.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quality_status.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.process_stage.label(class="form-label") }}
+                                {{ form.process_stage(class="form-select") }}
+                                <small class="text-muted">Current stage of the process</small>
+                                {% if form.process_stage.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.process_stage.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Notes Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-secondary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-sticky-note"></i> Additional Notes
+                                </h6>
+                                {{ form.notes.label(class="form-label") }}
+                                {{ form.notes(class="form-control", rows="4") }}
+                                <small class="text-muted">Any additional notes about today's work (optional)</small>
+                                {% if form.notes.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.notes.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <a href="{{ url_for('jobwork.daily_entries_list') }}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Update Entry
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Warning Card -->
+            <div class="card mt-4 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Important Notice</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">
+                        <strong>Note:</strong> Editing this entry will recalculate team assignment progress and may affect job work completion status. 
+                        Any changes to quantity completed will automatically update the worker's progress percentage in team assignments.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set current date if work_date is empty
+    const workDateInput = document.getElementById('work_date');
+    if (workDateInput && !workDateInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        workDateInput.value = today;
+    }
+    
+    // Focus on first input
+    const firstInput = document.querySelector('input:not([type="hidden"]), select');
+    if (firstInput) {
+        firstInput.focus();
+    }
+});
+</script>
+{% endblock %}

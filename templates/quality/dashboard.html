@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-shield-alt me-2"></i>Quality Control Dashboard</h2>
+                <div>
+                    <a href="{{ url_for('quality.add_issue') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Report Issue
+                    </a>
+                    <a href="{{ url_for('quality.add_inspection') }}" class="btn btn-success">
+                        <i class="fas fa-check-circle me-1"></i>Log Inspection
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.total_issues }}</h4>
+                            <p class="mb-0">Total Issues</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.open_issues }}</h4>
+                            <p class="mb-0">Open Issues</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.critical_issues }}</h4>
+                            <p class="mb-0">Critical Issues</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-fire fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.resolved_this_month }}</h4>
+                            <p class="mb-0">Resolved This Month</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Critical Issues -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-exclamation-triangle text-danger me-2"></i>Critical & High Priority Issues</h5>
+                </div>
+                <div class="card-body">
+                    {% if critical_issues %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Issue #</th>
+                                        <th>Item</th>
+                                        <th>Type</th>
+                                        <th>Severity</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for issue in critical_issues %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('quality.view_issue', id=issue.id) }}">
+                                                {{ issue.issue_number }}
+                                            </a>
+                                        </td>
+                                        <td>{{ issue.item.name }}</td>
+                                        <td>
+                                            <span class="badge bg-info">{{ issue.issue_type.title() }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge {% if issue.severity == 'critical' %}bg-danger{% else %}bg-warning{% endif %}">
+                                                {{ issue.severity.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ issue.status.title() }}</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No critical or high priority issues currently open.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Quality Issues -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-history me-2"></i>Recent Issues</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_issues %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Issue #</th>
+                                        <th>Item</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for issue in recent_issues %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('quality.view_issue', id=issue.id) }}">
+                                                {{ issue.issue_number }}
+                                            </a>
+                                        </td>
+                                        <td>{{ issue.item.name }}</td>
+                                        <td>
+                                            <span class="badge bg-info">{{ issue.issue_type.title() }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if issue.status == 'open' %}bg-warning
+                                                {% elif issue.status == 'investigating' %}bg-info
+                                                {% elif issue.status == 'resolved' %}bg-success
+                                                {% else %}bg-secondary{% endif %}">
+                                                {{ issue.status.title() }}
+                                            </span>
+                                        </td>
+                                        <td>{{ issue.detected_date.strftime('%m/%d') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No quality issues recorded yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quality Metrics -->
+    <div class="row mt-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-bar me-2"></i>Quality Issues by Item</h5>
+                </div>
+                <div class="card-body">
+                    {% if quality_by_item %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Issue Count</th>
+                                        <th>Quantity Affected</th>
+                                        <th>Cost Impact</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in quality_by_item %}
+                                    <tr>
+                                        <td>{{ item.name }}</td>
+                                        <td><span class="badge bg-danger">{{ item.issue_count }}</span></td>
+                                        <td>{{ "%.2f"|format(item.total_affected or 0) }}</td>
+                                        <td>₹{{ "%.2f"|format(item.total_cost or 0) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No quality data available yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-microscope me-2"></i>Recent Inspections</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_inspections %}
+                        {% for inspection in recent_inspections %}
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-2 border rounded">
+                            <div>
+                                <strong>{{ inspection.production_ref.production_number }}</strong><br>
+                                <small class="text-muted">{{ inspection.inspector.username }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge {% if inspection.rejection_rate > 10 %}bg-danger{% elif inspection.rejection_rate > 5 %}bg-warning{% else %}bg-success{% endif %}">
+                                    {{ "%.1f"|format(inspection.rejection_rate) }}% rejected
+                                </span><br>
+                                <small class="text-muted">{{ inspection.inspection_date.strftime('%m/%d/%Y') }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No inspections logged yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

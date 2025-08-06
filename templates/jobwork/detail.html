@@ -1,0 +1,638 @@
+{% extends "base.html" %}
+
+{% block title %}Job Work Details - {{ job.job_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-tools"></i> Job Work Details - {{ job.job_number }}</h2>
+                <div>
+                    <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                    <a href="{{ url_for('jobwork.edit_job_work', id=job.id) }}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    {% if job.is_team_work %}
+                    <a href="{{ url_for('jobwork.team_assignments', job_id=job.id) }}" class="btn btn-success">
+                        <i class="fas fa-users"></i> Manage Team
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row">
+                <!-- Job Work Information -->
+                <div class="col-md-8">
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-info-circle"></i> Job Work Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>Job Number:</strong></td>
+                                            <td>{{ job.job_number }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Work Type:</strong></td>
+                                            <td>
+                                                <span class="badge {% if job.work_type == 'in_house' %}bg-success{% elif job.work_type == 'multi_process' %}bg-warning{% else %}bg-primary{% endif %}">
+                                                    {{ job.work_type.replace('_', ' ').title() }}
+                                                </span>
+                                                <br><small class="text-info"><i class="fas fa-receipt"></i> Material receipt managed via GRN system</small>
+                                                <br><small class="text-success"><i class="fas fa-clipboard-check"></i> Inspection integrated with GRN workflow</small>
+                                            </td>
+                                        </tr>
+                                        {% if job.work_type == 'in_house' %}
+                                        <tr>
+                                            <td><strong>Department:</strong></td>
+                                            <td>{{ job.department }}</td>
+                                        </tr>
+                                        {% else %}
+                                        <tr>
+                                            <td><strong>Customer:</strong></td>
+                                            <td>{{ job.customer_name }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        <tr>
+                                            <td><strong>Item:</strong></td>
+                                            <td>{{ job.item.name }} ({{ job.item.code }})</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Process:</strong></td>
+                                            <td>
+                                                <span class="badge bg-info">{{ job.process.replace('_', ' ').title() }}</span>
+                                                {% if job.work_type == 'multi_process' %}
+                                                <small class="text-muted d-block">Multiple processes - see details below</small>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong>Quantity Sent:</strong></td>
+                                            <td>{{ job.quantity_sent }} {{ job.item.unit_of_measure }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Quantity Received:</strong></td>
+                                            <td>
+                                                <span class="{% if job.quantity_received > 0 %}text-success fw-bold{% else %}text-muted{% endif %}">
+                                                    {{ job.quantity_received or 0 }} {{ job.item.unit_of_measure }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Pending Quantity:</strong></td>
+                                            <td>
+                                                <span class="{% if job.pending_quantity > 0 %}text-warning fw-bold{% else %}text-muted{% endif %}">
+                                                    {{ job.pending_receipt_display }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Completion:</strong></td>
+                                            <td>
+                                                <div class="progress" style="height: 20px; width: 200px;">
+                                                    <div class="progress-bar {% if job.completion_percentage == 100 %}bg-success{% elif job.completion_percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                         role="progressbar" 
+                                                         style="width: {{ job.completion_percentage }}%">
+                                                        {{ "%.1f"|format(job.completion_percentage) }}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Expected Finished:</strong></td>
+                                            <td>{{ job.expected_finished_material or 'Not specified' }} {{ job.item.unit_of_measure if job.expected_finished_material else '' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Expected Scrap:</strong></td>
+                                            <td>{{ job.expected_scrap or 'Not specified' }} {{ job.item.unit_of_measure if job.expected_scrap else '' }}</td>
+                                        </tr>
+                                        {% if job.work_type == 'outsourced' %}
+                                        <tr>
+                                            <td><strong>Rate per Unit:</strong></td>
+                                            <td>₹{{ "%.2f"|format(job.rate_per_unit) }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Total Cost:</strong></td>
+                                            <td><strong>₹{{ "%.2f"|format(job.quantity_sent * job.rate_per_unit) }}</strong></td>
+                                        </tr>
+                                        {% endif %}
+                                        <tr>
+                                            <td><strong>Status:</strong></td>
+                                            <td>
+                                                <span class="badge 
+                                                    {% if job.status == 'sent' %}bg-warning
+                                                    {% elif job.status == 'partial_received' %}bg-info
+                                                    {% elif job.status == 'completed' %}bg-success
+                                                    {% else %}bg-secondary{% endif %}">
+                                                    {{ job.status.replace('_', ' ').title() }}
+                                                </span>
+                                                
+                                                <!-- Status validation for team work -->
+                                                {% if job.status == 'completed' and job.is_team_work and team_assignments %}
+                                                    {% set incomplete_assignments = team_assignments|selectattr('status', 'ne', 'completed')|list %}
+                                                    {% if incomplete_assignments %}
+                                                        <div class="mt-2">
+                                                            <div class="alert alert-warning alert-sm d-inline-block">
+                                                                <i class="fas fa-exclamation-triangle"></i> 
+                                                                <strong>Status Mismatch!</strong> Job marked as completed but team members are still working.
+                                                                <a href="{{ url_for('jobwork.validate_and_fix_completion', job_id=job.id) }}" 
+                                                                   class="btn btn-warning btn-xs ms-2">
+                                                                    <i class="fas fa-tools"></i> Fix Status
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- Dates -->
+                            <div class="row mt-3">
+                                <div class="col-md-12">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <strong>Sent Date:</strong><br>
+                                                    {{ job.sent_date.strftime('%d %b %Y') }}
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <strong>Expected Return:</strong><br>
+                                                    {{ job.expected_return.strftime('%d %b %Y') if job.expected_return else 'Not specified' }}
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <strong>Created:</strong><br>
+                                                    {{ job.created_at.strftime('%d %b %Y at %I:%M %p') }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Notes -->
+                            {% if job.notes %}
+                            <div class="row mt-3">
+                                <div class="col-md-12">
+                                    <h6><i class="fas fa-sticky-note"></i> Notes:</h6>
+                                    <div class="alert alert-light">{{ job.notes }}</div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Process Information Section -->
+                    {% if job.work_type != 'multi_process' %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-cog"></i> Process Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-primary">Process Details</h6>
+                                    <table class="table table-borderless table-sm">
+                                        <tr>
+                                            <td><strong>Process Type:</strong></td>
+                                            <td>
+                                                {% if job.work_type == 'unified' and processes %}
+                                                    <span class="badge bg-info px-3 py-2">Multi-Process</span>
+                                                {% else %}
+                                                    <span class="badge bg-primary px-3 py-2">
+                                                        {{ job.process.replace('_', ' ').title() if job.process else 'Not specified' }}
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% if job.work_type == 'unified' and processes %}
+                                        <tr>
+                                            <td><strong>Process Name:</strong></td>
+                                            <td>
+                                                {% for process in processes %}
+                                                    <span class="badge bg-primary me-2">{{ process.process_name }}</span>
+                                                {% endfor %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Output Products:</strong></td>
+                                            <td>
+                                                {% for process in processes %}
+                                                    {% if process.output_item %}
+                                                        <div class="mb-2">
+                                                            <span class="badge bg-success me-2">{{ process.output_item.name }}</span>
+                                                            <strong>{{ process.output_quantity }}</strong> {{ process.output_item.unit_of_measure }}
+                                                            <small class="text-muted d-block">from {{ process.process_name }} process</small>
+                                                        </div>
+                                                    {% endif %}
+                                                {% endfor %}
+                                                {% if not processes|selectattr('output_item')|list %}
+                                                    <span class="text-muted">No output products specified</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        <tr>
+                                            <td><strong>Expected Finished:</strong></td>
+                                            <td>
+                                                {% if job.expected_finished_material %}
+                                                    <span class="text-success fw-bold">{{ job.expected_finished_material }} {{ job.item.unit_of_measure }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">Not specified</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Expected Scrap:</strong></td>
+                                            <td>
+                                                {% if job.expected_scrap %}
+                                                    <span class="text-warning fw-bold">{{ job.expected_scrap }} {{ job.item.unit_of_measure }}</span>
+                                                    <small class="text-muted d-block">
+                                                        ({{ "%.1f"|format((job.expected_scrap / job.quantity_sent * 100) if job.quantity_sent > 0 else 0) }}% waste)
+                                                    </small>
+                                                {% else %}
+                                                    <span class="text-muted">Not specified</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% if job.work_type == 'outsourced' %}
+                                        <tr>
+                                            <td><strong>Rate Structure:</strong></td>
+                                            <td>
+                                                <div class="badge bg-success">₹{{ "%.2f"|format(job.rate_per_unit) }} per {{ job.item.unit_of_measure }}</div>
+                                                <br><small class="text-muted">Total: ₹{{ "%.2f"|format(job.quantity_sent * job.rate_per_unit) }}</small>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-primary">Work Assignment</h6>
+                                    <table class="table table-borderless table-sm">
+                                        {% if job.work_type == 'in_house' %}
+                                        <tr>
+                                            <td><strong>Department:</strong></td>
+                                            <td>
+                                                <span class="badge bg-success px-3 py-2">
+                                                    <i class="fas fa-building"></i> {{ job.department.title() if job.department else 'Not assigned' }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% if job.is_team_work %}
+                                        <tr>
+                                            <td><strong>Team Work:</strong></td>
+                                            <td>
+                                                <span class="badge bg-warning text-dark px-3 py-2">
+                                                    <i class="fas fa-users"></i> Team Assignment Enabled
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% else %}
+                                        <tr>
+                                            <td><strong>Customer/Vendor:</strong></td>
+                                            <td>
+                                                <span class="badge bg-primary px-3 py-2">
+                                                    <i class="fas fa-user"></i> {{ job.customer_name if job.customer_name else 'Not specified' }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        <tr>
+                                            <td><strong>Material Receipt:</strong></td>
+                                            <td>
+                                                <div class="text-info">
+                                                    <i class="fas fa-clipboard-check"></i> <strong>GRN System</strong>
+                                                    <br><small class="text-muted">All materials received via GRN workflow</small>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Quality Control:</strong></td>
+                                            <td>
+                                                <div class="text-success">
+                                                    <i class="fas fa-check-circle"></i> <strong>Integrated Inspection</strong>
+                                                    <br><small class="text-muted">Quality control via GRN process</small>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Multi-Process Details Section -->
+                    {% if job.work_type == 'multi_process' %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0"><i class="fas fa-cogs"></i> Multi-Process Workflow Details</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if processes %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Seq</th>
+                                            <th>Process</th>
+                                            <th>Work Type</th>
+                                            <th>Assigned To</th>
+                                            <th>Input Qty</th>
+                                            <th>Output Product</th>
+                                            <th>Output Qty</th>
+                                            <th>Rate & Cost</th>
+                                            <th>Expected Dates</th>
+                                            <th>Team Info</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for process in processes %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-primary">{{ process.sequence_number }}</span>
+                                            </td>
+                                            <td>
+                                                <strong>{{ process.process_name }}</strong>
+                                                {% if process.notes %}
+                                                <br><small class="text-muted">{{ process.notes[:50] }}{{ '...' if process.notes|length > 50 else '' }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge {% if process.work_type == 'in_house' %}bg-success{% else %}bg-info{% endif %}">
+                                                    {{ process.work_type.replace('_', ' ').title() }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if process.work_type == 'in_house' %}
+                                                    <i class="fas fa-building"></i> {{ process.department.title() if process.department else 'Not specified' }}
+                                                {% else %}
+                                                    <i class="fas fa-user"></i> {{ process.customer_name if process.customer_name else 'Not specified' }}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <strong>{{ process.quantity_input }}</strong> {{ job.item.unit_of_measure }}
+                                            </td>
+                                            <td>
+                                                {% if process.output_item %}
+                                                    <span class="badge bg-light text-dark">{{ process.output_item.name }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">Same as input</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if process.output_quantity %}
+                                                    <strong>{{ process.output_quantity }}</strong> 
+                                                    {{ process.output_item.unit_of_measure if process.output_item else job.item.unit_of_measure }}
+                                                {% else %}
+                                                    <span class="text-muted">Same as input</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if process.rate_per_unit and process.rate_per_unit > 0 %}
+                                                    <div class="text-success">
+                                                        <strong>₹{{ "%.2f"|format(process.rate_per_unit) }}</strong> per unit
+                                                        <br><small class="text-muted">
+                                                            Total: ₹{{ "%.2f"|format(process.quantity_input * process.rate_per_unit) }}
+                                                        </small>
+                                                    </div>
+                                                {% else %}
+                                                    <span class="text-muted">No cost</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if process.start_date %}
+                                                    <div class="small">
+                                                        <strong>Start:</strong> {{ process.start_date.strftime('%d %b %Y') }}<br>
+                                                        {% if process.expected_completion %}
+                                                            <strong>Due:</strong> {{ process.expected_completion.strftime('%d %b %Y') }}
+                                                        {% else %}
+                                                            <span class="text-muted">No due date</span>
+                                                        {% endif %}
+                                                    </div>
+                                                {% else %}
+                                                    <span class="text-muted">Dates not set</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if process.is_team_work %}
+                                                    <div class="text-success">
+                                                        <i class="fas fa-users"></i> Team Work
+                                                        <br><small>Max: {{ process.max_team_members }} members</small>
+                                                        {% if process.team_lead %}
+                                                        <br><small class="text-primary">
+                                                            <i class="fas fa-user-tie"></i> Lead: {{ process.team_lead.name }}
+                                                        </small>
+                                                        {% endif %}
+                                                    </div>
+                                                {% else %}
+                                                    <span class="text-muted">
+                                                        <i class="fas fa-user"></i> Individual
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-warning">Pending</span>
+                                                <br><small class="text-muted">
+                                                    {% if process.expected_completion %}
+                                                        Due: {{ process.expected_completion.strftime('%m/%d') }}
+                                                    {% endif %}
+                                                </small>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Process Flow Visualization -->
+                            <div class="mt-4">
+                                <h6><i class="fas fa-project-diagram"></i> Process Flow:</h6>
+                                <div class="d-flex align-items-center flex-wrap">
+                                    {% for process in processes %}
+                                        <div class="text-center me-3 mb-2">
+                                            <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                                                 style="width: 30px; height: 30px; font-size: 12px;">
+                                                {{ process.sequence_number }}
+                                            </div>
+                                            <div class="small mt-1" style="max-width: 80px;">
+                                                {{ process.process_name }}
+                                            </div>
+                                        </div>
+                                        {% if not loop.last %}
+                                        <i class="fas fa-arrow-right text-muted me-3"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                No process details found for this multi-process job work.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Team Work Section -->
+                    {% if job.is_team_work and team_assignments %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-users"></i> Team Assignments</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Employee</th>
+                                            <th>Assigned Qty</th>
+                                            <th>Completed</th>
+                                            <th>Progress</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for assignment in team_assignments %}
+                                        <tr>
+                                            <td>{{ assignment.employee.name }}</td>
+                                            <td>{{ assignment.assigned_quantity }} {{ job.item.unit_of_measure }}</td>
+                                            <td>{{ assignment.completed_quantity }} {{ job.item.unit_of_measure }}</td>
+                                            <td>
+                                                {% set progress = (assignment.completed_quantity / assignment.assigned_quantity * 100) if assignment.assigned_quantity > 0 else 0 %}
+                                                <div class="progress" style="height: 15px;">
+                                                    <div class="progress-bar" style="width: {{ progress }}%">
+                                                        {{ "%.0f"|format(progress) }}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">{{ assignment.status.replace('_', ' ').title() }}</span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="text-center mt-3">
+                                <a href="{{ url_for('jobwork.team_assignments', job_id=job.id) }}" class="btn btn-success btn-sm">
+                                    <i class="fas fa-users"></i> Manage Team Assignments
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% elif job.is_team_work %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-users"></i> Team Work Configuration</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <i class="fas fa-users text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="mt-3">Team Work Enabled</h5>
+                            <p class="text-muted">This job work can be divided among up to {{ job.max_team_members }} team members.</p>
+                            <a href="{{ url_for('jobwork.team_assignments', job_id=job.id) }}" class="btn btn-success">
+                                <i class="fas fa-user-plus"></i> Start Assigning Team Members
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Sidebar -->
+                <div class="col-md-4">
+                    <!-- Quick Actions -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('jobwork.edit_job_work', id=job.id) }}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-edit"></i> Edit Job Work
+                                </a>
+                                {% if job.is_team_work %}
+                                <a href="{{ url_for('jobwork.team_assignments', job_id=job.id) }}" class="btn btn-success btn-sm">
+                                    <i class="fas fa-users"></i> Manage Team
+                                </a>
+                                {% endif %}
+                                {% if job.has_pending_quantity %}
+                                <a href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}" class="btn btn-success btn-sm">
+                                    <i class="fas fa-receipt"></i> Receive Materials
+                                </a>
+                                {% endif %}
+                                <a href="{{ url_for('jobwork.send_job_work', job_id=job.id) }}" class="btn btn-warning btn-sm">
+                                    <i class="fas fa-paper-plane"></i> Send Order
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- GRN-Based Material Receipt -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-receipt"></i> Material Receipt (GRN)</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if job.has_pending_quantity %}
+                            <div class="alert alert-info small">
+                                <i class="fas fa-info-circle me-1"></i>
+                                All job works (In-House, Outsourced, Multi-Process) use GRN system for unified material receipt and quality control.
+                            </div>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}" class="btn btn-success btn-sm">
+                                    <i class="fas fa-bolt"></i> Quick Receive Materials
+                                </a>
+                                <a href="{{ url_for('grn.create_grn', job_work_id=job.id) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-receipt"></i> Create Full GRN
+                                </a>
+                                <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-info btn-sm">
+                                    <i class="fas fa-tachometer-alt"></i> GRN Dashboard
+                                </a>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-success small">
+                                <i class="fas fa-check-circle me-1"></i>
+                                All materials have been received through GRN system.
+                            </div>
+                            <div class="d-grid">
+                                <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-info btn-sm">
+                                    <i class="fas fa-list"></i> View GRN Records
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Document Management Section -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-paperclip"></i> Documents</h6>
+                        </div>
+                        <div class="card-body text-center">
+                            <a href="{{ url_for('documents.upload_document', transaction_type='job_work', transaction_id=job.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-upload"></i> Upload Document
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

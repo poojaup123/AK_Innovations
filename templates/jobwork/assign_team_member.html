@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Assign Team Member - {{ job.job_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-user-plus"></i> Assign Team Member</h4>
+                    <small>Job Work: {{ job.job_number }} - {{ job.item.name }}</small>
+                </div>
+                <div class="card-body">
+                    <!-- Job Work Summary -->
+                    <div class="alert alert-info">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Total Quantity:</strong><br>
+                                {{ job.quantity_sent }} {{ job.item.unit_of_measure }}
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Team Capacity:</strong><br>
+                                {{ (job.max_team_members - (job.team_assignments|length)) }} slots remaining
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Available Employees:</strong><br>
+                                {{ available_count }} employees
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if available_count == 0 %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>No Available Employees</strong><br>
+                        All active employees are either already assigned to this job or no active employees exist in the system.
+                    </div>
+                    <div class="text-center">
+                        <a href="{{ url_for('jobwork.team_assignments', job_id=job.id) }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Team Assignments
+                        </a>
+                    </div>
+                    {% else %}
+                    <!-- Assignment Form -->
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.employee_id.label(class="form-label") }}
+                                {{ form.employee_id(class="form-select") }}
+                                <div class="form-text">Select an employee to assign to this job work</div>
+                                {% if form.employee_id.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.employee_id.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.assigned_quantity.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.assigned_quantity(class="form-control", step="0.01", max=job.quantity_sent) }}
+                                    <span class="input-group-text">{{ job.item.unit_of_measure }}</span>
+                                </div>
+                                <div class="form-text">Quantity to assign to this team member (max: {{ job.quantity_sent }})</div>
+                                {% if form.assigned_quantity.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.assigned_quantity.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control", rows="3") }}
+                            <div class="form-text">Any specific instructions or notes for this team member</div>
+                            {% if form.notes.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.notes.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Team Work Benefits Info -->
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <h6><i class="fas fa-lightbulb"></i> Team Work Benefits</h6>
+                                <ul class="mb-0">
+                                    <li>Individual progress tracking for each team member</li>
+                                    <li>Workload distribution across multiple employees</li>
+                                    <li>Better project management and timeline control</li>
+                                    <li>Individual performance monitoring and feedback</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('jobwork.team_assignments', job_id=job.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-user-plus"></i> Assign Team Member
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Current Team Assignments (if any) -->
+            {% if job.team_assignments %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> Current Team Members</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Assigned Quantity</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignment in job.team_assignments %}
+                                <tr>
+                                    <td>{{ assignment.employee.name }}</td>
+                                    <td>{{ assignment.assigned_quantity }} {{ job.item.unit_of_measure }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ assignment.status.replace('_', ' ').title() }}</span>
+                                    </td>
+                                    <td>
+                                        {% set progress = (assignment.completed_quantity / assignment.assigned_quantity * 100) if assignment.assigned_quantity > 0 else 0 %}
+                                        <div class="progress" style="height: 15px;">
+                                            <div class="progress-bar" style="width: {{ progress }}%">
+                                                {{ "%.0f"|format(progress) }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

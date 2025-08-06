@@ -1,0 +1,149 @@
+Connecting **Sales Order (SO)** and **Purchase Order (PO)** to the **Accounts section** in your system enables automated **voucher generation**, **ledger updates**, and **tax handling** — just like in a full ERP or Tally-like system.
+
+Let’s break it down **step by step**:
+
+---
+
+## 🔄 FLOW 1: **Purchase Order → Accounts Integration**
+
+### 🧾 When PO is Created:
+
+* No accounting entry is made yet.
+* Status: **Planned procurement**
+
+> Just saves the intent to buy.
+
+---
+
+### 📦 When GRN is Created (Partial or Full):
+
+#### 📘 Journal Entry: **Purchase Voucher**
+
+| Ledger                   | Dr / Cr | Amount       |
+| ------------------------ | ------- | ------------ |
+| Inventory - Raw Material | Dr      | ₹XXX (Value) |
+| GRN Clearing A/c         | Cr      | ₹XXX         |
+
+> Inventory value increases → this is a system voucher to record receipt.
+
+---
+
+### 🧾 When Invoice is Received:
+
+#### 📘 Journal Entry: **Vendor Invoice Voucher**
+
+| Ledger           | Dr / Cr | Amount     |
+| ---------------- | ------- | ---------- |
+| GRN Clearing A/c | Dr      | ₹XXX       |
+| GST Input A/c    | Dr      | ₹XXX (tax) |
+| Vendor A/c       | Cr      | ₹XXX + tax |
+
+> Settles GRN clearing, adds vendor payable and tax credit.
+
+---
+
+### 💵 When Payment is Made:
+
+#### 📘 Journal Entry: **Payment Voucher**
+
+| Ledger     | Dr / Cr | Amount |
+| ---------- | ------- | ------ |
+| Vendor A/c | Dr      | ₹XXX   |
+| Bank A/c   | Cr      | ₹XXX   |
+
+> Vendor balance is cleared, bank is reduced.
+
+---
+
+## 🔄 FLOW 2: **Sales Order → Accounts Integration**
+
+### 📋 When Sales Order is Created:
+
+* No journal entry yet — just booked demand.
+
+---
+
+### 🚚 When Material is Delivered (Outward):
+
+#### 📘 Journal Entry: **Stock Out (COGS)**
+
+| Ledger                     | Dr / Cr | Amount |
+| -------------------------- | ------- | ------ |
+| Cost of Goods Sold (COGS)  | Dr      | ₹XXX   |
+| Inventory - Finished Goods | Cr      | ₹XXX   |
+
+> Moves finished goods to cost account.
+
+---
+
+### 🧾 When Invoice is Raised:
+
+#### 📘 Journal Entry: **Sales Invoice Voucher**
+
+| Ledger         | Dr / Cr | Amount     |
+| -------------- | ------- | ---------- |
+| Customer A/c   | Dr      | ₹XXX + GST |
+| Sales A/c      | Cr      | ₹XXX       |
+| GST Output A/c | Cr      | ₹XXX       |
+
+> Customer becomes receivable, revenue and GST are booked.
+
+---
+
+### 💰 When Customer Pays:
+
+#### 📘 Journal Entry: **Receipt Voucher**
+
+| Ledger       | Dr / Cr | Amount |
+| ------------ | ------- | ------ |
+| Bank A/c     | Dr      | ₹XXX   |
+| Customer A/c | Cr      | ₹XXX   |
+
+> Payment is received and customer balance is cleared.
+
+---
+
+## 📊 Reports Auto-Generated from These Entries
+
+| Report Type             | Data Source                 |
+| ----------------------- | --------------------------- |
+| Purchase Register       | From GRNs + Vendor Invoices |
+| Sales Register          | From Sales Invoices         |
+| Vendor Outstanding      | From Invoice vs Payment     |
+| Customer Outstanding    | From Invoice vs Receipt     |
+| GST Summary             | From tax ledgers            |
+| Inventory Valuation     | From GRNs and Outwards      |
+| Profitability per Order | Sales - COGS                |
+
+---
+
+## 🔄 System Automation Logic
+
+| Event              | Auto Trigger                                   |
+| ------------------ | ---------------------------------------------- |
+| GRN → Voucher      | Purchase voucher for inventory received        |
+| Invoice (Vendor)   | Journal with tax + vendor payable              |
+| Invoice (Customer) | Journal with revenue, tax, customer receivable |
+| Payment            | Bank entry linked to voucher                   |
+| Partial GRNs       | Handle balance PO qty                          |
+| Advance Payments   | Can auto-adjust with invoice                   |
+
+---
+
+## 💡 BONUS: Voucher Linkage
+
+Every voucher should be traceable like this:
+
+```
+PO → GRN → Vendor Invoice → Payment
+         ↓
+     Inventory Updated
+
+SO → Delivery → Sales Invoice → Receipt
+                     ↓
+                 COGS Booked
+```
+
+---
+
+Would you like a **UI layout** for this linkage or want help building the **voucher generator engine** in your app?

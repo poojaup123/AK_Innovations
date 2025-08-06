@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Update Job Work Quantity{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>Update Job Work Quantity</h2>
+                    <p class="text-muted">Job #{{ job.job_number }} - {{ job.customer_name }}</p>
+                </div>
+                <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Update Received Quantity</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Job Details -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Item</label>
+                                <div class="form-control-plaintext">{{ job.item.name }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Quantity Sent</label>
+                                <div class="form-control-plaintext">{{ job.quantity_sent }} {{ job.item.unit_of_measure }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Current Received</label>
+                                <div class="form-control-plaintext">{{ job.quantity_received }} {{ job.item.unit_of_measure }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Remaining</label>
+                                <div class="form-control-plaintext">{{ job.quantity_sent - job.quantity_received }} {{ job.item.unit_of_measure }}</div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Update Form -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.quantity_received.label(class="form-label") }}
+                                {{ form.quantity_received(class="form-control", step="0.01", max=job.quantity_sent - job.quantity_received) }}
+                                {% if form.quantity_received.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quantity_received.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Enter additional quantity received</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.received_date.label(class="form-label") }}
+                                {{ form.received_date(class="form-control") }}
+                                {% if form.received_date.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.received_date.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control", rows="3", placeholder="Add notes about this receipt...") }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.notes.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Quantity
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Job Work Summary</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Job Number:</strong></td>
+                            <td>{{ job.job_number }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Customer:</strong></td>
+                            <td>{{ job.customer_name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Item:</strong></td>
+                            <td>{{ job.item.name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Sent Date:</strong></td>
+                            <td>{{ job.sent_date.strftime('%m/%d/%Y') if job.sent_date else '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Expected Return:</strong></td>
+                            <td>{{ job.expected_return.strftime('%m/%d/%Y') if job.expected_return else '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Rate per Unit:</strong></td>
+                            <td>₹{{ job.rate_per_unit }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Current Status:</strong></td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' }}">
+                                    {{ job.status.replace('_', ' ').title() }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            {% if job.notes %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Current Notes</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ job.notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

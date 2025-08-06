@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}User Permissions - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-user-shield"></i> User Permissions</h1>
+            <p class="text-muted">Assign specific permissions to control what each user can access and do.</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('settings.user_management') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to User Management
+            </a>
+        </div>
+    </div>
+
+    <!-- User Selection -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-user-check"></i> Select User
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('settings.user_permissions') }}">
+                <div class="row align-items-end">
+                    <div class="col-md-8">
+                        <label for="user_id" class="form-label">User</label>
+                        <select class="form-select" id="user_id" name="user_id" onchange="this.form.submit()">
+                            <option value="">Select a user to manage permissions</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}" {% if selected_user and selected_user.id == user.id %}selected{% endif %}>
+                                {{ user.username }} ({{ user.email }}) - {{ user.role.title() }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        {% if selected_user %}
+                        <div class="alert alert-info mb-0">
+                            <strong>Selected:</strong> {{ selected_user.username }}
+                            {% if selected_user.role == 'admin' %}
+                            <span class="badge bg-danger ms-2">Admin (All Permissions)</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if selected_user and selected_user.role != 'admin' %}
+    <!-- Permission Categories -->
+    <form method="POST" action="{{ url_for('settings.update_user_permissions', user_id=selected_user.id) }}">
+        {% for category, perms in permissions_by_category.items() %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-{{ category_icons[category] }}"></i> 
+                            {{ category.title().replace('_', ' ') }} Permissions
+                        </h5>
+                    </div>
+                    <div class="col-auto">
+                        <div class="form-check">
+                            <input class="form-check-input category-toggle" type="checkbox" 
+                                   id="toggle_{{ category }}" data-category="{{ category }}">
+                            <label class="form-check-label" for="toggle_{{ category }}">
+                                Select All
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for permission in perms %}
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input permission-check" type="checkbox" 
+                                   name="permissions" value="{{ permission.code }}" 
+                                   id="perm_{{ permission.code }}" 
+                                   data-category="{{ category }}"
+                                   {% if permission.code in user_permissions %}checked{% endif %}>
+                            <label class="form-check-label" for="perm_{{ permission.code }}">
+                                <strong>{{ permission.name }}</strong>
+                                <small class="text-muted d-block">{{ permission.description }}</small>
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Save Button -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save"></i> Save Permissions for {{ selected_user.username }}
+                        </button>
+                        <div class="mt-2">
+                            <small class="text-muted">Changes will take effect immediately</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    {% elif selected_user and selected_user.role == 'admin' %}
+    <!-- Admin Notice -->
+    <div class="card">
+        <div class="card-body text-center">
+            <i class="fas fa-crown fa-3x text-warning mb-3"></i>
+            <h4>Administrator User</h4>
+            <p class="text-muted">
+                {{ selected_user.username }} is an administrator and has access to all system features by default.
+                To restrict their access, change their role to "Staff" first.
+            </p>
+            <a href="{{ url_for('settings.user_management') }}" class="btn btn-outline-primary">
+                <i class="fas fa-user-edit"></i> Manage User Roles
+            </a>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- No User Selected -->
+    <div class="card">
+        <div class="card-body text-center">
+            <i class="fas fa-user-plus fa-3x text-muted mb-3"></i>
+            <h4>Select a User</h4>
+            <p class="text-muted">Choose a user from the dropdown above to manage their permissions.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Category toggle functionality
+document.querySelectorAll('.category-toggle').forEach(toggle => {
+    toggle.addEventListener('change', function() {
+        const category = this.dataset.category;
+        const categoryChecks = document.querySelectorAll(`input[data-category="${category}"].permission-check`);
+        
+        categoryChecks.forEach(check => {
+            check.checked = this.checked;
+        });
+    });
+});
+
+// Update category toggles when individual permissions change
+document.querySelectorAll('.permission-check').forEach(check => {
+    check.addEventListener('change', function() {
+        const category = this.dataset.category;
+        const categoryToggle = document.querySelector(`#toggle_${category}`);
+        const categoryChecks = document.querySelectorAll(`input[data-category="${category}"].permission-check`);
+        
+        const checkedCount = Array.from(categoryChecks).filter(c => c.checked).length;
+        const totalCount = categoryChecks.length;
+        
+        if (checkedCount === 0) {
+            categoryToggle.checked = false;
+            categoryToggle.indeterminate = false;
+        } else if (checkedCount === totalCount) {
+            categoryToggle.checked = true;
+            categoryToggle.indeterminate = false;
+        } else {
+            categoryToggle.checked = false;
+            categoryToggle.indeterminate = true;
+        }
+    });
+});
+
+// Initialize category toggles on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.category-toggle').forEach(toggle => {
+        const category = toggle.dataset.category;
+        const categoryChecks = document.querySelectorAll(`input[data-category="${category}"].permission-check`);
+        
+        const checkedCount = Array.from(categoryChecks).filter(c => c.checked).length;
+        const totalCount = categoryChecks.length;
+        
+        if (checkedCount === 0) {
+            toggle.checked = false;
+            toggle.indeterminate = false;
+        } else if (checkedCount === totalCount) {
+            toggle.checked = true;
+            toggle.indeterminate = false;
+        } else {
+            toggle.checked = false;
+            toggle.indeterminate = true;
+        }
+    });
+});
+</script>
+{% endblock %}

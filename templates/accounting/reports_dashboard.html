@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Financial Reports - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-chart-bar"></i> Financial Reports</h1>
+            <p class="text-muted">Generate and view financial statements and reports</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('accounting.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Accounting
+            </a>
+        </div>
+    </div>
+
+    <!-- Primary Financial Reports -->
+    <div class="row mb-4">
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-balance-scale fa-3x text-primary mb-3"></i>
+                    <h5>Trial Balance</h5>
+                    <p class="text-muted">View account balances and verify books are balanced</p>
+                    <a href="{{ url_for('accounting.trial_balance') }}" class="btn btn-primary">
+                        <i class="fas fa-eye"></i> View Trial Balance
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-pie fa-3x text-success mb-3"></i>
+                    <h5>Profit & Loss</h5>
+                    <p class="text-muted">Income statement showing revenue and expenses</p>
+                    <a href="{{ url_for('accounting.profit_loss') }}" class="btn btn-success">
+                        <i class="fas fa-eye"></i> View P&L Statement
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-building fa-3x text-info mb-3"></i>
+                    <h5>Balance Sheet</h5>
+                    <p class="text-muted">Financial position showing assets and liabilities</p>
+                    <a href="{{ url_for('accounting.balance_sheet') }}" class="btn btn-info">
+                        <i class="fas fa-eye"></i> View Balance Sheet
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Reports -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-book fa-3x text-warning mb-3"></i>
+                    <h5>Day Book</h5>
+                    <p class="text-muted">All journal entries and transactions</p>
+                    <a href="{{ url_for('accounting.day_book') }}" class="btn btn-warning">
+                        <i class="fas fa-eye"></i> View Day Book
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-file-invoice fa-3x text-secondary mb-3"></i>
+                    <h5>Account Ledgers</h5>
+                    <p class="text-muted">Individual account transaction history</p>
+                    <a href="{{ url_for('accounting.account_ledgers') }}" class="btn btn-secondary">
+                        <i class="fas fa-eye"></i> View Ledgers
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Outstanding Reports -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-hand-holding-usd fa-3x text-danger mb-3"></i>
+                    <h5>Outstanding Payables</h5>
+                    <p class="text-muted">Amounts owed to suppliers and vendors</p>
+                    <a href="{{ url_for('accounting.outstanding_payables') }}" class="btn btn-danger">
+                        <i class="fas fa-eye"></i> View Payables
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-money-check-alt fa-3x text-success mb-3"></i>
+                    <h5>Outstanding Receivables</h5>
+                    <p class="text-muted">Amounts owed by customers</p>
+                    <a href="{{ url_for('accounting.outstanding_receivables') }}" class="btn btn-success">
+                        <i class="fas fa-eye"></i> View Receivables
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GST Reports -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-percentage"></i> GST Reports</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-4">
+                            <div class="text-center">
+                                <i class="fas fa-file-alt fa-2x text-primary mb-2"></i>
+                                <h6>GSTR-1</h6>
+                                <p class="text-muted small">Outward supplies report</p>
+                                <a href="{{ url_for('accounting.gstr1_report') }}" class="btn btn-outline-primary btn-sm">
+                                    Generate GSTR-1
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="text-center">
+                                <i class="fas fa-file-alt fa-2x text-info mb-2"></i>
+                                <h6>GSTR-3B</h6>
+                                <p class="text-muted small">Monthly summary return</p>
+                                <a href="{{ url_for('accounting.gstr3b_report') }}" class="btn btn-outline-info btn-sm">
+                                    Generate GSTR-3B
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="text-center">
+                                <i class="fas fa-chart-bar fa-2x text-success mb-2"></i>
+                                <h6>GST Summary</h6>
+                                <p class="text-muted small">Tax collected and paid</p>
+                                <a href="{{ url_for('accounting.gst_summary') }}" class="btn btn-outline-success btn-sm">
+                                    View GST Summary
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory & Cost Reports -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-boxes fa-3x text-primary mb-3"></i>
+                    <h5>Inventory Valuation</h5>
+                    <p class="text-muted">Stock value and cost analysis</p>
+                    <a href="{{ url_for('accounting.inventory_valuation') }}" class="btn btn-primary">
+                        <i class="fas fa-eye"></i> View Valuation
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-line fa-3x text-warning mb-3"></i>
+                    <h5>Cost of Goods Sold</h5>
+                    <p class="text-muted">Production and manufacturing costs</p>
+                    <a href="{{ url_for('accounting.cogs_report') }}" class="btn btn-warning">
+                        <i class="fas fa-eye"></i> View COGS
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Report Actions -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-primary w-100" onclick="generateQuickReport('monthly')">
+                                <i class="fas fa-calendar-alt"></i><br>
+                                Monthly Summary
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-success w-100" onclick="generateQuickReport('quarterly')">
+                                <i class="fas fa-calendar-week"></i><br>
+                                Quarterly Report
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-info w-100" onclick="generateQuickReport('annual')">
+                                <i class="fas fa-calendar"></i><br>
+                                Annual Report
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-warning w-100" onclick="exportAllReports()">
+                                <i class="fas fa-download"></i><br>
+                                Export All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function generateQuickReport(period) {
+    let url = '';
+    const today = new Date();
+    
+    switch(period) {
+        case 'monthly':
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            url = `{{ url_for('accounting.trial_balance') }}?from_date=${firstDay.toISOString().split('T')[0]}&to_date=${today.toISOString().split('T')[0]}`;
+            break;
+        case 'quarterly':
+            const quarterStart = new Date(today.getFullYear(), Math.floor(today.getMonth()/3)*3, 1);
+            url = `{{ url_for('accounting.profit_loss') }}?from_date=${quarterStart.toISOString().split('T')[0]}&to_date=${today.toISOString().split('T')[0]}`;
+            break;
+        case 'annual':
+            const yearStart = new Date(today.getFullYear(), 0, 1);
+            url = `{{ url_for('accounting.profit_loss') }}?from_date=${yearStart.toISOString().split('T')[0]}&to_date=${today.toISOString().split('T')[0]}`;
+            break;
+    }
+    
+    if(url) {
+        window.open(url, '_blank');
+    }
+}
+
+function exportAllReports() {
+    // This would trigger export of all major reports
+    alert('Export functionality will be implemented to generate PDF/Excel reports');
+}
+</script>
+{% endblock %}

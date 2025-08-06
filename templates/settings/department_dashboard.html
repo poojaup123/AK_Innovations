@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Department Management - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-building"></i> Department Management</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('settings.dashboard') }}" class="btn btn-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Back to Settings
+            </a>
+            {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('department.add_department') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Department
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ total_departments }}</h4>
+                            <p class="mb-0">Total Departments</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-building fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ active_departments }}</h4>
+                            <p class="mb-0">Active Departments</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ inactive_departments }}</h4>
+                            <p class="mb-0">Inactive Departments</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-times-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ dept_employee_counts|length }}</h4>
+                            <p class="mb-0">Departments with Staff</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Departments by Employee Count -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-bar"></i> Departments by Employee Count</h5>
+                </div>
+                <div class="card-body">
+                    {% if dept_employee_counts %}
+                        {% for dept_name, employee_count in dept_employee_counts %}
+                        <div class="row mb-2">
+                            <div class="col">
+                                <strong>{{ dept_name }}</strong>
+                            </div>
+                            <div class="col-auto">
+                                <span class="badge bg-primary">{{ employee_count }} employees</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No departments with employees found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Departments -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-clock"></i> Recently Added Departments</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_departments %}
+                        {% for dept in recent_departments %}
+                        <div class="row mb-2">
+                            <div class="col">
+                                <strong>{{ dept.name }}</strong>
+                                <br><small class="text-muted">{{ dept.created_at.strftime('%B %d, %Y') }}</small>
+                            </div>
+                            <div class="col-auto">
+                                <span class="badge bg-{{ 'success' if dept.is_active else 'secondary' }}">
+                                    {{ 'Active' if dept.is_active else 'Inactive' }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No departments found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <a href="{{ url_for('department.list_departments') }}" class="btn btn-outline-primary w-100 mb-2">
+                                <i class="fas fa-list"></i> View All Departments
+                            </a>
+                        </div>
+                        {% if current_user.role == 'admin' %}
+                        <div class="col-md-4">
+                            <a href="{{ url_for('department.add_department') }}" class="btn btn-outline-success w-100 mb-2">
+                                <i class="fas fa-plus"></i> Add New Department
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('department.list_departments', status='inactive') }}" class="btn btn-outline-warning w-100 mb-2">
+                                <i class="fas fa-eye-slash"></i> View Inactive Departments
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

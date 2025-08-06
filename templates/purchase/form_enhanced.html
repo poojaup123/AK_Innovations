@@ -1,0 +1,827 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table td.text-center, .table td.align-middle {
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+    .btn-group .btn {
+        border-radius: 0.25rem !important;
+        margin-right: 2px;
+    }
+    .btn-group .btn:last-child {
+        margin-right: 0;
+    }
+    #poItemsTable .text-center {
+        min-width: 80px;
+    }
+    #poItemsTable td {
+        padding: 8px 6px;
+    }
+    #poItemsTable .input-group {
+        margin-bottom: 0;
+        min-width: 100px;
+        width: 100%;
+    }
+    #poItemsTable .form-control-sm {
+        font-size: 0.875rem;
+    }
+    #poItemsTable .input-group-text {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+        background-color: var(--bs-light);
+        border-color: var(--bs-border-color);
+    }
+    #poItemsTable .input-group .form-control {
+        border-right: none;
+        min-width: 60px;
+        text-align: center;
+    }
+    #poItemsTable .form-control {
+        font-size: 0.9rem;
+        padding: 0.375rem 0.5rem;
+    }
+    #poItemsTable .fw-bold {
+        font-weight: 600 !important;
+        color: var(--bs-dark);
+    }
+    #poItemsTable td.text-center {
+        font-weight: 600;
+    }
+    #poItemsTable th {
+        background-color: var(--bs-gray-100);
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+        border-bottom: 2px solid var(--bs-gray-300);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-shopping-cart"></i> {{ title }}</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('purchase.list_purchase_orders') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Purchase Orders
+            </a>
+        </div>
+    </div>
+
+    <form method="POST" id="purchaseOrderForm">
+        {{ form.hidden_tag() }}
+        
+        <!-- PO Header Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Purchase Order Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ form.po_number.label(class="form-label") }}
+                        {{ form.po_number(class="form-control", readonly=True) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.po_date.label(class="form-label") }}
+                        {{ form.po_date(class="form-control") }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.delivery_date.label(class="form-label") }}
+                        {{ form.delivery_date(class="form-control") }}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        {{ form.supplier_id.label(class="form-label") }}
+                        <div class="position-relative">
+                            <input type="text" id="supplier_search" class="form-control" placeholder="Search suppliers..." autocomplete="off">
+                            <div id="supplier_dropdown" class="dropdown-menu w-100" style="max-height: 200px; overflow-y: auto; display: none;">
+                                <!-- Suppliers will be populated here -->
+                            </div>
+                            {{ form.supplier_id(style="display: none;", id="supplier_id_hidden") }}
+                        </div>
+                        <small class="text-muted">Type to search suppliers by name</small>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        {{ form.payment_terms.label(class="form-label") }}
+                        {{ form.payment_terms(class="form-control") }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.freight_terms.label(class="form-label") }}
+                        {{ form.freight_terms(class="form-control") }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.validity_months.label(class="form-label") }}
+                        {{ form.validity_months(class="form-control") }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Purchase Order Items -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Purchase Order Items</h5>
+                <button type="button" class="btn btn-sm btn-primary" onclick="addPOItem()">
+                    <i class="fas fa-plus"></i> Add Item
+                </button>
+            </div>
+            <div class="card-body">
+                <!-- Scroll Indicator -->
+                <div class="alert alert-info mb-3" role="alert">
+                    <i class="fas fa-arrows-alt-h"></i> <strong>Table contains many columns:</strong> 
+                    Scroll horizontally to see <strong>Material Destination</strong>, UOM, Qty, Rate, and Amount columns →
+                </div>
+                <div class="table-responsive" style="overflow-x: auto; border: 2px solid #0d6efd; border-radius: 8px;">
+                    <style>
+                        #poItemsTable { 
+                            min-width: 1500px; 
+                            table-layout: fixed; 
+                            width: 100%;
+                        }
+                        #poItemsTable td {
+                            position: relative;
+                            overflow: visible;
+                            white-space: nowrap;
+                            padding: 6px 8px;
+                        }
+                        #poItemsTable th {
+                            position: relative;
+                            overflow: visible;
+                            white-space: nowrap;
+                            padding: 8px 8px;
+                            text-align: center;
+                            vertical-align: middle;
+                            font-weight: 600;
+                        }
+                        #poItemsTable input, #poItemsTable select, #poItemsTable textarea { 
+                            box-sizing: border-box; 
+                        }
+                        #poItemsTable .input-group { min-width: 120px; white-space: nowrap; }
+                        .table-responsive { 
+                            max-height: 600px; 
+                            overflow-y: auto; 
+                        }
+                        /* Specific column widths to prevent overlap */
+                        #poItemsTable th:nth-child(1), #poItemsTable td:nth-child(1) { width: 50px !important; }
+                        #poItemsTable th:nth-child(2), #poItemsTable td:nth-child(2) { width: 100px !important; }
+                        #poItemsTable th:nth-child(3), #poItemsTable td:nth-child(3) { width: 220px !important; }
+                        #poItemsTable th:nth-child(4), #poItemsTable td:nth-child(4) { width: 130px !important; }
+                        #poItemsTable th:nth-child(5), #poItemsTable td:nth-child(5) { width: 100px !important; }
+                        #poItemsTable th:nth-child(6), #poItemsTable td:nth-child(6) { width: 120px !important; }
+                        #poItemsTable th:nth-child(7), #poItemsTable td:nth-child(7) { width: 160px !important; }
+                        #poItemsTable th:nth-child(8), #poItemsTable td:nth-child(8) { width: 80px !important; }
+                        #poItemsTable th:nth-child(9), #poItemsTable td:nth-child(9) { width: 100px !important; }
+                        #poItemsTable th:nth-child(10), #poItemsTable td:nth-child(10) { width: 130px !important; }
+                        #poItemsTable th:nth-child(11), #poItemsTable td:nth-child(11) { width: 130px !important; }
+                        #poItemsTable th:nth-child(12), #poItemsTable td:nth-child(12) { width: 80px !important; }
+                        
+                        /* Material Destination Column Highlighting */
+                        #poItemsTable th:nth-child(7), #poItemsTable td:nth-child(7) {
+                            background-color: #fff3cd !important;
+                            border-left: 3px solid #ffc107 !important;
+                            font-weight: 600 !important;
+                        }
+                    </style>
+                    <table class="table table-bordered" id="poItemsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>No.</th>
+                                <th>Item Code</th>
+                                <th>Item + Description</th>
+                                <th>Unit Weight</th>
+                                <th>HSN Code</th>
+                                <th>GST Rate</th>
+                                <th>Material<br>Destination</th>
+                                <th>UOM</th>
+                                <th>Qty</th>
+                                <th>Rate</th>
+                                <th>Amount</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="poItemsBody">
+                            {% if po_items %}
+                                {% for item in po_items %}
+                                <tr data-item-id="{{ item.id }}">
+                                    <td class="align-middle text-center">{{ loop.index }}</td>
+                                    <td class="align-middle">
+                                        <input type="text" class="form-control form-control-sm text-center fw-bold" name="rm_code_{{ item.id }}" 
+                                               value="{{ item.rm_code or item.item.code }}" placeholder="Item Code">
+                                    </td>
+                                    <td class="align-middle">
+                                        <select class="form-control form-control-sm" name="item_id_{{ item.id }}" onchange="populateItemDetails(this)">
+                                            <option value="">Select Item</option>
+                                            {% for available_item in items %}
+                                            <option value="{{ available_item.id }}" 
+                                                    {% if available_item.id == item.item_id %}selected{% endif %}
+                                                    data-code="{{ available_item.code }}"
+                                                    data-name="{{ available_item.name }}"
+                                                    data-description="{{ available_item.description or '' }}"
+                                                    data-hsn="{{ available_item.hsn_code or '' }}"
+                                                    data-gst="{{ available_item.gst_rate or 18.0 }}"
+                                                    data-uom="{{ available_item.unit_of_measure }}"
+                                                    data-price="{{ available_item.unit_price or 0.0 }}"
+                                                    data-unit-weight="{{ available_item.unit_weight or 0.0 }}"
+                                                    data-weight-unit="{{ available_item.weight_unit or 'kg' }}">
+                                                {{ available_item.code }} - {{ available_item.name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <textarea class="form-control form-control-sm mt-1" name="description_{{ item.id }}" 
+                                                  rows="2" placeholder="Item description">{{ item.item_description or item.item.description }}</textarea>
+                                    </td>
+                                    <td class="align-middle" style="min-width: 120px; max-width: 120px; overflow: hidden; position: relative;">
+                                        <div style="display: flex; gap: 2px; width: 115px; position: relative;">
+                                            <input type="number" class="form-control form-control-sm" name="unit_weight_{{ item.id }}" 
+                                                   value="{{ item.item.unit_weight or '' }}" step="0.001" min="0" placeholder="0.000" 
+                                                   style="width: 70px; font-size: 12px; padding: 2px 4px;">
+                                            <select class="form-select form-select-sm" name="weight_unit_{{ item.id }}" 
+                                                    style="width: 43px; font-size: 11px; padding: 2px 2px; position: relative; z-index: 1;">
+                                                <option value="kg" {% if item.item.weight_unit == 'kg' or not item.item.weight_unit %}selected{% endif %}>kg</option>
+                                                <option value="g" {% if item.item.weight_unit == 'g' %}selected{% endif %}>g</option>
+                                                <option value="lbs" {% if item.item.weight_unit == 'lbs' %}selected{% endif %}>lbs</option>
+                                                <option value="oz" {% if item.item.weight_unit == 'oz' %}selected{% endif %}>oz</option>
+                                                <option value="ton" {% if item.item.weight_unit == 'ton' %}selected{% endif %}>ton</option>
+                                            </select>
+                                        </div>
+                                    </td>
+                                    <td class="align-middle">
+                                        <input type="text" class="form-control form-control-sm text-center fw-bold" name="hsn_code_{{ item.id }}" 
+                                               value="{{ item.hsn_code or item.item.hsn_code }}" placeholder="HSN Code">
+                                    </td>
+                                    <td class="align-middle">
+                                        <div class="input-group input-group-sm" style="min-width: 120px; white-space: nowrap;">
+                                            <input type="number" class="form-control" name="gst_rate_{{ item.id }}" 
+                                                   value="{{ item.gst_rate or item.item.gst_rate or 0.0 }}" step="0.01" min="0" max="100" placeholder="18" style="min-width: 80px; flex: 1;">
+                                            <span class="input-group-text" style="white-space: nowrap;">%</span>
+                                        </div>
+                                    </td>
+                                    <td class="align-middle">
+                                        <select class="form-control form-control-sm" name="material_destination_{{ item.id }}" style="min-width: 140px;">
+                                            <option value="raw_material" {% if item.material_destination == 'raw_material' or not item.material_destination %}selected{% endif %}>Raw Material</option>
+                                            <option value="finished" {% if item.material_destination == 'finished' %}selected{% endif %}>Finished Goods</option>
+                                            <option value="wip" {% if item.material_destination == 'wip' %}selected{% endif %}>Work in Progress</option>
+                                            <option value="scrap" {% if item.material_destination == 'scrap' %}selected{% endif %}>Scrap/Waste</option>
+                                        </select>
+                                    </td>
+                                    <td class="align-middle">
+                                        <input type="text" class="form-control form-control-sm text-center fw-bold" name="uom_{{ item.id }}" 
+                                               value="{{ item.uom or item.item.unit_of_measure }}" placeholder="UOM" style="min-width: 80px;">
+                                    </td>
+                                    <td class="align-middle">
+                                        <input type="number" class="form-control form-control-sm" name="qty_{{ item.id }}" 
+                                               value="{{ item.qty or item.quantity_ordered }}" step="0.01" min="0" 
+                                               onchange="calculateAmount(this)" placeholder="0" style="min-width: 100px;">
+                                    </td>
+                                    <td class="align-middle">
+                                        <input type="number" class="form-control form-control-sm" name="rate_{{ item.id }}" 
+                                               value="{{ item.rate or item.unit_price or item.item.unit_price }}" step="0.01" min="0" 
+                                               onchange="calculateAmount(this)" placeholder="0.00" style="min-width: 120px; width: 100%;">
+                                    </td>
+                                    <td class="align-middle">
+                                        <input type="number" class="form-control form-control-sm" name="amount_{{ item.id }}" 
+                                               value="{{ item.amount or item.total_price }}" readonly placeholder="0.00" style="min-width: 120px; width: 100%;">
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% endif %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-secondary">
+                                <td colspan="10" class="text-end"><strong>Sub Total:</strong></td>
+                                <td><input type="number" class="form-control form-control-sm" id="subTotal" readonly placeholder="0.00"></td>
+                                <td></td>
+                            </tr>
+                            <tr class="table-secondary">
+                                <td colspan="10" class="text-end"><strong>Total GST:</strong></td>
+                                <td><input type="number" class="form-control form-control-sm" id="igstAmount" readonly placeholder="0.00"></td>
+                                <td></td>
+                            </tr>
+                            <tr class="table-dark">
+                                <td colspan="10" class="text-end"><strong>Grand Total:</strong></td>
+                                <td><input type="number" class="form-control form-control-sm" id="grandTotal" readonly placeholder="0.00"></td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Additional Information</h5>
+            </div>
+            <div class="card-body">
+                <!-- Approval Section - Only show during editing -->
+                {% if po %}
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ form.prepared_by.label(class="form-label") }}
+                        {{ form.prepared_by(class="form-control") }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.verified_by.label(class="form-label") }}
+                        {{ form.verified_by(class="form-control") }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.approved_by.label(class="form-label") }}
+                        {{ form.approved_by(class="form-control") }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        {{ form.delivery_notes.label(class="form-label") }}
+                        {{ form.delivery_notes(class="form-control", rows="3") }}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        {{ form.notes.label(class="form-label") }}
+                        {{ form.notes(class="form-control", rows="3") }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="card">
+            <div class="card-body">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Purchase Order
+                </button>
+                <a href="{{ url_for('purchase.list_purchase_orders') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+                {% if po %}
+                <a href="{{ url_for('purchase.print_purchase_order', id=po.id) }}" class="btn btn-info" target="_blank">
+                    <i class="fas fa-print"></i> Print
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+let itemCounter = 0;
+
+// Define items data for JavaScript use
+const itemsData = [
+    {% for item in items %}
+    {
+        id: {{ item.id }},
+        code: "{{ item.code }}",
+        name: "{{ item.name }}",
+        description: "{{ item.description or '' }}",
+        hsn_code: "{{ item.hsn_code or '' }}",
+        gst_rate: {{ item.gst_rate or 0.0 }},
+        unit_of_measure: "{{ item.purchase_unit if item.purchase_unit else item.unit_of_measure }}",
+        unit_price: {{ item.unit_price or 0.0 }},
+        unit_weight: {{ item.unit_weight or 0.0 }},
+        weight_unit: "{{ item.weight_unit or 'kg' }}",
+        bom_rate: {{ item.purchase_rate if item.purchase_rate else (item.bom_rate or item.unit_price or 0.0) }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
+console.log('=== ITEMS DATA DEBUG ===');
+console.log('Total items loaded:', itemsData.length);
+itemsData.forEach(item => {
+    console.log(`Item ${item.code}: unit_price=${item.unit_price}, bom_rate=${item.bom_rate}`);
+});
+console.log('=======================');
+
+function addPOItem() {
+    itemCounter++;
+    const tbody = document.getElementById('poItemsBody');
+    const rowCount = tbody.rows.length + 1;
+    
+    const row = tbody.insertRow();
+    row.innerHTML = `
+        <td class="align-middle text-center">${rowCount}</td>
+        <td class="align-middle">
+            <input type="text" class="form-control form-control-sm text-center fw-bold" name="rm_code_new_${itemCounter}" placeholder="Item Code">
+        </td>
+        <td class="align-middle">
+            <select class="form-control form-control-sm" name="item_id_new_${itemCounter}" onchange="populateItemDetails(this)">
+                <option value="">Select Item</option>
+            </select>
+            <textarea class="form-control form-control-sm mt-1" name="description_new_${itemCounter}" 
+                      rows="2" placeholder="Item description"></textarea>
+        </td>
+        <td class="align-middle" style="min-width: 120px; max-width: 120px; overflow: hidden; position: relative;">
+            <div style="display: flex; gap: 2px; width: 115px; position: relative;">
+                <input type="number" class="form-control form-control-sm" name="unit_weight_new_${itemCounter}" 
+                       step="0.001" min="0" placeholder="0.000" 
+                       style="width: 70px; font-size: 12px; padding: 2px 4px;">
+                <select class="form-select form-select-sm" name="weight_unit_new_${itemCounter}" 
+                        style="width: 43px; font-size: 11px; padding: 2px 2px; position: relative; z-index: 1;">
+                    <option value="kg" selected>kg</option>
+                    <option value="g">g</option>
+                    <option value="lbs">lbs</option>
+                    <option value="oz">oz</option>
+                    <option value="ton">ton</option>
+                </select>
+            </div>
+        </td>
+        <td class="align-middle">
+            <input type="text" class="form-control form-control-sm text-center fw-bold" name="hsn_code_new_${itemCounter}" placeholder="HSN Code">
+        </td>
+        <td class="align-middle">
+            <div class="input-group input-group-sm" style="min-width: 120px; white-space: nowrap;">
+                <input type="number" class="form-control gst-field" name="gst_rate_new_${itemCounter}" 
+                       step="0.01" min="0" max="100" placeholder="18" onchange="calculateAmount(this)" style="min-width: 80px; flex: 1;">
+                <span class="input-group-text" style="white-space: nowrap;">%</span>
+            </div>
+        </td>
+        <td class="align-middle">
+            <select class="form-control form-control-sm" name="material_destination_new_${itemCounter}" style="min-width: 140px;">
+                <option value="raw_material" selected>Raw Material</option>
+                <option value="finished">Finished Goods</option>
+                <option value="wip">Work in Progress</option>
+                <option value="scrap">Scrap/Waste</option>
+            </select>
+        </td>
+        <td class="align-middle">
+            <input type="text" class="form-control form-control-sm text-center fw-bold" name="uom_new_${itemCounter}" placeholder="UOM">
+        </td>
+        <td class="align-middle">
+            <input type="number" class="form-control form-control-sm" name="qty_new_${itemCounter}" 
+                   step="0.01" min="0" onchange="calculateAmount(this)" placeholder="0">
+        </td>
+        <td class="align-middle">
+            <input type="number" class="form-control form-control-sm rate-field" name="rate_new_${itemCounter}" 
+                   step="0.01" min="0" onchange="calculateAmount(this)" placeholder="0.00">
+        </td>
+        <td class="align-middle">
+            <input type="number" class="form-control form-control-sm" name="amount_new_${itemCounter}" 
+                   readonly placeholder="0.00">
+        </td>
+        <td class="align-middle text-center">
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    // Populate the item dropdown
+    const selectElement = row.querySelector('select[name*="item_id"]');
+    itemsData.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = `${item.code} - ${item.name}`;
+        option.dataset.code = item.code;
+        option.dataset.name = item.name;
+        option.dataset.description = item.description;
+        option.dataset.hsn = item.hsn_code;
+        option.dataset.gst = item.gst_rate;  // This should be GST percentage like 18%
+        option.dataset.uom = item.unit_of_measure;
+        option.dataset.unitWeight = item.unit_weight;
+        option.dataset.weightUnit = item.weight_unit;
+        option.dataset.price = item.bom_rate;  // This should be the BOM unit cost like 42.94
+        
+        console.log(`=== DATASET MAPPING FOR ${item.code} ===`);
+        console.log('Source data from backend:', {
+            gst_rate: item.gst_rate,
+            bom_rate: item.bom_rate, 
+            unit_price: item.unit_price,
+            hsn_code: item.hsn_code,
+            unit_of_measure: item.unit_of_measure
+        });
+        console.log('Dataset attributes set:', {
+            'dataset.gst': option.dataset.gst,
+            'dataset.price': option.dataset.price,
+            'dataset.hsn': option.dataset.hsn,
+            'dataset.uom': option.dataset.uom
+        });
+        console.log('===============================');
+        selectElement.appendChild(option);
+    });
+}
+
+function populateItemDetails(selectElement) {
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    
+    console.log('=== Auto-population Debug ===');
+    console.log('Selected option:', selectedOption);
+    console.log('Selected value:', selectedOption.value);
+    console.log('Selected text:', selectedOption.textContent);
+    console.log('Full dataset object:', selectedOption.dataset);
+    console.log('Individual dataset values:', {
+        code: selectedOption.dataset.code,
+        gst: selectedOption.dataset.gst,
+        price: selectedOption.dataset.price,
+        uom: selectedOption.dataset.uom,
+        hsn: selectedOption.dataset.hsn,
+        description: selectedOption.dataset.description
+    });
+    
+    if (selectedOption.value) {
+        const row = selectElement.closest('tr');
+        
+        // Find all input fields in this row
+        const rmCodeInput = row.querySelector(`input[name*="rm_code"]`);
+        const descriptionTextarea = row.querySelector(`textarea[name*="description"]`);
+        const unitWeightInput = row.querySelector(`input[name*="unit_weight"]`);
+        const weightUnitSelect = row.querySelector(`select[name*="weight_unit"]`);
+        const hsnInput = row.querySelector(`input[name*="hsn_code"]`);
+        const gstInput = row.querySelector(`input.gst-field[name*="gst_rate"]`);
+        const uomInput = row.querySelector(`input[name*="uom"]`);
+        const rateInput = row.querySelector(`input.rate-field[name*="rate"]`);
+        
+        console.log('Found fields:', {
+            rmCodeInput: rmCodeInput ? rmCodeInput.name : 'NOT FOUND',
+            descriptionTextarea: descriptionTextarea ? descriptionTextarea.name : 'NOT FOUND',
+            hsnInput: hsnInput ? hsnInput.name : 'NOT FOUND',
+            gstInput: gstInput ? gstInput.name : 'NOT FOUND',
+            uomInput: uomInput ? uomInput.name : 'NOT FOUND',
+            rateInput: rateInput ? rateInput.name : 'NOT FOUND'
+        });
+        
+        console.log('=== FIELD MAPPING VERIFICATION ===');
+        console.log('Form Fields to Data Source Mapping:');
+        console.log('Item Code Field ← item.code:', selectedOption.dataset.code);
+        console.log('Description Field ← item.description:', selectedOption.dataset.description);
+        console.log('HSN Code Field ← item.hsn_code:', selectedOption.dataset.hsn);
+        console.log('GST Rate Field ← MANUAL ENTRY (left empty)');
+        console.log('UOM Field ← item.unit_of_measure:', selectedOption.dataset.uom);
+        console.log('Rate Field ← item.bom_rate:', selectedOption.dataset.price);
+        console.log('==================================');
+
+        // Clear all fields first to prevent conflicts
+        [rmCodeInput, descriptionTextarea, unitWeightInput, hsnInput, gstInput, uomInput, rateInput].forEach(field => {
+            if (field) field.value = '';
+        });
+        if (weightUnitSelect) weightUnitSelect.value = 'kg';
+
+        // Set values with explicit mapping
+        if (rmCodeInput) {
+            rmCodeInput.value = selectedOption.dataset.code || '';
+            console.log('✓ Item Code set to:', rmCodeInput.value);
+        }
+        if (descriptionTextarea) {
+            descriptionTextarea.value = selectedOption.dataset.description || '';
+            console.log('✓ Description set to:', descriptionTextarea.value);
+        }
+        if (unitWeightInput) {
+            unitWeightInput.value = selectedOption.dataset.unitWeight || '';
+            console.log('✓ Unit Weight set to:', unitWeightInput.value);
+        }
+        if (weightUnitSelect) {
+            weightUnitSelect.value = selectedOption.dataset.weightUnit || 'kg';
+            console.log('✓ Weight Unit set to:', selectedOption.dataset.weightUnit || 'kg');
+        }
+        if (hsnInput) {
+            hsnInput.value = selectedOption.dataset.hsn || '';
+            console.log('✓ HSN Code set to:', hsnInput.value);
+        }
+        if (gstInput) {
+            // Leave GST Rate empty for manual entry - force clear
+            gstInput.value = '';
+            gstInput.setAttribute('value', '');
+            gstInput.setAttribute('placeholder', '18'); // Suggest common GST rate
+            console.log('✓ GST Rate field cleared for manual entry (placeholder: 18%)');
+        }
+        if (uomInput) {
+            uomInput.value = selectedOption.dataset.uom || '';
+            console.log('✓ UOM set to:', uomInput.value, '(should be "nos" for castor)');
+        }
+        if (rateInput) {
+            const bomRate = selectedOption.dataset.price || '0.00';
+            rateInput.value = bomRate;
+            rateInput.setAttribute('value', bomRate);
+            console.log('✓ Rate set to:', bomRate, '(BOM unit cost for', selectedOption.dataset.code + ')');
+            console.log('✓ Rate input value confirmed:', rateInput.value);
+        } else {
+            console.error('❌ Rate input field not found!');
+        }
+        
+        console.log('=== Auto-population Complete ===');
+        
+        // Force values with delay to override any interference
+        setTimeout(() => {
+            console.log('=== FORCING VALUES AFTER 100ms ===');
+            if (gstInput) {
+                gstInput.value = '';
+                gstInput.setAttribute('value', '');
+                console.log('GST field forcibly cleared:', gstInput.value);
+            }
+            if (rateInput) {
+                const bomRate = selectedOption.dataset.price || '0.00';
+                rateInput.value = bomRate;
+                rateInput.setAttribute('value', bomRate);
+                console.log('Rate field forcibly set to:', rateInput.value);
+            }
+            console.log('==================================');
+        }, 100);
+        
+        // Also force again after 500ms to be sure
+        setTimeout(() => {
+            console.log('=== FINAL FORCE AFTER 500ms ===');
+            if (gstInput) {
+                gstInput.value = '';
+                console.log('GST final value:', gstInput.value);
+            }
+            if (rateInput) {
+                const bomRate = selectedOption.dataset.price || '0.00';
+                rateInput.value = bomRate;
+                console.log('Rate final value:', rateInput.value);
+            }
+            console.log('===============================');
+        }, 500);
+        
+        if (rateInput) {
+            calculateAmount(rateInput);
+        }
+    }
+}
+
+function calculateAmount(element) {
+    const row = element.closest('tr');
+    const qtyInput = row.querySelector(`input[name*="qty"]`);
+    const rateInput = row.querySelector(`input.rate-field[name*="rate"]`);
+    const amountInput = row.querySelector(`input[name*="amount"]`);
+    
+    console.log('=== AMOUNT CALCULATION ===');
+    console.log('Qty input:', qtyInput ? qtyInput.value : 'NOT FOUND');
+    console.log('Rate input:', rateInput ? rateInput.value : 'NOT FOUND');
+    console.log('Amount input:', amountInput ? 'FOUND' : 'NOT FOUND');
+    
+    if (qtyInput && rateInput && amountInput) {
+        const qty = parseFloat(qtyInput.value) || 0;
+        const rate = parseFloat(rateInput.value) || 0;
+        const amount = qty * rate;
+        amountInput.value = amount.toFixed(2);
+        console.log(`Calculation: ${qty} × ${rate} = ${amount.toFixed(2)}`);
+    }
+    
+    calculateTotals();
+}
+
+function calculateTotals() {
+    let subTotal = 0;
+    let totalGstAmount = 0;
+    
+    const tbody = document.getElementById('poItemsBody');
+    const rows = tbody.querySelectorAll('tr');
+    
+    console.log('=== TOTAL CALCULATION ===');
+    console.log('Number of rows:', rows.length);
+    
+    rows.forEach((row, index) => {
+        const amountInput = row.querySelector('input[name*="amount"]');
+        const gstInput = row.querySelector('input.gst-field[name*="gst_rate"]');
+        
+        console.log(`Row ${index + 1} fields:`, {
+            amountInput: amountInput ? `Found (${amountInput.value})` : 'NOT FOUND',
+            gstInput: gstInput ? `Found (${gstInput.value})` : 'NOT FOUND'
+        });
+        
+        if (amountInput && gstInput) {
+            const amount = parseFloat(amountInput.value) || 0;
+            const gstRate = parseFloat(gstInput.value) || 0;
+            const gstAmount = (amount * gstRate) / 100;
+            
+            console.log(`Row ${index + 1}: Amount=${amount}, GST Rate=${gstRate}%, GST Amount=${gstAmount.toFixed(2)}`);
+            
+            subTotal += amount;
+            totalGstAmount += gstAmount;
+        }
+    });
+    
+    const grandTotal = subTotal + totalGstAmount;
+    
+    console.log(`Totals: Sub=${subTotal.toFixed(2)}, GST=${totalGstAmount.toFixed(2)}, Grand=${grandTotal.toFixed(2)}`);
+    console.log('=========================');
+    
+    // Update total fields
+    const subTotalField = document.getElementById('subTotal');
+    const igstAmountField = document.getElementById('igstAmount'); 
+    const grandTotalField = document.getElementById('grandTotal');
+    
+    if (subTotalField) subTotalField.value = subTotal.toFixed(2);
+    if (igstAmountField) igstAmountField.value = totalGstAmount.toFixed(2);
+    if (grandTotalField) grandTotalField.value = grandTotal.toFixed(2);
+}
+
+function removeRow(button) {
+    const row = button.closest('tr');
+    row.remove();
+    
+    // Renumber rows
+    const rows = document.querySelectorAll('#poItemsBody tr');
+    rows.forEach((row, index) => {
+        row.cells[0].textContent = index + 1;
+    });
+    
+    calculateTotals();
+}
+
+// Searchable Supplier Dropdown
+function initializeSupplierSearch() {
+    const searchInput = document.getElementById('supplier_search');
+    const dropdown = document.getElementById('supplier_dropdown');
+    const hiddenSelect = document.getElementById('supplier_id_hidden');
+    
+    // Get suppliers from the hidden select options
+    const suppliers = Array.from(hiddenSelect.options).filter(option => option.value !== '0').map(option => ({
+        id: option.value,
+        name: option.text
+    }));
+    
+    function showDropdown(filteredSuppliers) {
+        dropdown.innerHTML = '';
+        dropdown.style.display = 'block';
+        
+        if (filteredSuppliers.length === 0) {
+            dropdown.innerHTML = '<div class="dropdown-item text-muted">No suppliers found</div>';
+            return;
+        }
+        
+        filteredSuppliers.forEach(supplier => {
+            const item = document.createElement('div');
+            item.className = 'dropdown-item';
+            item.style.cursor = 'pointer';
+            item.textContent = supplier.name;
+            
+            item.addEventListener('click', function() {
+                searchInput.value = supplier.name;
+                hiddenSelect.value = supplier.id;
+                dropdown.style.display = 'none';
+            });
+            
+            dropdown.appendChild(item);
+        });
+    }
+    
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        
+        if (query.length === 0) {
+            dropdown.style.display = 'none';
+            hiddenSelect.value = '0';
+            return;
+        }
+        
+        const filteredSuppliers = suppliers.filter(supplier => 
+            supplier.name.toLowerCase().includes(query)
+        );
+        
+        showDropdown(filteredSuppliers);
+    });
+    
+    searchInput.addEventListener('focus', function() {
+        if (this.value.trim().length > 0) {
+            const query = this.value.toLowerCase().trim();
+            const filteredSuppliers = suppliers.filter(supplier => 
+                supplier.name.toLowerCase().includes(query)
+            );
+            showDropdown(filteredSuppliers);
+        }
+    });
+    
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!searchInput.contains(event.target) && !dropdown.contains(event.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+    
+    // Set initial value if supplier is already selected (for edit mode)
+    if (hiddenSelect.value && hiddenSelect.value !== '0') {
+        const selectedOption = hiddenSelect.options[hiddenSelect.selectedIndex];
+        if (selectedOption) {
+            searchInput.value = selectedOption.text;
+        }
+    }
+}
+
+// Calculate totals on page load
+document.addEventListener('DOMContentLoaded', function() {
+    calculateTotals();
+    initializeSupplierSearch();
+});
+</script>
+{% endblock %}

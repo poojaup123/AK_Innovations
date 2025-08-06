@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+{% set title = "Batch/Lot Tracking" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-barcode text-warning me-2"></i>
+                    Batch/Lot Tracking
+                </h1>
+                <div>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createBatchModal">
+                        <i class="fas fa-plus"></i> Create Batch
+                    </button>
+                    <a href="{{ url_for('live_status.process_dashboard') }}" class="btn btn-outline-secondary ms-2">
+                        <i class="fas fa-broadcast-tower"></i> Live Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Summary Statistics -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Total Batches</h5>
+                            <h3>{{ stats.total_batches }}</h3>
+                            <small>Active & Expired</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Active Batches</h5>
+                            <h3>{{ stats.active_batches }}</h3>
+                            <small>With Inventory</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Expired Batches</h5>
+                            <h3>{{ stats.expired_batches }}</h3>
+                            <small>Past Expiry</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Total Quantity</h5>
+                            <h3>{{ "%.0f"|format(stats.total_batch_quantity) }}</h3>
+                            <small>All Batches</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Batch Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i> Batch Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Batch Number</th>
+                                    <th>Item</th>
+                                    <th>Supplier Batch</th>
+                                    <th>Manufacture Date</th>
+                                    <th>Expiry Date</th>
+                                    <th>Status</th>
+                                    <th>Total Quantity</th>
+                                    <th>Raw</th>
+                                    <th>WIP</th>
+                                    <th>Finished</th>
+                                    <th>Quality</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for batch in batches %}
+                                <tr class="{% if batch.is_expired %}table-danger{% endif %}">
+                                    <td>
+                                        <code>{{ batch.batch_number }}</code>
+                                    </td>
+                                    <td>
+                                        <strong>{{ batch.item.name }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ batch.item.code }}</small>
+                                    </td>
+                                    <td>
+                                        {% if batch.supplier_batch %}
+                                            <code>{{ batch.supplier_batch }}</code>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if batch.manufacture_date %}
+                                            {{ batch.manufacture_date.strftime('%d/%m/%Y') }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if batch.expiry_date %}
+                                            {{ batch.expiry_date.strftime('%d/%m/%Y') }}
+                                            {% if batch.is_expired %}
+                                                <i class="fas fa-exclamation-triangle text-danger ms-1"></i>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">No Expiry</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if batch.is_expired %}
+                                            <span class="badge bg-danger">Expired</span>
+                                        {% elif batch.total_quantity > 0 %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Depleted</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{{ "%.2f"|format(batch.total_quantity) }}</strong>
+                                        <span class="text-muted">{{ batch.item.unit_of_measure }}</span>
+                                    </td>
+                                    <td>
+                                        {% if batch.qty_raw > 0 %}
+                                            <span class="badge bg-info">{{ "%.2f"|format(batch.qty_raw) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set total_wip = (batch.qty_wip or 0) + (batch.qty_wip_cutting or 0) + (batch.qty_wip_bending or 0) + (batch.qty_wip_welding or 0) + (batch.qty_wip_zinc or 0) + (batch.qty_wip_painting or 0) + (batch.qty_wip_assembly or 0) + (batch.qty_wip_machining or 0) + (batch.qty_wip_polishing or 0) %}
+                                        {% if total_wip > 0 %}
+                                            <span class="badge bg-warning">{{ "%.2f"|format(total_wip) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if batch.qty_finished > 0 %}
+                                            <span class="badge bg-success">{{ "%.2f"|format(batch.qty_finished) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if batch.quality_status == 'good' %}
+                                            <span class="badge bg-success">Good</span>
+                                        {% elif batch.quality_status == 'defective' %}
+                                            <span class="badge bg-warning">Defective</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Expired</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if batches|length == 0 %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-barcode text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No Batches Found</h5>
+                        <p class="text-muted">Create your first batch to start tracking inventory lots.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Batch Modal -->
+<div class="modal fade" id="createBatchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Batch</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createBatchForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="itemSelect" class="form-label">Item *</label>
+                                <select class="form-select" id="itemSelect" required name="item_id">
+                                    <option value="">Select Item</option>
+                                    {% for batch in batches %}
+                                        {% if loop.index0 == 0 %}
+                                            {% set items = [batch.item] %}
+                                            {% for b in batches %}
+                                                {% if b.item not in items %}
+                                                    {% set _ = items.append(b.item) %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    <!-- Note: In production, this should load all items from the database -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="batchNumber" class="form-label">Batch Number *</label>
+                                <input type="text" class="form-control" id="batchNumber" required 
+                                       name="batch_number" placeholder="e.g., BATCH-2025-001">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="supplierBatch" class="form-label">Supplier Batch</label>
+                                <input type="text" class="form-control" id="supplierBatch" 
+                                       name="supplier_batch" placeholder="Supplier's batch number">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="initialQuantity" class="form-label">Initial Quantity</label>
+                                <input type="number" class="form-control" id="initialQuantity" 
+                                       name="initial_quantity" step="0.01" min="0" placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="manufactureDate" class="form-label">Manufacture Date</label>
+                                <input type="date" class="form-control" id="manufactureDate" name="manufacture_date">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="expiryDate" class="form-label">Expiry Date</label>
+                                <input type="date" class="form-control" id="expiryDate" name="expiry_date">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createBatch()">
+                    <i class="fas fa-plus"></i> Create Batch
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function createBatch() {
+    const form = document.getElementById('createBatchForm');
+    const formData = new FormData(form);
+    
+    const data = {
+        item_id: formData.get('item_id'),
+        batch_number: formData.get('batch_number'),
+        supplier_batch: formData.get('supplier_batch'),
+        manufacture_date: formData.get('manufacture_date'),
+        expiry_date: formData.get('expiry_date'),
+        initial_quantity: formData.get('initial_quantity')
+    };
+    
+    // Basic validation
+    if (!data.item_id || !data.batch_number) {
+        showAlert('warning', 'Please fill in required fields');
+        return;
+    }
+    
+    fetch('/live-status/create-batch', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+            bootstrap.Modal.getInstance(document.getElementById('createBatchModal')).hide();
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showAlert('danger', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'Failed to create batch');
+    });
+}
+
+function showAlert(type, message) {
+    const alertHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    document.querySelector('.container-fluid').insertAdjacentHTML('afterbegin', alertHTML);
+    
+    setTimeout(() => {
+        const alert = document.querySelector('.alert');
+        if (alert) {
+            bootstrap.Alert.getOrCreateInstance(alert).close();
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

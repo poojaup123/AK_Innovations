@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-hand-holding-usd"></i> {{ title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('hr.dashboard') }}">HR Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('hr.advance_list') }}">Employee Advances</a></li>
+                    <li class="breadcrumb-item active">{{ title }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('hr.advance_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-hand-holding-usd"></i> Employee Advance Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Basic Information Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-info-circle"></i> Basic Information
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.advance_number.label(class="form-label") }}
+                                {{ form.advance_number(class="form-control") }}
+                                {% if form.advance_number.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.advance_number.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.employee_id.label(class="form-label") }}
+                                {{ form.employee_id(class="form-select") }}
+                                {% if form.employee_id.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.employee_id.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.amount.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.amount(class="form-control", id="advance_amount", onchange="calculateRepayment()") }}
+                                </div>
+                                {% if form.amount.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.amount.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.advance_date.label(class="form-label") }}
+                                {{ form.advance_date(class="form-control") }}
+                                {% if form.advance_date.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.advance_date.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 mb-3">
+                                {{ form.reason.label(class="form-label") }}
+                                {{ form.reason(class="form-control", placeholder="e.g., Medical emergency, House rent, Personal needs") }}
+                                {% if form.reason.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.reason.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Repayment Details Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-success border-bottom pb-2 mb-3">
+                                    <i class="fas fa-calendar-alt"></i> Repayment Details
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.repayment_months.label(class="form-label") }}
+                                {{ form.repayment_months(class="form-control", id="repayment_months", onchange="calculateRepayment()") }}
+                                <small class="form-text text-muted">Number of months to repay this advance</small>
+                                {% if form.repayment_months.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.repayment_months.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.payment_method.label(class="form-label") }}
+                                {{ form.payment_method(class="form-select") }}
+                                {% if form.payment_method.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.payment_method.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Notes Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-info border-bottom pb-2 mb-3">
+                                    <i class="fas fa-sticky-note"></i> Additional Information
+                                </h6>
+                            </div>
+                            <div class="col-12 mb-3">
+                                {{ form.notes.label(class="form-label") }}
+                                {{ form.notes(class="form-control") }}
+                                {% if form.notes.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.notes.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('hr.advance_list') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            {{ form.submit(class="btn btn-warning") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Repayment Summary Card -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-calculator"></i> Repayment Summary</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td>Advance Amount:</td>
+                            <td class="text-end" id="display_amount">₹0.00</td>
+                        </tr>
+                        <tr>
+                            <td>Repayment Months:</td>
+                            <td class="text-end" id="display_months">0</td>
+                        </tr>
+                        <tr class="table-warning">
+                            <td><strong>Monthly Deduction:</strong></td>
+                            <td class="text-end"><strong id="display_monthly">₹0.00</strong></td>
+                        </tr>
+                    </table>
+                    
+                    <div class="alert alert-info mt-3">
+                        <small>
+                            <i class="fas fa-info-circle"></i>
+                            This amount will be automatically deducted from the employee's salary each month until the advance is fully repaid.
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6><i class="fas fa-exclamation-triangle"></i> Important Notes</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><small><i class="fas fa-check text-success"></i> Requires admin approval</small></li>
+                        <li><small><i class="fas fa-check text-success"></i> Auto-deduction from salary</small></li>
+                        <li><small><i class="fas fa-check text-success"></i> Balance tracking included</small></li>
+                        <li><small><i class="fas fa-check text-success"></i> Payment method recorded</small></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function calculateRepayment() {
+    const amount = parseFloat(document.getElementById('advance_amount').value) || 0;
+    const months = parseInt(document.getElementById('repayment_months').value) || 1;
+    
+    const monthlyDeduction = amount / months;
+    
+    // Update display
+    document.getElementById('display_amount').textContent = '₹' + amount.toFixed(2);
+    document.getElementById('display_months').textContent = months;
+    document.getElementById('display_monthly').textContent = '₹' + monthlyDeduction.toFixed(2);
+}
+
+// Initialize calculation on page load
+document.addEventListener('DOMContentLoaded', function() {
+    calculateRepayment();
+});
+</script>
+{% endblock %}

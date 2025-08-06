@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-cogs"></i> {{ title }}</h1>
+            <p class="text-muted">Job works with multiple sequential processes</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('multi_process_jobwork.add_multi_process_job') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create Multi-Process Job Work
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-list"></i> Multi-Process Job Works</h5>
+                    <span class="badge bg-info">{{ job_summaries|length }} job works</span>
+                </div>
+                <div class="card-body">
+                    {% if job_summaries %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Job Number</th>
+                                        <th>Item</th>
+                                        <th>Total Quantity</th>
+                                        <th>Processes</th>
+                                        <th>Progress</th>
+                                        <th>Total Cost</th>
+                                        <th>Start Date</th>
+                                        <th>Expected Completion</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for summary in job_summaries %}
+                                    {% set job = summary.job %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('multi_process_jobwork.detail', id=job.id) }}" 
+                                               class="text-decoration-none fw-bold">
+                                                {{ job.job_number }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            {{ job.item.name }}
+                                            <br><small class="text-muted">{{ job.item.code }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold">{{ job.quantity_sent }}</span> pcs
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ summary.total_processes }}</span> processes
+                                            <br><small class="text-muted">{{ summary.completed_processes }} completed</small>
+                                        </td>
+                                        <td>
+                                            <div class="progress mb-1" style="height: 20px;">
+                                                {% set progress = summary.progress_percentage %}
+                                                <div class="progress-bar {% if progress == 100 %}bg-success{% elif progress > 0 %}bg-primary{% else %}bg-secondary{% endif %}" 
+                                                     role="progressbar" 
+                                                     style="width: {{ progress }}%" 
+                                                     aria-valuenow="{{ progress }}" 
+                                                     aria-valuemin="0" aria-valuemax="100">
+                                                    {{ "%.0f"|format(progress) }}%
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">{{ summary.completed_processes }}/{{ summary.total_processes }} processes</small>
+                                        </td>
+                                        <td>
+                                            ₹{{ "%.2f"|format(summary.total_cost) }}
+                                        </td>
+                                        <td>
+                                            {{ job.sent_date.strftime('%d %b %Y') if job.sent_date else 'Not set' }}
+                                        </td>
+                                        <td>
+                                            {{ job.expected_return.strftime('%d %b %Y') if job.expected_return else 'Not set' }}
+                                        </td>
+                                        <td>
+                                            {% if summary.progress_percentage == 100 %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif summary.progress_percentage > 0 %}
+                                                <span class="badge bg-primary">In Progress</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Pending</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('multi_process_jobwork.detail', id=job.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% if job.has_pending_quantity %}
+                                                    <a href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}" 
+                                                       class="btn btn-sm btn-outline-success" title="Receive Materials via GRN">
+                                                        <i class="fas fa-receipt"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-cogs fa-4x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Multi-Process Job Works Yet</h5>
+                            <p class="text-muted">Create your first multi-process job work to manage complex manufacturing workflows.</p>
+                            <a href="{{ url_for('multi_process_jobwork.add_multi_process_job') }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create Multi-Process Job Work
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Process Overview Cards -->
+    {% if job_summaries %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <h5><i class="fas fa-chart-pie"></i> Overview</h5>
+        </div>
+        
+        {% set total_jobs = job_summaries|length %}
+        {% set completed_jobs = job_summaries|selectattr('progress_percentage', 'equalto', 100)|list|length %}
+        {% set in_progress_jobs = job_summaries|rejectattr('progress_percentage', 'equalto', 100)|rejectattr('progress_percentage', 'equalto', 0)|list|length %}
+        {% set pending_jobs = job_summaries|selectattr('progress_percentage', 'equalto', 0)|list|length %}
+        {% set total_cost = job_summaries|sum(attribute='total_cost') %}
+        
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Jobs</h6>
+                            <h2 class="mb-0">{{ total_jobs }}</h2>
+                        </div>
+                        <div>
+                            <i class="fas fa-cogs fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Completed</h6>
+                            <h2 class="mb-0">{{ completed_jobs }}</h2>
+                        </div>
+                        <div>
+                            <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">In Progress</h6>
+                            <h2 class="mb-0">{{ in_progress_jobs }}</h2>
+                        </div>
+                        <div>
+                            <i class="fas fa-clock fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Value</h6>
+                            <h2 class="mb-0">₹{{ "%.0f"|format(total_cost) }}</h2>
+                        </div>
+                        <div>
+                            <i class="fas fa-rupee-sign fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

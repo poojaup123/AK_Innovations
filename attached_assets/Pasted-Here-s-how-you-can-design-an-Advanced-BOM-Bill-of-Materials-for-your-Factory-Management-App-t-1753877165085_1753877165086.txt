@@ -1,0 +1,83 @@
+Here’s how you can design an **Advanced BOM (Bill of Materials)** for your Factory Management App, tightly integrated with inventory, UOM, job work, GRN, costing, and multi-process manufacturing:
+
+---
+
+### 🧱 **1. Core Features of Advanced BOM**
+
+| Feature                     | Description                                                                                 |
+| --------------------------- | ------------------------------------------------------------------------------------------- |
+| **Multi-Level BOM**         | Supports sub-assemblies and recursive structures (e.g., Castor → Wheel + Plate + Hardware). |
+| **UOM Conversion**          | Define quantity in any UOM (Kg, Sheets), auto-convert to inventory UOM (Pcs).               |
+| **Output Quantity Mapping** | Define expected output (e.g., 1 MS Sheet → 400 Mounted Plates).                             |
+| **Scrap Estimation**        | Track standard scrap % per process and material.                                            |
+| **Process Routing**         | Each BOM can define a sequence of operations (Cutting → Zinc → Assembly).                   |
+| **Cost Layering**           | Raw material cost + process cost + markup/freight for total BOM cost.                       |
+| **Vendor/Jobwork Linkage**  | Optionally assign default vendor or department per process.                                 |
+| **Version Control**         | Track BOM changes over time and maintain historical records.                                |
+
+---
+
+### 🛠️ **2. Suggested BOM Table Schema**
+
+```python
+class BillOfMaterials(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.ForeignKey('item.id')  # Final product
+    output_quantity = db.Column(db.Float)  # e.g., 400 plates
+    uom_id = db.ForeignKey('uom.id')  # Output UOM
+    version = db.Column(db.String)
+    remarks = db.Column(db.Text)
+
+class BOMComponent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    bom_id = db.ForeignKey('billofmaterials.id')
+    material_id = db.ForeignKey('item.id')
+    qty_required = db.Column(db.Float)
+    uom_id = db.ForeignKey('uom.id')
+    scrap_percent = db.Column(db.Float)
+    process_step = db.Column(db.Integer)
+    process_name = db.Column(db.String)
+    default_vendor_id = db.Column(db.ForeignKey('vendor.id'))
+    rate = db.Column(db.Float)  # Optional, for cost roll-up
+```
+
+---
+
+### 🔁 **3. Workflow Integration**
+
+* **From BOM to Job Work**
+  → Auto-fill job work material list based on BOM
+  → Predefined output expectation
+  → Auto-calculate required raw materials
+
+* **With UOM**
+  → Purchase in KG, BOM in Pcs, Inventory auto-adjusts
+  → Track conversion losses during job work or GRN
+
+* **With GRN**
+  → Return against Job Work matches BOM expectations
+  → Scrap tracked automatically
+
+* **With Production**
+  → Use BOM to validate material availability before order execution
+  → Block raw materials, deduct WIP, receive finished items
+
+* **With Costing**
+  → BOM-level cost visibility
+  → Live calculation: Material cost + Process cost + Scrap loss
+
+---
+
+### 📈 **4. BOM Dashboard Metrics**
+
+| Metric              | Description                                                        |
+| ------------------- | ------------------------------------------------------------------ |
+| Material Shortage   | Flag BOMs where inventory < required qty                           |
+| Total BOM Cost      | Final costing after adding labor, freight, overhead                |
+| Output Variance     | Compare expected vs actual GRN output                              |
+| Scrap Efficiency    | Per-process scrap performance                                      |
+| Alternate Materials | Define interchangeable raw materials (e.g., 1.5mm vs 1.8mm sheets) |
+
+---
+
+Would you like a working UI template or database model in Flask for this BOM system?

@@ -1,0 +1,107 @@
+**Job Work Report screen**, it shows a clean table with:
+
+* ✅ Job Numbers
+* ✅ Item Name
+* ✅ Quantity Sent
+* ✅ Rate & Total Value
+* ✅ Sent Date
+* ✅ Expected Return
+* ✅ Status (`Sent`, `Partial_Received`, `Completed`)
+
+---
+
+## 🧠 But What’s Missing?
+
+You don’t yet have **complete tracking** of:
+
+* ✅ How many units are received back?
+* ✅ On **which date**?
+* ✅ If not fully received, how much is **still pending**?
+* ✅ Any **inspection or rejection** details?
+
+---
+
+## ✅ What You Should Do (Step-by-Step)
+
+### 🔁 1. Add a **GRN Tracking System**
+
+As explained earlier:
+
+* Every time items are received back, create a **GRN entry** with quantity & inspection status.
+* Use **parent-child GRN tables**:
+
+  * **GRN Parent** = One per job work receive event
+  * **GRN Child** = Items received in that batch
+
+You can link GRNs to this screen.
+
+---
+
+### 📋 2. Add a Button ➕ **\[Receive Material]**
+
+Each row in your table (like `JOB-2025-0006`) should have a button:
+
+```plaintext
+[Receive Material]
+```
+
+On clicking:
+
+* Show **modal** or new page with:
+
+  * Received Qty
+  * Date
+  * Remarks
+  * Inspection Pass/Fail
+  * Add to Inventory (Yes/No)
+
+Then update:
+
+* Status to `Partial_Received` or `Completed`
+* Inventory updated only for **Passed** qty
+* Rejected qty may go to `Scrap` or `Rework`
+
+---
+
+### 📊 3. Add Status Breakdown UI
+
+On this screen or linked to each job:
+Show like:
+
+| Total Sent | Received | Pending | Last Received On |
+| ---------- | -------- | ------- | ---------------- |
+| 100 pcs    | 60 pcs   | 40 pcs  | 27/07/2025       |
+
+Click “Received” → see GRN details:
+
+* Batch 1 → 40 pcs on 26/07 (Pass)
+* Batch 2 → 20 pcs on 27/07 (5 Rejected)
+
+---
+
+### 🛠️ 4. Track Multiple Receipts per Job
+
+Currently, your **Job Work ID** is one per order.
+
+You need to let user:
+
+* Record **multiple receive events**
+* Against same job number (e.g. `JOB-2025-0006`)
+* System should **auto calculate pending qty** and show status:
+
+  * If 100 sent, and 60 received → show `Partial_Received`
+  * When 100 received → update status `Completed`
+
+---
+
+## ✅ Final Additions
+
+| Feature          | Why It’s Needed                                |
+| ---------------- | ---------------------------------------------- |
+| GRN Table        | Tracks quantity, inspection, and received date |
+| Receive Button   | So users can update return status              |
+| Inventory Sync   | Only approved GRN qty adds back to stock       |
+| WIP Qty          | Show “Under Process” qty                       |
+| Rejection Entry      | If material is rejected during inspection      |
+| Job Work Summary | Full lifecycle history by job number           |
+

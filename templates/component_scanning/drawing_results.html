@@ -1,0 +1,525 @@
+{% extends "base.html" %}
+
+{% block title %}Drawing Analysis Results - Component Scanning{% endblock %}
+
+{% block head %}
+<style>
+.results-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.component-card {
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 15px;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.component-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.confidence-badge {
+    font-size: 0.8em;
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+.drawing-info {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.geometry-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+}
+
+.circular { background: #e3f2fd; color: #1976d2; }
+.rectangular { background: #f3e5f5; color: #7b1fa2; }
+.annotation { background: #e8f5e8; color: #388e3c; }
+
+.dimension-table {
+    font-size: 0.9em;
+}
+
+.source-badge {
+    font-size: 0.75em;
+    padding: 2px 6px;
+    border-radius: 8px;
+}
+
+.source-geometry { background: #e3f2fd; color: #1976d2; }
+.source-annotation { background: #e8f5e8; color: #388e3c; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="results-container">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="{{ url_for('component_scanning.dashboard') }}">Component Scanning</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="{{ url_for('component_scanning.upload_image') }}">Upload</a>
+                        </li>
+                        <li class="breadcrumb-item active">Drawing Results</li>
+                    </ol>
+                </nav>
+                <h1><i class="fas fa-drafting-compass"></i> Drawing Analysis Results</h1>
+                <p class="text-muted">Components detected from technical drawing: {{ drawing_filename }}</p>
+            </div>
+            <div class="col-auto">
+                <a href="{{ url_for('component_scanning.upload_image') }}" class="btn btn-secondary me-2">
+                    <i class="fas fa-upload"></i> Upload Another
+                </a>
+                <button onclick="generateVisualization()" class="btn btn-info me-2">
+                    <i class="fas fa-image"></i> Generate Image
+                </button>
+                <a href="{{ url_for('drawing_upload.create_bom_from_drawing', session_id=session_id) }}" class="btn btn-success">
+                    <i class="fas fa-list-alt"></i> Create BOM
+                </a>
+            </div>
+        </div>
+
+        <!-- Drawing Information -->
+        <div class="drawing-info">
+            <h4><i class="fas fa-info-circle"></i> Drawing Information</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Filename:</strong></td>
+                            <td>{{ drawing_filename }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>File Size:</strong></td>
+                            <td>{{ "%.1f"|format(result.processing_info.file_size / 1024) }} KB</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Format:</strong></td>
+                            <td>
+                                {{ result.processing_info.file_format.upper() }}
+                                {% if result.processing_info.file_format == 'step' %}
+                                    <span class="badge bg-info ms-1">3D Model</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Processed:</strong></td>
+                            <td>{{ result.processing_info.processed_at[:19] }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Layers:</strong></td>
+                            <td>{{ result.drawing_info.get('entity_counts', {}).get('layers', 0) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Analysis Method:</strong></td>
+                            <td>
+                                {% if result.drawing_info.file_type == '3D STEP Model' %}
+                                    Filename + Content Analysis
+                                {% else %}
+                                    Geometry + Annotation Analysis
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Dimensions:</strong></td>
+                            <td>{{ result.drawing_info.get('entity_counts', {}).get('dimensions', 0) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Text Annotations:</strong></td>
+                            <td>{{ result.drawing_info.get('entity_counts', {}).get('texts', 0) }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            {% if result.drawing_info.title_block %}
+            <div class="mt-3">
+                <h5>Title Block Information</h5>
+                <div class="row">
+                    {% for key, value in result.drawing_info.title_block.items() %}
+                    <div class="col-md-4 mb-2">
+                        <strong>{{ key.replace('_', ' ').title() }}:</strong> {{ value }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Components Summary -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 class="text-primary">{{ result.components|length }}</h2>
+                        <p class="card-text">Total Components</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 class="text-success">{{ result.components|selectattr('source', 'equalto', 'drawing_geometry')|list|length }}</h2>
+                        <p class="card-text">From Geometry</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 class="text-info">{{ result.components|selectattr('source', 'equalto', 'drawing_annotation')|list|length }}</h2>
+                        <p class="card-text">From Annotations</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 class="text-warning">0</h2>
+                        <p class="card-text">Matched to Inventory</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detected Components -->
+        <div class="row">
+            <div class="col">
+                <h3><i class="fas fa-puzzle-piece"></i> Detected Components</h3>
+                
+                {% if result.components %}
+                    {% for component in result.components %}
+                    <div class="component-card">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <div class="geometry-icon {{ component.geometry if component.geometry else 'annotation' }}">
+                                    {% if component.geometry == 'circular' %}
+                                        <i class="fas fa-circle"></i>
+                                    {% elif component.geometry == 'rectangular' %}
+                                        <i class="fas fa-square"></i>
+                                    {% else %}
+                                        <i class="fas fa-tag"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col">
+                                <h5 class="mb-1">
+                                    {{ component.type.replace('_', ' ').title() }}
+                                    {% if component.name %}
+                                        <small class="text-muted">({{ component.name }})</small>
+                                    {% endif %}
+                                </h5>
+                                
+                                <!-- Dimensions -->
+                                {% if component.dimensions %}
+                                <div class="row mt-2">
+                                    <div class="col-md-6">
+                                        <table class="table table-sm dimension-table">
+                                            {% for key, value in component.dimensions.items() %}
+                                            <tr>
+                                                <td><strong>{{ key.title() }}:</strong></td>
+                                                <td>
+                                                    {% if value is number %}
+                                                        {{ "%.2f"|format(value) }} mm
+                                                    {% else %}
+                                                        {{ value }}
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </table>
+                                    </div>
+                                    {% if component.specifications %}
+                                    <div class="col-md-6">
+                                        <table class="table table-sm">
+                                            {% for key, value in component.specifications.items() %}
+                                            <tr>
+                                                <td><strong>{{ key.title() }}:</strong></td>
+                                                <td>{{ value }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </table>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Additional Info -->
+                                <div class="mt-2">
+                                    <span class="badge source-{{ component.source.split('_')[1] if '_' in component.source else 'annotation' }} source-badge">
+                                        {{ component.source.replace('_', ' ').title() }}
+                                    </span>
+                                    {% if component.layer %}
+                                    <span class="badge bg-secondary ms-1">Layer: {{ component.layer }}</span>
+                                    {% endif %}
+                                    {% if component.part_number %}
+                                    <span class="badge bg-info ms-1">P/N: {{ component.part_number }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-auto">
+                                <span class="badge confidence-badge
+                                    {% if component.confidence >= 0.8 %}bg-success
+                                    {% elif component.confidence >= 0.6 %}bg-warning
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ (component.confidence * 100)|round }}% Confidence
+                                </span>
+                                <br>
+                                <button class="btn btn-sm btn-outline-primary mt-2" 
+                                        onclick="viewComponentDetails('{{ component.id }}')">
+                                    <i class="fas fa-eye"></i> Details
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h4>No Components Detected</h4>
+                        <p class="text-muted">The drawing analysis did not detect any recognizable components.</p>
+                        <a href="{{ url_for('component_scanning.upload_image') }}" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Try Another File
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Component Details Modal -->
+<div class="modal fade" id="componentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Component Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="componentModalBody">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewComponentDetails(componentId) {
+    // Load component details via AJAX
+    fetch(`/component-scanning/drawing-component-details/{{ session_id }}/${componentId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const component = data.component;
+                const html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Basic Information</h6>
+                            <table class="table table-sm">
+                                <tr><td><strong>Type:</strong></td><td>${component.type}</td></tr>
+                                <tr><td><strong>ID:</strong></td><td>${component.id}</td></tr>
+                                <tr><td><strong>Source:</strong></td><td>${component.source}</td></tr>
+                                <tr><td><strong>Layer:</strong></td><td>${component.layer || 'N/A'}</td></tr>
+                                <tr><td><strong>Confidence:</strong></td><td>${(component.confidence * 100).toFixed(1)}%</td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Dimensions</h6>
+                            <table class="table table-sm">
+                                ${component.dimensions ? Object.entries(component.dimensions).map(([key, value]) => 
+                                    `<tr><td><strong>${key}:</strong></td><td>${typeof value === 'number' ? value.toFixed(2) + ' mm' : value}</td></tr>`
+                                ).join('') : '<tr><td colspan="2">No dimensions available</td></tr>'}
+                            </table>
+                        </div>
+                    </div>
+                    ${component.position ? `
+                    <div class="mt-3">
+                        <h6>Position</h6>
+                        <p>X: ${component.position[0].toFixed(2)}, Y: ${component.position[1].toFixed(2)}</p>
+                    </div>` : ''}
+                `;
+                document.getElementById('componentModalBody').innerHTML = html;
+                new bootstrap.Modal(document.getElementById('componentModal')).show();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading component details:', error);
+            alert('Failed to load component details');
+        });
+}
+
+function generateVisualization() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    // Show loading state
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    button.disabled = true;
+    
+    fetch(`/component-scanning/generate-visualization/{{ session_id }}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Create modal to display the image
+                const modal = document.createElement('div');
+                modal.className = 'modal fade';
+                modal.id = 'visualizationModal';
+                modal.innerHTML = `
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Component Visualization</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body text-center">
+                                <div class="alert alert-info mb-3">
+                                    <strong>Component Analysis Complete!</strong><br>
+                                    Generated visualization for: ${data.components_count} component(s)
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Preview:</h6>
+                                        <div style="border: 2px solid #007bff; background: #f8f9fa; padding: 15px; border-radius: 8px; min-height: 200px;">
+                                            <div class="text-center">
+                                                <i class="fas fa-image fa-3x text-muted mb-3"></i>
+                                                <p class="text-muted">Visualization generated successfully</p>
+                                                <small class="text-muted">Click buttons below to view</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>File Information:</h6>
+                                        <div class="text-start">
+                                            <p><strong>Format:</strong> SVG + PNG</p>
+                                            <p><strong>Components:</strong> ${data.components_count}</p>
+                                            <p><strong>Status:</strong> <span class="badge bg-success">Ready</span></p>
+                                        </div>
+                                        
+                                        <div class="mt-3">
+                                            <button onclick="window.open('${data.png_url || data.svg_url}', '_blank')" class="btn btn-primary btn-sm mb-2 w-100">
+                                                <i class="fas fa-eye"></i> View Full Image
+                                            </button>
+                                            <button onclick="window.open('${data.svg_url}', '_blank')" class="btn btn-outline-primary btn-sm mb-2 w-100">
+                                                <i class="fas fa-code"></i> View SVG Source
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 text-center">
+                                    <div class="btn-group" role="group">
+                                        <a href="${data.svg_url}" download="components_visualization.svg" class="btn btn-primary">
+                                            <i class="fas fa-download"></i> Download SVG
+                                        </a>
+                                        ${data.png_url ? 
+                                            `<a href="${data.png_url}" download="components_visualization.png" class="btn btn-success">
+                                                <i class="fas fa-download"></i> Download PNG
+                                            </a>` : ''
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                const modalInstance = new bootstrap.Modal(modal);
+                modalInstance.show();
+                
+                // Image should load automatically via img tag
+                
+                // Remove modal when hidden
+                modal.addEventListener('hidden.bs.modal', function () {
+                    modal.remove();
+                });
+                
+                // Show success message
+                showNotification('Visualization generated successfully!', 'success');
+            } else {
+                showNotification('Failed to generate visualization: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error generating visualization:', error);
+            showNotification('Error generating visualization', 'error');
+        })
+        .finally(() => {
+            // Restore button state
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+}
+
+function showNotification(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const notification = document.createElement('div');
+    notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+function openImageInNewTab(url) {
+    window.open(url, '_blank');
+}
+
+function loadSVGContent(svgUrl) {
+    const svgDisplay = document.getElementById('svgDisplay');
+    const loadingDiv = svgDisplay.nextElementSibling;
+    
+    fetch(svgUrl)
+        .then(response => response.text())
+        .then(svgContent => {
+            svgDisplay.innerHTML = svgContent;
+            loadingDiv.style.display = 'none';
+        })
+        .catch(error => {
+            console.error('Error loading SVG:', error);
+            svgDisplay.innerHTML = `
+                <div class="alert alert-warning">
+                    <p>Could not load visualization preview</p>
+                    <a href="${svgUrl}" target="_blank" class="btn btn-outline-primary">
+                        <i class="fas fa-external-link-alt"></i> Open in New Tab
+                    </a>
+                </div>
+            `;
+            loadingDiv.style.display = 'none';
+        });
+}
+</script>
+{% endblock %}

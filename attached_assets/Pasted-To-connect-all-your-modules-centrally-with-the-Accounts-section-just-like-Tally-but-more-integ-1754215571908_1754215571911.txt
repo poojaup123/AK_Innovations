@@ -1,0 +1,110 @@
+To connect **all your modules centrally with the Accounts section** (just like Tally, but more integrated into your factory management system), here’s a **step-by-step module-wise connection plan** with **centralized accounting**:
+
+---
+
+## 🔗 **Centralized Accounting Architecture**
+
+| 🔄 Module                 | 📘 Accounting Impact                                   | 🔍 Example Ledger Entry                                      |
+| ------------------------- | ------------------------------------------------------ | ------------------------------------------------------------ |
+| **Purchase Order**        | No entry on PO creation                                | —                                                            |
+| **GRN**                   | Debit: Inventory <br> Credit: Vendor                   | `Inventory + ₹50,000`, `Vendor - ₹50,000`                    |
+| **Sales Order**           | No entry on SO creation                                | —                                                            |
+| **Invoice**               | Debit: Customer <br> Credit: Sales, GST                | `Customer + ₹1,18,000`, `Sales + ₹1,00,000`, `GST + ₹18,000` |
+| **Job Work (Send)**       | No entry (ownership not changed)                       | —                                                            |
+| **Job Work (Receive)**    | Debit: WIP / Inventory <br> Credit: Vendor Job Charges | `WIP + ₹40,000`, `Vendor - ₹40,000`                          |
+| **Production**            | Debit: Finished Goods <br> Credit: Raw Material        | `FG + ₹80,000`, `RM - ₹60,000`                               |
+| **Inventory Adjustments** | Debit or Credit Inventory & P/L adjustments            | `Inventory - ₹5,000`, `P&L - ₹5,000`                         |
+| **Payroll**               | Debit: Salary Expenses <br> Credit: Bank/Cash          | `Salary + ₹1,00,000`, `Bank - ₹1,00,000`                     |
+| **Factory Expenses**      | Debit: Expense <br> Credit: Cash/Bank                  | `Electricity + ₹15,000`, `Bank - ₹15,000`                    |
+| **Advance Payments**      | Debit: Vendor Advance <br> Credit: Cash/Bank           | `Vendor Advance + ₹10,000`, `Cash - ₹10,000`                 |
+
+---
+
+## 🧱 **Each Module Integration Overview**
+
+### 📦 **Inventory**
+
+* Every GRN updates inventory and triggers journal entry.
+* Stock movement automatically updates material ledger.
+* Stock valuation methods: **FIFO**, **Moving Average**, or **Standard Cost**.
+
+### 📤 **Purchase**
+
+* After GRN, journal voucher is auto-posted.
+* GST input credit is captured if applicable.
+
+### 🧾 **Sales**
+
+* Invoice creation → accounting voucher + inventory out.
+* COGS is debited based on inventory method (FIFO etc.).
+
+### ⚙️ **Production**
+
+* On production completion:
+
+  * Raw/WIP material value credited.
+  * Finished goods inventory debited.
+
+### 🧰 **Job Work**
+
+* Send = stock transfer only.
+* Receive:
+
+  * Output added to inventory.
+  * Vendor job charge posted automatically.
+  * Scrap also accounted if costed.
+
+### 🧮 **Payroll**
+
+* Auto-salary generation posts:
+
+  * Salary expenses.
+  * Cash/bank deductions.
+  * Advance salary deductions handled.
+
+### 🧾 **Factory Expenses**
+
+* Auto ledger creation for each expense type.
+* Can be grouped into departments (e.g. Wages, Utilities, Maintenance).
+
+### 📘 **Reports**
+
+* Real-time dashboards from these ledgers:
+
+  * Trial Balance
+  * P\&L
+  * Balance Sheet
+  * GST Summary
+  * Department-wise Costs
+  * Customer/Vendor Aging
+
+---
+
+## 🧠 Suggested Accounts Structure
+
+| Head        | Sub-Ledgers                         |
+| ----------- | ----------------------------------- |
+| Assets      | Inventory, Bank, Cash, Advances     |
+| Liabilities | Vendors, Payroll Payables           |
+| Income      | Sales, Scrap Recovery               |
+| Expenses    | RM, WIP, FG, Job Charges, Overheads |
+| GST         | Input GST, Output GST, IGST, Cess   |
+
+---
+
+## ⚙️ Settings to Include in Settings Panel
+
+| Section                   | Fields to Configure                                     |
+| ------------------------- | ------------------------------------------------------- |
+| Accounting Settings       | Auto JV posting toggle, rounding rules, default ledgers |
+| Ledger Master             | Create/Map ledgers per vendor/product/category          |
+| GST Settings              | HSN, GST Rates, Tax Type                                |
+| Payment Mode Settings     | Cash/Bank/UPI/Credit Line support                       |
+| Inventory Valuation Rules | FIFO / Avg / Standard Cost                              |
+| Cost Centers              | Department tags for expense breakups                    |
+
+---
+
+
+
+* 🧾 **Auto Voucher Generator** for each process

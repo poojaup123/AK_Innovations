@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}GRN Workflow Dashboard - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="row mb-3">
+                <div class="col-12">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-exchange-alt"></i> GRN Workflow Dashboard</h1>
+            <p class="text-muted">Manage the complete Purchase → GRN → Invoice → Payment workflow</p>
+        </div>
+        <div class="col-auto">
+            <form method="POST" action="{{ url_for('grn_workflow.setup_clearing_accounts') }}" style="display: inline;">
+                <button type="submit" class="btn btn-warning btn-sm">
+                    <i class="fas fa-cog"></i> Setup Clearing Accounts
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Pending Invoices</h5>
+                            <h2 class="mb-0">{{ stats.get('pending_invoices', 0) }}</h2>
+                            <small>GRNs awaiting invoice</small>
+                        </div>
+                        <i class="fas fa-file-invoice fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Pending Payments</h5>
+                            <h2 class="mb-0">{{ stats.get('pending_payments', 0) }}</h2>
+                            <small>Outstanding invoices</small>
+                        </div>
+                        <i class="fas fa-credit-card fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Completed</h5>
+                            <h2 class="mb-0">{{ stats.get('completed_workflows', 0) }}</h2>
+                            <small>Full workflow complete</small>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Total GRNs</h5>
+                            <h2 class="mb-0">{{ stats.get('total_grns', 0) }}</h2>
+                            <small>All GRN records</small>
+                        </div>
+                        <i class="fas fa-truck fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('grn_workflow.list_invoices') }}" class="btn btn-outline-primary btn-block">
+                                <i class="fas fa-file-invoice fa-2x d-block mb-2"></i>
+                                Manage Invoices
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('grn_workflow.list_payments') }}" class="btn btn-outline-success btn-block">
+                                <i class="fas fa-money-bill-wave fa-2x d-block mb-2"></i>
+                                Record Payments
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('grn_workflow.po_fulfillment_report') }}" class="btn btn-outline-info btn-block">
+                                <i class="fas fa-chart-bar fa-2x d-block mb-2"></i>
+                                PO Fulfillment
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('grn_workflow.vendor_outstanding_report') }}" class="btn btn-outline-warning btn-block">
+                                <i class="fas fa-balance-scale fa-2x d-block mb-2"></i>
+                                Vendor Outstanding
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent GRNs with Workflow Status -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> Recent GRNs & Workflow Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>GRN Number</th>
+                                    <th>Vendor</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Workflow Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for grn, workflow_status in recent_grns %}
+                                <tr>
+                                    <td><strong>{{ grn.grn_number }}</strong></td>
+                                    <td>{{ grn.purchase_order.supplier.name if grn.purchase_order else 'N/A' }}</td>
+                                    <td>{{ grn.received_date.strftime('%d-%m-%Y') if grn.received_date else 'N/A' }}</td>
+                                    <td class="text-end">
+                                        ₹{{ "%.2f"|format(grn.total_amount) }}
+                                    </td>
+                                    <td>
+                                        {% if workflow_status %}
+                                            {% if workflow_status.payment_made %}
+                                                <span class="badge bg-success">Complete</span>
+                                            {% elif workflow_status.invoice_received %}
+                                                <span class="badge bg-warning">Awaiting Payment</span>
+                                            {% elif workflow_status.material_received %}
+                                                <span class="badge bg-info">Awaiting Invoice</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Material Received</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-secondary">No Workflow</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if not workflow_status or not workflow_status.invoice_received %}
+                                        <a href="{{ url_for('grn_workflow.create_invoice_for_grn', grn_id=grn.id) }}" 
+                                           class="btn btn-sm btn-outline-primary" title="Create Invoice">
+                                            <i class="fas fa-file-invoice"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3">No recent GRNs found</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pending Actions Sidebar -->
+        <div class="col-md-4">
+            <!-- Pending Invoices -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6><i class="fas fa-clock"></i> Pending Invoices</h6>
+                </div>
+                <div class="card-body">
+                    {% for grn in pending_invoices %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <small><strong>{{ grn.grn_number }}</strong></small>
+                            <br><small class="text-muted">{{ grn.purchase_order.supplier.name if grn.purchase_order else 'N/A' }}</small>
+                        </div>
+                        <a href="{{ url_for('grn_workflow.create_invoice_for_grn', grn_id=grn.id) }}" 
+                           class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus"></i>
+                        </a>
+                    </div>
+                    <hr class="my-2">
+                    {% else %}
+                    <p class="text-muted text-center">No pending invoices</p>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Outstanding Payments -->
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-exclamation-triangle"></i> Outstanding Payments</h6>
+                </div>
+                <div class="card-body">
+                    {% for invoice in outstanding_payments %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <small><strong>{{ invoice.invoice_number }}</strong></small>
+                            <br><small class="text-muted">{{ invoice.vendor.name }}</small>
+                            <br><small class="text-danger">₹{{ "%.2f"|format(invoice.outstanding_amount) }}</small>
+                        </div>
+                        <a href="{{ url_for('grn_workflow.create_payment_for_invoice', invoice_id=invoice.id) }}" 
+                           class="btn btn-sm btn-success">
+                            <i class="fas fa-money-bill"></i>
+                        </a>
+                    </div>
+                    <hr class="my-2">
+                    {% else %}
+                    <p class="text-muted text-center">No outstanding payments</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Auto-refresh dashboard every 2 minutes
+    setTimeout(function() {
+        location.reload();
+    }, 120000);
+});
+</script>
+{% endblock %}

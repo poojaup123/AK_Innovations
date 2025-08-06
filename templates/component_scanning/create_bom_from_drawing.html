@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+
+{% block title %}Create BOM from Drawing - Component Scanning{% endblock %}
+
+{% block head %}
+<style>
+.bom-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.component-selector {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.component-selector:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.component-selector.selected {
+    border-color: #007bff;
+    background: #f8f9fa;
+}
+
+.quantity-input {
+    width: 80px;
+}
+
+.bom-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+.component-specs {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.drawing-summary {
+    background: #e7f3ff;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="bom-container">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="{{ url_for('component_scanning.dashboard') }}">Component Scanning</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="{{ url_for('drawing_upload.drawing_results', session_id=session_id) }}">Drawing Results</a>
+                        </li>
+                        <li class="breadcrumb-item active">Create BOM</li>
+                    </ol>
+                </nav>
+                <h1><i class="fas fa-list-alt"></i> Create BOM from Technical Drawing</h1>
+                <p class="text-muted">Select components from the drawing analysis to create a Bill of Materials</p>
+            </div>
+        </div>
+
+        <!-- Drawing Summary -->
+        <div class="drawing-summary">
+            <h4><i class="fas fa-info-circle"></i> Drawing Summary</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    {% if drawing_info.title_block.drawing_number %}
+                    <p><strong>Drawing Number:</strong> {{ drawing_info.title_block.drawing_number }}</p>
+                    {% endif %}
+                    {% if drawing_info.title_block.material %}
+                    <p><strong>Material:</strong> {{ drawing_info.title_block.material }}</p>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Components Detected:</strong> {{ components|length }}</p>
+                    <p><strong>Analysis Date:</strong> {{ moment().format('YYYY-MM-DD HH:mm') }}</p>
+                </div>
+            </div>
+        </div>
+
+        <form id="bomForm" method="POST" action="{{ url_for('bom.create_from_drawing') }}">
+            <input type="hidden" name="session_id" value="{{ session_id }}">
+            
+            <!-- Component Selection -->
+            <div class="row">
+                <div class="col-lg-7">
+                    <h3><i class="fas fa-check-square"></i> Select Components</h3>
+                    <p class="text-muted">Choose which detected components to include in the BOM</p>
+                    
+                    <div id="componentList">
+                        {% for component in components %}
+                        <div class="component-selector" data-component-id="{{ component.id }}">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <div class="form-check">
+                                        <input class="form-check-input component-checkbox" 
+                                               type="checkbox" 
+                                               id="component_{{ loop.index }}"
+                                               name="selected_components"
+                                               value="{{ component.id }}"
+                                               {% if component.confidence >= 0.7 %}checked{% endif %}>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <h6 class="mb-1">
+                                        {{ component.type.replace('_', ' ').title() }}
+                                        {% if component.name %}
+                                            <small class="text-muted">({{ component.name }})</small>
+                                        {% endif %}
+                                    </h6>
+                                    
+                                    <!-- Component Specifications -->
+                                    <div class="component-specs">
+                                        {% if component.dimensions %}
+                                            {% for key, value in component.dimensions.items() %}
+                                                <span class="badge bg-light text-dark me-1">
+                                                    {{ key.title() }}: 
+                                                    {% if value is number %}
+                                                        {{ "%.1f"|format(value) }} mm
+                                                    {% else %}
+                                                        {{ value }}
+                                                    {% endif %}
+                                                </span>
+                                            {% endfor %}
+                                        {% endif %}
+                                        
+                                        {% if component.layer %}
+                                        <span class="badge bg-secondary me-1">Layer: {{ component.layer }}</span>
+                                        {% endif %}
+                                        
+                                        <span class="badge 
+                                            {% if component.confidence >= 0.8 %}bg-success
+                                            {% elif component.confidence >= 0.6 %}bg-warning
+                                            {% else %}bg-secondary{% endif %} me-1">
+                                            {{ (component.confidence * 100)|round }}% Confidence
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            <label class="form-label mb-0">Qty:</label>
+                                        </div>
+                                        <div class="col-auto">
+                                            <input type="number" 
+                                                   class="form-control quantity-input" 
+                                                   name="quantity_{{ component.id }}"
+                                                   value="1" 
+                                                   min="1" 
+                                                   max="999">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if not components %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-search fa-2x text-muted mb-3"></i>
+                        <h5>No Components Available</h5>
+                        <p class="text-muted">No components were detected from the drawing analysis.</p>
+                        <a href="{{ url_for('component_scanning.upload_image') }}" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Upload Another File
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- BOM Preview -->
+                <div class="col-lg-5">
+                    <div class="sticky-top" style="top: 20px;">
+                        <h3><i class="fas fa-eye"></i> BOM Preview</h3>
+                        <p class="text-muted">Live preview of the BOM being created</p>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <h6 class="mb-0">Bill of Materials</h6>
+                                    </div>
+                                    <div class="col-auto">
+                                        <span class="badge bg-primary" id="bomItemCount">0 items</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm bom-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Item</th>
+                                                <th>Specs</th>
+                                                <th class="text-end">Qty</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="bomPreview">
+                                            <tr class="text-center text-muted">
+                                                <td colspan="3" class="py-4">
+                                                    <i class="fas fa-plus-circle"></i><br>
+                                                    Select components above
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BOM Details Form -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">BOM Details</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="bomName" class="form-label">BOM Name *</label>
+                                    <input type="text" class="form-control" id="bomName" name="bom_name" 
+                                           value="Drawing BOM - {{ moment().format('YYYY-MM-DD') }}" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="bomDescription" class="form-label">Description</label>
+                                    <textarea class="form-control" id="bomDescription" name="description" rows="3"
+                                              placeholder="BOM created from technical drawing analysis..."></textarea>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="projectCode" class="form-label">Project/Part Code</label>
+                                    <input type="text" class="form-control" id="projectCode" name="project_code" 
+                                           value="{{ drawing_info.title_block.drawing_number or '' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2 mt-3">
+                            <button type="submit" class="btn btn-success btn-lg" id="createBomBtn" disabled>
+                                <i class="fas fa-save"></i> Create BOM
+                            </button>
+                            <a href="{{ url_for('drawing_upload.drawing_results', session_id=session_id) }}" 
+                               class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Results
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.component-checkbox');
+    const bomPreview = document.getElementById('bomPreview');
+    const bomItemCount = document.getElementById('bomItemCount');
+    const createBomBtn = document.getElementById('createBomBtn');
+    
+    // Initialize BOM preview
+    updateBomPreview();
+    
+    // Handle component selection
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const selector = this.closest('.component-selector');
+            
+            if (this.checked) {
+                selector.classList.add('selected');
+            } else {
+                selector.classList.remove('selected');
+            }
+            
+            updateBomPreview();
+        });
+    });
+    
+    // Handle quantity changes
+    document.querySelectorAll('.quantity-input').forEach(input => {
+        input.addEventListener('input', updateBomPreview);
+    });
+    
+    function updateBomPreview() {
+        const selectedComponents = [];
+        
+        checkboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                const componentId = checkbox.value;
+                const selector = checkbox.closest('.component-selector');
+                const quantityInput = selector.querySelector('.quantity-input');
+                const componentName = selector.querySelector('h6').textContent.trim();
+                const specs = Array.from(selector.querySelectorAll('.component-specs .badge'))
+                    .map(badge => badge.textContent.trim())
+                    .filter(text => !text.includes('Confidence'))
+                    .slice(0, 2)
+                    .join(', ');
+                
+                selectedComponents.push({
+                    id: componentId,
+                    name: componentName,
+                    specs: specs,
+                    quantity: parseInt(quantityInput.value) || 1
+                });
+            }
+        });
+        
+        // Update item count
+        bomItemCount.textContent = selectedComponents.length + ' item' + (selectedComponents.length !== 1 ? 's' : '');
+        
+        // Update preview table
+        if (selectedComponents.length === 0) {
+            bomPreview.innerHTML = `
+                <tr class="text-center text-muted">
+                    <td colspan="3" class="py-4">
+                        <i class="fas fa-plus-circle"></i><br>
+                        Select components above
+                    </td>
+                </tr>
+            `;
+            createBomBtn.disabled = true;
+        } else {
+            bomPreview.innerHTML = selectedComponents.map(component => `
+                <tr>
+                    <td>
+                        <strong>${component.name}</strong>
+                    </td>
+                    <td>
+                        <small class="text-muted">${component.specs || 'No specs'}</small>
+                    </td>
+                    <td class="text-end">
+                        <span class="badge bg-primary">${component.quantity}</span>
+                    </td>
+                </tr>
+            `).join('');
+            createBomBtn.disabled = false;
+        }
+    }
+    
+    // Form submission
+    document.getElementById('bomForm').addEventListener('submit', function(e) {
+        const selectedCount = document.querySelectorAll('.component-checkbox:checked').length;
+        
+        if (selectedCount === 0) {
+            e.preventDefault();
+            alert('Please select at least one component to create a BOM.');
+            return;
+        }
+        
+        // Show loading state
+        createBomBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating BOM...';
+        createBomBtn.disabled = true;
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Sales Dashboard - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-chart-line"></i> Sales Dashboard</h1>
+            <p class="text-muted">Manage sales orders and customers</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('sales.add_sales_order') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Sales Order
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Total SOs</h5>
+                            <h3>{{ stats.total_sos }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-file-invoice-dollar fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Pending SOs</h5>
+                            <h3>{{ stats.pending_sos }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Partial SOs</h5>
+                            <h3>{{ stats.partial_sos }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Completed SOs</h5>
+                            <h3>{{ stats.completed_sos }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('sales.list_sales_orders') }}" class="btn btn-outline-primary btn-sm w-100">
+                                <i class="fas fa-list"></i> View All SOs
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('sales.list_customers') }}" class="btn btn-outline-info btn-sm w-100">
+                                <i class="fas fa-users"></i> Manage Customers
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('purchase.add_supplier') }}?partner_type=customer" class="btn btn-outline-success btn-sm w-100">
+                                <i class="fas fa-plus"></i> Add Customer
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('reports.sales_report') }}" class="btn btn-outline-secondary btn-sm w-100">
+                                <i class="fas fa-chart-bar"></i> Sales Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Sales Orders and Top Customers -->
+    <div class="row">
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-clock"></i> Recent Sales Orders</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_sos %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>SO Number</th>
+                                        <th>Customer</th>
+                                        <th>Status</th>
+                                        <th>Order Date</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for so in recent_sos %}
+                                    <tr>
+                                        <td>{{ so.so_number }}</td>
+                                        <td>{{ so.customer.name }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if so.status == 'completed' else 'warning' if so.status == 'partial' else 'danger' if so.status == 'cancelled' else 'primary' }}">
+                                                {{ so.status.title() }}
+                                            </span>
+                                        </td>
+                                        <td>{{ so.order_date.strftime('%m/%d/%Y') }}</td>
+                                        <td>₹{{ so.total_amount }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No sales orders found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-trophy"></i> Top Customers</h5>
+                </div>
+                <div class="card-body">
+                    {% if top_customers %}
+                        {% for customer_name, order_count in top_customers %}
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>{{ customer_name }}</span>
+                            <span class="badge bg-secondary">{{ order_count }} orders</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No customer data available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

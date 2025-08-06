@@ -1,0 +1,516 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Tracking Dashboard{% endblock %}
+
+{% block content %}
+<style>
+/* Reset any floating or positioning issues */
+* {
+    float: none !important;
+}
+.container-fluid {
+    display: block !important;
+    width: 100% !important;
+    clear: both !important;
+    position: relative !important;
+}
+.batch-dashboard {
+    display: block !important;
+    width: calc(100% - 250px) !important;
+    margin-right: 250px !important;
+}
+.sidebar-widgets {
+    position: fixed !important;
+    top: 100px !important;
+    right: 20px !important;
+    width: 220px !important;
+    z-index: 1000 !important;
+}
+</style>
+<div class="container-fluid">
+<div class="batch-dashboard">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-boxes"></i> Batch Tracking Dashboard</h1>
+                <div class="btn-group">
+                    <a href="{{ url_for('inventory.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-warehouse"></i> Inventory
+                    </a>
+                    <a href="{{ url_for('production.dashboard') }}" class="btn btn-outline-success">
+                        <i class="fas fa-cogs"></i> Production
+                    </a>
+                    <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-truck"></i> GRN
+                    </a>
+                    <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-outline-warning">
+                        <i class="fas fa-tools"></i> Job Work
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Batches</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_batches }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-boxes fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Active Batches</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.active_batches }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Expiring Soon</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.batches_expiring_soon }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Expired Batches</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.expired_batches }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-times-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Parent-Child Table -->
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Parent-Child Batch Tracking</h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow">
+                            <a class="dropdown-item" href="#">Export Report</a>
+                            <a class="dropdown-item" href="#">View All GRNs</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" id="parentChildTable">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th style="width: 40px;"></th>
+                                    <th>Parent Doc</th>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Vendor/Customer</th>
+                                    <th>Status</th>
+                                    <th>Total Qty</th>
+                                    <th>GRNs Linked</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for parent in parent_child_data %}
+                                <tr class="parent-row" data-parent-id="{{ parent.parent_id }}" style="cursor: pointer;">
+                                    <td>
+                                        <i class="fas fa-chevron-right expand-icon" style="transition: transform 0.3s;"></i>
+                                    </td>
+                                    <td><strong>{{ parent.parent_doc }}</strong></td>
+                                    <td>{{ parent.date.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        {% if parent.type == 'Purchase Order' %}
+                                            <span class="badge badge-success">Purchase Order</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">Job Work</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ parent.vendor_customer }}</td>
+                                    <td>
+                                        {% if parent.status == 'Completed' %}
+                                            <span class="badge badge-success">{{ parent.status }}</span>
+                                        {% elif parent.status == 'Partial' %}
+                                            <span class="badge badge-warning">{{ parent.status }}</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">{{ parent.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ parent.total_qty }}</td>
+                                    <td>{{ parent.grn_count }} GRNs</td>
+                                </tr>
+                                
+                                <!-- Child GRN Rows (Initially Hidden) -->
+                                {% for grn in parent.child_grns %}
+                                <tr class="child-row" data-parent-id="{{ parent.parent_id }}" style="display: none; background-color: #f8f9fc;">
+                                    <td></td>
+                                    <td style="padding-left: 30px;">
+                                        <a href="{{ url_for('grn.detail', grn_id=grn.grn_id) }}" class="text-primary">
+                                            {{ grn.grn_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ grn.grn_date.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        {% for batch_no in grn.batch_numbers %}
+                                            <span class="badge badge-info badge-sm">{{ batch_no }}</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>{{ grn.item_name }}</td>
+                                    <td>
+                                        {% if grn.status == 'Completed' %}
+                                            <span class="badge badge-success badge-sm">{{ grn.status }}</span>
+                                        {% elif grn.status == 'Received' %}
+                                            <span class="badge badge-warning badge-sm">{{ grn.status }}</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary badge-sm">{{ grn.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ grn.received_qty }} Nos</td>
+                                    <td>
+                                        {% if grn.scrap_qty > 0 %}
+                                            <span class="text-danger">{{ grn.scrap_qty }} Scrap</span>
+                                        {% else %}
+                                            <span class="text-success">No Scrap</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        
+                        {% if not parent_child_data %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-box-open fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-500">No batch tracking data available yet.</p>
+                            <a href="{{ url_for('grn.dashboard') }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create First GRN
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Sidebar Widgets -->
+<div class="sidebar-widgets">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Recent Batch Movements</h6>
+        </div>
+        <div class="card-body">
+            {% if recent_movements %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <tbody>
+                        {% for movement in recent_movements %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="mr-3">
+                                        <div class="icon-circle bg-primary">
+                                            <i class="fas fa-exchange-alt text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div class="small">
+                                        <div class="font-weight-bold">{{ movement.batch.batch_number }}</div>
+                                        <div class="text-gray-500">{{ movement.item.name }}</div>
+                                        <div class="text-xs text-gray-400">
+                                            {{ movement.created_at.strftime('%d/%m %H:%M') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-right">
+                                <div class="small">
+                                    <div class="font-weight-bold">{{ movement.quantity }}</div>
+                                    <div class="text-gray-500">{{ movement.to_state or 'N/A' }}</div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-3">
+                <i class="fas fa-info-circle text-gray-300 mb-2"></i>
+                <p class="text-gray-500 mb-0">No recent movements</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-success">Quick Actions</h6>
+        </div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-6 mb-3">
+                    <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="fas fa-plus-circle"></i><br>
+                        <small>Create GRN</small>
+                    </a>
+                </div>
+                <div class="col-6 mb-3">
+                    <a href="{{ url_for('inventory.multi_state_view') }}" class="btn btn-outline-info btn-sm w-100">
+                        <i class="fas fa-layer-group"></i><br>
+                        <small>Multi-State</small>
+                    </a>
+                </div>
+                <div class="col-6 mb-3">
+                    <a href="{{ url_for('batch_tracking.traceability_report') }}" class="btn btn-outline-warning btn-sm w-100">
+                        <i class="fas fa-search"></i><br>
+                        <small>Traceability</small>
+                    </a>
+                </div>
+                <div class="col-6 mb-3">
+                    <a href="{{ url_for('production.dashboard') }}" class="btn btn-outline-success btn-sm w-100">
+                        <i class="fas fa-cogs"></i><br>
+                        <small>Production</small>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- JavaScript for Parent-Child Table Functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Parent-Child Row Toggle Functionality
+    const parentRows = document.querySelectorAll('.parent-row');
+    
+    parentRows.forEach(function(row) {
+        row.addEventListener('click', function() {
+            const parentId = this.getAttribute('data-parent-id');
+            const childRows = document.querySelectorAll('.child-row[data-parent-id="' + parentId + '"]');
+            const expandIcon = this.querySelector('.expand-icon');
+            
+            // Toggle visibility of child rows
+            let isExpanded = false;
+            childRows.forEach(function(childRow) {
+                if (childRow.style.display === 'none' || childRow.style.display === '') {
+                    childRow.style.display = 'table-row';
+                    isExpanded = true;
+                } else {
+                    childRow.style.display = 'none';
+                    isExpanded = false;
+                }
+            });
+            
+            // Rotate the expand icon
+            if (isExpanded) {
+                expandIcon.style.transform = 'rotate(90deg)';
+                this.classList.add('expanded');
+            } else {
+                expandIcon.style.transform = 'rotate(0deg)';
+                this.classList.remove('expanded');
+            }
+        });
+    });
+    
+    // Add hover effect for parent rows
+    parentRows.forEach(function(row) {
+        row.addEventListener('mouseenter', function() {
+            if (!this.classList.contains('expanded')) {
+                this.style.backgroundColor = '#e3f2fd';
+            }
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            if (!this.classList.contains('expanded')) {
+                this.style.backgroundColor = '';
+            }
+        });
+    });
+});
+</script>
+
+<style>
+.parent-row.expanded {
+    background-color: #e8f5e8 !important;
+}
+
+.icon-circle {
+    height: 2rem;
+    width: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.child-row:hover {
+    background-color: #f1f3f4 !important;
+}
+
+.expand-icon {
+    color: #5a5c69;
+    font-size: 0.8rem;
+}
+
+.badge-sm {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+}
+</style>
+                                {% for movement in recent_movements %}
+                                <tr>
+                                    <td>{{ movement.movement_date.strftime('%m/%d/%Y') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('inventory.batch_traceability', batch_id=movement.batch_id) }}" 
+                                           class="text-primary">
+                                            {{ movement.batch.batch_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ movement.item.name }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if movement.to_state == 'Raw' %}primary{% elif movement.to_state.startswith('WIP') %}warning{% elif movement.to_state == 'Finished' %}success{% elif movement.to_state == 'Scrap' %}danger{% else %}secondary{% endif %}">
+                                            {{ movement.movement_description }}
+                                        </span>
+                                    </td>
+                                    <td>{{ "%.2f"|format(movement.quantity) }} {{ movement.unit_of_measure }}</td>
+                                    <td>{{ movement.ref_type }}-{{ movement.ref_id }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Batches Requiring Attention -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Batches Requiring Attention</h6>
+                </div>
+                <div class="card-body">
+                    {% for batch in attention_batches %}
+                    <div class="media mb-3">
+                        <div class="media-body">
+                            <div class="small text-gray-500">
+                                {{ batch.item.name }}
+                                {% if batch.expiry_date and batch.expiry_date <= (moment().add(7, 'days').format('YYYY-MM-DD')|strptime('%Y-%m-%d')).date() %}
+                                <span class="badge badge-warning">Expiring Soon</span>
+                                {% endif %}
+                                {% if batch.quality_status == 'pending_inspection' %}
+                                <span class="badge badge-info">Pending Inspection</span>
+                                {% endif %}
+                                {% if batch.total_quantity <= 10 %}
+                                <span class="badge badge-danger">Low Quantity</span>
+                                {% endif %}
+                            </div>
+                            <div class="font-weight-bold">
+                                <a href="{{ url_for('inventory.batch_traceability', batch_id=batch.id) }}">
+                                    {{ batch.batch_number }}
+                                </a>
+                            </div>
+                            <div class="text-gray-600 small">
+                                {% if batch.expiry_date %}
+                                Expires: {{ batch.expiry_date.strftime('%m/%d/%Y') }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Consumption Reports -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Batch Consumption Summary</h6>
+                </div>
+                <div class="card-body">
+                    {% for report in consumption_reports %}
+                    <div class="media mb-3">
+                        <div class="media-body">
+                            <div class="font-weight-bold">{{ report.batch_number }}</div>
+                            <div class="small text-gray-500">{{ report.item.name }}</div>
+                            <div class="progress mb-2" style="height: 10px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ report.utilization_percentage or 0 }}%">
+                                </div>
+                            </div>
+                            <div class="row text-center">
+                                <div class="col">
+                                    <div class="small text-gray-500">Yield</div>
+                                    <div class="font-weight-bold">{{ "%.1f"|format(report.yield_percentage or 0) }}%</div>
+                                </div>
+                                <div class="col">
+                                    <div class="small text-gray-500">Scrap</div>
+                                    <div class="font-weight-bold text-danger">{{ "%.1f"|format(report.scrap_percentage or 0) }}%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+.border-left-danger {
+    border-left: 0.25rem solid #e74a3b !important;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Accounting Integration Flow Chart - AK Innovations Factory Management{% endblock %}
+
+{% block head %}
+<style>
+.flowchart-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin: 2rem 0;
+}
+
+.integration-summary {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin: 2rem 0;
+}
+
+.module-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.module-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.module-card h5 {
+    color: #3498db;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 0.5rem;
+}
+
+.accounting-entries {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 5px;
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+    font-family: monospace;
+    font-size: 0.85rem;
+}
+
+.dr { color: #e74c3c; font-weight: bold; }
+.cr { color: #27ae60; font-weight: bold; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-sitemap"></i> Accounting Integration Flow Chart</h1>
+            <p class="text-muted">Complete overview of how all modules integrate with the accounting system</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('accounting.dashboard') }}" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> Back to Accounting
+            </a>
+        </div>
+    </div>
+
+    <!-- Flow Chart -->
+    <div class="flowchart-container">
+        <div class="text-center mb-3">
+            <h3>System Integration Architecture</h3>
+            <p class="text-muted">Click on the image to download the full flow chart</p>
+        </div>
+        
+        <div class="text-center">
+            <a href="{{ url_for('static', filename='accounting_integration_flowchart.svg') }}" target="_blank">
+                <img src="{{ url_for('static', filename='accounting_integration_flowchart.svg') }}" 
+                     alt="Accounting Integration Flow Chart" 
+                     style="width: 100%; max-width: 1200px; border: 1px solid #ddd; border-radius: 5px;">
+            </a>
+        </div>
+    </div>
+
+    <!-- Integration Summary -->
+    <div class="integration-summary">
+        <h4><i class="fas fa-cogs"></i> Integration Summary</h4>
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Automatic Journal Entry Creation:</h6>
+                <ul>
+                    <li>Every business transaction creates proper journal entries</li>
+                    <li>Double-entry bookkeeping maintained automatically</li>
+                    <li>Real-time account balance updates</li>
+                    <li>Complete audit trail for all transactions</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6>Financial Reporting Integration:</h6>
+                <ul>
+                    <li>Trial Balance reflects all module activities</li>
+                    <li>P&L includes revenue and expenses from all departments</li>
+                    <li>Balance Sheet shows real-time asset and liability positions</li>
+                    <li>Cash flow tracking across all business operations</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Module Details -->
+    <div class="module-details">
+        
+        <!-- Inventory Integration -->
+        <div class="module-card">
+            <h5><i class="fas fa-warehouse"></i> Inventory Integration</h5>
+            <p>Stock movements automatically create accounting entries:</p>
+            <div class="accounting-entries">
+                <strong>Stock Receipt:</strong><br>
+                <span class="dr">Dr.</span> Raw Material Inventory<br>
+                <span class="cr">Cr.</span> GRN Clearing Account
+            </div>
+            <div class="accounting-entries">
+                <strong>Stock Issue:</strong><br>
+                <span class="dr">Dr.</span> Cost of Goods Sold<br>
+                <span class="cr">Cr.</span> Inventory Account
+            </div>
+            <ul>
+                <li>Real-time inventory valuation</li>
+                <li>Automatic COGS calculation</li>
+                <li>Multi-state inventory tracking</li>
+            </ul>
+        </div>
+
+        <!-- Purchase Integration -->
+        <div class="module-card">
+            <h5><i class="fas fa-shopping-cart"></i> Purchase Integration</h5>
+            <p>Purchase orders create comprehensive accounting entries:</p>
+            <div class="accounting-entries">
+                <strong>Purchase Entry:</strong><br>
+                <span class="dr">Dr.</span> Raw Material Inventory<br>
+                <span class="dr">Dr.</span> GST Input Tax<br>
+                <span class="cr">Cr.</span> Supplier Payable
+            </div>
+            <ul>
+                <li>Automatic supplier account creation</li>
+                <li>GST compliance handling</li>
+                <li>Purchase commitment tracking</li>
+            </ul>
+        </div>
+
+        <!-- Sales Integration -->
+        <div class="module-card">
+            <h5><i class="fas fa-handshake"></i> Sales Integration</h5>
+            <p>Sales orders generate revenue accounting entries:</p>
+            <div class="accounting-entries">
+                <strong>Sales Entry:</strong><br>
+                <span class="dr">Dr.</span> Customer Receivable<br>
+                <span class="cr">Cr.</span> Sales Revenue<br>
+                <span class="cr">Cr.</span> GST Output Tax
+            </div>
+            <ul>
+                <li>Customer receivable tracking</li>
+                <li>Revenue recognition</li>
+                <li>GST output tax management</li>
+            </ul>
+        </div>
+
+        <!-- GRN 3-Step Workflow -->
+        <div class="module-card">
+            <h5><i class="fas fa-truck"></i> GRN 3-Step Workflow</h5>
+            <p>Enterprise-grade procurement with clearing account:</p>
+            <div class="accounting-entries">
+                <strong>Step 1 - Material Receipt:</strong><br>
+                <span class="dr">Dr.</span> Inventory Account<br>
+                <span class="cr">Cr.</span> GRN Clearing Account
+            </div>
+            <div class="accounting-entries">
+                <strong>Step 2 - Vendor Invoice:</strong><br>
+                <span class="dr">Dr.</span> GRN Clearing Account<br>
+                <span class="dr">Dr.</span> GST Input Tax<br>
+                <span class="cr">Cr.</span> Vendor Payable
+            </div>
+            <div class="accounting-entries">
+                <strong>Step 3 - Payment:</strong><br>
+                <span class="dr">Dr.</span> Vendor Payable<br>
+                <span class="cr">Cr.</span> Bank/Cash Account
+            </div>
+        </div>
+
+        <!-- Production Integration -->
+        <div class="module-card">
+            <h5><i class="fas fa-industry"></i> Production Integration</h5>
+            <p>BOM-driven manufacturing with cost tracking:</p>
+            <div class="accounting-entries">
+                <strong>Material Consumption:</strong><br>
+                <span class="dr">Dr.</span> Work in Progress<br>
+                <span class="cr">Cr.</span> Raw Material Inventory
+            </div>
+            <div class="accounting-entries">
+                <strong>Production Completion:</strong><br>
+                <span class="dr">Dr.</span> Finished Goods<br>
+                <span class="cr">Cr.</span> Work in Progress
+            </div>
+            <ul>
+                <li>Material consumption tracking</li>
+                <li>Labor cost allocation</li>
+                <li>Scrap accounting</li>
+            </ul>
+        </div>
+
+        <!-- HR Integration -->
+        <div class="module-card">
+            <h5><i class="fas fa-users"></i> HR & Payroll Integration</h5>
+            <p>Comprehensive payroll and expense tracking:</p>
+            <div class="accounting-entries">
+                <strong>Salary Payment:</strong><br>
+                <span class="dr">Dr.</span> Wages & Salary Expense<br>
+                <span class="cr">Cr.</span> Bank/Cash Account
+            </div>
+            <div class="accounting-entries">
+                <strong>Employee Advance:</strong><br>
+                <span class="dr">Dr.</span> Employee Advance Account<br>
+                <span class="cr">Cr.</span> Cash Account
+            </div>
+            <ul>
+                <li>Automated salary processing</li>
+                <li>Advance management</li>
+                <li>Statutory compliance</li>
+            </ul>
+        </div>
+
+    </div>
+
+    <!-- Technical Details -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-code"></i> Integration Services</h5>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li><code>AccountingAutomation</code> - Main integration service</li>
+                        <li><code>GRNWorkflowService</code> - 3-step GRN automation</li>
+                        <li><code>HRAccountingIntegration</code> - Payroll automation</li>
+                        <li><code>AuthenticAccountingIntegration</code> - Generic voucher creation</li>
+                        <li><code>InventoryValuationService</code> - Real-time valuations</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-shield-alt"></i> Data Integrity Features</h5>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        <li>Double-entry validation (Dr = Cr)</li>
+                        <li>Transaction reference tracking</li>
+                        <li>Automatic rollback on errors</li>
+                        <li>Complete audit trail</li>
+                        <li>Real-time balance updates</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

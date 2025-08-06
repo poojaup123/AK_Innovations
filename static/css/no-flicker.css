@@ -1,0 +1,76 @@
+/**
+ * Anti-Flickering CSS for Factory Management System
+ * Prevents all forms of flickering during page loads and transitions
+ */
+
+/* Preload class disables all transitions during page load */
+.preload *,
+.preload *:before,
+.preload *:after {
+    transition: none !important;
+    animation: none !important;
+    -webkit-transition: none !important;
+    -moz-transition: none !important;
+    -ms-transition: none !important;
+    -o-transition: none !important;
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+}
+
+/* Ensure critical elements remain stable */
+.sidebar,
+.nav,
+.nav-link,
+.main-content,
+.main-wrapper {
+    opacity: 1 !important;
+    visibility: visible !important;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+}
+
+/* Prevent Bootstrap animations during load */
+.preload .fade,
+.preload .collapse,
+.preload .collapsing,
+.preload .show,
+.preload .showing,
+.preload .hiding {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* Disable hover effects during preload */
+.preload *:hover {
+    transition: none !important;
+}
+
+/* Prevent Bootstrap dropdown animations during load */
+.preload .dropdown-menu {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* Prevent modal animations during load */
+.preload .modal {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* Additional click protection */
+.nav-link.clicked {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+/* Ensure smooth rendering after preload is removed */
+body:not(.preload) .nav-link {
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+body:not(.preload) .sidebar {
+    transition: none; /* Keep sidebar stable even after preload */
+}

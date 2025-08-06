@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Job Work Entries - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-calendar-day"></i> Daily Job Work Entries</h1>
+            <p class="text-muted">Track daily job work progress by workers</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('jobwork.daily_job_work_entry') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Log Daily Work
+            </a>
+            <a href="{{ url_for('jobwork.worker_productivity') }}" class="btn btn-outline-info">
+                <i class="fas fa-chart-bar"></i> Productivity
+            </a>
+            <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Job Work Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="fas fa-filter"></i> Filter Daily Entries</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('jobwork.daily_entries_list') }}">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="worker_name" class="form-label">Worker Name</label>
+                        <input type="text" name="worker_name" id="worker_name" class="form-control" 
+                               value="{{ worker_name }}" placeholder="Search by worker name">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="job_work_id" class="form-label">Job Work</label>
+                        <select name="job_work_id" id="job_work_id" class="form-select">
+                            <option value="">All Job Works</option>
+                            {% for job in active_jobs %}
+                                <option value="{{ job.id }}" {% if job_work_id == job.id %}selected{% endif %}>
+                                    {{ job.job_number }} - {{ job.item.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="date_from" class="form-label">From Date</label>
+                        <input type="date" name="date_from" id="date_from" class="form-control" value="{{ date_from }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="date_to" class="form-label">To Date</label>
+                        <input type="date" name="date_to" id="date_to" class="form-control" value="{{ date_to }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="d-grid gap-2 w-100">
+                            <button type="submit" class="btn btn-info">
+                                <i class="fas fa-search"></i> Filter
+                            </button>
+                            <a href="{{ url_for('jobwork.daily_entries_list') }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Daily Entries Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if entries.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Date</th>
+                                <th>Worker</th>
+                                <th>Job Work</th>
+                                <th>Item</th>
+                                <th>Hours</th>
+                                <th>Quantity</th>
+                                <th>Quality</th>
+                                <th>Stage</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in entries.items %}
+                            <tr>
+                                <td>
+                                    <strong>{{ entry.work_date.strftime('%d/%m/%Y') }}</strong>
+                                    <br><small class="text-muted">{{ entry.work_date.strftime('%A') }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ entry.worker_name }}</strong>
+                                    <br><small class="text-muted">Logged at {{ entry.created_at.strftime('%I:%M %p') }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ entry.job_work.job_number }}</strong>
+                                    <br><small class="text-muted">{{ entry.job_work.process }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ entry.job_work.item.name }}</strong>
+                                    <br><small class="text-muted">{{ entry.job_work.item.code }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ entry.hours_worked }} hrs</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{ entry.quantity_completed }} units</span>
+                                </td>
+                                <td>
+                                    <span class="badge {{ entry.quality_badge_class }}">
+                                        {{ entry.quality_status.replace('_', ' ').title() }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge {{ entry.stage_badge_class }}">
+                                        {{ entry.process_stage.replace('_', ' ').title() }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('jobwork.daily_entry_detail', entry_id=entry.id) }}" class="btn btn-outline-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('jobwork.edit_daily_entry', entry_id=entry.id) }}" class="btn btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if entries.pages > 1 %}
+                <nav aria-label="Daily entries pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if entries.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('jobwork.daily_entries_list', page=entries.prev_num, worker_name=worker_name, job_work_id=job_work_id, date_from=date_from, date_to=date_to) }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in entries.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != entries.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('jobwork.daily_entries_list', page=page_num, worker_name=worker_name, job_work_id=job_work_id, date_from=date_from, date_to=date_to) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if entries.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('jobwork.daily_entries_list', page=entries.next_num, worker_name=worker_name, job_work_id=job_work_id, date_from=date_from, date_to=date_to) }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <h5>No daily entries found</h5>
+                    <p class="text-muted">Start by logging your first daily job work entry.</p>
+                    <a href="{{ url_for('jobwork.daily_job_work_entry') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Log Daily Work
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modals removed to fix stuck modal issue -->
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Enhanced modal cleanup for stuck backdrops
+document.addEventListener('DOMContentLoaded', function() {
+    // Force remove any stuck modal backdrops immediately
+    const removeBackdrops = () => {
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => backdrop.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        document.body.style.marginRight = '';
+    };
+    
+    // Remove backdrops immediately
+    removeBackdrops();
+    
+    // Remove after a short delay to catch any late-loading backdrops
+    setTimeout(removeBackdrops, 100);
+    setTimeout(removeBackdrops, 500);
+    
+    // Force close any visible modals
+    const allModals = document.querySelectorAll('.modal');
+    allModals.forEach(modal => {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    });
+});
+</script>
+{% endblock %}

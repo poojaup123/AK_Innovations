@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}Vendor Invoices - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-file-invoice"></i> Vendor Invoices</h1>
+            <p class="text-muted">Manage vendor invoices in the 3-step GRN workflow</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('grn_workflow.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <a href="{{ url_for('grn_workflow.create_standalone_invoice') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create Invoice
+            </a>
+        </div>
+    </div>
+
+    <!-- Status Filter -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5><i class="fas fa-filter"></i> Filter Invoices</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row">
+                <div class="col-md-3">
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="all" {{ 'selected' if status_filter == 'all' }}>All Status</option>
+                        <option value="draft" {{ 'selected' if status_filter == 'draft' }}>Draft</option>
+                        <option value="pending" {{ 'selected' if status_filter == 'pending' }}>Pending Payment</option>
+                        <option value="paid" {{ 'selected' if status_filter == 'paid' }}>Paid</option>
+                        <option value="overdue" {{ 'selected' if status_filter == 'overdue' }}>Overdue</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="search" class="form-control" placeholder="Search invoice number..." 
+                           value="{{ request.args.get('search', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <a href="{{ url_for('grn_workflow.list_invoices') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Total Invoices</h5>
+                            <h2 class="mb-0">{{ invoices.total if invoices else 0 }}</h2>
+                            <small>All invoices</small>
+                        </div>
+                        <i class="fas fa-file-invoice fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Pending</h5>
+                            <h2 class="mb-0">0</h2>
+                            <small>Awaiting payment</small>
+                        </div>
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Paid</h5>
+                            <h2 class="mb-0">0</h2>
+                            <small>Completed</small>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Overdue</h5>
+                            <h2 class="mb-0">0</h2>
+                            <small>Past due date</small>
+                        </div>
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoices Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-table"></i> Invoice List</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Vendor</th>
+                            <th>Invoice Date</th>
+                            <th>Due Date</th>
+                            <th>Amount</th>
+                            <th>Outstanding</th>
+                            <th>Status</th>
+                            <th>Days Outstanding</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if invoices and invoices.items %}
+                            {% for invoice in invoices.items %}
+                            <tr class="{% if invoice.status == 'overdue' %}table-danger{% elif invoice.status == 'pending' %}table-warning{% elif invoice.status == 'paid' %}table-success{% endif %}">
+                                <td><strong>{{ invoice.invoice_number }}</strong></td>
+                                <td>
+                                    {% if invoice.vendor_id %}
+                                        {% set vendor = invoice.vendor if invoice.vendor else 'Vendor #' + invoice.vendor_id|string %}
+                                        {{ vendor.name if vendor and vendor.name else vendor }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>{{ invoice.invoice_date.strftime('%d-%m-%Y') if invoice.invoice_date else 'N/A' }}</td>
+                                <td>{{ invoice.due_date.strftime('%d-%m-%Y') if invoice.due_date else 'N/A' }}</td>
+                                <td class="text-end">₹{{ "%.2f"|format(invoice.total_amount) }}</td>
+                                <td class="text-end">
+                                    <strong>₹{{ "%.2f"|format(invoice.outstanding_amount) }}</strong>
+                                </td>
+                                <td>
+                                    {% if invoice.status == 'draft' %}
+                                        <span class="badge bg-secondary">Draft</span>
+                                    {% elif invoice.status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif invoice.status == 'paid' %}
+                                        <span class="badge bg-success">Paid</span>
+                                    {% elif invoice.status == 'overdue' %}
+                                        <span class="badge bg-danger">Overdue</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">{{ invoice.status|title }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if invoice.days_outstanding is defined %}
+                                        {% if invoice.days_outstanding > 30 %}
+                                            <span class="badge bg-danger">{{ invoice.days_outstanding }} days</span>
+                                        {% elif invoice.days_outstanding > 15 %}
+                                            <span class="badge bg-warning">{{ invoice.days_outstanding }} days</span>
+                                        {% else %}
+                                            <span class="badge bg-info">{{ invoice.days_outstanding }} days</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('grn_workflow.view_invoice', invoice_id=invoice.id) }}" class="btn btn-sm btn-outline-info" title="View Invoice">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if invoice.status != 'paid' %}
+                                            <a href="{{ url_for('grn_workflow.create_payment_for_invoice', invoice_id=invoice.id) }}" class="btn btn-sm btn-outline-success" title="Record Payment">
+                                                <i class="fas fa-money-bill"></i>
+                                            </a>
+                                        {% endif %}
+                                        {% if invoice.status == 'draft' %}
+                                            <a href="#" class="btn btn-sm btn-outline-warning" title="Edit Invoice"
+                                               onclick="alert('Invoice editing feature coming soon!')">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-4">
+                                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                                    <br>No invoices found
+                                    <br><small>Create your first vendor invoice to get started</small>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if invoices and invoices.pages > 1 %}
+            <nav aria-label="Invoice pagination">
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        <small class="text-muted">
+                            Showing {{ ((invoices.page - 1) * invoices.per_page) + 1 }} to 
+                            {{ invoices.page * invoices.per_page if invoices.page * invoices.per_page < invoices.total else invoices.total }} 
+                            of {{ invoices.total }} invoices
+                        </small>
+                    </div>
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if invoices.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('grn_workflow.list_invoices', page=invoices.prev_num, status=status_filter) }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in invoices.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != invoices.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('grn_workflow.list_invoices', page=page_num, status=status_filter) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if invoices.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('grn_workflow.list_invoices', page=invoices.next_num, status=status_filter) }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add tooltips to action buttons
+    const tooltips = document.querySelectorAll('[title]');
+    tooltips.forEach(element => {
+        new bootstrap.Tooltip(element);
+    });
+    
+    // Highlight overdue invoices
+    const overdueRows = document.querySelectorAll('.table-danger');
+    overdueRows.forEach(row => {
+        row.style.animation = 'pulse 2s infinite';
+    });
+});
+
+// Add pulse animation for overdue invoices
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes pulse {
+        0% { background-color: rgba(220, 53, 69, 0.1); }
+        50% { background-color: rgba(220, 53, 69, 0.2); }
+        100% { background-color: rgba(220, 53, 69, 0.1); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

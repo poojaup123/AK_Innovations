@@ -1,0 +1,450 @@
+{% extends "base.html" %}
+
+{% block title %}Material Cutting Optimization{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title"><i class="fas fa-cut"></i> Material Cutting Optimization</h1>
+    <p class="page-subtitle">Optimize cutting patterns to minimize waste and reduce material costs</p>
+</div>
+
+<div class="row">
+    <!-- Configuration Panel -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Optimization Settings</h5>
+            </div>
+            <div class="card-body">
+                <form id="optimizationForm">
+                    <!-- Sheet Dimensions -->
+                    <div class="mb-3">
+                        <label class="form-label">Sheet Dimensions (mm)</label>
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="number" class="form-control" id="sheetWidth" value="1200" placeholder="Width">
+                                <small class="text-muted">Width</small>
+                            </div>
+                            <div class="col-6">
+                                <input type="number" class="form-control" id="sheetHeight" value="600" placeholder="Height">
+                                <small class="text-muted">Height</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Algorithm Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Packing Algorithm</label>
+                        <select class="form-select" id="algorithm">
+                            <option value="skyline" selected>Skyline (Balanced)</option>
+                            <option value="maxrects">MaxRects (Best Quality)</option>
+                            <option value="guillotine">Guillotine (Fastest)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Cost Settings -->
+                    <div class="mb-3">
+                        <label class="form-label">Cost per Sheet (₹)</label>
+                        <input type="number" class="form-control" id="costPerSheet" value="500" step="0.01">
+                    </div>
+                    
+                    <!-- Max Sheets -->
+                    <div class="mb-3">
+                        <label class="form-label">Maximum Sheets</label>
+                        <input type="number" class="form-control" id="maxSheets" value="10" min="1">
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary w-100" onclick="runOptimization()">
+                        <i class="fas fa-play"></i> Run Optimization
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="card-title">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-info btn-sm" onclick="loadStandardSizes()">
+                        <i class="fas fa-ruler"></i> Standard Sizes
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" onclick="clearAll()">
+                        <i class="fas fa-trash"></i> Clear All
+                    </button>
+                    <button class="btn btn-outline-warning btn-sm" onclick="loadDemo()">
+                        <i class="fas fa-play"></i> Load Demo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Parts Selection -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title">Parts to Cut</h5>
+                <button class="btn btn-outline-primary btn-sm" onclick="selectAll()">
+                    <i class="fas fa-check-square"></i> Select All
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th width="50">Select</th>
+                                <th>Item</th>
+                                <th>Code</th>
+                                <th width="80">Width</th>
+                                <th width="80">Height</th>
+                                <th width="80">Qty</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="partsTable">
+                            {% for item in items %}
+                            <tr>
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input part-checkbox" type="checkbox" 
+                                               data-item-id="{{ item.id }}"
+                                               data-item-name="{{ item.name }}"
+                                               data-width="{{ item.unit_weight or 100 }}"
+                                               data-height="{{ item.unit_weight or 50 }}">
+                                    </div>
+                                </td>
+                                <td>{{ item.name }}</td>
+                                <td><code>{{ item.code }}</code></td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm width-input" 
+                                           value="{{ item.unit_weight or 100 }}" min="1" step="0.1">
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm height-input" 
+                                           value="{{ item.unit_weight or 50 }}" min="1" step="0.1">
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm quantity-input" 
+                                           value="1" min="1">
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ item.item_type|title }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results Section -->
+<div id="resultsSection" class="row mt-4" style="display: none;">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title">Optimization Results</h5>
+                <div>
+                    <button class="btn btn-outline-success btn-sm" onclick="exportResults()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" onclick="showReport()">
+                        <i class="fas fa-file-text"></i> Report
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Summary Stats -->
+                <div class="row mb-4" id="summaryStats">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+                
+                <!-- Cutting Layouts -->
+                <div id="cuttingLayouts">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5>Running Optimization...</h5>
+                <p class="text-muted">Please wait while we calculate the optimal cutting pattern.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let optimizationResults = null;
+
+// Load any stored results from dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    const storedResults = sessionStorage.getItem('optimizationResult');
+    if (storedResults) {
+        optimizationResults = JSON.parse(storedResults);
+        displayResults(optimizationResults);
+        sessionStorage.removeItem('optimizationResult');
+    }
+});
+
+function selectAll() {
+    const checkboxes = document.querySelectorAll('.part-checkbox');
+    const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+    checkboxes.forEach(cb => cb.checked = !allSelected);
+}
+
+function loadStandardSizes() {
+    // Load standard sheet sizes
+    const standards = [
+        {name: "4x8 feet", width: 1220, height: 2440},
+        {name: "2x4 feet", width: 610, height: 1220},
+        {name: "A0", width: 841, height: 1189},
+        {name: "Custom", width: 1200, height: 600}
+    ];
+    
+    // Simple prompt for now - in real app, use a modal
+    const choice = prompt("Choose standard size:\n" + 
+        standards.map((s, i) => `${i+1}. ${s.name} (${s.width}x${s.height})`).join('\n'));
+    
+    const index = parseInt(choice) - 1;
+    if (index >= 0 && index < standards.length) {
+        document.getElementById('sheetWidth').value = standards[index].width;
+        document.getElementById('sheetHeight').value = standards[index].height;
+    }
+}
+
+function clearAll() {
+    document.querySelectorAll('.part-checkbox').forEach(cb => cb.checked = false);
+    document.getElementById('resultsSection').style.display = 'none';
+}
+
+function loadDemo() {
+    // Select first few items and set demo quantities
+    const checkboxes = document.querySelectorAll('.part-checkbox');
+    const quantities = document.querySelectorAll('.quantity-input');
+    
+    checkboxes.forEach((cb, i) => {
+        if (i < 5) {
+            cb.checked = true;
+            if (quantities[i]) {
+                quantities[i].value = Math.floor(Math.random() * 5) + 1;
+            }
+        }
+    });
+}
+
+function runOptimization() {
+    const selectedParts = getSelectedParts();
+    
+    if (selectedParts.length === 0) {
+        alert('Please select at least one part to optimize.');
+        return;
+    }
+    
+    const optimizationData = {
+        parts: selectedParts,
+        sheet_width: parseFloat(document.getElementById('sheetWidth').value),
+        sheet_height: parseFloat(document.getElementById('sheetHeight').value),
+        max_sheets: parseInt(document.getElementById('maxSheets').value),
+        algorithm: document.getElementById('algorithm').value,
+        cost_per_sheet: parseFloat(document.getElementById('costPerSheet').value)
+    };
+    
+    $('#loadingModal').modal('show');
+    
+    fetch('/packing/api/optimize-cutting', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(optimizationData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        $('#loadingModal').modal('hide');
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            optimizationResults = data;
+            displayResults(data);
+        }
+    })
+    .catch(error => {
+        $('#loadingModal').modal('hide');
+        console.error('Error:', error);
+        alert('Optimization failed: ' + error.message);
+    });
+}
+
+function getSelectedParts() {
+    const parts = [];
+    const checkboxes = document.querySelectorAll('.part-checkbox:checked');
+    
+    checkboxes.forEach(checkbox => {
+        const row = checkbox.closest('tr');
+        const width = parseFloat(row.querySelector('.width-input').value);
+        const height = parseFloat(row.querySelector('.height-input').value);
+        const quantity = parseInt(row.querySelector('.quantity-input').value);
+        
+        parts.push({
+            selected: true,
+            item_name: checkbox.dataset.itemName,
+            width: width,
+            height: height,
+            quantity: quantity
+        });
+    });
+    
+    return parts;
+}
+
+function displayResults(data) {
+    document.getElementById('resultsSection').style.display = 'block';
+    
+    // Display summary stats
+    const summaryHtml = `
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>${data.sheets_used}</h3>
+                    <p class="mb-0">Sheets Required</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>${data.efficiency_percentage}%</h3>
+                    <p class="mb-0">Material Efficiency</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>₹${(data.total_material_cost || 0).toFixed(2)}</h3>
+                    <p class="mb-0">Material Cost</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h3>${data.waste_area.toFixed(0)}</h3>
+                    <p class="mb-0">Waste Area (mm²)</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('summaryStats').innerHTML = summaryHtml;
+    
+    // Display cutting layouts
+    let layoutsHtml = '<h6>Cutting Layouts:</h6>';
+    
+    data.layouts.forEach(layout => {
+        layoutsHtml += `
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6>Sheet ${layout.sheet_number} (${layout.sheet_dimensions.width}×${layout.sheet_dimensions.height} mm)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Parts List:</h6>
+                            <ul class="list-group list-group-flush">
+        `;
+        
+        layout.parts.forEach(part => {
+            const rotatedNote = part.rotated ? ' <span class="badge bg-info">Rotated</span>' : '';
+            layoutsHtml += `
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>${part.item_name} #${part.instance}${rotatedNote}</span>
+                    <small>${part.dimensions.width}×${part.dimensions.height} at (${part.position.x}, ${part.position.y})</small>
+                </li>
+            `;
+        });
+        
+        layoutsHtml += `
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border" style="position: relative; width: 300px; height: 180px; background: #f8f9fa;">
+                                <small class="text-muted">Visual layout (scaled)</small>
+                                <!-- SVG layout would go here in a full implementation -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    document.getElementById('cuttingLayouts').innerHTML = layoutsHtml;
+}
+
+function exportResults() {
+    if (!optimizationResults) {
+        alert('No results to export.');
+        return;
+    }
+    
+    fetch('/packing/export/cutting-plan', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(optimizationResults)
+    })
+    .then(response => response.blob())
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `cutting_plan_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    })
+    .catch(error => {
+        console.error('Export failed:', error);
+        alert('Export failed: ' + error.message);
+    });
+}
+
+function showReport() {
+    if (!optimizationResults) {
+        alert('No results to show.');
+        return;
+    }
+    
+    // Generate text report
+    let report = `MATERIAL CUTTING OPTIMIZATION REPORT\n`;
+    report += `Generated: ${new Date().toLocaleString()}\n\n`;
+    report += `SUMMARY:\n`;
+    report += `- Sheets Required: ${optimizationResults.sheets_used}\n`;
+    report += `- Material Efficiency: ${optimizationResults.efficiency_percentage}%\n`;
+    report += `- Total Cost: ₹${(optimizationResults.total_material_cost || 0).toFixed(2)}\n`;
+    report += `- Waste Area: ${optimizationResults.waste_area.toFixed(0)} mm²\n\n`;
+    
+    // Show in a new window
+    const reportWindow = window.open('', '_blank');
+    reportWindow.document.write(`<pre>${report}</pre>`);
+    reportWindow.document.title = 'Cutting Optimization Report';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-barcode me-2"></i>{{ title }}</h2>
+                <div>
+                    <a href="{{ url_for('grn.detail', id=grn.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to GRN
+                    </a>
+                    <a href="{{ url_for('inventory.batch_tracking_dashboard') }}" class="btn btn-info">
+                        <i class="fas fa-barcode me-1"></i>Batch Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRN Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>GRN Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>GRN Number:</strong><br>
+                            <span class="text-primary">{{ grn.grn_number }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Received Date:</strong><br>
+                            {{ grn.received_date.strftime('%d/%m/%Y') }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Status:</strong><br>
+                            <span class="badge bg-{{ 'success' if grn.status == 'completed' else 'info' }}">
+                                {{ grn.status.title() }}
+                            </span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Total Batches Created:</strong><br>
+                            <span class="badge bg-primary">{{ batches|length }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batches Created -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-boxes me-2"></i>Batches Created from this GRN</h5>
+                </div>
+                <div class="card-body">
+                    {% if batches %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Batch Number</th>
+                                        <th>Item</th>
+                                        <th>Quantities</th>
+                                        <th>Quality Status</th>
+                                        <th>Storage Location</th>
+                                        <th>Created Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for batch in batches %}
+                                    <tr>
+                                        <td>
+                                            <strong class="text-primary">{{ batch.batch_number }}</strong>
+                                            {% if batch.expiry_date %}
+                                                <br><small class="text-muted">Expires: {{ batch.expiry_date.strftime('%d/%m/%Y') }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <strong>{{ batch.item.name }}</strong>
+                                            <br><small class="text-muted">{{ batch.item.code }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex flex-column">
+                                                {% if batch.qty_raw > 0 %}
+                                                    <span class="badge bg-info">Raw: {{ batch.qty_raw }} {{ batch.item.unit_of_measure }}</span>
+                                                {% endif %}
+                                                {% if batch.qty_wip > 0 %}
+                                                    <span class="badge bg-warning">WIP: {{ batch.qty_wip }} {{ batch.item.unit_of_measure }}</span>
+                                                {% endif %}
+                                                {% if batch.qty_finished > 0 %}
+                                                    <span class="badge bg-success">Finished: {{ batch.qty_finished }} {{ batch.item.unit_of_measure }}</span>
+                                                {% endif %}
+                                                {% if batch.qty_scrap > 0 %}
+                                                    <span class="badge bg-danger">Scrap: {{ batch.qty_scrap }} {{ batch.item.unit_of_measure }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if batch.quality_status == 'good' else 'warning' if batch.quality_status == 'pending_inspection' else 'danger' }}">
+                                                {{ batch.quality_status.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>{{ batch.storage_location or 'Not specified' }}</td>
+                                        <td>{{ batch.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                        <td>
+                                            <a href="{{ url_for('inventory.batch_traceability', batch_id=batch.id) }}" 
+                                               class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-search"></i> Trace
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No batches have been created from this GRN yet. 
+                            {% if grn.status != 'completed' %}
+                                Batches will be automatically created when GRN line items are processed.
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Statistics -->
+    {% if batches %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-bar me-2"></i>Batch Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h4>{{ batches|selectattr('qty_raw', 'gt', 0)|list|length }}</h4>
+                                    <p class="mb-0">Raw Material Batches</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <h4>{{ batches|selectattr('qty_wip', 'gt', 0)|list|length }}</h4>
+                                    <p class="mb-0">WIP Batches</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h4>{{ batches|selectattr('qty_finished', 'gt', 0)|list|length }}</h4>
+                                    <p class="mb-0">Finished Batches</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-secondary text-white">
+                                <div class="card-body">
+                                    <h4>{{ batches|selectattr('quality_status', 'equalto', 'good')|list|length }}</h4>
+                                    <p class="mb-0">Quality Approved</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

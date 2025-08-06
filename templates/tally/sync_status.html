@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Tally Sync Status - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-sync-alt me-2"></i>Tally Sync Status Report</h2>
+            <p class="text-muted">Monitor synchronization status of your data with Tally</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('tally.dashboard') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Sync Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-shopping-cart me-2"></i>Purchase Orders</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h4 class="text-primary">{{ purchase_stats.total }}</h4>
+                            <small class="text-muted">Total</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-success">{{ purchase_stats.synced }}</h4>
+                            <small class="text-muted">Synced</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-warning">{{ purchase_stats.pending }}</h4>
+                            <small class="text-muted">Pending</small>
+                        </div>
+                    </div>
+                    <div class="progress mt-3">
+                        {% set sync_percent = (purchase_stats.synced / purchase_stats.total * 100) if purchase_stats.total > 0 else 0 %}
+                        <div class="progress-bar bg-success" style="width: {{ sync_percent }}%"></div>
+                    </div>
+                    <small class="text-muted">{{ "%.1f"|format(sync_percent) }}% synced</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-chart-line me-2"></i>Sales Orders</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h4 class="text-primary">{{ sales_stats.total }}</h4>
+                            <small class="text-muted">Total</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-success">{{ sales_stats.synced }}</h4>
+                            <small class="text-muted">Synced</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-warning">{{ sales_stats.pending }}</h4>
+                            <small class="text-muted">Pending</small>
+                        </div>
+                    </div>
+                    <div class="progress mt-3">
+                        {% set sync_percent = (sales_stats.synced / sales_stats.total * 100) if sales_stats.total > 0 else 0 %}
+                        <div class="progress-bar bg-success" style="width: {{ sync_percent }}%"></div>
+                    </div>
+                    <small class="text-muted">{{ "%.1f"|format(sync_percent) }}% synced</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-receipt me-2"></i>Factory Expenses</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h4 class="text-primary">{{ expense_stats.total }}</h4>
+                            <small class="text-muted">Total</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-success">{{ expense_stats.synced }}</h4>
+                            <small class="text-muted">Synced</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-warning">{{ expense_stats.pending }}</h4>
+                            <small class="text-muted">Pending</small>
+                        </div>
+                    </div>
+                    <div class="progress mt-3">
+                        {% set sync_percent = (expense_stats.synced / expense_stats.total * 100) if expense_stats.total > 0 else 0 %}
+                        <div class="progress-bar bg-success" style="width: {{ sync_percent }}%"></div>
+                    </div>
+                    <small class="text-muted">{{ "%.1f"|format(sync_percent) }}% synced</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Records -->
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6><i class="fas fa-shopping-cart me-2"></i>Pending Purchase Orders</h6>
+                    {% if pending_purchases %}
+                    <button class="btn btn-sm btn-success" onclick="markSynced('purchase')">
+                        <i class="fas fa-check"></i> Mark All Synced
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if pending_purchases %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" id="selectAllPurchase" onchange="selectAll('purchase')">
+                                        </th>
+                                        <th>PO Number</th>
+                                        <th>Supplier</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for po in pending_purchases %}
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" class="purchase-checkbox" value="{{ po.id }}">
+                                        </td>
+                                        <td>{{ po.po_number }}</td>
+                                        <td>{{ po.supplier.name }}</td>
+                                        <td>₹{{ "%.2f"|format(po.total_amount or 0) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">All purchase orders are synced!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6><i class="fas fa-chart-line me-2"></i>Pending Sales Orders</h6>
+                    {% if pending_sales %}
+                    <button class="btn btn-sm btn-success" onclick="markSynced('sales')">
+                        <i class="fas fa-check"></i> Mark All Synced
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if pending_sales %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" id="selectAllSales" onchange="selectAll('sales')">
+                                        </th>
+                                        <th>SO Number</th>
+                                        <th>Customer</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for so in pending_sales %}
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" class="sales-checkbox" value="{{ so.id }}">
+                                        </td>
+                                        <td>{{ so.so_number }}</td>
+                                        <td>{{ so.customer.name }}</td>
+                                        <td>₹{{ "%.2f"|format(so.total_amount or 0) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">All sales orders are synced!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6><i class="fas fa-receipt me-2"></i>Pending Expenses</h6>
+                    {% if pending_expenses %}
+                    <button class="btn btn-sm btn-success" onclick="markSynced('expense')">
+                        <i class="fas fa-check"></i> Mark All Synced
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if pending_expenses %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" id="selectAllExpense" onchange="selectAll('expense')">
+                                        </th>
+                                        <th>Expense No</th>
+                                        <th>Category</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for expense in pending_expenses %}
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" class="expense-checkbox" value="{{ expense.id }}">
+                                        </td>
+                                        <td>{{ expense.expense_number }}</td>
+                                        <td>{{ expense.category.replace('_', ' ').title() }}</td>
+                                        <td>₹{{ "%.2f"|format(expense.total_amount or 0) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">All expenses are synced!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function selectAll(type) {
+    const masterCheckbox = document.getElementById(`selectAll${type.charAt(0).toUpperCase() + type.slice(1)}`);
+    const checkboxes = document.querySelectorAll(`.${type}-checkbox`);
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = masterCheckbox.checked;
+    });
+}
+
+function markSynced(type) {
+    const checkboxes = document.querySelectorAll(`.${type}-checkbox:checked`);
+    const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    
+    if (ids.length === 0) {
+        alert('Please select records to mark as synced');
+        return;
+    }
+    
+    if (confirm(`Mark ${ids.length} ${type} record(s) as synced with Tally?`)) {
+        fetch('{{ url_for("tally.mark_synced") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                type: type,
+                ids: ids
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error marking records as synced');
+        });
+    }
+}
+</script>
+{% endblock %}

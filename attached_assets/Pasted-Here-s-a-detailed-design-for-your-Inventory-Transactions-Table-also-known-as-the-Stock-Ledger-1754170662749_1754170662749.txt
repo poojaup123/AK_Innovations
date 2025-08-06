@@ -1,0 +1,69 @@
+Here’s a detailed design for your **Inventory Transactions Table**, also known as the **Stock Ledger** or **Inventory Movement Log**. This table is essential to track **all inflow/outflow activities**, **batch-wise tracking**, **multi-company movements**, and **valuation basis**.
+
+---
+
+## 📦 **Inventory Transactions Table (Stock Ledger)**
+
+| Field Name           | Type          | Description                                                              |
+| -------------------- | ------------- | ------------------------------------------------------------------------ |
+| `id`                 | UUID / Int    | Unique transaction ID                                                    |
+| `timestamp`          | DateTime      | Date and time of transaction                                             |
+| `company_id`         | FK to Company | Which company performed this transaction                                 |
+| `item_id`            | FK to Item    | Which item/material was moved                                            |
+| `uom_id`             | FK to UOM     | Unit of measure for the transaction (kg, pcs, etc.)                      |
+| `batch_no`           | FK to Batch   | Batch involved in this transaction                                       |
+| `source_location`    | String        | From where inventory was moved (e.g., Purchase, Job Work, Store, Vendor) |
+| `target_location`    | String        | Destination (e.g., Production, FG Store, Customer)                       |
+| `transaction_type`   | Enum          | PO, GRN, Job Work Out, Job Work In, Production, Scrap, Sales, Adjustment |
+| `quantity`           | Decimal       | How many units were moved (positive = IN, negative = OUT)                |
+| `value_per_unit`     | Decimal       | Rate per unit used for valuation                                         |
+| `total_value`        | Decimal       | `quantity × value_per_unit`                                              |
+| `reference_doc_type` | String        | e.g., GRN, PO, JobWork, Production, Sales                                |
+| `reference_doc_id`   | UUID / Int    | ID of the document triggering this transaction                           |
+| `remarks`            | Text          | Any notes or reference (e.g., “cutting loss”, “rejected qty”, etc.)      |
+
+---
+
+## 🧠 Example Entries
+
+| Timestamp        | Item          | Qty  | Batch  | Type           | From     | To       | Value/unit | Ref      |
+| ---------------- | ------------- | ---- | ------ | -------------- | -------- | -------- | ---------- | -------- |
+| 2025-08-01 10:00 | MS Sheet      | +10  | MS-001 | GRN            | Vendor A | Store    | ₹120       | GRN-1001 |
+| 2025-08-01 11:00 | MS Sheet      | -5   | MS-001 | Job Work Out   | Store    | Vendor B | ₹120       | JW-1001  |
+| 2025-08-03 15:00 | Mounted Plate | +400 | FG-001 | Job Work In    | Vendor B | Store    | ₹20        | GRN-1010 |
+| 2025-08-04 10:00 | Mounted Plate | -300 | FG-001 | Production Use | Store    | Assembly | ₹20        | PRO-2001 |
+| 2025-08-05 14:00 | Castor Wheel  | +290 | FG-002 | Production Out | Assembly | FG Store | ₹65        | PRO-2002 |
+
+---
+
+## 🔗 Linked Tables
+
+* `Item` → Item master
+* `Company` → To support multi-company
+* `UOM` → Supports conversions
+* `Batch` → For batch-wise tracking
+* `Document IDs` → For traceability (like GRN, PO, Job Work)
+
+---
+
+## 🧾 Use Cases Supported
+
+| Scenario                    | Tracked? |
+| --------------------------- | -------- |
+| Raw material purchase (GRN) | ✅        |
+| Job work out and in         | ✅        |
+| Production input/output     | ✅        |
+| Scrap entry                 | ✅        |
+| Sales dispatch              | ✅        |
+| Returns                     | ✅        |
+| Inter-warehouse transfers   | ✅        |
+| Valuation tracking          | ✅        |
+
+---
+
+Would you like me to:
+
+* Build this into your database schema?
+* Link it to reports like **Inventory Valuation**, **Material Ledger**, or **Batch Traceability**?
+
+Let me know how you'd like to proceed.

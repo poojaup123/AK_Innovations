@@ -1,0 +1,61 @@
+<!-- Document Upload/List Card Component -->
+<div class="card mt-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="fas fa-paperclip"></i> Documents</h6>
+        <a href="{{ url_for('documents.upload_document', reference_type=reference_type, reference_id=reference_id) }}" 
+           class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-plus"></i> Upload Document
+        </a>
+    </div>
+    <div class="card-body">
+        {% if documents %}
+            <div class="row">
+                {% for doc in documents %}
+                <div class="col-md-6 mb-2">
+                    <div class="border rounded p-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-1">
+                                    <i class="fas fa-file me-2"></i>
+                                    <strong class="text-truncate">{{ doc.original_filename }}</strong>
+                                </div>
+                                <small class="text-muted">
+                                    {{ doc.document_type.replace('_', ' ').title() if doc.document_type else 'Document' }} • 
+                                    {{ format_file_size(doc.file_size) }}
+                                </small>
+                                {% if doc.description %}
+                                    <p class="mb-1 small text-muted">{{ doc.description[:50] }}{% if doc.description|length > 50 %}...{% endif %}</p>
+                                {% endif %}
+                            </div>
+                            <div class="btn-group btn-group-sm ms-2">
+                                <a href="{{ url_for('documents.view_document', document_id=doc.id) }}" 
+                                   class="btn btn-outline-primary btn-sm" target="_blank" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('documents.download_document', document_id=doc.id) }}" 
+                                   class="btn btn-outline-success btn-sm" title="Download">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% if documents|length > 4 %}
+            <div class="text-center mt-2">
+                <a href="{{ url_for('documents.list_documents', reference_type=reference_type, reference_id=reference_id) }}" 
+                   class="btn btn-sm btn-outline-secondary">
+                    View All {{ documents|length }} Documents <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-3">
+                <i class="fas fa-file-alt fa-2x text-muted mb-2"></i>
+                <p class="text-muted mb-0">No documents uploaded yet.</p>
+                <small class="text-muted">Upload invoices, receipts, contracts, and other related documents.</small>
+            </div>
+        {% endif %}
+    </div>
+</div>

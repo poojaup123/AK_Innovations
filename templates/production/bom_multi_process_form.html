@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+
+{% block title %}Add Multiple Process Routing - {{ bom.bom_code }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1><i class="fas fa-cogs text-primary"></i> Add Process Routing</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('production.dashboard') }}">Production</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('production.list_bom') }}">Bill of Materials</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('production.edit_bom', id=bom.id) }}">{{ bom.bom_code }}</a></li>
+                    <li class="breadcrumb-item active">Add Process Routing</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-cogs"></i> Manufacturing Process Details</h5>
+                    <small>BOM: {{ bom.bom_code }} - {{ bom.product.name if bom.product else 'Unknown Product' }}</small>
+                </div>
+                <div class="card-body">
+                    <form id="multiProcessForm" method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Multi-Process Configuration -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h6><i class="fas fa-layer-group"></i> Multi-Process Configuration</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="processContainer">
+                                    <!-- Process 1 (Default) -->
+                                    <div class="process-item border rounded p-3 mb-3" data-process="1">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h6 class="text-primary mb-0">{% if edit_process %}Edit: {{ edit_process.process_name }}{% else %}Process 1{% endif %}</h6>
+                                            <button type="button" class="btn btn-sm btn-outline-danger remove-process" style="display: none;">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label">Process Name</label>
+                                                    <select class="form-select process-name" name="processes[0][process_name]" required>
+                                                        <option value="">Select Process</option>
+                                                        <option value="Cutting">Cutting</option>
+                                                        <option value="Bending">Bending</option>
+                                                        <option value="Welding">Welding</option>
+                                                        <option value="Zinc">Zinc Plating</option>
+                                                        <option value="Painting">Painting</option>
+                                                        <option value="Assembly">Assembly</option>
+                                                        <option value="Machining">Machining</option>
+                                                        <option value="Polishing">Polishing</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label">Sequence Number</label>
+                                                    <input type="number" class="form-control step-number" name="processes[0][step_number]" value="1" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label">Setup Time (min)</label>
+                                                    <input type="number" step="0.1" class="form-control" name="processes[0][setup_time_minutes]" placeholder="0.0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label">Runtime per Unit (min)</label>
+                                                    <input type="number" step="0.1" class="form-control" name="processes[0][run_time_minutes]" placeholder="0.0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label">Labor Rate (₹/hour)</label>
+                                                    <input type="number" step="0.01" class="form-control" name="processes[0][labor_rate_per_hour]" placeholder="0.00">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label">Cost per Unit (₹) <small class="text-muted">(with flexible units)</small></label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">₹</span>
+                                                        <input type="number" step="0.01" class="form-control" name="processes[0][cost_per_unit]" placeholder="0.00">
+                                                        <select class="form-select" name="processes[0][cost_unit]" style="max-width: 120px;">
+                                                            <option value="per_unit">per unit</option>
+                                                            <option value="per_kg">per kg</option>
+                                                            <option value="per_meter">per meter</option>
+                                                            <option value="per_hour">per hour</option>
+                                                            <option value="per_piece">per piece</option>
+                                                            <option value="per_batch">per batch</option>
+                                                        </select>
+                                                    </div>
+                                                    <small class="form-text text-muted">Cost for this manufacturing process</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-group mb-3">
+                                            <label class="form-label">Operation Description</label>
+                                            <textarea class="form-control" name="processes[0][operation_description]" rows="2" placeholder="Detailed description of the operation"></textarea>
+                                        </div>
+                                        
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="processes[0][quality_check_required]" value="true">
+                                            <label class="form-check-label">Quality Check Required</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-center">
+                                    <button type="button" class="btn btn-success" id="addProcessBtn">
+                                        <i class="fas fa-plus"></i> Add Process
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('production.edit_bom', id=bom.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to BOM
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save"></i> Save All Processes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Process Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h6><i class="fas fa-info-circle"></i> Process Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>BOM:</strong> {{ bom.bom_code }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Product:</strong> {{ bom.product.name if bom.product else 'Unknown' }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Current Processes:</strong> {{ bom.processes|length }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Process Tips -->
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h6><i class="fas fa-lightbulb"></i> Process Tips</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> Use sequential step numbers (1, 2, 3...)</li>
+                        <li><i class="fas fa-check text-success"></i> Provide clear process descriptions</li>
+                        <li><i class="fas fa-check text-success"></i> Set realistic timing estimates</li>
+                        <li><i class="fas fa-check text-success"></i> Enable quality checks for critical processes</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let processCount = 1;
+
+document.getElementById('addProcessBtn').addEventListener('click', function() {
+    processCount++;
+    
+    const processContainer = document.getElementById('processContainer');
+    const newProcessItem = createProcessItem(processCount);
+    processContainer.appendChild(newProcessItem);
+    
+    updateRemoveButtons();
+});
+
+function createProcessItem(processNumber) {
+    const div = document.createElement('div');
+    div.className = 'process-item border rounded p-3 mb-3';
+    div.setAttribute('data-process', processNumber);
+    
+    const index = processNumber - 1;
+    
+    div.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="text-primary mb-0">Process ${processNumber}</h6>
+            <button type="button" class="btn btn-sm btn-outline-danger remove-process">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label class="form-label">Process Name</label>
+                    <select class="form-select process-name" name="processes[${index}][process_name]" required>
+                        <option value="">Select Process</option>
+                        <option value="Cutting">Cutting</option>
+                        <option value="Bending">Bending</option>
+                        <option value="Welding">Welding</option>
+                        <option value="Zinc">Zinc Plating</option>
+                        <option value="Painting">Painting</option>
+                        <option value="Assembly">Assembly</option>
+                        <option value="Machining">Machining</option>
+                        <option value="Polishing">Polishing</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label class="form-label">Sequence Number</label>
+                    <input type="number" class="form-control step-number" name="processes[${index}][step_number]" value="${processNumber}" required>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group mb-3">
+                    <label class="form-label">Setup Time (min)</label>
+                    <input type="number" step="0.1" class="form-control" name="processes[${index}][setup_time_minutes]" placeholder="0.0">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group mb-3">
+                    <label class="form-label">Runtime per Unit (min)</label>
+                    <input type="number" step="0.1" class="form-control" name="processes[${index}][run_time_minutes]" placeholder="0.0">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group mb-3">
+                    <label class="form-label">Labor Rate (₹/hour)</label>
+                    <input type="number" step="0.01" class="form-control" name="processes[${index}][labor_rate_per_hour]" placeholder="0.00">
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group mb-3">
+                    <label class="form-label">Cost per Unit (₹) <small class="text-muted">(with flexible units)</small></label>
+                    <div class="input-group">
+                        <span class="input-group-text">₹</span>
+                        <input type="number" step="0.01" class="form-control" name="processes[${index}][cost_per_unit]" placeholder="0.00">
+                        <select class="form-select" name="processes[${index}][cost_unit]" style="max-width: 120px;">
+                            <option value="per_unit">per unit</option>
+                            <option value="per_kg">per kg</option>
+                            <option value="per_meter">per meter</option>
+                            <option value="per_hour">per hour</option>
+                            <option value="per_piece">per piece</option>
+                            <option value="per_batch">per batch</option>
+                        </select>
+                    </div>
+                    <small class="form-text text-muted">Cost for this manufacturing process</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group mb-3">
+            <label class="form-label">Operation Description</label>
+            <textarea class="form-control" name="processes[${index}][operation_description]" rows="2" placeholder="Detailed description of the operation"></textarea>
+        </div>
+        
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="processes[${index}][quality_check_required]" value="true">
+            <label class="form-check-label">Quality Check Required</label>
+        </div>
+    `;
+    
+    // Add event listener for remove button
+    div.querySelector('.remove-process').addEventListener('click', function() {
+        div.remove();
+        updateProcessNumbers();
+        updateRemoveButtons();
+    });
+    
+    // Auto-generate process code when process name changes
+    div.querySelector('.process-name').addEventListener('change', function() {
+        const processCode = div.querySelector('.process-code');
+        const processName = this.value;
+        if (processName && !processCode.value) {
+            processCode.value = processName.substring(0, 4).toUpperCase();
+        }
+    });
+    
+    return div;
+}
+
+function updateRemoveButtons() {
+    const processItems = document.querySelectorAll('.process-item');
+    processItems.forEach((item, index) => {
+        const removeBtn = item.querySelector('.remove-process');
+        if (processItems.length > 1) {
+            removeBtn.style.display = 'inline-block';
+        } else {
+            removeBtn.style.display = 'none';
+        }
+    });
+}
+
+function updateProcessNumbers() {
+    const processItems = document.querySelectorAll('.process-item');
+    processItems.forEach((item, index) => {
+        const processNumber = index + 1;
+        
+        // Update visual process number
+        item.querySelector('h6').textContent = `Process ${processNumber}`;
+        
+        // Update step number input
+        const stepInput = item.querySelector('.step-number');
+        stepInput.value = processNumber;
+        
+        // Update all name attributes
+        const inputs = item.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if (input.name) {
+                input.name = input.name.replace(/processes\[\d+\]/, `processes[${index}]`);
+            }
+        });
+        
+        item.setAttribute('data-process', processNumber);
+    });
+    
+    processCount = processItems.length;
+}
+
+// Auto-generate process codes when process names change
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('process-name')) {
+        const processItem = e.target.closest('.process-item');
+        const processCode = processItem.querySelector('.process-code');
+        const processName = e.target.value;
+        
+        if (processName && !processCode.value) {
+            processCode.value = processName.substring(0, 4).toUpperCase();
+        }
+    }
+});
+
+// Form validation
+document.getElementById('multiProcessForm').addEventListener('submit', function(e) {
+    const processNames = document.querySelectorAll('.process-name');
+    const stepNumbers = document.querySelectorAll('.step-number');
+    
+    // Check for duplicate process names
+    const names = Array.from(processNames).map(select => select.value).filter(name => name);
+    const uniqueNames = [...new Set(names)];
+    
+    if (names.length !== uniqueNames.length) {
+        e.preventDefault();
+        alert('Please ensure all processes have unique names.');
+        return;
+    }
+    
+    // Check for duplicate step numbers
+    const steps = Array.from(stepNumbers).map(input => parseInt(input.value)).filter(step => step);
+    const uniqueSteps = [...new Set(steps)];
+    
+    if (steps.length !== uniqueSteps.length) {
+        e.preventDefault();
+        alert('Please ensure all processes have unique step numbers.');
+        return;
+    }
+});
+
+// Function to update unit displays based on selected products
+function updateUnitDisplays() {
+    // Handle all input product dropdowns
+    document.querySelectorAll('select[name*="[input_product_id]"]').forEach(function(select) {
+        select.addEventListener('change', function() {
+            const itemId = this.value;
+            const processItem = this.closest('.process-item');
+            const unitDisplay = processItem.querySelector('.input-unit-display');
+            
+            if (itemId) {
+                // Fetch actual unit from API
+                fetch(`/production/api/item/${itemId}/unit`)
+                    .then(response => response.json())
+                    .then(data => {
+                        unitDisplay.textContent = data.unit || 'pcs';
+                    })
+                    .catch(error => {
+                        console.error('Error fetching unit:', error);
+                        unitDisplay.textContent = 'pcs';
+                    });
+            } else {
+                unitDisplay.textContent = 'pcs';
+            }
+        });
+    });
+    
+    // Handle all output product dropdowns
+    document.querySelectorAll('select[name*="[output_product_id]"]').forEach(function(select) {
+        select.addEventListener('change', function() {
+            const itemId = this.value;
+            const processItem = this.closest('.process-item');
+            const unitDisplay = processItem.querySelector('.output-unit-display');
+            
+            if (itemId) {
+                // Fetch actual unit from API
+                fetch(`/production/api/item/${itemId}/unit`)
+                    .then(response => response.json())
+                    .then(data => {
+                        unitDisplay.textContent = data.unit || 'pcs';
+                    })
+                    .catch(error => {
+                        console.error('Error fetching unit:', error);
+                        unitDisplay.textContent = 'pcs';
+                    });
+            } else {
+                unitDisplay.textContent = 'pcs';
+            }
+        });
+    });
+}
+
+// Initialize unit display updates
+document.addEventListener('DOMContentLoaded', function() {
+    updateUnitDisplays();
+});
+
+// Re-initialize when new processes are added
+document.getElementById('addProcessBtn').addEventListener('click', function() {
+    setTimeout(updateUnitDisplays, 100); // Small delay to ensure DOM is updated
+});
+
+// Pre-populate form if editing existing process
+{% if edit_process %}
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the first process container (index 0)
+    const firstProcess = document.querySelector('[data-process="1"]');
+    
+    // Pre-populate all fields
+    firstProcess.querySelector('[name="processes[0][process_name]"]').value = '{{ edit_process.process_name }}';
+    firstProcess.querySelector('[name="processes[0][step_number]"]').value = '{{ edit_process.step_number }}';
+    firstProcess.querySelector('[name="processes[0][operation_description]"]').value = '{{ edit_process.operation_description or "" }}';
+    firstProcess.querySelector('[name="processes[0][setup_time_minutes]"]').value = '{{ edit_process.setup_time_minutes or 0 }}';
+    firstProcess.querySelector('[name="processes[0][run_time_minutes]"]').value = '{{ edit_process.run_time_minutes or 0 }}';
+    firstProcess.querySelector('[name="processes[0][labor_rate_per_hour]"]').value = '{{ edit_process.labor_rate_per_hour or 0 }}';
+    firstProcess.querySelector('[name="processes[0][cost_per_unit]"]').value = '{{ edit_process.cost_per_unit or 0 }}';
+    firstProcess.querySelector('[name="processes[0][cost_unit]"]').value = '{{ edit_process.cost_unit or "per_unit" }}';
+    
+
+    
+    // Update the submit button text for editing
+    document.querySelector('button[type="submit"]').innerHTML = '<i class="fas fa-save"></i> Update Process';
+    
+    // Hide add process button since we're editing a single process
+    document.getElementById('addProcessBtn').style.display = 'none';
+    
+    // Update help text
+    const helpCard = document.querySelector('.alert-info');
+    if (helpCard) {
+        helpCard.innerHTML = '<i class="fas fa-info-circle"></i> <strong>Editing Process:</strong> Update the fields below and click "Update Process" to save your changes.';
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

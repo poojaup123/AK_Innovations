@@ -1,0 +1,461 @@
+{% extends "base.html" %}
+
+{% block title %}Settings Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Settings</li>
+                </ol>
+            </nav>
+            <h2><i class="fas fa-cog"></i> Settings Dashboard</h2>
+            <p class="text-muted">Configure and manage your factory management system settings</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Quick Stats -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div class="card-body text-center">
+                            <h3>1</h3>
+                            <p class="mb-0">Companies</p>
+                            <i class="fas fa-building position-absolute" style="top: 10px; right: 15px; opacity: 0.3; font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                        <div class="card-body text-center">
+                            <h3>1</h3>
+                            <p class="mb-0">Active</p>
+                            <i class="fas fa-check-circle position-absolute" style="top: 10px; right: 15px; opacity: 0.3; font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);">
+                        <div class="card-body text-center">
+                            <h3>50+</h3>
+                            <p class="mb-0">Total Users</p>
+                            <i class="fas fa-users position-absolute" style="top: 10px; right: 15px; opacity: 0.3; font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white" style="background: linear-gradient(135deg, #c2185b 0%, #e91e63 100%);">
+                        <div class="card-body text-center">
+                            <h3>50+</h3>
+                            <p class="mb-0">Configuration Items</p>
+                            <i class="fas fa-sliders-h position-absolute" style="top: 10px; right: 15px; opacity: 0.3; font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Configuration Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-star"></i> Centralized Multi-Company Settings</h5>
+                    <p class="text-muted mb-0">Configure inventory behavior, accounting automation, production controls, and job work preferences across multiple companies with role-based access control and audit trails.</p>
+                </div>
+                <div class="card-body">
+                    <!-- Company Management -->
+                    <div class="card mb-3">
+                        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-building"></i>
+                                    <span class="ms-2">Company Management</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-2">Add/edit companies, assign users, set default company</p>
+                            <a href="{{ url_for('settings.company_settings') }}" class="btn btn-primary btn-sm">Configure</a>
+                        </div>
+                    </div>
+
+                    <!-- Inventory Configuration -->
+                    <div class="card mb-3">
+                        <div class="card-header" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-boxes"></i>
+                                    <span class="ms-2">Inventory Configuration</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-2">Stock valuation, batch tracking, multi-UOM settings</p>
+                            <a href="{{ url_for('settings_advanced.inventory_settings') }}" class="btn btn-success btn-sm">Configure</a>
+                        </div>
+                    </div>
+
+                    <!-- Accounting Automation -->
+                    <div class="card mb-3">
+                        <div class="card-header" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); color: white;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-calculator"></i>
+                                    <span class="ms-2">Accounting Automation</span>
+                                </div>
+                                <span class="badge bg-light text-dark">Essential</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-2">Auto journal entries, default ledgers, and GST compliance settings</p>
+                            <div class="mb-3">
+                                <small class="text-success"><i class="fas fa-check"></i> Double-entry automation</small><br>
+                                <small class="text-success"><i class="fas fa-check"></i> GST compliance</small><br>
+                                <small class="text-success"><i class="fas fa-check"></i> Invoice generation</small>
+                            </div>
+                            <a href="{{ url_for('settings_advanced.accounting_settings') }}" class="btn btn-warning btn-sm">Configure</a>
+                        </div>
+                    </div>
+
+                    <!-- Production Controls -->
+                    <div class="card mb-3">
+                        <div class="card-header" style="background: linear-gradient(135deg, #c2185b 0%, #e91e63 100%); color: white;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-industry"></i>
+                                    <span class="ms-2">Production Controls</span>
+                                </div>
+                                <span class="badge bg-light text-dark">Advanced</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-2">BOM configurations, cost calculations, and batch linking rules</p>
+                            <div class="mb-3">
+                                <small class="text-success"><i class="fas fa-check"></i> Multi-level BOM</small><br>
+                                <small class="text-success"><i class="fas fa-check"></i> Auto cost calculation</small><br>
+                                <small class="text-success"><i class="fas fa-check"></i> Process tracking</small>
+                            </div>
+                            <a href="{{ url_for('settings_advanced.production_settings') }}" class="btn btn-danger btn-sm">Configure</a>
+                        </div>
+                    </div>
+
+                    <!-- Job Work Preferences -->
+                    <div class="card mb-3">
+                        <div class="card-header" style="background: linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%); color: white;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-tools"></i>
+                                    <span class="ms-2">Job Work Preferences</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-2">GRN requirements, vendor rates, billing modes</p>
+                            <a href="{{ url_for('settings_advanced.jobwork_settings') }}" class="btn btn-info btn-sm">Configure</a>
+                        </div>
+                    </div>
+
+                    <!-- Basic Settings -->
+                    <div class="card mb-3">
+                        <div class="card-header" style="background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%); color: white;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-cog"></i>
+                                    <span class="ms-2">Basic Settings</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-2">Company info, notifications, user management</p>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('settings.company_settings') }}" class="btn btn-outline-primary btn-sm">Company Info</a>
+                                <a href="{{ url_for('settings.notification_settings') }}" class="btn btn-outline-success btn-sm">Notifications</a>
+                                <a href="{{ url_for('settings.user_management') }}" class="btn btn-outline-secondary btn-sm">Users</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Advanced Settings -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-sliders-h"></i> Advanced Settings</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Access the complete centralized configuration system with multi-company management and detailed business rules.</p>
+                    <a href="{{ url_for('settings_advanced.settings_dashboard') }}" class="btn btn-primary">
+                        <i class="fas fa-sliders-h"></i> Explore Advanced Settings
+                    </a>
+                </div>
+            </div>
+
+            <!-- System Status -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-check-circle"></i> System Status</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Centralized settings active</span>
+                            <i class="fas fa-check-circle text-success"></i>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Multi-company support enabled</span>
+                            <i class="fas fa-check-circle text-success"></i>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Default company configured</span>
+                            <i class="fas fa-check-circle text-success"></i>
+                        </div>
+                    </div>
+                    <div class="mb-0">
+                        <div class="d-flex justify-content-between">
+                            <span>Admin user assigned</span>
+                            <i class="fas fa-check-circle text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Reset Options -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-database"></i> System Reset & Maintenance</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Reset specific sections of your factory data. Use with caution - this action cannot be undone.</p>
+                    
+                    <button type="button" class="btn btn-warning btn-sm w-100" onclick="openResetModal()">
+                        <i class="fas fa-undo"></i> Reset Database Sections
+                    </button>
+                    
+                    <div class="mt-3">
+                        <small class="text-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Warning:</strong> Only authorized administrators should perform reset operations.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuration Guide -->
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-question-circle"></i> Configuration Guide</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>Getting Started:</h6>
+                        <ol class="small">
+                            <li>Configure company details</li>
+                            <li>Set up inventory rules</li>
+                            <li>Configure accounting automation</li>
+                            <li>Define production controls</li>
+                            <li>Set job work preferences</li>
+                        </ol>
+                    </div>
+                    <div class="alert alert-info p-2">
+                        <small><i class="fas fa-lightbulb"></i> <strong>Tip:</strong> Start with Company Management to establish the foundation for all other settings.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Database Modal -->
+<div class="modal fade" id="resetModal" tabindex="-1" aria-labelledby="resetModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="resetModalLabel">
+                    <i class="fas fa-database"></i> Reset Database Sections
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Warning:</strong> This action will permanently delete selected data. This cannot be undone.
+                </div>
+                
+                <form id="resetForm" method="POST" action="{{ url_for('settings.reset_database') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+                    
+                    <h6 class="text-primary">Select sections to reset:</h6>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="reset_purchase_sales" id="reset_purchase_sales">
+                                <label class="form-check-label" for="reset_purchase_sales">
+                                    <i class="fas fa-shopping-cart text-primary"></i> Purchase & Sales Orders
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="reset_inventory" id="reset_inventory">
+                                <label class="form-check-label" for="reset_inventory">
+                                    <i class="fas fa-boxes text-success"></i> Inventory & Items
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="reset_production" id="reset_production">
+                                <label class="form-check-label" for="reset_production">
+                                    <i class="fas fa-industry text-info"></i> Production & Job Work
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="reset_inspections" id="reset_inspections">
+                                <label class="form-check-label" for="reset_inspections">
+                                    <i class="fas fa-search text-warning"></i> Quality Inspections
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="reset_accounting" id="reset_accounting">
+                                <label class="form-check-label" for="reset_accounting">
+                                    <i class="fas fa-calculator text-info"></i> Accounting & Finance
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="reset_expenses" id="reset_expenses">
+                                <label class="form-check-label" for="reset_expenses">
+                                    <i class="fas fa-money-bill text-danger"></i> Factory Expenses
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="reset_employees" id="reset_employees">
+                                <label class="form-check-label" for="reset_employees">
+                                    <i class="fas fa-users text-secondary"></i> Employee Records
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="reset_documents" id="reset_documents">
+                                <label class="form-check-label" for="reset_documents">
+                                    <i class="fas fa-file text-dark"></i> Document Archives
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="reset_grn" id="reset_grn">
+                                <label class="form-check-label" for="reset_grn">
+                                    <i class="fas fa-receipt text-primary"></i> GRN & Receipts
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="reset_batches" id="reset_batches">
+                                <label class="form-check-label" for="reset_batches">
+                                    <i class="fas fa-barcode text-success"></i> Batch Tracking
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="confirmResetCheckbox" required>
+                            <label class="form-check-label text-danger" for="confirmResetCheckbox">
+                                <strong>I understand this action cannot be undone</strong>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeResetModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmResetBtn" disabled>
+                    <i class="fas fa-trash"></i> Reset Selected Sections
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Bulletproof Modal CSS Fix */
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+.modal {
+    z-index: 1050 !important;
+}
+body.modal-open {
+    overflow: hidden;
+}
+</style>
+
+<script>
+// Aggressive Modal Fix - No Backdrop Issues
+document.addEventListener('DOMContentLoaded', function () {
+    // Enable reset button only after confirming checkbox
+    document.getElementById('confirmResetCheckbox').addEventListener('change', function () {
+        document.getElementById('confirmResetBtn').disabled = !this.checked;
+    });
+
+    // Handle reset button click
+    document.getElementById('confirmResetBtn').addEventListener('click', function() {
+        if (!document.getElementById('confirmResetCheckbox').checked) {
+            alert('Please confirm that you understand this action cannot be undone.');
+            return;
+        }
+        
+        // Convert checkboxes to proper form values
+        const checkboxes = document.querySelectorAll('#resetForm input[type="checkbox"]:not(#confirmResetCheckbox)');
+        checkboxes.forEach(checkbox => {
+            // Add hidden input with 'true' or 'false' value
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = checkbox.name;
+            hiddenInput.value = checkbox.checked ? 'true' : 'false';
+            document.getElementById('resetForm').appendChild(hiddenInput);
+        });
+        
+        document.getElementById('resetForm').submit();
+    });
+});
+
+// Custom modal open function - bypasses Bootstrap backdrop issues
+function openResetModal() {
+    // Remove any existing backdrops completely
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    
+    // Remove modal-open class from body
+    document.body.classList.remove('modal-open');
+    
+    // Show modal without backdrop
+    const modal = new bootstrap.Modal(document.getElementById('resetModal'), {
+        backdrop: false,  // No backdrop
+        keyboard: true
+    });
+    
+    modal.show();
+}
+
+// Custom modal close function
+function closeResetModal() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('resetModal'));
+    if (modal) {
+        modal.hide();
+    }
+    
+    // Clean up any remaining backdrops
+    setTimeout(() => {
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    }, 100);
+}
+</script>
+{% endblock %}

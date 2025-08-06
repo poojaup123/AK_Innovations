@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Job Work Report{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-tools"></i> Job Work Report</h2>
+                <a href="{{ url_for('reports.dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Reports
+                </a>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="end_date" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All Status</option>
+                                <option value="sent" {{ 'selected' if status_filter == 'sent' }}>Sent</option>
+                                <option value="in_progress" {{ 'selected' if status_filter == 'in_progress' }}>In Progress</option>
+                                <option value="completed" {{ 'selected' if status_filter == 'completed' }}>Completed</option>
+                                <option value="returned" {{ 'selected' if status_filter == 'returned' }}>Returned</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                            <a href="{{ url_for('reports.jobwork_report') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Job Works Table -->
+            <div class="card">
+                <div class="card-body">
+                    {% if job_works %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Job Number</th>
+                                        <th>Customer</th>
+                                        <th>Item</th>
+                                        <th>Quantity Sent</th>
+                                        <th>Rate</th>
+                                        <th>Total Value</th>
+                                        <th>Sent Date</th>
+                                        <th>Expected Return</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for job in job_works %}
+                                    <tr>
+                                        <td><strong>{{ job.job_number }}</strong></td>
+                                        <td>{{ job.customer.name if job.customer else 'N/A' }}</td>
+                                        <td>{{ job.item.name if job.item else 'N/A' }}</td>
+                                        <td>{{ job.quantity_sent }} {{ job.item.unit_of_measure if job.item else '' }}</td>
+                                        <td>₹{{ "%.2f"|format(job.rate_per_unit) }}</td>
+                                        <td>₹{{ "%.2f"|format(job.quantity_sent * job.rate_per_unit) }}</td>
+                                        <td>{{ job.sent_date.strftime('%d/%m/%Y') if job.sent_date else 'N/A' }}</td>
+                                        <td>{{ job.expected_return.strftime('%d/%m/%Y') if job.expected_return else 'N/A' }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if job.status == 'sent' %}primary{% elif job.status == 'in_progress' %}warning{% elif job.status == 'completed' %}success{% elif job.status == 'returned' %}info{% else %}secondary{% endif %}">
+                                                {{ job.status.title() if job.status else 'Unknown' }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Summary -->
+                        <div class="mt-4">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="card bg-light">
+                                        <div class="card-body text-center">
+                                            <h5>Total Job Works</h5>
+                                            <h3>{{ job_works|length }}</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card bg-light">
+                                        <div class="card-body text-center">
+                                            <h5>Total Value</h5>
+                                            <h3>₹{{ "%.2f"|format(job_works|sum(attribute='quantity_sent')|default(0) * job_works|map(attribute='rate_per_unit')|sum|default(0)) }}</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card bg-light">
+                                        <div class="card-body text-center">
+                                            <h5>Completed</h5>
+                                            <h3>{{ job_works|selectattr('status', 'equalto', 'completed')|list|length }}</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card bg-light">
+                                        <div class="card-body text-center">
+                                            <h5>In Progress</h5>
+                                            <h3>{{ job_works|selectattr('status', 'equalto', 'in_progress')|list|length }}</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No job works found</h5>
+                            <p class="text-muted">Try adjusting your filters or create a new job work order.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

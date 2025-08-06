@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Vouchers - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-receipt"></i> Vouchers</h1>
+            <p class="text-muted">Manage all financial transactions</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('accounting.add_voucher') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> New Voucher
+                </a>
+                <a href="{{ url_for('accounting.add_payment') }}" class="btn btn-success">
+                    <i class="fas fa-money-bill-wave"></i> Payment
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="draft" {{ 'selected' if status_filter == 'draft' }}>Draft</option>
+                        <option value="posted" {{ 'selected' if status_filter == 'posted' }}>Posted</option>
+                        <option value="cancelled" {{ 'selected' if status_filter == 'cancelled' }}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Type</label>
+                    <select name="type" class="form-select">
+                        <option value="">All Types</option>
+                        {% for vt in voucher_types %}
+                        <option value="{{ vt.code }}" {{ 'selected' if voucher_type == vt.code }}>{{ vt.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <div>
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
+                        <a href="{{ url_for('accounting.list_vouchers') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Vouchers Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if vouchers.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Date</th>
+                                <th>Voucher No.</th>
+                                <th>Type</th>
+                                <th>Party</th>
+                                <th>Reference</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Created By</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for voucher in vouchers.items %}
+                            <tr>
+                                <td>{{ voucher.transaction_date.strftime('%d/%m/%Y') }}</td>
+                                <td><strong>{{ voucher.voucher_number }}</strong></td>
+                                <td>
+                                    <span class="badge bg-{{ 'primary' if voucher.voucher_type.code == 'PUR' else 'success' if voucher.voucher_type.code == 'SAL' else 'warning' if voucher.voucher_type.code == 'PAY' else 'info' }}">
+                                        {{ voucher.voucher_type.name }}
+                                    </span>
+                                </td>
+                                <td>{{ voucher.party.name if voucher.party else '-' }}</td>
+                                <td>{{ voucher.reference_number or '-' }}</td>
+                                <td class="text-end">₹{{ "{:,.2f}".format(voucher.total_amount) }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if voucher.status == 'posted' else 'warning' if voucher.status == 'draft' else 'danger' }}">
+                                        {{ voucher.status.title() }}
+                                    </span>
+                                </td>
+                                <td>{{ voucher.creator.username if voucher.creator else '-' }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('accounting.view_voucher', id=voucher.id) }}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if voucher.status == 'draft' %}
+                                        <a href="{{ url_for('accounting.edit_voucher', id=voucher.id) }}" 
+                                           class="btn btn-outline-secondary btn-sm">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <form method="POST" action="{{ url_for('accounting.post_voucher', id=voucher.id) }}" 
+                                              style="display: inline;" onsubmit="return confirm('Post this voucher? This action cannot be undone.')">
+                                            <button type="submit" class="btn btn-outline-success btn-sm">
+                                                <i class="fas fa-check"></i> Post
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if vouchers.pages > 1 %}
+                <nav aria-label="Vouchers pagination" class="mt-3">
+                    <ul class="pagination justify-content-center">
+                        {% if vouchers.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('accounting.list_vouchers', page=vouchers.prev_num, status=status_filter, type=voucher_type) }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in vouchers.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != vouchers.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('accounting.list_vouchers', page=page_num, status=status_filter, type=voucher_type) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if vouchers.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('accounting.list_vouchers', page=vouchers.next_num, status=status_filter, type=voucher_type) }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                    <h4>No Vouchers Found</h4>
+                    <p class="text-muted">Create your first voucher to get started</p>
+                    <a href="{{ url_for('accounting.add_voucher') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create First Voucher
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

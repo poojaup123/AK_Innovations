@@ -1,0 +1,638 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Image - Component Scanning{% endblock %}
+
+{% block head %}
+<style>
+.upload-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.drop-zone {
+    border: 3px dashed #007bff;
+    border-radius: 15px;
+    padding: 60px 20px;
+    text-align: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.drop-zone.dragover {
+    border-color: #0056b3;
+    background: linear-gradient(135deg, #e7f3ff 0%, #cce7ff 100%);
+    transform: scale(1.02);
+}
+
+.drop-zone input[type="file"] {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.upload-icon {
+    font-size: 4rem;
+    color: #007bff;
+    margin-bottom: 20px;
+}
+
+.preview-container {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.preview-image {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.settings-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.confidence-slider {
+    width: 100%;
+}
+
+.process-btn {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    border: none;
+    padding: 12px 30px;
+    font-size: 1.1rem;
+    border-radius: 25px;
+    transition: all 0.3s;
+}
+
+.process-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,123,255,0.3);
+}
+
+.file-info {
+    background: #e7f3ff;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.upload-method-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.upload-method-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.upload-method-card.active {
+    border-color: #007bff;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e7f3ff 100%);
+}
+
+.upload-method-card.active.drawing-method {
+    border-color: #28a745;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e8f5e8 100%);
+}
+
+.select-method-btn {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.upload-method-card.active .select-method-btn {
+    opacity: 1;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="upload-container">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="{{ url_for('component_scanning.dashboard') }}">Component Scanning</a>
+                        </li>
+                        <li class="breadcrumb-item active">Upload Image</li>
+                    </ol>
+                </nav>
+                <h1><i class="fas fa-upload"></i> Upload for Component Detection</h1>
+                <p class="text-muted">Choose your input method for component detection and analysis</p>
+            </div>
+        </div>
+
+        <!-- Upload Method Selection -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card h-100 upload-method-card active" data-method="image" onclick="selectUploadMethod('image')">
+                    <div class="card-body text-center">
+                        <i class="fas fa-camera fa-3x text-primary mb-3"></i>
+                        <h5>Upload Image</h5>
+                        <p class="text-muted">Upload product photos for AI-powered component detection with computer vision</p>
+                        <button type="button" class="btn btn-primary select-method-btn" data-method="image" onclick="selectUploadMethod('image')">
+                            <i class="fas fa-check"></i> Use Image Detection
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100 upload-method-card" data-method="drawing" onclick="selectUploadMethod('drawing')">
+                    <div class="card-body text-center">
+                        <i class="fas fa-drafting-compass fa-3x text-success mb-3"></i>
+                        <h5>Upload Technical Drawing</h5>
+                        <p class="text-muted">Upload CAD files (DXF/DWG/STP) for precise component extraction and specifications</p>
+                        <button type="button" class="btn btn-success select-method-btn" data-method="drawing" onclick="selectUploadMethod('drawing')">
+                            <i class="fas fa-check"></i> Use Drawing Analysis
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Upload Form -->
+        <form id="imageUploadForm" method="POST" enctype="multipart/form-data" style="display: block;">
+            <!-- Upload Area -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="drop-zone" id="dropZone">
+                        <input type="file" name="image" id="imageInput" accept=".png,.jpg,.jpeg,.bmp,.tiff">
+                        <div class="upload-content">
+                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                            <h4>Drop your image here or click to browse</h4>
+                            <p class="text-muted">
+                                Supported formats: PNG, JPG, JPEG, BMP, TIFF<br>
+                                Maximum file size: 16MB
+                            </p>
+                            <button type="button" class="btn btn-primary" onclick="document.getElementById('imageInput').click()">
+                                <i class="fas fa-folder-open"></i> Choose File
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- File Info -->
+                    <div id="fileInfo" class="file-info" style="display: none;">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h6 class="mb-1">Selected File:</h6>
+                                <p class="mb-0" id="fileName"></p>
+                                <small class="text-muted" id="fileSize"></small>
+                            </div>
+                            <div class="col-auto">
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearFile()">
+                                    <i class="fas fa-times"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Image Preview -->
+                    <div id="previewContainer" class="preview-container" style="display: none;">
+                        <img id="imagePreview" class="preview-image" alt="Preview">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detection Settings -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-cog"></i> Detection Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="confidenceThreshold" class="form-label">
+                                Confidence Threshold: <span id="confidenceValue">0.5</span>
+                            </label>
+                            <input type="range" class="form-range confidence-slider" 
+                                   name="confidence_threshold" id="confidenceThreshold" 
+                                   min="0.1" max="0.95" step="0.05" value="0.5">
+                            <div class="d-flex justify-content-between">
+                                <small class="text-muted">Less Strict (0.1)</small>
+                                <small class="text-muted">More Strict (0.95)</small>
+                            </div>
+                            <small class="text-muted">
+                                Lower values detect more objects but may include false positives
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Expected Components</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="screws" checked>
+                                <label class="form-check-label" for="screws">Screws & Fasteners</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="bolts" checked>
+                                <label class="form-check-label" for="bolts">Bolts & Nuts</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="plates" checked>
+                                <label class="form-check-label" for="plates">Plates & Brackets</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="other" checked>
+                                <label class="form-check-label" for="other">Other Components</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary process-btn" id="processBtn" disabled>
+                    <i class="fas fa-magic"></i> Start Component Detection
+                </button>
+                <div class="mt-2">
+                    <small class="text-muted">Processing typically takes 5-15 seconds depending on image complexity</small>
+                </div>
+            </div>
+        </form>
+
+        <!-- Drawing Upload Form -->
+        <form id="drawingUploadForm" method="POST" enctype="multipart/form-data" style="display: none;">
+            <!-- Drawing Upload Area -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="drop-zone" id="drawingDropZone">
+                        <input type="file" name="drawing_file" id="drawingInput" accept=".dxf,.dwg,.stp,.step">
+                        <div class="upload-content">
+                            <i class="fas fa-file-code upload-icon text-success"></i>
+                            <h4>Drop your technical drawing here or click to browse</h4>
+                            <p class="text-muted">
+                                Supported formats: DXF, DWG, STP, STEP<br>
+                                Maximum file size: 50MB
+                            </p>
+                            <button type="button" class="btn btn-success" onclick="document.getElementById('drawingInput').click()">
+                                <i class="fas fa-folder-open"></i> Choose Drawing File
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Drawing File Info -->
+                    <div id="drawingFileInfo" class="file-info" style="display: none;">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h6 class="mb-1">Selected Drawing:</h6>
+                                <p class="mb-0" id="drawingFileName"></p>
+                                <small class="text-muted" id="drawingFileSize"></small>
+                            </div>
+                            <div class="col-auto">
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearDrawingFile()">
+                                    <i class="fas fa-times"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drawing Processing Options -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-cog"></i> Drawing Analysis Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="extractDimensions" checked>
+                                <label class="form-check-label" for="extractDimensions">
+                                    Extract Dimensions
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="extractAnnotations" checked>
+                                <label class="form-check-label" for="extractAnnotations">
+                                    Process Text Annotations
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="extractTitleBlock" checked>
+                                <label class="form-check-label" for="extractTitleBlock">
+                                    Extract Title Block Information
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Expected Drawing Scale</label>
+                            <select class="form-select" name="drawing_scale">
+                                <option value="auto">Auto-detect</option>
+                                <option value="1:1">1:1 (Full Scale)</option>
+                                <option value="1:2">1:2 (Half Scale)</option>
+                                <option value="1:5">1:5</option>
+                                <option value="1:10">1:10</option>
+                                <option value="2:1">2:1 (Double Scale)</option>
+                            </select>
+                            <small class="text-muted">Scale affects dimension calculations</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Process Drawing Button -->
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-success btn-lg process-btn" id="processDrawingBtn" disabled>
+                    <i class="fas fa-cog fa-spin" style="display: none;"></i>
+                    <i class="fas fa-search"></i>
+                    Analyze Technical Drawing
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Processing Modal -->
+<div class="modal fade" id="processingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center p-4">
+                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+                <h5 id="processingTitle">Processing Image...</h5>
+                <p class="text-muted" id="processingDescription">AI is analyzing your image and detecting components</p>
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('imageInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const previewContainer = document.getElementById('previewContainer');
+    const imagePreview = document.getElementById('imagePreview');
+    const processBtn = document.getElementById('processBtn');
+    const confidenceSlider = document.getElementById('confidenceThreshold');
+    const confidenceValue = document.getElementById('confidenceValue');
+    const uploadForm = document.getElementById('uploadForm');
+
+    // Confidence slider
+    confidenceSlider.addEventListener('input', function() {
+        confidenceValue.textContent = this.value;
+    });
+
+    // Drag and drop functionality
+    dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFileSelect(files[0]);
+        }
+    });
+
+    // File input change
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+        }
+    });
+
+    function handleFileSelect(file) {
+        // Validate file
+        const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/bmp', 'image/tiff'];
+        if (!allowedTypes.includes(file.type)) {
+            alert('Please select a valid image file (PNG, JPG, JPEG, BMP, TIFF)');
+            return;
+        }
+
+        const maxSize = 16 * 1024 * 1024; // 16MB
+        if (file.size > maxSize) {
+            alert('File size must be less than 16MB');
+            return;
+        }
+
+        // Update file info
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = formatFileSize(file.size);
+        fileInfo.style.display = 'block';
+
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            imagePreview.src = e.target.result;
+            previewContainer.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+
+        // Enable process button
+        processBtn.disabled = false;
+    }
+
+    function clearFile() {
+        fileInput.value = '';
+        fileInfo.style.display = 'none';
+        previewContainer.style.display = 'none';
+        processBtn.disabled = true;
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Make functions global
+    window.clearFile = clearFile;
+    window.formatFileSize = formatFileSize;
+    window.handleFileSelect = handleFileSelect;
+
+    // Method selection functionality
+    document.querySelectorAll('.select-method-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const method = this.dataset.method;
+            selectUploadMethod(method);
+        });
+    });
+    
+    // Handle method card clicks
+    document.querySelectorAll('.upload-method-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const method = this.dataset.method;
+            selectUploadMethod(method);
+        });
+    });
+    
+    // Drawing file handling
+    const drawingInput = document.getElementById('drawingInput');
+    const drawingDropZone = document.getElementById('drawingDropZone');
+    
+    if (drawingInput && drawingDropZone) {
+        drawingInput.addEventListener('change', handleDrawingFileSelect);
+        
+        // Drawing drop zone events
+        drawingDropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+        
+        drawingDropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+        
+        drawingDropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                drawingInput.files = files;
+                handleDrawingFileSelect();
+            }
+        });
+    }
+});
+
+window.selectUploadMethod = function(method) {
+    // Update card appearance
+    document.querySelectorAll('.upload-method-card').forEach(card => {
+        card.classList.remove('active');
+        if (card.dataset.method === method && method === 'drawing') {
+            card.classList.add('drawing-method');
+        }
+    });
+    
+    document.querySelector(`[data-method="${method}"]`).classList.add('active');
+    
+    // Show/hide forms
+    const imageForm = document.getElementById('imageUploadForm');
+    const drawingForm = document.getElementById('drawingUploadForm');
+    
+    if (method === 'image') {
+        imageForm.style.display = 'block';
+        drawingForm.style.display = 'none';
+    } else if (method === 'drawing') {
+        imageForm.style.display = 'none';
+        drawingForm.style.display = 'block';
+    }
+};
+
+window.handleDrawingFileSelect = function() {
+    const input = document.getElementById('drawingInput');
+    const fileInfo = document.getElementById('drawingFileInfo');
+    const fileName = document.getElementById('drawingFileName');
+    const fileSize = document.getElementById('drawingFileSize');
+    const processBtn = document.getElementById('processDrawingBtn');
+    
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        fileName.textContent = file.name;
+        fileSize.textContent = window.formatFileSize(file.size);
+        fileInfo.style.display = 'block';
+        processBtn.disabled = false;
+    }
+};
+
+// Drawing form submission - moved inside main DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+    const drawingForm = document.getElementById('drawingUploadForm');
+    const imageForm = document.getElementById('imageUploadForm');
+    
+    // Drawing form handling
+    if (drawingForm) {
+        drawingForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const modal = new bootstrap.Modal(document.getElementById('processingModal'));
+            
+            // Update modal for drawing processing
+            document.getElementById('processingTitle').textContent = 'Processing Technical Drawing...';
+            document.getElementById('processingDescription').textContent = 'Analyzing CAD file and extracting component specifications';
+            
+            modal.show();
+            
+            fetch('/component-scanning/upload-drawing', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                modal.hide();
+                if (data.success) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                modal.hide();
+                console.error('Error:', error);
+                alert('An error occurred while processing the drawing');
+            });
+        });
+    }
+    
+    // Image form handling
+    if (imageForm) {
+        imageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show processing modal
+            const modal = new bootstrap.Modal(document.getElementById('processingModal'));
+            modal.show();
+        
+            // Submit form
+            this.submit();
+        });
+    }
+});
+
+// Make functions globally accessible
+window.clearFile = function() {
+    const fileInput = document.getElementById('imageInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const previewContainer = document.getElementById('previewContainer');
+    const processBtn = document.getElementById('processBtn');
+    
+    fileInput.value = '';
+    fileInfo.style.display = 'none';
+    previewContainer.style.display = 'none';
+    processBtn.disabled = true;
+};
+
+window.clearDrawingFile = function() {
+    const input = document.getElementById('drawingInput');
+    const fileInfo = document.getElementById('drawingFileInfo');
+    const processBtn = document.getElementById('processDrawingBtn');
+    
+    input.value = '';
+    fileInfo.style.display = 'none';
+    processBtn.disabled = true;
+};
+</script>
+{% endblock %}

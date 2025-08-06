@@ -1,0 +1,152 @@
+To clean your codebase and remove all unused, outdated, and duplicated sections (especially since you’ve changed things many times), here’s a **step-by-step strategy** that works well for Flask-based factory apps like yours:
+
+---
+
+## ✅ Step-by-Step Codebase Cleanup Plan
+
+### 🧹 1. **Backup First**
+
+* Create a full backup of your current project (zip or `git branch`).
+* Don’t skip this — just in case something breaks during cleanup.
+
+---
+
+### 📁 2. **Audit Project Structure**
+
+Check for these common clutter areas:
+
+| Folder       | What to check                                               |
+| ------------ | ----------------------------------------------------------- |
+| `templates/` | Duplicated or outdated HTML files                           |
+| `routes/`    | Old route files (like `old_inventory.py`, `test_routes.py`) |
+| `models/`    | Models not connected to any table or blueprint              |
+| `static/`    | Unused CSS, JS, image files                                 |
+| Root folder  | Scripts like `create_sample_xxx.py`, unused CLI files       |
+
+---
+
+### 🔍 3. **Find Unused Code Automatically**
+
+Use tools to detect unused Python code:
+
+```bash
+# Install cleanup tools
+pip install vulture autoflake isort
+
+# Find unused functions, imports, variables
+vulture . > unused_report.txt
+```
+
+This will give you a list of unused:
+
+* Functions
+* Classes
+* Variables
+* Files
+
+---
+
+### 🧼 4. **Remove or Archive Legacy Blueprints**
+
+Inside your `app.py` or blueprint registration, look for things like:
+
+```python
+from routes import old_hr, old_inventory, test_routes
+```
+
+👉 **Delete or archive** those if not used.
+
+Also:
+
+* Search `app.register_blueprint(` to find unused ones.
+* Comment and test before deleting permanently.
+
+---
+
+### 🗂️ 5. **Organize Folder Structure Properly**
+
+Use a modern layout like:
+
+```
+your_app/
+├── app.py
+├── config.py
+├── static/
+│   ├── css/
+│   ├── js/
+│   └── images/
+├── templates/
+│   ├── layout.html
+│   ├── dashboard.html
+│   ├── includes/
+├── routes/
+│   ├── __init__.py
+│   ├── inventory.py
+│   ├── production.py
+│   └── accounting.py
+├── models/
+│   ├── __init__.py
+│   ├── inventory_models.py
+│   ├── production_models.py
+├── services/
+│   ├── batch_management.py
+│   ├── grn_automation.py
+│   └── accounting_automation.py
+└── utils/
+    └── helpers.py
+```
+
+---
+
+### 🧠 6. **Check for Duplicate Templates**
+
+Search for similar files like:
+
+* `dashboard.html` vs `dashboard_old.html`
+* `edit_item.html`, `edit_item2.html`, `edit_item_new.html`
+
+✅ Keep only the ones actually linked in your routes.
+
+---
+
+### 🔎 7. **Search for Orphan Models**
+
+Open `models.py` and verify:
+
+* Are all models being used in views/services?
+* Do they show up in the database?
+* You can comment them temporarily and check if app breaks.
+
+---
+
+### 🧪 8. **Run & Test**
+
+After cleaning:
+
+* Restart the app
+* Visit each section (Dashboard, Inventory, Production, etc.)
+* Check console for missing imports, 404 templates, or Jinja errors
+
+---
+
+## 🧰 Tools You Can Use
+
+| Tool                    | Use                                    |
+| ----------------------- | -------------------------------------- |
+| `vulture`               | Find unused Python code                |
+| `isort`                 | Organize imports                       |
+| `autoflake`             | Remove unused imports/vars             |
+| `grep` or VSCode Search | Find orphan templates/scripts manually |
+
+---
+
+## 🧼 Want Me to Help You Clean It?
+
+If you:
+
+* Upload your full folder tree (`ls -R` or screenshot)
+* OR show me your current `routes/`, `templates/`, and `models/` folders
+
+👉 I can **generate a cleanup checklist** for you in 1 go.
+
+Let me know — and I’ll help you refactor and clean it with zero impact on working modules.

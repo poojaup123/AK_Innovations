@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-edit"></i> {{ title }}</h1>
+            <p class="text-muted">Update progress for {{ process.process_name }} process</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('multi_process_jobwork.detail', id=process.job_work_id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Job Work
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Process Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-info-circle"></i> Process Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Process:</strong>
+                            <br><span class="badge {{ process.process_badge_class }}">{{ process.process_name }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Sequence:</strong>
+                            <br><span class="badge bg-info">{{ process.sequence_number }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Input Quantity:</strong>
+                            <br>{{ process.quantity_input }} pcs
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Current Status:</strong>
+                            <br><span class="badge {{ process.status_badge_class }}">{{ process.status.replace('_', ' ').title() }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <strong>Work Type:</strong>
+                            {% if process.work_type == 'outsourced' %}
+                                <span class="badge bg-warning">Outsourced</span>
+                                <br><small class="text-muted">Vendor: {{ process.customer_name or 'Not assigned' }}</small>
+                            {% else %}
+                                <span class="badge bg-info">In-House</span>
+                                <br><small class="text-muted">Department: {{ process.department or 'Not assigned' }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Current Progress:</strong>
+                            <div class="progress mt-1" style="height: 20px;">
+                                {% set progress_pct = process.completion_percentage %}
+                                <div class="progress-bar {% if progress_pct == 100 %}bg-success{% elif progress_pct > 0 %}bg-primary{% else %}bg-secondary{% endif %}" 
+                                     role="progressbar" 
+                                     style="width: {{ progress_pct }}%" 
+                                     aria-valuenow="{{ progress_pct }}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    {{ "%.0f"|format(progress_pct) }}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Progress Update Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-tasks"></i> Update Process Progress</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-4 mb-3">
+                                {{ form.quantity_output.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.quantity_output(class="form-control", onchange="updateProgress()") }}
+                                    <span class="input-group-text">pcs</span>
+                                </div>
+                                {% if form.quantity_output.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quantity_output.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Maximum: {{ process.quantity_input }} pcs</small>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.quantity_scrap.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.quantity_scrap(class="form-control", onchange="updateProgress()") }}
+                                    <span class="input-group-text">kg</span>
+                                </div>
+                                {% if form.quantity_scrap.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quantity_scrap.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Waste/defective weight in kg</small>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.status.label(class="form-label") }}
+                                {{ form.status(class="form-select", onchange="toggleCompletionDate()") }}
+                                {% if form.status.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.status.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3" id="completion-date-field" style="display: none;">
+                                {{ form.actual_completion.label(class="form-label") }}
+                                {{ form.actual_completion(class="form-control") }}
+                                {% if form.actual_completion.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.actual_completion.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12 mb-3">
+                                {{ form.notes.label(class="form-label") }}
+                                {{ form.notes(class="form-control") }}
+                                {% if form.notes.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.notes.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Progress Summary -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title"><i class="fas fa-chart-line"></i> Progress Summary</h6>
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-bold">Input Quantity:</label>
+                                                <div class="fs-6 fw-bold text-info">{{ process.quantity_input }} pcs</div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-bold">Output + Scrap:</label>
+                                                <div id="total-processed" class="fs-6 fw-bold text-warning">
+                                                    {{ (process.quantity_output or 0) + (process.quantity_scrap or 0) }} pcs
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-bold">Remaining:</label>
+                                                <div id="remaining-quantity" class="fs-6 fw-bold text-primary">
+                                                    {{ process.quantity_input - ((process.quantity_output or 0) + (process.quantity_scrap or 0)) }} pcs
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-bold">Progress:</label>
+                                                <div id="progress-percentage" class="fs-5 fw-bold text-success">
+                                                    {{ "%.1f"|format(process.completion_percentage) }}%
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle"></i> 
+                                                Progress = (Output + Scrap) ÷ Input × 100
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('multi_process_jobwork.detail', id=process.job_work_id) }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Progress
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Process Update Form JavaScript
+const inputQuantity = {{ process.quantity_input }};
+
+function updateProgress() {
+    const outputQty = parseFloat(document.getElementById('quantity_output').value) || 0;
+    const scrapQty = parseFloat(document.getElementById('quantity_scrap').value) || 0;
+    const totalProcessed = outputQty + scrapQty;
+    const remaining = inputQuantity - totalProcessed;
+    const progressPct = (totalProcessed / inputQuantity) * 100;
+    
+    document.getElementById('total-processed').textContent = `${totalProcessed} pcs`;
+    document.getElementById('remaining-quantity').textContent = `${remaining} pcs`;
+    document.getElementById('progress-percentage').textContent = `${progressPct.toFixed(1)}%`;
+    
+    // Validation
+    if (totalProcessed > inputQuantity) {
+        document.getElementById('total-processed').style.color = 'red';
+        document.getElementById('remaining-quantity').style.color = 'red';
+    } else {
+        document.getElementById('total-processed').style.color = '';
+        document.getElementById('remaining-quantity').style.color = '';
+    }
+}
+
+function toggleCompletionDate() {
+    const status = document.getElementById('status').value;
+    const completionField = document.getElementById('completion-date-field');
+    
+    if (status === 'completed') {
+        completionField.style.display = 'block';
+        // Set today's date as default
+        if (!document.getElementById('actual_completion').value) {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('actual_completion').value = today;
+        }
+    } else {
+        completionField.style.display = 'none';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateProgress();
+    toggleCompletionDate();
+});
+</script>
+{% endblock %}

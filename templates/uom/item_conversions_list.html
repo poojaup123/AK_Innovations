@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Item Conversions - AK Innovations Factory{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('uom.dashboard') }}">UOM Management</a></li>
+                    <li class="breadcrumb-item active">Item Conversions</li>
+                </ol>
+            </nav>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-cog"></i> Item-Specific Conversions</h2>
+                    <p class="text-muted">Configure how each item is bought, stored, and sold</p>
+                </div>
+                <a href="{{ url_for('uom.add_item_conversion') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Configure Item
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> Configured Items</h5>
+                </div>
+                <div class="card-body">
+                    {% if item_conversions %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Purchase Unit</th>
+                                    <th>Inventory Unit</th>
+                                    <th>Sale Unit</th>
+                                    <th>Conversion Path</th>
+                                    <th>Weight Info</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for conversion in item_conversions %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ conversion.item.name }}</strong>
+                                        <br><small class="text-muted">{{ conversion.item.code }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ conversion.purchase_unit.symbol }}</span>
+                                        <br><small>{{ conversion.purchase_unit.name }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ conversion.inventory_unit.symbol }}</span>
+                                        <br><small>{{ conversion.inventory_unit.name }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ conversion.sale_unit.symbol }}</span>
+                                        <br><small>{{ conversion.sale_unit.name }}</small>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            Purchase → Inventory: ×{{ conversion.purchase_to_inventory }}<br>
+                                            Inventory → Sale: ×{{ conversion.inventory_to_sale }}<br>
+                                            <strong>Purchase → Sale: ×{{ conversion.purchase_to_sale }}</strong>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if conversion.weight_per_piece %}
+                                            <small>
+                                                {{ conversion.weight_per_piece }} Kg/piece<br>
+                                                {{ conversion.pieces_per_kg }} pieces/Kg
+                                            </small>
+                                        {% else %}
+                                            <small class="text-muted">Not configured</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('uom.edit_item_conversion', conversion_id=conversion.id) }}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-cog fa-3x text-muted mb-3"></i>
+                        <h5>No Item Conversions Configured</h5>
+                        <p class="text-muted">Configure how your items are bought, stored, and sold in different units.</p>
+                        <a href="{{ url_for('uom.add_item_conversion') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Configure First Item
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

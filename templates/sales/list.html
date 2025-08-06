@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Sales Orders - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-chart-line"></i> Sales Orders</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('sales.add_sales_order') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Sales Order
+            </a>
+        </div>
+    </div>
+
+    <!-- Enhanced Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-filter"></i> Filters & Search</h6>
+                </div>
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-2">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="draft" {{ 'selected' if status_filter == 'draft' }}>Draft</option>
+                                <option value="confirmed" {{ 'selected' if status_filter == 'confirmed' }}>Confirmed</option>
+                                <option value="delivered" {{ 'selected' if status_filter == 'delivered' }}>Delivered</option>
+                                <option value="cancelled" {{ 'selected' if status_filter == 'cancelled' }}>Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Customer</label>
+                            <select name="customer" class="form-select">
+                                <option value="">All Customers</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.id }}" {{ 'selected' if customer_filter|string == customer.id|string }}>
+                                    {{ customer.name[:20] }}{{ '...' if customer.name|length > 20 else '' }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">From Date</label>
+                            <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">To Date</label>
+                            <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Search</label>
+                            <input type="text" name="search" class="form-control" placeholder="SO Number..." value="{{ search_term }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Filter
+                                </button>
+                                <a href="{{ url_for('sales.list_sales_orders') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Info -->
+    <div class="row mb-3">
+        <div class="col-md-12 text-end">
+            {% if sos.items %}
+            <span class="badge bg-info">{{ sos.total }} SO(s) found</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sales Orders Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if sos.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>SO Number</th>
+                                <th>Customer</th>
+                                <th>Order Date</th>
+                                <th>Delivery Date</th>
+                                <th>Status</th>
+                                <th>Total Amount</th>
+                                <th>Created By</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for so in sos.items %}
+                            <tr>
+                                <td><strong>{{ so.so_number }}</strong></td>
+                                <td>{{ so.customer.name }}</td>
+                                <td>{{ so.order_date.strftime('%m/%d/%Y') }}</td>
+                                <td>{{ so.delivery_date.strftime('%m/%d/%Y') if so.delivery_date else '-' }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if so.status == 'completed' else 'warning' if so.status == 'partial' else 'danger' if so.status == 'cancelled' else 'primary' }}">
+                                        {{ so.status.title() }}
+                                    </span>
+                                </td>
+                                <td>₹{{ so.total_amount }}</td>
+                                <td>{{ so.creator.username }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('sales.edit_sales_order', id=so.id) }}" class="btn btn-outline-primary btn-sm" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ url_for('documents.upload_document', transaction_type='sales_order', transaction_id=so.id) }}" class="btn btn-outline-warning btn-sm" title="Upload Documents">
+                                            <i class="fas fa-paperclip"></i>
+                                        </a>
+                                        {% if current_user.role == 'admin' %}
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="Change Status">
+                                                <i class="fas fa-exchange-alt"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                {% if so.status != 'draft' %}
+                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="changeSoStatus({{ so.id }}, 'draft')">
+                                                    <span class="badge bg-secondary me-2">Draft</span> Set as Draft
+                                                </a></li>
+                                                {% endif %}
+                                                {% if so.status != 'pending' %}
+                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="changeSoStatus({{ so.id }}, 'pending')">
+                                                    <span class="badge bg-warning me-2">Pending</span> Set as Pending
+                                                </a></li>
+                                                {% endif %}
+                                                {% if so.status != 'confirmed' %}
+                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="changeSoStatus({{ so.id }}, 'confirmed')">
+                                                    <span class="badge bg-primary me-2">Confirmed</span> Set as Confirmed
+                                                </a></li>
+                                                {% endif %}
+                                                {% if so.status != 'shipped' %}
+                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="changeSoStatus({{ so.id }}, 'shipped')">
+                                                    <span class="badge bg-info me-2">Shipped</span> Set as Shipped
+                                                </a></li>
+                                                {% endif %}
+                                                {% if so.status != 'delivered' %}
+                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="changeSoStatus({{ so.id }}, 'delivered')">
+                                                    <span class="badge bg-success me-2">Delivered</span> Set as Delivered
+                                                </a></li>
+                                                {% endif %}
+                                                {% if so.status != 'cancelled' %}
+                                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="changeSoStatus({{ so.id }}, 'cancelled')">
+                                                    <span class="badge bg-danger me-2">Cancelled</span> Set as Cancelled
+                                                </a></li>
+                                                {% endif %}
+                                            </ul>
+                                        </div>
+                                        {% endif %}
+                                        <a href="{{ url_for('sales.delete_sales_order', id=so.id) }}" class="btn btn-outline-danger btn-sm" 
+                                           onclick="return confirm('Are you sure you want to delete this sales order?')" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if sos.pages > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        {% if sos.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('sales.list_sales_orders', page=sos.prev_num, status=status_filter) }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in sos.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != sos.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('sales.list_sales_orders', page=page_num, status=status_filter) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if sos.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('sales.list_sales_orders', page=sos.next_num, status=status_filter) }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                    <h5>No sales orders found</h5>
+                    <p class="text-muted">Start by creating your first sales order.</p>
+                    <a href="{{ url_for('sales.add_sales_order') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create First SO
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function changeSoStatus(soId, newStatus) {
+    if (confirm(`Are you sure you want to change the status to "${newStatus.toUpperCase()}"?`)) {
+        const formData = new FormData();
+        formData.append('status', newStatus);
+        
+        fetch(`/sales/change_status/${soId}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message and reload page
+                alert(data.message);
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error changing status');
+        });
+    }
+}
+</script>
+{% endblock %}

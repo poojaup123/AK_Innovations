@@ -1,0 +1,139 @@
+Great question. Now that your app has **batch-wise inventory tracking**, the **production module** becomes smarter, more traceable, and better integrated.
+
+Let’s break it down step-by-step to explain **how production will work now**:
+
+---
+
+## 🏭 **Production Flow with Batch-Wise Inventory**
+
+### 📘 Use Case:
+
+You're producing **Mounted Plate (ITEM-0001)** using **Ms Sheet (ITEM-0002)** in batches.
+
+---
+
+## ✅ Step-by-Step Flow
+
+### 🔹 **Step 1: Create Production Order**
+
+Fields:
+
+* Production ID: `PRD-0001`
+* Product to produce: `Mounted Plate`
+* Quantity to produce: `500 pcs`
+* Expected Scrap: `5%`
+* Production Date: `01-08-2025`
+* BOM: Auto fetched (if selected)
+* Department / In-house team
+* Target Completion Date
+
+---
+
+### 🔹 **Step 2: Select Raw Material Input**
+
+From BOM, the system auto fetches required raw materials and their quantity based on UOM and batch.
+
+Example:
+
+* BOM requires 1 sheet = 10 pcs.
+* You want to make 500 pcs → need 50 sheets.
+
+You select from available batches:
+
+| Batch ID | Item     | Qty Available | Select Qty |
+| -------- | -------- | ------------- | ---------- |
+| MS-001   | Ms Sheet | 78 sheets     | 50 sheets  |
+
+System logs that **MS-001** batch is used.
+
+---
+
+### 🔹 **Step 3: Reserve & Consume Raw Material**
+
+* Deduct 50 sheets from batch `MS-001`.
+* Mark them as **WIP** under this production.
+* Move from `Raw → WIP`.
+
+📌 **Inventory Log Entry**
+
+* `txn_type`: Production Consumption
+* `from_state`: Raw
+* `to_state`: WIP
+* `ref_doc`: `PRD-0001`
+
+---
+
+### 🔹 **Step 4: Complete Production**
+
+Once production is done:
+
+* Enter output quantity: `490 pcs`
+* Scrap: `10 pcs` (optional field)
+* Select Output UOM: pcs
+* Assign Finished Batch ID: `FG-001`
+
+📌 Actions:
+
+* Create **new batch**: `FG-001`
+* Quantity: 490 pcs
+* Location: `Finished Store`
+* Move from WIP → Finished
+* Scrap quantity added to Scrap state
+
+📌 **Inventory Log Entry**
+
+* `txn_type`: Production Complete
+* `to_state`: Finished
+* `ref_doc`: `PRD-0001`
+
+📌 **Scrap Log Entry**
+
+* Batch: `MS-001`
+* Qty: 10 pcs
+* Scrap Reason: e.g., Defective Cutting
+
+---
+
+### 🔹 **Step 5: Update Inventory Dashboard**
+
+Automatically:
+
+* Raw Material: -50 from `MS-001`
+* WIP: -50
+* Finished: +490 (FG-001)
+* Scrap: +10
+
+---
+
+### 🗂 Batch Table Update
+
+| Batch ID | Item          | Qty | State    | Source   |
+| -------- | ------------- | --- | -------- | -------- |
+| MS-001   | Ms Sheet      | 28  | Raw      | GRN-0001 |
+| FG-001   | Mounted Plate | 490 | Finished | PRD-0001 |
+| SCRP-001 | Ms Sheet      | 10  | Scrap    | PRD-0001 |
+
+---
+
+## 🎯 Benefits of This Flow
+
+✅ Batch-wise traceability
+✅ Scrap and yield analysis
+✅ WIP tracking per production
+✅ Auto updates to multi-state inventory
+✅ Can track rework, QC, delay, and costing
+✅ Enables accurate inventory valuation
+
+---
+
+## 📌 Optional Advanced Features (Future Scope)
+
+* Add **QC Status** per finished batch
+* Assign **operator/labor** for performance tracking
+* **Auto BOM-based material suggestions**
+* **Production Costing**: Labor + material = item rate
+* **Process-wise production routing**
+
+---
+
+Would you like me to show a **Production Form UI wireframe** for this flow too?

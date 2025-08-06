@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Invoice Details - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-file-invoice"></i> Invoice Details</h1>
+            <p class="text-muted">View vendor invoice information and payment status</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('grn_workflow.list_invoices') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Invoices
+            </a>
+            {% if invoice and invoice.status != 'paid' %}
+                <a href="#" class="btn btn-success" onclick="alert('Payment recording feature coming soon!')">
+                    <i class="fas fa-money-bill"></i> Record Payment
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if invoice %}
+    <!-- Invoice Header Card -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5><i class="fas fa-file-invoice"></i> Invoice {{ invoice.invoice_number }}</h5>
+                </div>
+                <div class="col-auto">
+                    {% if invoice.status == 'draft' %}
+                        <span class="badge bg-secondary fs-6">Draft</span>
+                    {% elif invoice.status == 'pending' %}
+                        <span class="badge bg-warning fs-6">Pending Payment</span>
+                    {% elif invoice.status == 'paid' %}
+                        <span class="badge bg-success fs-6">Paid</span>
+                    {% elif invoice.status == 'overdue' %}
+                        <span class="badge bg-danger fs-6">Overdue</span>
+                    {% else %}
+                        <span class="badge bg-light text-dark fs-6">{{ invoice.status|title }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="text-muted">Vendor Information</h6>
+                    <p class="mb-1"><strong>{{ invoice.vendor.name if invoice.vendor else 'Unknown Vendor' }}</strong></p>
+                    <p class="mb-1">{{ invoice.vendor.address if invoice.vendor and invoice.vendor.address else 'Address not available' }}</p>
+                    <p class="mb-1">{{ invoice.vendor.phone if invoice.vendor and invoice.vendor.phone else 'Phone not available' }}</p>
+                    <p class="mb-0">{{ invoice.vendor.email if invoice.vendor and invoice.vendor.email else 'Email not available' }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-muted">Invoice Details</h6>
+                    <div class="row mb-1">
+                        <div class="col-4"><strong>Invoice Date:</strong></div>
+                        <div class="col-8">{{ invoice.invoice_date.strftime('%d-%m-%Y') if invoice.invoice_date else 'Not set' }}</div>
+                    </div>
+                    <div class="row mb-1">
+                        <div class="col-4"><strong>Due Date:</strong></div>
+                        <div class="col-8">{{ invoice.due_date.strftime('%d-%m-%Y') if invoice.due_date else 'Not set' }}</div>
+                    </div>
+                    <div class="row mb-1">
+                        <div class="col-4"><strong>Created:</strong></div>
+                        <div class="col-8">{{ invoice.created_at.strftime('%d-%m-%Y %H:%M') if invoice.created_at else 'Unknown' }}</div>
+                    </div>
+                    <div class="row mb-0">
+                        <div class="col-4"><strong>Updated:</strong></div>
+                        <div class="col-8">{{ invoice.updated_at.strftime('%d-%m-%Y %H:%M') if invoice.updated_at else 'Never' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Amount Summary -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4>₹{{ "%.2f"|format(invoice.base_amount) }}</h4>
+                    <small>Base Amount</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-secondary text-white">
+                <div class="card-body text-center">
+                    <h4>₹{{ "%.2f"|format(invoice.gst_amount) }}</h4>
+                    <small>GST Amount</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4>₹{{ "%.2f"|format(invoice.total_amount) }}</h4>
+                    <small>Total Amount</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card {% if invoice.outstanding_amount > 0 %}bg-warning{% else %}bg-success{% endif %} text-white">
+                <div class="card-body text-center">
+                    <h4>₹{{ "%.2f"|format(invoice.outstanding_amount) }}</h4>
+                    <small>Outstanding</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Items/GRN Links -->
+    {% if invoice.grn_links %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5><i class="fas fa-link"></i> Linked GRNs</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>GRN Number</th>
+                            <th>GRN Date</th>
+                            <th>GRN Amount</th>
+                            <th>Allocated Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for link in invoice.grn_links %}
+                        <tr>
+                            <td><strong>{{ link.grn.grn_number if link.grn else 'N/A' }}</strong></td>
+                            <td>{{ link.grn.created_at.strftime('%d-%m-%Y') if link.grn and link.grn.created_at else 'N/A' }}</td>
+                            <td class="text-end">
+                                {% if link.grn and link.grn.line_items %}
+                                    {% set grn_total = link.grn.line_items|sum(attribute='quantity_received')|float * (link.grn.line_items|first).rate_per_unit|float %}
+                                    ₹{{ "%.2f"|format(grn_total) }}
+                                {% else %}
+                                    ₹0.00
+                                {% endif %}
+                            </td>
+                            <td class="text-end">₹{{ "%.2f"|format(link.allocated_amount) }}</td>
+                            <td>
+                                {% if link.allocated_amount > 0 %}
+                                    <span class="badge bg-success">Linked</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Payment History -->
+    {% if invoice.payments %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5><i class="fas fa-money-bill"></i> Payment History</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Payment Date</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Reference</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in invoice.payments %}
+                        <tr>
+                            <td>{{ payment.payment_date.strftime('%d-%m-%Y') if payment.payment_date else 'N/A' }}</td>
+                            <td class="text-end">₹{{ "%.2f"|format(payment.amount) }}</td>
+                            <td>{{ payment.payment_method if payment.payment_method else 'N/A' }}</td>
+                            <td>{{ payment.reference_number if payment.reference_number else 'N/A' }}</td>
+                            <td>
+                                {% if payment.status == 'completed' %}
+                                    <span class="badge bg-success">Completed</span>
+                                {% elif payment.status == 'pending' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ payment.status|title }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Additional Information -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-info-circle"></i> Additional Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Other Charges</h6>
+                    <div class="row mb-2">
+                        <div class="col-6">Freight:</div>
+                        <div class="col-6 text-end">₹{{ "%.2f"|format(invoice.freight_amount) }}</div>
+                    </div>
+                    <div class="row mb-0">
+                        <div class="col-6">Other Charges:</div>
+                        <div class="col-6 text-end">₹{{ "%.2f"|format(invoice.other_charges) }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6>Notes</h6>
+                    <p class="text-muted">
+                        {{ invoice.notes if invoice.notes else 'No additional notes available.' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Invoice Not Found -->
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+            <h4>Invoice Not Found</h4>
+            <p class="text-muted">The requested invoice could not be found or has been deleted.</p>
+            <a href="{{ url_for('grn_workflow.list_invoices') }}" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> Back to Invoices
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

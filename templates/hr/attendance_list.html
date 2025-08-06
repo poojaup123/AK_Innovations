@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Employee Attendance{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header Section -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-calendar-check me-2"></i>Employee Attendance</h2>
+                    <p class="text-muted mb-0">Track employee attendance, working hours, and leave records</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('hr.add_attendance') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Mark Attendance
+                    </a>
+                    <a href="{{ url_for('hr.bulk_attendance') }}" class="btn btn-warning">
+                        <i class="fas fa-users-cog me-1"></i>Bulk Attendance
+                    </a>
+                    <a href="{{ url_for('hr.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to HR
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filters Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filter Attendance Records</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('hr.attendance_list') }}">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label for="employee_id" class="form-label">Employee</label>
+                                <select name="employee_id" id="employee_id" class="form-select">
+                                    <option value="">All Employees</option>
+                                    {% for emp in employees %}
+                                        <option value="{{ emp.id }}" {% if employee_id == emp.id %}selected{% endif %}>
+                                            {{ emp.name }} ({{ emp.employee_code }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="date_from" class="form-label">From Date</label>
+                                <input type="date" name="date_from" id="date_from" class="form-control" value="{{ date_from }}">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="date_to" class="form-label">To Date</label>
+                                <input type="date" name="date_to" id="date_to" class="form-control" value="{{ date_to }}">
+                            </div>
+                            <div class="col-md-2">
+                                <label for="status" class="form-label">Status</label>
+                                <select name="status" id="status" class="form-select">
+                                    <option value="">All Status</option>
+                                    <option value="present" {% if status == 'present' %}selected{% endif %}>Present</option>
+                                    <option value="absent" {% if status == 'absent' %}selected{% endif %}>Absent</option>
+                                    <option value="late" {% if status == 'late' %}selected{% endif %}>Late</option>
+                                    <option value="half_day" {% if status == 'half_day' %}selected{% endif %}>Half Day</option>
+                                    <option value="leave" {% if status == 'leave' %}selected{% endif %}>On Leave</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <div class="btn-group w-100">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search me-1"></i>Filter
+                                    </button>
+                                    <a href="{{ url_for('hr.attendance_list') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times me-1"></i>Clear
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Attendance Records -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Attendance Records
+                        <span class="badge bg-primary ms-2">{{ attendance_records.total }} records</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if attendance_records.items %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="min-width: 120px;">Date</th>
+                                        <th style="min-width: 150px;">Employee</th>
+                                        <th style="min-width: 100px;">Check-in</th>
+                                        <th style="min-width: 100px;">Check-out</th>
+                                        <th style="min-width: 80px;">Hours</th>
+                                        <th style="min-width: 80px;">Overtime</th>
+                                        <th style="min-width: 100px;">Status</th>
+                                        <th style="min-width: 120px;">Leave Type</th>
+                                        <th style="min-width: 100px;">Marked By</th>
+                                        <th style="min-width: 120px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in attendance_records.items %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ record.attendance_date.strftime('%d %b %Y') }}</strong><br>
+                                            <small class="text-muted">{{ record.attendance_date.strftime('%A') }}</small>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong>{{ record.employee.name }}</strong><br>
+                                                <small class="text-muted">{{ record.employee.employee_code }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if record.check_in_time %}
+                                                <span class="text-success">
+                                                    <i class="fas fa-sign-in-alt me-1"></i>
+                                                    {{ record.check_in_time.strftime('%H:%M') }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">--:--</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if record.check_out_time %}
+                                                <span class="text-danger">
+                                                    <i class="fas fa-sign-out-alt me-1"></i>
+                                                    {{ record.check_out_time.strftime('%H:%M') }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">--:--</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if record.hours_worked %}
+                                                <span class="badge bg-info">{{ "%.1f"|format(record.hours_worked) }}h</span>
+                                            {% else %}
+                                                <span class="text-muted">0h</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if record.overtime_hours and record.overtime_hours > 0 %}
+                                                <span class="badge bg-warning">{{ "%.1f"|format(record.overtime_hours) }}h</span>
+                                            {% else %}
+                                                <span class="text-muted">0h</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ record.status_badge_class }}">
+                                                {{ record.status.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if record.leave_type %}
+                                                <span class="badge bg-secondary">{{ record.leave_type.replace('_', ' ').title() }}</span>
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ record.marker.username }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('hr.attendance_detail', id=record.id) }}" 
+                                                   class="btn btn-outline-info" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('hr.edit_attendance', id=record.id) }}" 
+                                                   class="btn btn-outline-primary" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                {% if current_user.is_admin() %}
+                                                <a href="{{ url_for('hr.delete_attendance', id=record.id) }}" 
+                                                   class="btn btn-outline-danger" title="Delete"
+                                                   onclick="return confirm('Delete this attendance record?')">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if attendance_records.pages > 1 %}
+                            <nav class="mt-3">
+                                <ul class="pagination justify-content-center">
+                                    {% if attendance_records.has_prev %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('hr.attendance_list', page=attendance_records.prev_num, employee_id=employee_id, date_from=date_from, date_to=date_to, status=status) }}">Previous</a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for page_num in attendance_records.iter_pages() %}
+                                        {% if page_num %}
+                                            {% if page_num != attendance_records.page %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="{{ url_for('hr.attendance_list', page=page_num, employee_id=employee_id, date_from=date_from, date_to=date_to, status=status) }}">{{ page_num }}</a>
+                                                </li>
+                                            {% else %}
+                                                <li class="page-item active">
+                                                    <span class="page-link">{{ page_num }}</span>
+                                                </li>
+                                            {% endif %}
+                                        {% else %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link">…</span>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if attendance_records.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('hr.attendance_list', page=attendance_records.next_num, employee_id=employee_id, date_from=date_from, date_to=date_to, status=status) }}">Next</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Attendance Records Found</h5>
+                            <p class="text-muted">No attendance records match your current filters.</p>
+                            <a href="{{ url_for('hr.add_attendance') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Mark First Attendance
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

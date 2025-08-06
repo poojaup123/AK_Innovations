@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Invoices - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-between align-items-center mb-4">
+        <div class="col">
+            <h1><i class="fas fa-file-invoice"></i> Invoices</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('accounting.add_invoice') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create Invoice
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Invoice Type</label>
+                    <select name="type" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="sales" {% if invoice_type == 'sales' %}selected{% endif %}>Sales Invoice</option>
+                        <option value="purchase" {% if invoice_type == 'purchase' %}selected{% endif %}>Purchase Invoice</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+                        <option value="sent" {% if status_filter == 'sent' %}selected{% endif %}>Sent</option>
+                        <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+                        <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Invoices Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Type</th>
+                            <th>Party</th>
+                            <th>Date</th>
+                            <th>Due Date</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in invoices.items %}
+                        <tr>
+                            <td>
+                                <strong>{{ invoice.invoice_number }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge {% if invoice.invoice_type == 'sales' %}bg-success{% else %}bg-primary{% endif %}">
+                                    {{ invoice.invoice_type.title() }}
+                                </span>
+                            </td>
+                            <td>{{ invoice.party_name }}</td>
+                            <td>{{ invoice.invoice_date.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                {% if invoice.due_date %}{{ invoice.due_date.strftime('%d/%m/%Y') }}{% endif %}
+                            </td>
+                            <td class="text-end">₹{{ "%.2f"|format(invoice.total_amount) }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if invoice.status == 'draft' %}bg-secondary
+                                    {% elif invoice.status == 'sent' %}bg-warning
+                                    {% elif invoice.status == 'paid' %}bg-success
+                                    {% elif invoice.status == 'cancelled' %}bg-danger
+                                    {% endif %}">
+                                    {{ invoice.status.title() }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('accounting.view_invoice', id=invoice.id) }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('accounting.edit_invoice', id=invoice.id) }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('accounting.print_invoice', id=invoice.id) }}" class="btn btn-outline-info" target="_blank">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-file-invoice fa-3x mb-3"></i>
+                                    <p>No invoices found</p>
+                                    <a href="{{ url_for('accounting.add_invoice') }}" class="btn btn-primary">
+                                        Create First Invoice
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if invoices.pages > 1 %}
+            <nav aria-label="Invoice pagination">
+                <ul class="pagination justify-content-center">
+                    {% if invoices.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('accounting.list_invoices', page=invoices.prev_num, type=invoice_type, status=status_filter) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in invoices.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != invoices.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('accounting.list_invoices', page=page_num, type=invoice_type, status=status_filter) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if invoices.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('accounting.list_invoices', page=invoices.next_num, type=invoice_type, status=status_filter) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

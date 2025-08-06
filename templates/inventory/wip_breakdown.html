@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% set title = "WIP Breakdown by Process" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-cogs text-primary me-2"></i>
+                    WIP Breakdown by Process
+                </h1>
+                <div>
+                    <a href="{{ url_for('inventory.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Inventory
+                    </a>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="row mb-4">
+                <div class="col-md-2">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Total WIP</h5>
+                            <h3>{{ total_wip_items }}</h3>
+                            <small>Items in WIP</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Cutting</h5>
+                            <h3>{{ process_totals.cutting }}</h3>
+                            <small>Units</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Bending</h5>
+                            <h3>{{ process_totals.bending }}</h3>
+                            <small>Units</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Welding</h5>
+                            <h3>{{ process_totals.welding }}</h3>
+                            <small>Units</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Zinc</h5>
+                            <h3>{{ process_totals.zinc }}</h3>
+                            <small>Units</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-secondary text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Other</h5>
+                            <h3>{{ process_totals.other }}</h3>
+                            <small>Units</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WIP Details Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i> WIP Details by Item & Process
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Item Code</th>
+                                    <th>Item Name</th>
+                                    <th>UOM</th>
+                                    <th>Total WIP</th>
+                                    <th>Cutting</th>
+                                    <th>Bending</th>
+                                    <th>Welding</th>
+                                    <th>Zinc</th>
+                                    <th>Painting</th>
+                                    <th>Assembly</th>
+                                    <th>Machining</th>
+                                    <th>Polishing</th>
+                                    <th>Legacy</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                {% if item.total_wip > 0 %}
+                                <tr>
+                                    <td><code>{{ item.code }}</code></td>
+                                    <td>{{ item.name }}</td>
+                                    <td><span class="badge bg-light text-dark">{{ item.unit_of_measure }}</span></td>
+                                    <td><strong>{{ "%.2f"|format(item.total_wip) }}</strong></td>
+                                    
+                                    <!-- Process-specific WIP columns -->
+                                    <td>
+                                        {% if item.qty_wip_cutting > 0 %}
+                                            <span class="badge bg-info">{{ "%.2f"|format(item.qty_wip_cutting) }}</span>
+                                            {% if wip_processes.get(item.id, {}).get('cutting') %}
+                                                {% for output in wip_processes[item.id]['cutting'] %}
+                                                    {% if output.output_item %}
+                                                        <br><small class="text-success"><strong>→ {{ output.output_quantity }} {{ output.output_item.unit_of_measure }} {{ output.output_item.name }}</strong></small>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.qty_wip_bending > 0 %}
+                                            <span class="badge bg-warning">{{ "%.2f"|format(item.qty_wip_bending) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                        {% if wip_processes.get(item.id, {}).get('bending') %}
+                                            {% for output in wip_processes[item.id]['bending'] %}
+                                                {% if output.output_item %}
+                                                    <br><small class="text-success"><strong>→ {{ output.output_quantity }} {{ output.output_item.unit_of_measure }} {{ output.output_item.name }}</strong></small>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.qty_wip_welding > 0 %}
+                                            <span class="badge bg-danger">{{ "%.2f"|format(item.qty_wip_welding) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                        {% if wip_processes.get(item.id, {}).get('welding') %}
+                                            {% for output in wip_processes[item.id]['welding'] %}
+                                                {% if output.output_item %}
+                                                    <br><small class="text-success"><strong>→ {{ output.output_quantity }} {{ output.output_item.unit_of_measure }} {{ output.output_item.name }}</strong></small>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.qty_wip_zinc > 0 %}
+                                            <span class="badge bg-success">{{ "%.2f"|format(item.qty_wip_zinc) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                        {% if wip_processes.get(item.id, {}).get('zinc') %}
+                                            {% for output in wip_processes[item.id]['zinc'] %}
+                                                {% if output.output_item %}
+                                                    <br><small class="text-success"><strong>→ {{ output.output_quantity }} {{ output.output_item.unit_of_measure }} {{ output.output_item.name }}</strong></small>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.qty_wip_painting > 0 %}
+                                            <span class="badge bg-primary">{{ "%.2f"|format(item.qty_wip_painting) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                        {% if wip_processes.get(item.id, {}).get('painting') %}
+                                            {% for output in wip_processes[item.id]['painting'] %}
+                                                {% if output.output_item %}
+                                                    <br><small class="text-success"><strong>→ {{ output.output_quantity }} {{ output.output_item.unit_of_measure }} {{ output.output_item.name }}</strong></small>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.qty_wip_assembly > 0 %}
+                                            <span class="badge bg-dark">{{ "%.2f"|format(item.qty_wip_assembly) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                        {% if wip_processes.get(item.id, {}).get('assembly') %}
+                                            {% for output in wip_processes[item.id]['assembly'] %}
+                                                {% if output.output_item %}
+                                                    <br><small class="text-success"><strong>→ {{ output.output_quantity }} {{ output.output_item.unit_of_measure }} {{ output.output_item.name }}</strong></small>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.qty_wip_machining > 0 %}
+                                            <span class="badge bg-secondary">{{ "%.2f"|format(item.qty_wip_machining) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                        {% if wip_processes.get(item.id, {}).get('machining') %}
+                                            {% for output in wip_processes[item.id]['machining'] %}
+                                                {% if output.output_item %}
+                                                    <br><small class="text-success"><strong>→ {{ output.output_quantity }} {{ output.output_item.unit_of_measure }} {{ output.output_item.name }}</strong></small>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.qty_wip_polishing > 0 %}
+                                            <span class="badge bg-light text-dark">{{ "%.2f"|format(item.qty_wip_polishing) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                        {% if wip_processes.get(item.id, {}).get('polishing') %}
+                                            {% for output in wip_processes[item.id]['polishing'] %}
+                                                {% if output.output_item %}
+                                                    <br><small class="text-success"><strong>→ {{ output.output_quantity }} {{ output.output_item.unit_of_measure }} {{ output.output_item.name }}</strong></small>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.qty_wip > 0 %}
+                                            <span class="badge bg-secondary">{{ "%.2f"|format(item.qty_wip) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if items|length == 0 or total_wip_items == 0 %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-box text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No WIP Inventory Found</h5>
+                        <p class="text-muted">All materials are either in raw or finished state.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

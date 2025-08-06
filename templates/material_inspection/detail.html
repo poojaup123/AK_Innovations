@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-eye me-2"></i>{{ title }}</h2>
+                <div>
+                    <a href="{{ url_for('material_inspection.list_inspections') }}" class="btn btn-secondary">
+                        <i class="fas fa-list me-1"></i>All Inspections
+                    </a>
+                    <a href="{{ url_for('material_inspection.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-dashboard me-1"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>Inspection Details</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Inspection Number:</strong></td>
+                            <td>{{ inspection.inspection_number }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Source:</strong></td>
+                            <td>
+                                {% if inspection.purchase_order %}
+                                    <span class="badge bg-primary">
+                                        <i class="fas fa-file-invoice me-1"></i>
+                                        Purchase Order: {{ inspection.purchase_order.po_number }}
+                                    </span>
+                                    <br><small class="text-muted">Supplier: {{ inspection.purchase_order.supplier.name }}</small>
+                                {% elif inspection.job_work %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-tools me-1"></i>
+                                        Job Work: {{ inspection.job_work.job_number }}
+                                    </span>
+                                    <br><small class="text-muted">Customer: {{ inspection.job_work.customer_name }}</small>
+                                {% else %}
+                                    <span class="text-muted">Direct Inspection</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Item:</strong></td>
+                            <td>
+                                <strong>{{ inspection.item.name }}</strong>
+                                <br><small class="text-muted">{{ inspection.item.code }}</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Material Classification:</strong></td>
+                            <td>
+                                {% if inspection.material_classification == 'raw_material' %}
+                                    <span class="badge bg-info">
+                                        <i class="fas fa-cubes me-1"></i>Raw Material
+                                    </span>
+                                {% elif inspection.material_classification == 'production_use' %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-cogs me-1"></i>Production Use
+                                    </span>
+                                {% elif inspection.material_classification == 'finished_goods' %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-box me-1"></i>Finished Goods
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ inspection.material_classification|title }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Inspector:</strong></td>
+                            <td>{{ inspection.inspector.username }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Inspection Date:</strong></td>
+                            <td>{{ inspection.inspection_date.strftime('%B %d, %Y at %I:%M %p') }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                <span class="badge bg-success">{{ inspection.status.title() }}</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie me-2"></i>Quantity Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-3">
+                            <div class="border rounded p-2">
+                                <h5 class="text-primary">{{ "%.2f"|format(inspection.received_quantity) }}</h5>
+                                <small class="text-muted">Received</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="border rounded p-2">
+                                <h5 class="text-info">{{ "%.2f"|format(inspection.inspected_quantity) }}</h5>
+                                <small class="text-muted">Inspected</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="border rounded p-2">
+                                <h5 class="text-success">{{ "%.2f"|format(inspection.passed_quantity) }}</h5>
+                                <small class="text-muted">Passed</small>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="border rounded p-2">
+                                <h5 class="text-danger">{{ "%.2f"|format(inspection.damaged_quantity + inspection.rejected_quantity) }}</h5>
+                                <small class="text-muted">Failed</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="progress mb-3" style="height: 30px;">
+                        {% set pass_percent = (inspection.passed_quantity / inspection.inspected_quantity * 100) if inspection.inspected_quantity > 0 else 0 %}
+                        {% set damage_percent = (inspection.damaged_quantity / inspection.inspected_quantity * 100) if inspection.inspected_quantity > 0 else 0 %}
+                        {% set reject_percent = (inspection.rejected_quantity / inspection.inspected_quantity * 100) if inspection.inspected_quantity > 0 else 0 %}
+                        
+                        <div class="progress-bar bg-success" style="width: {{ pass_percent }}%">
+                            Passed ({{ "%.1f"|format(pass_percent) }}%)
+                        </div>
+                        <div class="progress-bar bg-warning" style="width: {{ damage_percent }}%">
+                            Damaged ({{ "%.1f"|format(damage_percent) }}%)
+                        </div>
+                        <div class="progress-bar bg-danger" style="width: {{ reject_percent }}%">
+                            Rejected ({{ "%.1f"|format(reject_percent) }}%)
+                        </div>
+                    </div>
+
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Acceptance Rate:</strong></td>
+                            <td>
+                                <span class="badge {% if inspection.acceptance_rate >= 95 %}bg-success{% elif inspection.acceptance_rate >= 85 %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ "%.1f"|format(inspection.acceptance_rate) }}%
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Damaged Quantity:</strong></td>
+                            <td class="text-warning">{{ "%.2f"|format(inspection.damaged_quantity) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Rejected Quantity:</strong></td>
+                            <td class="text-danger">{{ "%.2f"|format(inspection.rejected_quantity) }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Damage and Rejection Details -->
+    {% if inspection.damage_types or inspection.rejection_reasons or inspection.inspection_notes %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-clipboard-list me-2"></i>Inspection Notes & Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if inspection.damage_types %}
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-exclamation-triangle text-warning me-1"></i>Damage Types:</h6>
+                            <div class="alert alert-warning">
+                                {{ inspection.damage_types }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if inspection.rejection_reasons %}
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-times-circle text-danger me-1"></i>Rejection Reasons:</h6>
+                            <div class="alert alert-danger">
+                                {{ inspection.rejection_reasons }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if inspection.inspection_notes %}
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-sticky-note text-info me-1"></i>Inspection Notes:</h6>
+                            <div class="alert alert-info">
+                                {{ inspection.inspection_notes }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - AK Innovations Factory{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('uom.dashboard') }}">UOM Management</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('uom.item_conversions_list') }}">Item Conversions</a></li>
+                    <li class="breadcrumb-item active">{{ title }}</li>
+                </ol>
+            </nav>
+            <h2><i class="fas fa-cog"></i> {{ title }}</h2>
+            <p class="text-muted">Configure how items are bought, stored, and sold in different units</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Item UOM Conversion Setup</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Item Selection -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-box"></i> Item Selection</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    {{ form.item.label(class="form-label") }}
+                                    {{ form.item(class="form-select", **{"onchange": "loadItemInfo()"}) }}
+                                    {% if form.item.errors %}
+                                        {% for error in form.item.errors %}
+                                            <div class="text-danger small">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Unit Configuration -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-balance-scale"></i> Unit Configuration</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            {{ form.purchase_unit.label(class="form-label") }}
+                                            {{ form.purchase_unit(class="form-select") }}
+                                            {% if form.purchase_unit.errors %}
+                                                {% for error in form.purchase_unit.errors %}
+                                                    <div class="text-danger small">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                            <div class="form-text">What unit you buy this item in</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            {{ form.inventory_unit.label(class="form-label") }}
+                                            {{ form.inventory_unit(class="form-select") }}
+                                            {% if form.inventory_unit.errors %}
+                                                {% for error in form.inventory_unit.errors %}
+                                                    <div class="text-danger small">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                            <div class="form-text">What unit you track stock in</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            {{ form.sale_unit.label(class="form-label") }}
+                                            {{ form.sale_unit(class="form-select") }}
+                                            {% if form.sale_unit.errors %}
+                                                {% for error in form.sale_unit.errors %}
+                                                    <div class="text-danger small">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                            <div class="form-text">What unit you sell this item in</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Conversion Factors -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-calculator"></i> Conversion Factors</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.purchase_to_inventory.label(class="form-label") }}
+                                            {{ form.purchase_to_inventory(class="form-control", **{"onchange": "calculateDerived()"}) }}
+                                            {% if form.purchase_to_inventory.errors %}
+                                                {% for error in form.purchase_to_inventory.errors %}
+                                                    <div class="text-danger small">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                            <div class="form-text">Example: 1 Kg = 1 Kg (factor = 1.0)</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.inventory_to_sale.label(class="form-label") }}
+                                            {{ form.inventory_to_sale(class="form-control", **{"onchange": "calculateDerived()"}) }}
+                                            {% if form.inventory_to_sale.errors %}
+                                                {% for error in form.inventory_to_sale.errors %}
+                                                    <div class="text-danger small">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                            <div class="form-text">Example: 1 Kg = 40 pieces (factor = 40.0)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <strong>Calculated Purchase to Sale Factor:</strong> 
+                                    <span id="calculatedFactor">0.0</span>
+                                    <div class="form-text">This is automatically calculated: Purchase to Inventory × Inventory to Sale</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Weight/Count Relationship (Optional) -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Weight/Count Relationship (Optional)</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.weight_per_piece.label(class="form-label") }}
+                                            {{ form.weight_per_piece(class="form-control", **{"onchange": "calculatePiecesPerKg()"}) }}
+                                            {% if form.weight_per_piece.errors %}
+                                                {% for error in form.weight_per_piece.errors %}
+                                                    <div class="text-danger small">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                            <div class="form-text">Example: 0.025 (25 grams per piece)</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.pieces_per_kg.label(class="form-label") }}
+                                            {{ form.pieces_per_kg(class="form-control", **{"onchange": "calculateWeightPerPiece()"}) }}
+                                            {% if form.pieces_per_kg.errors %}
+                                                {% for error in form.pieces_per_kg.errors %}
+                                                    <div class="text-danger small">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                            <div class="form-text">Example: 40 (40 pieces per Kg)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <strong>Note:</strong> These values should be consistent with each other. 
+                                    If you enter one, the other will be calculated automatically.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-sticky-note"></i> Additional Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    {{ form.notes.label(class="form-label") }}
+                                    {{ form.notes(class="form-control") }}
+                                    {% if form.notes.errors %}
+                                        {% for error in form.notes.errors %}
+                                            <div class="text-danger small">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('uom.item_conversions_list') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ form.submit.label.text }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help and Examples -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-lightbulb"></i> Examples</h6>
+                </div>
+                <div class="card-body">
+                    <h6>Steel Rods</h6>
+                    <ul class="small">
+                        <li><strong>Purchase Unit:</strong> Kg</li>
+                        <li><strong>Inventory Unit:</strong> Kg</li>
+                        <li><strong>Sale Unit:</strong> Pieces</li>
+                        <li><strong>Purchase to Inventory:</strong> 1.0</li>
+                        <li><strong>Inventory to Sale:</strong> 40.0</li>
+                        <li><strong>Weight per Piece:</strong> 0.025 Kg</li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <h6>Paint</h6>
+                    <ul class="small">
+                        <li><strong>Purchase Unit:</strong> Liters</li>
+                        <li><strong>Inventory Unit:</strong> Liters</li>
+                        <li><strong>Sale Unit:</strong> Bottles</li>
+                        <li><strong>Purchase to Inventory:</strong> 1.0</li>
+                        <li><strong>Inventory to Sale:</strong> 4.0</li>
+                        <li><strong>Volume per Bottle:</strong> 0.25 L</li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <h6>Cable Wire</h6>
+                    <ul class="small">
+                        <li><strong>Purchase Unit:</strong> Meters</li>
+                        <li><strong>Inventory Unit:</strong> Meters</li>
+                        <li><strong>Sale Unit:</strong> Pieces</li>
+                        <li><strong>Purchase to Inventory:</strong> 1.0</li>
+                        <li><strong>Inventory to Sale:</strong> 2.0</li>
+                        <li><strong>Length per Piece:</strong> 0.5 M</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-calculator"></i> Quick Calculator</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Test Conversion</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="testQuantity" placeholder="Quantity" step="0.01">
+                            <span class="input-group-text">→</span>
+                            <input type="text" class="form-control" id="testResult" readonly placeholder="Result">
+                        </div>
+                        <div class="form-text">Enter a quantity to test the conversion</div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="testConversion()">
+                        <i class="fas fa-calculator"></i> Calculate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function calculateDerived() {
+    const purchaseToInventory = parseFloat(document.getElementById('purchase_to_inventory').value) || 0;
+    const inventoryToSale = parseFloat(document.getElementById('inventory_to_sale').value) || 0;
+    const calculated = purchaseToInventory * inventoryToSale;
+    document.getElementById('calculatedFactor').textContent = calculated.toFixed(6);
+}
+
+function calculatePiecesPerKg() {
+    const weightPerPiece = parseFloat(document.getElementById('weight_per_piece').value);
+    if (weightPerPiece > 0) {
+        const piecesPerKg = 1.0 / weightPerPiece;
+        document.getElementById('pieces_per_kg').value = piecesPerKg.toFixed(2);
+    }
+}
+
+function calculateWeightPerPiece() {
+    const piecesPerKg = parseFloat(document.getElementById('pieces_per_kg').value);
+    if (piecesPerKg > 0) {
+        const weightPerPiece = 1.0 / piecesPerKg;
+        document.getElementById('weight_per_piece').value = weightPerPiece.toFixed(4);
+    }
+}
+
+function testConversion() {
+    const quantity = parseFloat(document.getElementById('testQuantity').value) || 0;
+    const purchaseToInventory = parseFloat(document.getElementById('purchase_to_inventory').value) || 0;
+    const inventoryToSale = parseFloat(document.getElementById('inventory_to_sale').value) || 0;
+    
+    if (quantity > 0 && purchaseToInventory > 0 && inventoryToSale > 0) {
+        const result = quantity * purchaseToInventory * inventoryToSale;
+        document.getElementById('testResult').value = result.toFixed(6);
+    }
+}
+
+// Initialize calculations on page load
+document.addEventListener('DOMContentLoaded', function() {
+    calculateDerived();
+});
+</script>
+{% endblock %}

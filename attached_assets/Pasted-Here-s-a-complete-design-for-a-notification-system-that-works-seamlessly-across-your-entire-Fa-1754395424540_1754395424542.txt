@@ -1,0 +1,165 @@
+Here’s a complete design for a **notification system** that works **seamlessly across your entire Factory Management System**, using Flask and integrating with Email, SMS, and WhatsApp.
+
+---
+
+### ✅ Notification System Objectives
+
+* Notify users/admins automatically on important actions
+* Centralize all system messages (alerts, approvals, warnings)
+* Support **Email**, **SMS**, **WhatsApp**
+* Configurable from **Settings panel**
+* Log all notifications (sent, pending, failed)
+
+---
+
+## 🔧 Core Architecture Overview
+
+### 📁 1. Database Tables
+
+#### `NotificationLog`
+
+| Field           | Type       | Description                      |
+| --------------- | ---------- | -------------------------------- |
+| id              | Integer    | Primary Key                      |
+| user\_id        | ForeignKey | Target user                      |
+| message         | Text       | Message content                  |
+| channel         | String     | `email`, `sms`, `whatsapp`       |
+| status          | String     | `pending`, `sent`, `failed`      |
+| related\_module | String     | `po`, `grn`, `production`, etc.  |
+| related\_id     | Integer    | ID of the PO/GRN/Production/etc. |
+| created\_at     | DateTime   | Timestamp                        |
+
+#### `NotificationSettings`
+
+| Field    | Type    | Description                             |
+| -------- | ------- | --------------------------------------- |
+| module   | String  | `po`, `grn`, `production`, `hr`, etc.   |
+| event    | String  | `created`, `approved`, `rejected`, etc. |
+| enabled  | Boolean | Enable/Disable                          |
+| channel  | String  | email/sms/whatsapp                      |
+| template | Text    | Message template with placeholders      |
+
+---
+
+## 🔁 2. Trigger Points for Notifications
+
+| Module         | Event                    | Trigger                          |
+| -------------- | ------------------------ | -------------------------------- |
+| Purchase Order | PO Created / Approved    | Notify vendor/admin              |
+| GRN            | Material Received        | Notify purchase team             |
+| Job Work       | Job Work Issued          | Notify vendor + QC head          |
+| Production     | Production Completed     | Notify stores + update inventory |
+| HR             | Salary Paid / Attendance | Notify employee                  |
+| Inventory      | Reorder Level Reached    | Notify store admin               |
+| Accounting     | Voucher Created          | Notify finance lead              |
+
+---
+
+## ⚙️ 3. How It Works Internally (Flow)
+
+1. **Event Occurs** (e.g. PO Created)
+2. Backend checks `NotificationSettings` for:
+
+   * Is notification enabled for this event/module?
+   * Which channels to use?
+3. **Message is prepared** using a Jinja2-style template
+4. A record is added to `NotificationLog` with `pending` status
+5. Notification Worker (or cron) sends it
+6. Status is updated to `sent` or `failed`
+
+---
+
+## 📬 4. Example Notification Templates
+
+```txt
+PO Created: 
+New PO (PO-2025-0003) for {{ supplier_name }} worth ₹{{ amount }} has been created on {{ created_date }}.
+```
+
+```txt
+Salary Paid:
+Dear {{ employee_name }}, salary ₹{{ amount }} for {{ pay_period }} has been credited via {{ payment_method }}.
+```
+
+---
+
+## 🛠️ 5. Notification Sender Logic (Python)
+
+Create a `services/notifications.py`:
+
+```python
+def send_notification(channel, message, recipient):
+    if channel == 'email':
+        send_email(message, recipient.email)
+    elif channel == 'sms':
+        send_sms(message, recipient.phone)
+    elif channel == 'whatsapp':
+        send_whatsapp(message, recipient.phone)
+```
+
+---
+
+## 🧠 6. Settings Panel UI
+
+In your **Settings > Notifications** panel:
+
+* Show a list of modules and events
+* Allow enabling/disabling channels
+* Allow editing templates
+* Test send option
+
+---
+
+## 📊 7. Notification Center (Admin Panel)
+
+| Column    | Description             |
+| --------- | ----------------------- |
+| Message   | Preview of message sent |
+| Module    | Module like PO, GRN, HR |
+| Channel   | email / sms / whatsapp  |
+| Recipient | Name and phone/email    |
+| Status    | sent / failed / pending |
+| Timestamp | When sent               |
+
+---
+
+## 🧱 Folder/File Structure
+
+```
+app/
+│
+├── services/
+│   └── notifications.py
+│
+├── templates/notifications/
+│   ├── po_created.html
+│   └── salary_paid.html
+│
+├── routes/
+│   └── notifications.py
+│
+├── models/
+│   └── models_notifications.py
+│
+└── static/js/notifications.js
+```
+
+---
+
+## ✅ Smart Features You Can Add Later
+
+* ✅ Retry failed messages (cron job)
+* ✅ Admin can test-send messages
+* ✅ Send attachments (e.g., invoice PDF)
+* ✅ WhatsApp template approval via Meta Business
+* ✅ Mobile app push support
+
+---
+
+Would you like code for:
+
+* The notification sender service?
+* The Notification Settings panel UI?
+* WhatsApp message sending from Python?
+
+Let me know!

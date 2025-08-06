@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Production Orders - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-cogs"></i> Production Orders</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('production.add_production') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Production Order
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <form method="GET" class="d-flex">
+                <select name="status" class="form-select me-2" onchange="this.form.submit()">
+                    <option value="">All Status</option>
+                    <option value="planned" {{ 'selected' if status_filter == 'planned' }}>Planned</option>
+                    <option value="in_progress" {{ 'selected' if status_filter == 'in_progress' }}>In Progress</option>
+                    <option value="completed" {{ 'selected' if status_filter == 'completed' }}>Completed</option>
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <!-- Production Orders Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if productions.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Production Number</th>
+                                <th>Product</th>
+                                <th>Planned Quantity</th>
+                                <th>Produced Quantity</th>
+                                <th>Production Date</th>
+                                <th>Status</th>
+                                <th>Created By</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for production in productions.items %}
+                            <tr>
+                                <td><strong>{{ production.production_number }}</strong></td>
+                                <td>{{ production.produced_item.name }}</td>
+                                <td>{{ production.quantity_planned }}</td>
+                                <td>{{ production.quantity_produced }}</td>
+                                <td>{{ production.production_date.strftime('%m/%d/%Y') }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if production.status == 'completed' else 'warning' if production.status == 'in_progress' else 'primary' }}">
+                                        {{ production.status.replace('_', ' ').title() }}
+                                    </span>
+                                </td>
+                                <td>{{ production.creator.username }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('production.edit_production', id=production.id) }}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% if production.status != 'completed' %}
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                Status
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                {% if production.status == 'planned' %}
+                                                <li><a class="dropdown-item" href="{{ url_for('production.update_status', id=production.id, status='in_progress') }}">Start Production</a></li>
+                                                {% endif %}
+                                                <li><a class="dropdown-item" href="{{ url_for('production.update_status', id=production.id, status='completed') }}">Complete</a></li>
+                                            </ul>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if productions.pages > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        {% if productions.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('production.list_productions', page=productions.prev_num, status=status_filter) }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in productions.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != productions.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('production.list_productions', page=page_num, status=status_filter) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if productions.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('production.list_productions', page=productions.next_num, status=status_filter) }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                    <h5>No production orders found</h5>
+                    <p class="text-muted">Start by creating your first production order.</p>
+                    <a href="{{ url_for('production.add_production') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create First Production Order
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

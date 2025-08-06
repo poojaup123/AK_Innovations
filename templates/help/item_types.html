@@ -1,0 +1,158 @@
+{% extends "help/base_help.html" %}
+
+{% block title %}Item Types Help - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="text-center mb-4">
+    <h1><i class="fas fa-boxes"></i> Item Types Classification Guide</h1>
+    <p class="lead">Understanding when and how to classify your inventory items</p>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-question-circle"></i> What are Item Types?</h3>
+    <p>Item Types are fundamental classifications that determine how your system handles each item throughout your manufacturing process. They affect inventory tracking, costing, accounting, and reporting.</p>
+</div>
+
+<div class="decision-tree">
+    <h4><i class="fas fa-sitemap"></i> Quick Decision Tree</h4>
+    <div class="mb-3">
+        <strong>Ask yourself:</strong>
+        <ol>
+            <li><strong>What happens to this item?</strong> Does it become part of a product, get consumed, or stay as a tool?</li>
+            <li><strong>How is it used?</strong> In production, for maintenance, for packaging, or sold as-is?</li>
+            <li><strong>How should it be accounted for?</strong> As inventory, expense, or asset?</li>
+        </ol>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="category-card">
+            <div class="category-header">
+                <i class="fas fa-industry" style="color: #6c757d;"></i> Material
+            </div>
+            <p><strong>Use for:</strong> Raw materials, components, and inputs that get transformed</p>
+            <div class="help-example">
+                <strong>Examples:</strong> Steel sheets, bolts, screws, aluminum rods, plastic pellets, chemicals, wire, rubber, glass
+            </div>
+            <p><strong>Inventory Behavior:</strong> Purchased → consumed in production → becomes part of finished goods</p>
+            <p><strong>Accounting:</strong> Raw material expense when consumed in production</p>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="category-card">
+            <div class="category-header">
+                <i class="fas fa-cog" style="color: #28a745;"></i> Product
+            </div>
+            <p><strong>Use for:</strong> Finished goods you manufacture and sell</p>
+            <div class="help-example">
+                <strong>Examples:</strong> Completed assemblies, final products, manufactured items ready for sale, finished components
+            </div>
+            <p><strong>Inventory Behavior:</strong> Produced from materials → stored as finished goods → sold to customers</p>
+            <p><strong>Accounting:</strong> Cost of goods sold when sold, inventory asset when in stock</p>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="category-card">
+            <div class="category-header">
+                <i class="fas fa-fire" style="color: #fd7e14;"></i> Consumable
+            </div>
+            <p><strong>Use for:</strong> Items consumed during production but don't become part of the final product</p>
+            <div class="help-example">
+                <strong>Examples:</strong> Cutting oil, welding gas, cleaning solvents, sandpaper, lubricants, flux, electrodes
+            </div>
+            <p><strong>Inventory Behavior:</strong> Purchased → consumed during manufacturing processes</p>
+            <p><strong>Accounting:</strong> Manufacturing overhead expense when used</p>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="category-card">
+            <div class="category-header">
+                <i class="fas fa-tools" style="color: #dc3545;"></i> Tool
+            </div>
+            <p><strong>Use for:</strong> Reusable equipment and tools for production</p>
+            <div class="help-example">
+                <strong>Examples:</strong> Cutting tools, drill bits, measuring instruments, jigs, fixtures, dies, molds
+            </div>
+            <p><strong>Inventory Behavior:</strong> Purchased → used repeatedly → eventually replaced due to wear</p>
+            <p><strong>Accounting:</strong> Fixed asset (depreciated) or expense depending on value</p>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="category-card">
+            <div class="category-header">
+                <i class="fas fa-wrench" style="color: #6f42c1;"></i> Spare Part
+            </div>
+            <p><strong>Use for:</strong> Replacement components for machinery and equipment</p>
+            <div class="help-example">
+                <strong>Examples:</strong> Motor bearings, pump seals, conveyor belts, electrical components, filters, gaskets
+            </div>
+            <p><strong>Inventory Behavior:</strong> Purchased → stored → used for maintenance when needed</p>
+            <p><strong>Accounting:</strong> Maintenance expense when consumed</p>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="category-card">
+            <div class="category-header">
+                <i class="fas fa-box" style="color: #20c997;"></i> Packaging
+            </div>
+            <p><strong>Use for:</strong> Materials used to package and ship finished products</p>
+            <div class="help-example">
+                <strong>Examples:</strong> Boxes, bubble wrap, labels, pallets, shrink wrap, tape, foam inserts
+            </div>
+            <p><strong>Inventory Behavior:</strong> Purchased → used to package finished goods for shipment</p>
+            <p><strong>Accounting:</strong> Packaging expense or part of cost of goods sold</p>
+        </div>
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-lightbulb"></i> Common Classification Scenarios</h3>
+    
+    <div class="help-tip">
+        <strong><i class="fas fa-question"></i> Material vs Consumable:</strong> If it becomes part of the final product = Material. If it's used up during production = Consumable
+    </div>
+    
+    <div class="help-tip">
+        <strong><i class="fas fa-question"></i> Tool vs Spare Part:</strong> If it's used in production = Tool. If it's for machinery maintenance = Spare Part
+    </div>
+    
+    <div class="help-tip">
+        <strong><i class="fas fa-question"></i> Product vs Material:</strong> If you sell it directly = Product. If it goes into making something else = Material
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-exclamation-triangle"></i> Important Guidelines</h3>
+    
+    <div class="help-warning">
+        <strong>Consistency is key:</strong> Use the same classification for similar items across your operations
+    </div>
+    
+    <div class="help-warning">
+        <strong>For multi-use items:</strong> Choose the primary use case in your factory
+    </div>
+    
+    <div class="help-warning">
+        <strong>When changing types:</strong> This affects historical reporting and accounting - consider carefully before changing existing items
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-chart-line"></i> Impact on Your System</h3>
+    <p>Your Item Type selection drives:</p>
+    <ul>
+        <li><strong>Inventory Tracking:</strong> How stock movements are recorded</li>
+        <li><strong>Costing:</strong> How costs are calculated and allocated</li>
+        <li><strong>Accounting:</strong> Which accounts are used for transactions</li>
+        <li><strong>Reporting:</strong> How items appear in various reports</li>
+        <li><strong>BOM Management:</strong> How items can be used in Bill of Materials</li>
+        <li><strong>Production Planning:</strong> How items are scheduled and tracked</li>
+    </ul>
+</div>
+{% endblock %}

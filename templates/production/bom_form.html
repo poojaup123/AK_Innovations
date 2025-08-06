@@ -1,0 +1,1568 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-sitemap"></i> {{ title }}</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('production.dashboard') }}">Production</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('production.list_bom') }}">BOM Management</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{{ url_for('production.list_bom') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to BOM List
+                    </a>
+                    {% if bom %}
+                    <a href="{{ url_for('production.bom_tree_view') }}#{{ bom.product.item_code }}" class="btn btn-outline-info" target="_blank">
+                        <i class="fas fa-sitemap"></i> Tree View
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabbed Interface for Better Organization -->
+    <ul class="nav nav-tabs" id="bomTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="basic-info-tab" data-bs-toggle="tab" data-bs-target="#basic-info" type="button" role="tab">
+                <i class="fas fa-info-circle"></i> Basic Information
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="costing-tab" data-bs-toggle="tab" data-bs-target="#costing" type="button" role="tab">
+                <i class="fas fa-calculator"></i> Costing & Overhead
+            </button>
+        </li>
+        {% if bom %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="components-tab" data-bs-toggle="tab" data-bs-target="#components" type="button" role="tab">
+                <i class="fas fa-boxes"></i> Components <span class="badge bg-primary">{{ bom.items|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="processes-tab" data-bs-toggle="tab" data-bs-target="#processes" type="button" role="tab">
+                <i class="fas fa-cogs"></i> Manufacturing Processes
+            </button>
+        </li>
+        {% endif %}
+    </ul>
+
+    <div class="tab-content" id="bomTabContent">
+        <!-- Basic Information Tab -->
+        <div class="tab-pane fade show active" id="basic-info" role="tabpanel">
+            <div class="card border-top-0">
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Basic BOM Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.product_id.label(class="form-label") }}
+                                    {{ form.product_id(class="form-select") }}
+                                    <small class="text-muted">Select the product this BOM creates</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.version.label(class="form-label") }}
+                                    {{ form.version(class="form-control") }}
+                                    <small class="text-muted">Version number (e.g., v1.0, v2.1)</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.status.label(class="form-label") }}
+                                    {{ form.status(class="form-select") }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.output_quantity.label(class="form-label") }}
+                                    {{ form.output_quantity(class="form-control", step="0.001") }}
+                                    <small class="text-muted">Units produced by this BOM</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.estimated_scrap_percent.label(class="form-label") }}
+                                    {{ form.estimated_scrap_percent(class="form-control", step="0.1") }}
+                                    <small class="text-muted">Overall scrap percentage expected</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Unit Weight for Cost Conversion -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.unit_weight.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.unit_weight(class="form-control", step="0.001") }}
+                                        {{ form.unit_weight_uom(class="form-select", style="max-width: 100px;") }}
+                                    </div>
+                                    <small class="text-muted">Weight per unit for converting per kg costs to per unit costs</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Cost Conversion Info</label>
+                                    <div class="alert alert-info py-2">
+                                        <small><i class="fas fa-info-circle"></i> When processes have per kg costs, they'll be automatically converted to per unit costs using this weight</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Multi-Level BOM Section -->
+                        <div class="card mt-3">
+                            <div class="card-header bg-info text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6><i class="fas fa-layer-group"></i> Multi-Level BOM</h6>
+                                    <small>
+                                        <a href="{{ url_for('help.bom_help') }}#multi-level-guide" target="_blank" class="text-white text-decoration-underline">
+                                            <i class="fas fa-question-circle"></i> Quick Guide
+                                        </a>
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.parent_bom_id.label(class="form-label") }}
+                                            {{ form.parent_bom_id(class="form-select") }}
+                                            <small class="text-muted">Select parent BOM if this is a sub-assembly</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.remarks.label(class="form-label") }}
+                                            {{ form.remarks(class="form-control") }}
+                                            <small class="text-muted">Additional remarks</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            {{ form.is_phantom_bom(class="form-check-input") }}
+                                            {{ form.is_phantom_bom.label(class="form-check-label") }}
+                                            <small class="form-text text-muted">Phantom BOMs are intermediate products not kept in inventory</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            {{ form.is_active(class="form-check-input") }}
+                                            {{ form.is_active.label(class="form-check-label") }}
+                                            <small class="form-text text-muted">Active BOMs are available for production</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons for Basic Info -->
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between gap-2">
+                                <a href="{{ url_for('production.list_bom') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                                <div class="d-flex gap-2">
+                                    {% if not bom %}
+                                    <button type="submit" name="action" value="save_and_close" class="btn btn-success btn-lg">
+                                        <i class="fas fa-save"></i> Create BOM & Close
+                                    </button>
+                                    <button type="submit" name="action" value="save_and_continue" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-plus"></i> Create BOM & Add Components
+                                    </button>
+                                    {% else %}
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <i class="fas fa-save"></i> Update BOM
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Costing & Overhead Tab -->
+        <div class="tab-pane fade" id="costing" role="tabpanel">
+            <div class="card border-top-0">
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+
+                        <!-- Labor Cost Section -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="fas fa-users"></i> Labor Costs</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            {{ form.labor_hours_per_unit.label(class="form-label") }}
+                                            {{ form.labor_hours_per_unit(class="form-control", step="0.01") }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            {{ form.labor_rate_per_hour.label(class="form-label") }}
+                                            {{ form.labor_rate_per_hour(class="form-control", step="0.01") }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            {{ form.labor_cost_per_unit.label(class="form-label") }}
+                                            {{ form.labor_cost_per_unit(class="form-control", step="0.01") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Overhead Section -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6><i class="fas fa-chart-line"></i> Overhead Costs</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.overhead_percentage.label(class="form-label") }}
+                                            {{ form.overhead_percentage(class="form-control", step="0.1") }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.overhead_cost_per_unit.label(class="form-label") }}
+                                            {{ form.overhead_cost_per_unit(class="form-control", step="0.01") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Freight Section -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6><i class="fas fa-truck"></i> Freight & Transportation</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.freight_cost_per_unit.label(class="form-label") }}
+                                            {{ form.freight_cost_per_unit(class="form-control", step="0.01") }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.freight_unit_type.label(class="form-label") }}
+                                            {{ form.freight_unit_type(class="form-select") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Markup Section -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6><i class="fas fa-percentage"></i> Markup/Profit Margin</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    {{ form.markup_percentage.label(class="form-label") }}
+                                    {{ form.markup_percentage(class="form-control", step="0.1") }}
+                                    <small class="text-muted">Markup percentage applied to total cost</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer">
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save"></i> Save Costing Information
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {% if bom %}
+        <!-- Components Tab -->
+        <div class="tab-pane fade" id="components" role="tabpanel">
+            <div class="card border-top-0">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5><i class="fas fa-boxes"></i> BOM Components</h5>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#addComponentForm">
+                            <i class="fas fa-plus"></i> Add Component
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Collapsible Add Component Form -->
+                <div class="collapse" id="addComponentForm">
+                    <div class="card-body border-bottom bg-light">
+                        <form method="POST" action="{{ url_for('production.add_bom_item', bom_id=bom.id) }}">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label class="form-label">Material/Component</label>
+                                    <select class="form-select live-search" name="item_id" id="materialSelect" required 
+                                            data-bs-toggle="dropdown" data-live-search="true" 
+                                            onchange="autoFillUOMAndCost(this)">
+                                        <option value="">🔍 Search & Select Material...</option>
+                                        {% for item in materials %}
+                                        <option value="{{ item.id }}" 
+                                                data-unit="{{ item.unit_of_measure }}" 
+                                                data-cost="{{ item.unit_price or 0 }}"
+                                                data-stock="{{ item.current_stock or 0 }}"
+                                                data-has-bom="{{ 'true' if item.active_bom else 'false' }}"
+                                                data-tokens="{{ item.name }} {{ item.code }}">
+                                            {{ item.name }} ({{ item.code }}) - Stock: {{ item.current_stock or 0 }}
+                                            {% if item.active_bom %} [Has Sub-BOM]{% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="invalid-feedback">Please select a material</div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Quantity</label>
+                                    <input type="number" class="form-control" name="quantity_required" step="0.001" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Unit</label>
+                                    <select class="form-select" name="unit" id="unitSelect">
+                                        {% if uom_choices %}
+                                            {% for value, label in uom_choices %}
+                                                <option value="{{ value }}">{{ label }}</option>
+                                            {% endfor %}
+                                        {% else %}
+                                            <option value="pcs">Pieces (pcs)</option>
+                                            <option value="kg">Kilograms (kg)</option>
+                                            <option value="g">Grams (g)</option>
+                                            <option value="m">Meters (m)</option>
+                                        {% endif %}
+                                    </select>
+                                    <small class="text-success" id="autoFillMessage" style="display: none;">
+                                        <i class="fas fa-magic"></i> Auto-filled from material
+                                    </small>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Unit Cost</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="number" class="form-control" name="unit_cost" id="unitCostInput" 
+                                               step="0.01" placeholder="0.00" onchange="calculateTotalCost()">
+                                    </div>
+                                    <small class="text-success" id="costAutoFillMessage" style="display: none;">
+                                        <i class="fas fa-magic"></i> Auto-filled from material
+                                    </small>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Notes</label>
+                                    <input type="text" class="form-control" name="notes" placeholder="Optional">
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-success btn-sm w-100" title="Add Component">
+                                        <i class="fas fa-plus"></i> Add
+                                    </button>
+                                </div>
+                                
+                                <!-- Quick Add Button -->
+                                <div class="col-12 mt-2">
+                                    <div class="d-flex justify-content-center">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" id="quickAddRowBtn" 
+                                                onclick="addQuickRow()" title="Quick add another row">
+                                            <i class="fas fa-plus-circle"></i> Add Another Component
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Components Table -->
+                <div class="card-body p-0">
+                    {% if bom_items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="componentsTable">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th style="width: 3%">
+                                        <button class="btn btn-sm btn-outline-light" onclick="toggleAllRows()" title="Expand/Collapse All">
+                                            <i class="fas fa-compress-alt" id="toggleAllIcon"></i>
+                                        </button>
+                                    </th>
+                                    <th style="width: 4%">#</th>
+                                    <th style="width: 23%">Component</th>
+                                    <th style="width: 11%">Required Qty</th>
+                                    <th style="width: 8%">Unit</th>
+                                    <th style="width: 11%">Unit Cost</th>
+                                    <th style="width: 11%">Total Cost</th>
+                                    <th style="width: 14%">Stock Status</th>
+                                    <th style="width: 10%">Notes</th>
+                                    <th style="width: 9%">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for bom_item in bom_items %}
+                                <tr data-item-id="{{ bom_item.id }}" class="main-component-row">
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-secondary expand-toggle" 
+                                                onclick="toggleComponentDetails({{ bom_item.id }})" 
+                                                title="Expand/Collapse Details">
+                                            <i class="fas fa-chevron-right" id="toggle-{{ bom_item.id }}"></i>
+                                        </button>
+                                    </td>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div>
+                                                <strong>{{ bom_item.item.name }}</strong><br>
+                                                <small class="text-muted">{{ bom_item.item.code }}</small>
+                                                {% if bom_item.item.is_intermediate %}
+                                                    <span class="badge bg-info ms-1">Intermediate</span>
+                                                {% endif %}
+                                                
+                                                <!-- Check if this item has a BOM (nested BOM indicator) -->
+                                                {% set item_bom = bom_item.item.active_bom %}
+                                                {% if item_bom %}
+                                                    <span class="badge bg-warning ms-1" title="This component has its own BOM">
+                                                        <i class="fas fa-sitemap"></i> Has Sub-BOM
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="editable" data-field="quantity_required" data-type="number">
+                                        <span class="display-value">{{ bom_item.quantity_required }}</span>
+                                        <input type="number" class="form-control form-control-sm edit-input" 
+                                               value="{{ bom_item.quantity_required }}" step="0.001" style="display: none;">
+                                    </td>
+                                    <td class="editable" data-field="unit" data-type="select">
+                                        <span class="display-value">{{ bom_item.unit }}</span>
+                                        <select class="form-select form-select-sm edit-input" style="display: none;">
+                                            {% if uom_choices %}
+                                                {% for value, label in uom_choices %}
+                                                    <option value="{{ value }}" {{ 'selected' if value == bom_item.unit else '' }}>{{ label }}</option>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </select>
+                                    </td>
+                                    <td class="editable" data-field="unit_cost" data-type="number">
+                                        <span class="display-value">₹{{ "%.2f"|format(bom_item.unit_cost) }}</span>
+                                        <div class="input-group input-group-sm edit-input" style="display: none;">
+                                            <span class="input-group-text">₹</span>
+                                            <input type="number" class="form-control" 
+                                                   value="{{ bom_item.unit_cost }}" step="0.01">
+                                        </div>
+                                    </td>
+                                    <td class="calculated-cost">
+                                        <strong>₹{{ "%.2f"|format(bom_item.quantity_required * bom_item.unit_cost) }}</strong>
+                                    </td>
+                                    <td>
+                                        {% set stock = bom_item.item.total_stock or bom_item.item.current_stock or 0 %}
+                                        {% if stock >= bom_item.quantity_required %}
+                                            <span class="badge bg-success">✓ Available</span>
+                                        {% elif stock > 0 %}
+                                            <span class="badge bg-warning">⚠ Low Stock</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">✗ Out of Stock</span>
+                                        {% endif %}
+                                        <br><small>{{ stock }} {{ bom_item.unit }}</small>
+                                    </td>
+                                    <td class="editable" data-field="notes" data-type="text">
+                                        <span class="display-value">{{ bom_item.notes or '-' }}</span>
+                                        <input type="text" class="form-control form-control-sm edit-input" 
+                                               value="{{ bom_item.notes or '' }}" style="display: none;">
+                                    </td>
+                                    <td>
+                                        <div class="btn-group-vertical btn-group-sm">
+                                            <!-- Nested BOM Management Button -->
+                                            {% set item_bom = bom_item.item.active_bom %}
+                                            {% if item_bom %}
+                                                <button class="btn btn-outline-info btn-sub-bom" 
+                                                        onclick="toggleSubBOM({{ bom_item.id }}, {{ item_bom.id }})" 
+                                                        title="View/Edit Sub-BOM">
+                                                    <i class="fas fa-sitemap"></i>
+                                                </button>
+                                            {% else %}
+                                                <button class="btn btn-outline-secondary btn-create-bom" 
+                                                        onclick="createSubBOM({{ bom_item.id }}, {{ bom_item.item.id }})" 
+                                                        title="Create Sub-BOM for this component">
+                                                    <i class="fas fa-plus-square"></i>
+                                                </button>
+                                            {% endif %}
+                                            
+                                            <button class="btn btn-outline-primary btn-edit" 
+                                                    onclick="enableInlineEdit(this)" title="Edit inline">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-outline-success btn-save" 
+                                                    onclick="saveInlineEdit(this)" title="Save changes" style="display: none;">
+                                                <i class="fas fa-save"></i>
+                                            </button>
+                                            <button class="btn btn-outline-secondary btn-cancel" 
+                                                    onclick="cancelInlineEdit(this)" title="Cancel edit" style="display: none;">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            <a href="{{ url_for('production.delete_bom_item', id=bom_item.id) }}" 
+                                               class="btn btn-outline-danger"
+                                               onclick="return confirm('Remove this component?')"
+                                               title="Remove">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Expandable Details Row -->
+                                <tr class="component-details-row" id="details-{{ bom_item.id }}" style="display: none;">
+                                    <td></td>
+                                    <td colspan="9">
+                                        <div class="card bg-light border-0">
+                                            <div class="card-body py-2">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <small class="text-muted">Material Properties</small>
+                                                        <ul class="list-unstyled small mb-0">
+                                                            <li><strong>Category:</strong> {{ bom_item.item.item_type or 'N/A' }}</li>
+                                                            <li><strong>Description:</strong> {{ bom_item.item.description or 'N/A' }}</li>
+                                                            <li><strong>Supplier:</strong> {{ bom_item.item.supplier.name if bom_item.item.supplier else 'N/A' }}</li>
+                                                        </ul>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <small class="text-muted">Inventory Details</small>
+                                                        <ul class="list-unstyled small mb-0">
+                                                            <li><strong>Current Stock:</strong> {{ bom_item.item.total_stock or bom_item.item.current_stock or 0 }} {{ bom_item.unit }}</li>
+                                                            <li><strong>Min Stock Level:</strong> {{ bom_item.item.min_stock_level or 'Not Set' }}</li>
+                                                            <li><strong>Last Updated:</strong> {{ bom_item.item.updated_at.strftime('%d/%m/%Y') if bom_item.item.updated_at else 'N/A' }}</li>
+                                                        </ul>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <small class="text-muted">Cost Analysis</small>
+                                                        <ul class="list-unstyled small mb-0">
+                                                            <li><strong>Standard Cost:</strong> ₹{{ "%.2f"|format(bom_item.item.standard_cost or bom_item.item.unit_price or 0) }}</li>
+                                                            <li><strong>Last Purchase Cost:</strong> ₹{{ "%.2f"|format(bom_item.item.last_purchase_cost or bom_item.item.unit_price or 0) }}</li>
+                                                            <li><strong>Avg Cost:</strong> ₹{{ "%.2f"|format(bom_item.item.average_cost or bom_item.item.unit_price or 0) }}</li>
+                                                        </ul>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <small class="text-muted">BOM Specifics</small>
+                                                        <ul class="list-unstyled small mb-0">
+                                                            <li><strong>Wastage Factor:</strong> {{ bom_item.wastage_percent or 0 }}%</li>
+                                                            <li><strong>Lead Time:</strong> {{ bom_item.item.lead_time_days or 'N/A' }} days</li>
+                                                            <li><strong>Critical Component:</strong> {{ 'Yes' if bom_item.is_critical else 'No' }}</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Nested Sub-BOM Row -->
+                                {% set item_bom = bom_item.item.active_bom %}
+                                {% if item_bom %}
+                                <tr class="sub-bom-row" id="sub-bom-{{ bom_item.id }}" style="display: none;">
+                                    <td></td>
+                                    <td colspan="9">
+                                        <div class="card border-warning">
+                                            <div class="card-header bg-warning text-dark">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <h6 class="mb-0">
+                                                        <i class="fas fa-sitemap"></i> Sub-BOM: {{ item_bom.bom_code }}
+                                                        <span class="badge bg-dark ms-2">{{ item_bom.items|length }} components</span>
+                                                    </h6>
+                                                    <div>
+                                                        <a href="{{ url_for('production.edit_bom', id=item_bom.id) }}" 
+                                                           class="btn btn-sm btn-dark" target="_blank" title="Edit in new tab">
+                                                            <i class="fas fa-external-link-alt"></i> Edit
+                                                        </a>
+                                                        <button class="btn btn-sm btn-outline-dark" 
+                                                                onclick="refreshSubBOM({{ bom_item.id }}, {{ item_bom.id }})" 
+                                                                title="Refresh sub-BOM data">
+                                                            <i class="fas fa-sync-alt"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm mb-0">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th style="width: 5%">#</th>
+                                                                <th style="width: 30%">Sub-Component</th>
+                                                                <th style="width: 15%">Quantity</th>
+                                                                <th style="width: 10%">Unit</th>
+                                                                <th style="width: 15%">Unit Cost</th>
+                                                                <th style="width: 15%">Total Cost</th>
+                                                                <th style="width: 10%">Stock</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for sub_item in item_bom.items %}
+                                                            <tr class="sub-component-row">
+                                                                <td>{{ loop.index }}</td>
+                                                                <td>
+                                                                    <div class="ps-3">
+                                                                        <i class="fas fa-level-down-alt text-muted me-1"></i>
+                                                                        <!-- Handle both model objects and dict structures -->
+                                                                        {% if sub_item.item %}
+                                                                            <strong>{{ sub_item.item.name }}</strong><br>
+                                                                            <small class="text-muted">{{ sub_item.item.code }}</small>
+                                                                            
+                                                                            <!-- Check for deeper nesting -->
+                                                                            {% if sub_item.item.active_bom %}
+                                                                                <span class="badge bg-info ms-1" title="Has deeper sub-BOM">
+                                                                                    <i class="fas fa-layers"></i> L3+
+                                                                                </span>
+                                                                            {% endif %}
+                                                                        {% elif sub_item.material %}
+                                                                            <strong>{{ sub_item.material.name }}</strong><br>
+                                                                            <small class="text-muted">{{ sub_item.material.code }}</small>
+                                                                            
+                                                                            <!-- Check for deeper nesting -->
+                                                                            {% if sub_item.material.active_bom %}
+                                                                                <span class="badge bg-info ms-1" title="Has deeper sub-BOM">
+                                                                                    <i class="fas fa-layers"></i> L3+
+                                                                                </span>
+                                                                            {% endif %}
+                                                                        {% else %}
+                                                                            <strong>Unknown Item</strong><br>
+                                                                            <small class="text-muted">No code</small>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                </td>
+                                                                <td>{{ sub_item.quantity_required or sub_item.qty_required or 0 }}</td>
+                                                                <td>{{ sub_item.unit or 'pcs' }}</td>
+                                                                <td>₹{{ "%.2f"|format(sub_item.unit_cost or 0) }}</td>
+                                                                <td>₹{{ "%.2f"|format((sub_item.quantity_required or sub_item.qty_required or 0) * (sub_item.unit_cost or 0)) }}</td>
+                                                                <td>
+                                                                    {% if sub_item.item %}
+                                                                        {% set sub_stock = sub_item.item.total_stock or sub_item.item.current_stock or 0 %}
+                                                                    {% elif sub_item.material %}
+                                                                        {% set sub_stock = sub_item.material.total_stock or sub_item.material.current_stock or 0 %}
+                                                                    {% else %}
+                                                                        {% set sub_stock = 0 %}
+                                                                    {% endif %}
+                                                                    {% if sub_stock >= (sub_item.quantity_required or sub_item.qty_required or 0) %}
+                                                                        <span class="badge bg-success">✓</span>
+                                                                    {% elif sub_stock > 0 %}
+                                                                        <span class="badge bg-warning">⚠</span>
+                                                                    {% else %}
+                                                                        <span class="badge bg-danger">✗</span>
+                                                                    {% endif %}
+                                                                    <br><small>{{ sub_stock }}</small>
+                                                                </td>
+                                                            </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                        <tfoot class="table-warning">
+                                                            <tr>
+                                                                <th colspan="5">Sub-BOM Total Cost</th>
+                                                                <th>₹{{ "%.2f"|format(item_bom.total_material_cost or 0) }}</th>
+                                                                <th></th>
+                                                            </tr>
+                                                        </tfoot>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-secondary">
+                                <tr>
+                                    <th colspan="6">Material Cost Subtotal</th>
+                                    <th id="materialCostTotal">₹{{ "%.2f"|format(material_cost or 0) }}</th>
+                                    <th colspan="3"></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Components Added</h5>
+                        <p class="text-muted">Click "Add Component" to start building your BOM.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Component Tree View (Mini Preview) -->
+                {% if bom_items %}
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Total Components: {{ bom_items|length }}</strong>
+                            <span class="text-muted ms-2">Material Cost: ₹{{ "%.2f"|format(material_cost or 0) }}</span>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('production.bom_tree_view') }}#{{ bom.product.code }}" 
+                               class="btn btn-outline-info btn-sm" target="_blank">
+                                <i class="fas fa-sitemap"></i> View Tree Structure
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Manufacturing Processes Tab -->
+        <div class="tab-pane fade" id="processes" role="tabpanel">
+            <div class="card border-top-0">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-cogs"></i> Manufacturing Process Workflow</h5>
+                    <small>Intelligent Integration: Process workflows automatically populate Scrap Management and Labor Costs</small>
+                </div>
+                <div class="card-body">
+                    {% if bom.processes %}
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h5 class="text-primary">{{ bom.total_process_steps }}</h5>
+                                    <small>Manufacturing Steps</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h5 class="text-info">{{ "%.1f"|format(bom.total_process_time_per_unit) }} min</h5>
+                                    <small>Total Process Time</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h5 class="text-success">₹{{ "%.2f"|format(bom.total_process_cost_per_unit) }}</h5>
+                                    <small>Process Labor Cost (converted)</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h5 class="text-warning">{{ "%.2f"|format(bom.estimated_scrap_percent or 0) }}%</h5>
+                                    <small>Expected Scrap</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Step</th>
+                                    <th>Process Name</th>
+                                    <th>Department</th>
+                                    <th>Time/Unit</th>
+                                    <th>Cost/Unit</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for process in bom.processes %}
+                                <tr>
+                                    <td>{{ process.step_number }}</td>
+                                    <td>
+                                        <strong>{{ process.process_name }}</strong>
+                                        {% if process.operation_description %}
+                                        <br><small class="text-muted">{{ process.operation_description }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ process.department.name if process.department else '-' }}</td>
+                                    <td>{{ "%.1f"|format(process.total_time_minutes) }} min</td>
+                                    <td>
+                                        {% set cost_info = process.cost_display_info %}
+                                        {% if cost_info.has_conversion %}
+                                            <div class="d-flex flex-column">
+                                                <span>₹{{ "%.2f"|format(cost_info.converted_cost) }}</span>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-exchange-alt" title="Converted from per kg to per unit"></i>
+                                                    Original: ₹{{ "%.2f"|format(cost_info.original_cost) }} {{ cost_info.cost_unit }}
+                                                </small>
+                                            </div>
+                                        {% else %}
+                                            ₹{{ "%.2f"|format(process.cost_per_unit or 0) }}
+                                            <small class="text-muted">({{ process.cost_unit or 'per_unit' }})</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('production.edit_bom_process', id=process.id) }}" 
+                                           class="btn btn-sm btn-outline-primary me-1">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <form method="POST" action="{{ url_for('production.delete_bom_process', id=process.id) }}" 
+                                              style="display: inline;" 
+                                              onsubmit="return confirm('Are you sure you want to delete this process?')">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Manufacturing Processes Defined</h5>
+                        <p class="text-muted">Add manufacturing processes to automatically calculate labor costs and scrap rates.</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('production.add_multi_bom_process', bom_id=bom.id) }}" 
+                           class="btn btn-primary">
+                            <i class="fas fa-plus"></i> {{ 'Add Process' if not bom.processes else 'Add Another Process' }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Enhanced BOM Form JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Handle URL fragment for tab navigation
+    function activateTabFromHash() {
+        const hash = window.location.hash;
+        if (hash) {
+            const targetTab = document.querySelector(`[data-bs-target="${hash}"]`);
+            if (targetTab) {
+                const tab = new bootstrap.Tab(targetTab);
+                tab.show();
+            }
+        }
+    }
+    
+    // Activate tab based on URL fragment on page load
+    activateTabFromHash();
+    
+    // Tab Management
+    const bomTabs = document.getElementById('bomTabs');
+    if (bomTabs) {
+        // Auto-fill material cost when material is selected
+        const materialSelect = document.querySelector('select[name="material_id"]');
+        const unitCostInput = document.querySelector('input[name="unit_cost"]');
+        const unitSelect = document.querySelector('select[name="unit"]');
+        
+        if (materialSelect && unitCostInput) {
+            materialSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                if (selectedOption.value) {
+                    const cost = selectedOption.dataset.cost || 0;
+                    const unit = selectedOption.dataset.unit || 'pcs';
+                    unitCostInput.value = parseFloat(cost).toFixed(2);
+                    
+                    // Auto-select matching unit
+                    if (unitSelect) {
+                        for (let option of unitSelect.options) {
+                            if (option.value === unit) {
+                                unitSelect.value = unit;
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Inline Editing for Components Table
+        const editButtons = document.querySelectorAll('.btn-edit');
+        editButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const row = this.closest('tr');
+                const itemId = row.dataset.itemId;
+                toggleInlineEdit(row, itemId);
+            });
+        });
+        
+        // Tab switching with validation
+        const tabs = document.querySelectorAll('[data-bs-toggle="tab"]');
+        tabs.forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function(e) {
+                const targetTab = e.target.getAttribute('data-bs-target');
+                
+                // Refresh calculations when switching to components tab
+                if (targetTab === '#components') {
+                    updateMaterialCostTotal();
+                }
+            });
+        });
+    }
+    
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+function toggleInlineEdit(row, itemId) {
+    const editables = row.querySelectorAll('.editable');
+    const button = row.querySelector('.btn-edit');
+    
+    if (button.innerHTML.includes('fa-edit')) {
+        // Enter edit mode
+        editables.forEach(cell => {
+            const field = cell.dataset.field;
+            const currentValue = cell.textContent.trim().replace('₹', '');
+            
+            let input;
+            if (field === 'unit') {
+                input = createUnitSelect(currentValue);
+            } else if (field === 'quantity_required' || field === 'unit_cost') {
+                input = document.createElement('input');
+                input.type = 'number';
+                input.step = field === 'unit_cost' ? '0.01' : '0.001';
+                input.value = currentValue;
+                input.className = 'form-control form-control-sm';
+            } else {
+                input = document.createElement('input');
+                input.type = 'text';
+                input.value = currentValue === '-' ? '' : currentValue;
+                input.className = 'form-control form-control-sm';
+            }
+            
+            cell.innerHTML = '';
+            cell.appendChild(input);
+        });
+        
+        button.innerHTML = '<i class="fas fa-save"></i>';
+        button.className = 'btn btn-outline-success btn-edit';
+    } else {
+        // Save changes
+        const updates = {};
+        let hasChanges = false;
+        
+        editables.forEach(cell => {
+            const field = cell.dataset.field;
+            const input = cell.querySelector('input, select');
+            const newValue = input.value;
+            
+            if (newValue !== '') {
+                updates[field] = newValue;
+                hasChanges = true;
+            }
+            
+            // Update display
+            if (field === 'unit_cost') {
+                cell.innerHTML = '₹' + parseFloat(newValue || 0).toFixed(2);
+            } else {
+                cell.innerHTML = newValue || '-';
+            }
+        });
+        
+        if (hasChanges) {
+            // Send AJAX update
+            updateBOMItem(itemId, updates, row);
+        }
+        
+        button.innerHTML = '<i class="fas fa-edit"></i>';
+        button.className = 'btn btn-outline-primary btn-edit';
+    }
+}
+
+function createUnitSelect(currentValue) {
+    const select = document.createElement('select');
+    select.className = 'form-select form-select-sm';
+    
+    const units = ['pcs', 'kg', 'g', 'l', 'ml', 'm', 'cm', 'ft', 'inch', 'sqm', 'sqft'];
+    units.forEach(unit => {
+        const option = document.createElement('option');
+        option.value = unit;
+        option.textContent = unit;
+        if (unit === currentValue) option.selected = true;
+        select.appendChild(option);
+    });
+    
+    return select;
+}
+
+function updateBOMItem(itemId, updates, row) {
+    fetch(`/production/bom_item/${itemId}/update`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+        },
+        body: JSON.stringify(updates)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update calculated cost
+            const calculatedCostCell = row.querySelector('.calculated-cost');
+            if (calculatedCostCell && updates.quantity_required && updates.unit_cost) {
+                const totalCost = parseFloat(updates.quantity_required) * parseFloat(updates.unit_cost);
+                calculatedCostCell.innerHTML = '₹' + totalCost.toFixed(2);
+            }
+            
+            // Update material cost total
+            updateMaterialCostTotal();
+            
+            // Show success notification
+            showNotification('Component updated successfully', 'success');
+        } else {
+            showNotification('Error updating component: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        showNotification('Network error updating component', 'error');
+        console.error('Error:', error);
+    });
+}
+
+function updateMaterialCostTotal() {
+    const costCells = document.querySelectorAll('.calculated-cost');
+    let total = 0;
+    
+    costCells.forEach(cell => {
+        const cost = parseFloat(cell.textContent.replace('₹', '')) || 0;
+        total += cost;
+    });
+    
+    const totalCell = document.getElementById('materialCostTotal');
+    if (totalCell) {
+        totalCell.textContent = '₹' + total.toFixed(2);
+    }
+}
+
+function showNotification(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    alert.style.top = '20px';
+    alert.style.right = '20px';
+    alert.style.zIndex = '9999';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 3000);
+}
+</script>
+
+<!-- Additional Advanced BOM Features JavaScript -->
+<script>
+// Advanced BOM Management JavaScript
+
+// Auto-fill UOM and Cost when material is selected
+function autoFillUOMAndCost(selectElement) {
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    if (!selectedOption.value) return;
+    
+    const unit = selectedOption.getAttribute('data-unit');
+    const cost = selectedOption.getAttribute('data-cost');
+    const stock = selectedOption.getAttribute('data-stock');
+    
+    // Auto-fill unit
+    const unitSelect = document.getElementById('unitSelect');
+    if (unit && unitSelect) {
+        unitSelect.value = unit;
+        showAutoFillMessage('autoFillMessage');
+    }
+    
+    // Auto-fill cost
+    const costInput = document.getElementById('unitCostInput');
+    if (cost && costInput) {
+        costInput.value = parseFloat(cost).toFixed(2);
+        showAutoFillMessage('costAutoFillMessage');
+        calculateTotalCost();
+    }
+    
+    // Show stock warning if needed
+    const stockLevel = parseFloat(stock) || 0;
+    if (stockLevel === 0) {
+        showStockWarning('This material is out of stock!', 'danger');
+    } else if (stockLevel < 10) {
+        showStockWarning(`Low stock: ${stockLevel} units available`, 'warning');
+    }
+}
+
+// Show auto-fill success messages
+function showAutoFillMessage(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.style.display = 'block';
+        setTimeout(() => {
+            element.style.display = 'none';
+        }, 3000);
+    }
+}
+
+// Show stock warnings
+function showStockWarning(message, type) {
+    // Create or update stock warning alert
+    let alertDiv = document.getElementById('stockAlert');
+    if (!alertDiv) {
+        alertDiv = document.createElement('div');
+        alertDiv.id = 'stockAlert';
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show mt-2`;
+        const formContainer = document.querySelector('#addComponentForm .card-body');
+        formContainer.appendChild(alertDiv);
+    }
+    
+    alertDiv.innerHTML = `
+        <i class="fas fa-exclamation-triangle"></i> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+}
+
+// Calculate total cost
+function calculateTotalCost() {
+    const quantity = parseFloat(document.querySelector('input[name="quantity_required"]').value) || 0;
+    const unitCost = parseFloat(document.getElementById('unitCostInput').value) || 0;
+    const totalCost = quantity * unitCost;
+    
+    // Update total cost display if exists
+    const totalCostDisplay = document.getElementById('totalCostDisplay');
+    if (totalCostDisplay) {
+        totalCostDisplay.textContent = `₹${totalCost.toFixed(2)}`;
+    }
+}
+
+// Quick add row functionality
+function addQuickRow() {
+    const form = document.querySelector('#addComponentForm form');
+    if (form) {
+        // Reset form for new entry
+        form.reset();
+        document.getElementById('materialSelect').focus();
+        
+        // Hide any previous messages
+        const autoFillMsg = document.getElementById('autoFillMessage');
+        const costAutoFillMsg = document.getElementById('costAutoFillMessage');
+        if (autoFillMsg) autoFillMsg.style.display = 'none';
+        if (costAutoFillMsg) costAutoFillMsg.style.display = 'none';
+        
+        // Remove stock alerts
+        const stockAlert = document.getElementById('stockAlert');
+        if (stockAlert) {
+            stockAlert.remove();
+        }
+        
+        // Auto-expand the form if collapsed
+        const addComponentForm = document.getElementById('addComponentForm');
+        if (!addComponentForm.classList.contains('show')) {
+            addComponentForm.classList.add('show');
+        }
+    }
+}
+
+// Expand/Collapse component details
+function toggleComponentDetails(itemId) {
+    const detailsRow = document.getElementById(`details-${itemId}`);
+    const toggleIcon = document.getElementById(`toggle-${itemId}`);
+    
+    if (detailsRow && toggleIcon) {
+        if (detailsRow.style.display === 'none' || detailsRow.style.display === '') {
+            detailsRow.style.display = 'table-row';
+            toggleIcon.classList.remove('fa-chevron-right');
+            toggleIcon.classList.add('fa-chevron-down');
+        } else {
+            detailsRow.style.display = 'none';
+            toggleIcon.classList.remove('fa-chevron-down');
+            toggleIcon.classList.add('fa-chevron-right');
+        }
+    }
+}
+
+// Toggle all rows expand/collapse
+function toggleAllRows() {
+    const detailsRows = document.querySelectorAll('.component-details-row');
+    const toggleIcons = document.querySelectorAll('.expand-toggle i');
+    const toggleAllIcon = document.getElementById('toggleAllIcon');
+    
+    const allExpanded = Array.from(detailsRows).every(row => row.style.display === 'table-row');
+    
+    detailsRows.forEach(row => {
+        row.style.display = allExpanded ? 'none' : 'table-row';
+    });
+    
+    toggleIcons.forEach(icon => {
+        if (allExpanded) {
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-right');
+        } else {
+            icon.classList.remove('fa-chevron-right');
+            icon.classList.add('fa-chevron-down');
+        }
+    });
+    
+    // Update toggle all icon
+    if (toggleAllIcon) {
+        if (allExpanded) {
+            toggleAllIcon.classList.remove('fa-expand-alt');
+            toggleAllIcon.classList.add('fa-compress-alt');
+        } else {
+            toggleAllIcon.classList.remove('fa-compress-alt');
+            toggleAllIcon.classList.add('fa-expand-alt');
+        }
+    }
+}
+
+// Enhanced inline editing functionality
+function enableInlineEdit(button) {
+    const row = button.closest('tr');
+    const editableCells = row.querySelectorAll('.editable');
+    
+    editableCells.forEach(cell => {
+        const displayValue = cell.querySelector('.display-value');
+        const editInput = cell.querySelector('.edit-input');
+        
+        if (displayValue && editInput) {
+            displayValue.style.display = 'none';
+            editInput.style.display = 'block';
+            
+            // Focus on first input
+            if (editInput.tagName === 'INPUT') {
+                editInput.focus();
+                editInput.select();
+            }
+        }
+    });
+    
+    // Toggle button visibility
+    button.style.display = 'none';
+    const saveBtn = row.querySelector('.btn-save');
+    const cancelBtn = row.querySelector('.btn-cancel');
+    if (saveBtn) saveBtn.style.display = 'block';
+    if (cancelBtn) cancelBtn.style.display = 'block';
+}
+
+function saveInlineEdit(button) {
+    const row = button.closest('tr');
+    const itemId = row.getAttribute('data-item-id');
+    const editableCells = row.querySelectorAll('.editable');
+    
+    const updateData = {};
+    
+    editableCells.forEach(cell => {
+        const field = cell.getAttribute('data-field');
+        const editInput = cell.querySelector('.edit-input');
+        const displayValue = cell.querySelector('.display-value');
+        
+        if (editInput && displayValue) {
+            let newValue;
+            if (editInput.tagName === 'SELECT') {
+                newValue = editInput.value;
+                displayValue.textContent = editInput.options[editInput.selectedIndex].text;
+            } else if (editInput.tagName === 'INPUT') {
+                newValue = editInput.value;
+                if (field === 'unit_cost') {
+                    displayValue.textContent = `₹${parseFloat(newValue).toFixed(2)}`;
+                } else {
+                    displayValue.textContent = newValue;
+                }
+            }
+            
+            updateData[field] = newValue;
+            
+            // Hide edit input, show display
+            editInput.style.display = 'none';
+            displayValue.style.display = 'block';
+        }
+    });
+    
+    // Update calculated cost if quantity or unit cost changed
+    if (updateData.quantity_required || updateData.unit_cost) {
+        const quantity = parseFloat(updateData.quantity_required) || parseFloat(row.querySelector('[data-field="quantity_required"] .display-value').textContent);
+        const unitCost = parseFloat(updateData.unit_cost) || parseFloat(row.querySelector('[data-field="unit_cost"] .display-value').textContent.replace('₹', ''));
+        const totalCost = quantity * unitCost;
+        const totalCostCell = row.querySelector('.calculated-cost');
+        if (totalCostCell) {
+            totalCostCell.innerHTML = `<strong>₹${totalCost.toFixed(2)}</strong>`;
+        }
+    }
+    
+    // Show success message
+    showToast('Component updated successfully!', 'success');
+    
+    // Toggle button visibility
+    button.style.display = 'none';
+    const cancelBtn = row.querySelector('.btn-cancel');
+    const editBtn = row.querySelector('.btn-edit');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    if (editBtn) editBtn.style.display = 'block';
+}
+
+function cancelInlineEdit(button) {
+    const row = button.closest('tr');
+    const editableCells = row.querySelectorAll('.editable');
+    
+    editableCells.forEach(cell => {
+        const displayValue = cell.querySelector('.display-value');
+        const editInput = cell.querySelector('.edit-input');
+        
+        if (displayValue && editInput) {
+            // Reset input to original value
+            if (editInput.tagName === 'INPUT') {
+                editInput.value = displayValue.textContent.replace('₹', '');
+            }
+            
+            editInput.style.display = 'none';
+            displayValue.style.display = 'block';
+        }
+    });
+    
+    // Toggle button visibility
+    button.style.display = 'none';
+    const saveBtn = row.querySelector('.btn-save');
+    const editBtn = row.querySelector('.btn-edit');
+    if (saveBtn) saveBtn.style.display = 'none';
+    if (editBtn) editBtn.style.display = 'block';
+}
+
+// Utility functions
+function showToast(message, type) {
+    // Create toast notification
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.style.position = 'fixed';
+    toast.style.top = '20px';
+    toast.style.right = '20px';
+    toast.style.zIndex = '9999';
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    // Remove after hiding
+    toast.addEventListener('hidden.bs.toast', () => {
+        toast.remove();
+    });
+}
+
+// Nested BOM Management Functions
+function toggleSubBOM(bomItemId, subBomId) {
+    const subBomRow = document.getElementById(`sub-bom-${bomItemId}`);
+    const button = document.querySelector(`button[onclick="toggleSubBOM(${bomItemId}, ${subBomId})"]`);
+    
+    if (subBomRow.style.display === 'none' || subBomRow.style.display === '') {
+        subBomRow.style.display = 'table-row';
+        button.classList.remove('btn-outline-info');
+        button.classList.add('btn-info');
+        button.title = 'Hide Sub-BOM';
+    } else {
+        subBomRow.style.display = 'none';
+        button.classList.remove('btn-info');
+        button.classList.add('btn-outline-info');
+        button.title = 'View/Edit Sub-BOM';
+    }
+}
+
+function createSubBOM(bomItemId, itemId) {
+    if (confirm('Create a new BOM for this component? This will allow you to define sub-components and manage nested manufacturing processes.')) {
+        // Open BOM creation in new tab with pre-filled product
+        const createUrl = `/production/bom/add?product_id=${itemId}&parent_bom_item=${bomItemId}`;
+        window.open(createUrl, '_blank');
+        
+        showToast('Opening BOM creation for this component...', 'info');
+    }
+}
+
+function refreshSubBOM(bomItemId, subBomId) {
+    // Refresh the sub-BOM data via AJAX
+    fetch(`/production/api/bom/${subBomId}/refresh`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Sub-BOM data refreshed successfully', 'success');
+                // Optionally reload the page section
+                location.reload();
+            } else {
+                showToast('Error refreshing sub-BOM: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            showToast('Network error refreshing sub-BOM', 'error');
+            console.error('Error:', error);
+        });
+}
+
+// Enhanced material selection with nested BOM detection
+function autoFillUOMAndCost(selectElement) {
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    if (!selectedOption.value) return;
+    
+    const unit = selectedOption.getAttribute('data-unit');
+    const cost = selectedOption.getAttribute('data-cost');
+    const stock = selectedOption.getAttribute('data-stock');
+    const hasBom = selectedOption.getAttribute('data-has-bom') === 'true';
+    
+    // Auto-fill unit
+    const unitSelect = document.getElementById('unitSelect');
+    if (unit && unitSelect) {
+        unitSelect.value = unit;
+        showAutoFillMessage('autoFillMessage');
+    }
+    
+    // Auto-fill cost
+    const costInput = document.getElementById('unitCostInput');
+    if (cost && costInput) {
+        costInput.value = parseFloat(cost).toFixed(2);
+        showAutoFillMessage('costAutoFillMessage');
+        calculateTotalCost();
+    }
+    
+    // Show nested BOM info if component has sub-BOM
+    if (hasBom) {
+        showNestedBOMInfo('This component has its own BOM structure with sub-components');
+    }
+    
+    // Show stock warning if needed
+    const stockLevel = parseFloat(stock) || 0;
+    if (stockLevel === 0) {
+        showStockWarning('This material is out of stock!', 'danger');
+    } else if (stockLevel < 10) {
+        showStockWarning(`Low stock: ${stockLevel} units available`, 'warning');
+    }
+}
+
+function showNestedBOMInfo(message) {
+    // Create or update nested BOM info alert
+    let alertDiv = document.getElementById('nestedBomAlert');
+    if (!alertDiv) {
+        alertDiv = document.createElement('div');
+        alertDiv.id = 'nestedBomAlert';
+        alertDiv.className = 'alert alert-info alert-dismissible fade show mt-2';
+        const formContainer = document.querySelector('#addComponentForm .card-body');
+        formContainer.appendChild(alertDiv);
+    }
+    
+    alertDiv.innerHTML = `
+        <i class="fas fa-sitemap"></i> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+}
+
+// Multi-level cost calculation
+function calculateMultiLevelCost() {
+    let totalCost = 0;
+    
+    // Calculate main level costs
+    document.querySelectorAll('.calculated-cost').forEach(cell => {
+        const cost = parseFloat(cell.textContent.replace('₹', '')) || 0;
+        totalCost += cost;
+    });
+    
+    // Add sub-BOM costs
+    document.querySelectorAll('.sub-bom-row .table tfoot th:nth-last-child(2)').forEach(cell => {
+        const subCost = parseFloat(cell.textContent.replace('₹', '')) || 0;
+        totalCost += subCost;
+    });
+    
+    // Update total display
+    const totalDisplay = document.getElementById('materialCostTotal');
+    if (totalDisplay) {
+        totalDisplay.textContent = `₹${totalCost.toFixed(2)}`;
+    }
+    
+    return totalCost;
+}
+
+// Enhanced component expand/collapse with nested BOM support
+function toggleComponentDetails(itemId) {
+    const detailsRow = document.getElementById(`details-${itemId}`);
+    const subBomRow = document.getElementById(`sub-bom-${itemId}`);
+    const toggleIcon = document.getElementById(`toggle-${itemId}`);
+    
+    if (detailsRow && toggleIcon) {
+        const isExpanded = detailsRow.style.display === 'table-row';
+        
+        if (isExpanded) {
+            detailsRow.style.display = 'none';
+            if (subBomRow) subBomRow.style.display = 'none';
+            toggleIcon.classList.remove('fa-chevron-down');
+            toggleIcon.classList.add('fa-chevron-right');
+        } else {
+            detailsRow.style.display = 'table-row';
+            toggleIcon.classList.remove('fa-chevron-right');
+            toggleIcon.classList.add('fa-chevron-down');
+        }
+    }
+}
+
+// Add event listeners when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Add quantity change listener
+    const quantityInput = document.querySelector('input[name="quantity_required"]');
+    if (quantityInput) {
+        quantityInput.addEventListener('input', calculateTotalCost);
+    }
+    
+    // Initialize nested BOM tooltips
+    const nestedBomButtons = document.querySelectorAll('.btn-sub-bom, .btn-create-bom');
+    nestedBomButtons.forEach(button => {
+        new bootstrap.Tooltip(button);
+    });
+    
+    // Auto-calculate multi-level costs on page load
+    setTimeout(() => {
+        calculateMultiLevelCost();
+    }, 500);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-search me-2"></i>{{ title }}</h2>
+                <a href="{{ url_for('material_inspection.dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-file-invoice text-primary me-2"></i>Purchase Order Details</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>PO Number:</strong></td>
+                            <td>{{ po.po_number }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Supplier:</strong></td>
+                            <td>{{ po.supplier.name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Order Date:</strong></td>
+                            <td>{{ po.order_date.strftime('%m/%d/%Y') if po.order_date else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Created:</strong></td>
+                            <td>{{ po.created_at.strftime('%m/%d/%Y') if po.created_at else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                <span class="badge bg-info">{{ po.status.title() }}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Inspection Status:</strong></td>
+                            <td>
+                                <span class="badge bg-warning">{{ po.inspection_status.title() }}</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list me-2"></i>Items to Inspect</h5>
+                </div>
+                <div class="card-body">
+                    {% if po.items %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Inspection Instructions:</strong> Review each item carefully. Click "Log Inspection" to record the inspection results for each item separately.
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Ordered Qty</th>
+                                        <th>Unit Price</th>
+                                        <th>Total Amount</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in po.items %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ item.item.name }}</strong>
+                                            <br><small class="text-muted">{{ item.item.code }}</small>
+                                        </td>
+                                        <td>{{ "%.2f"|format(item.quantity_ordered) }} {{ item.purchase_unit if item.purchase_unit else item.item.unit_of_measure }}</td>
+                                        <td>₹{{ "%.2f"|format(item.unit_price) }}</td>
+                                        <td>₹{{ "%.2f"|format(item.quantity_ordered * item.unit_price) }}</td>
+                                        <td>
+                                            <a href="{{ url_for('material_inspection.log_inspection') }}?po_id={{ po.id }}&item_id={{ item.item.id }}" 
+                                               class="btn btn-sm btn-success">
+                                                <i class="fas fa-clipboard-check me-1"></i>Log Inspection
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {% if po.notes %}
+                        <div class="mt-3">
+                            <h6><i class="fas fa-sticky-note me-1"></i>Notes:</h6>
+                            <div class="alert alert-light">{{ po.notes }}</div>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning mb-3"></i>
+                            <h5>No Items Found</h5>
+                            <p class="text-muted">This Purchase Order has no items to inspect.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

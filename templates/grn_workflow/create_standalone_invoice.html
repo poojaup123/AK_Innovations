@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Create Vendor Invoice - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-file-invoice-dollar"></i> Create Vendor Invoice</h1>
+            <p class="text-muted">Create a new vendor invoice for your records</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('grn_workflow.list_invoices') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Invoices
+            </a>
+        </div>
+    </div>
+
+    <!-- Invoice Form -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-plus"></i> Invoice Details</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.invoice_number.label(class="form-label") }}
+                            {{ form.invoice_number(class="form-control") }}
+                            {% if form.invoice_number.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.invoice_number.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.invoice_date.label(class="form-label") }}
+                            {{ form.invoice_date(class="form-control") }}
+                            {% if form.invoice_date.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.invoice_date.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.vendor_id.label(class="form-label") }}
+                            {{ form.vendor_id(class="form-select") }}
+                            {% if form.vendor_id.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.vendor_id.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.invoice_document.label(class="form-label") }}
+                            {{ form.invoice_document(class="form-control") }}
+                            {% if form.invoice_document.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.invoice_document.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="text-muted">Upload invoice document (PDF, JPG, PNG)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Amount Details -->
+                <div class="card bg-light mb-3">
+                    <div class="card-header">
+                        <h6><i class="fas fa-calculator"></i> Amount Breakdown</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ form.base_amount.label(class="form-label") }}
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        {{ form.base_amount(class="form-control", id="base_amount", onchange="calculateTotal()") }}
+                                    </div>
+                                    {% if form.base_amount.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.base_amount.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ form.gst_amount.label(class="form-label") }}
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        {{ form.gst_amount(class="form-control", id="gst_amount", onchange="calculateTotal()") }}
+                                    </div>
+                                    {% if form.gst_amount.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.gst_amount.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ form.freight_amount.label(class="form-label") }}
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        {{ form.freight_amount(class="form-control", id="freight_amount", onchange="calculateTotal()") }}
+                                    </div>
+                                    {% if form.freight_amount.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.freight_amount.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ form.other_charges.label(class="form-label") }}
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        {{ form.other_charges(class="form-control", id="other_charges", onchange="calculateTotal()") }}
+                                    </div>
+                                    {% if form.other_charges.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.other_charges.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.total_amount.label(class="form-label") }}
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        {{ form.total_amount(class="form-control", id="total_amount", readonly=true) }}
+                                    </div>
+                                    {% if form.total_amount.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.total_amount.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <small class="text-muted">Auto-calculated total amount</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{{ url_for('grn_workflow.list_invoices') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Create Invoice
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function calculateTotal() {
+    const baseAmount = parseFloat(document.getElementById('base_amount').value) || 0;
+    const gstAmount = parseFloat(document.getElementById('gst_amount').value) || 0;
+    const freightAmount = parseFloat(document.getElementById('freight_amount').value) || 0;
+    const otherCharges = parseFloat(document.getElementById('other_charges').value) || 0;
+    
+    const totalAmount = baseAmount + gstAmount + freightAmount + otherCharges;
+    document.getElementById('total_amount').value = totalAmount.toFixed(2);
+}
+
+// Set today's date as default
+document.addEventListener('DOMContentLoaded', function() {
+    const dateField = document.getElementById('{{ form.invoice_date.id }}');
+    if (dateField && !dateField.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateField.value = today;
+    }
+    
+    // Calculate initial total
+    calculateTotal();
+});
+</script>
+{% endblock %}

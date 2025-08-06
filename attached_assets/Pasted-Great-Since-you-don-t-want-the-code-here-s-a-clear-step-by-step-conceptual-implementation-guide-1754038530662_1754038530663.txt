@@ -1,0 +1,176 @@
+Great! Since you don’t want the code, here’s a **clear, step-by-step conceptual implementation guide** of how to **implement batch-wise tracking** in your factory management app — without any coding, just architecture and logic.
+
+---
+
+## ✅ Step-by-Step: Batch-wise Tracking in Your App (Non-Code)
+
+---
+
+### 🔹 **Step 1: Enable Batch in GRN (Goods Receipt Note)**
+
+**What to do:**
+
+* When raw material is received, assign a **unique Batch Code** (manual or auto).
+* Capture:
+
+  * Batch code
+  * Quantity
+  * UOM (e.g. kg, pcs)
+  * MFG date (optional)
+  * Expiry date (optional)
+  * Initial State = **Raw**
+
+**Result:**
+You now have identifiable stock stored **per batch**, not just per item.
+
+---
+
+### 🔹 **Step 2: Store Inventory by Batch**
+
+**What to do:**
+
+* Your inventory table should now show:
+
+  * Item
+  * Batch Code
+  * Quantity Available
+  * State: Raw / WIP / Finished / Scrap
+  * UOM
+  * Source (e.g., GRN, Production, Return)
+
+**Result:**
+Each item can have multiple lines (batches), all with different quantities or states.
+
+---
+
+### 🔹 **Step 3: Issue Material for Job Work (Batch Selection)**
+
+**What to do:**
+
+* When issuing raw material for job work:
+
+  * Select the **batch code** of the material
+  * Enter quantity to issue
+  * System should move this quantity from **Raw** to **WIP**
+  * Store Job Work ID + Vendor + Date + Batch Info
+
+**Result:**
+The system knows **exactly which batch was sent out** and how much is still left.
+
+---
+
+### 🔹 **Step 4: Return from Job Work (Batch-Aware)**
+
+**What to do:**
+When vendor returns job work output:
+
+* Input:
+
+  * Output product name
+  * New **Output Batch Code**
+  * Quantity produced
+  * Scrap Quantity (if any)
+  * Returned unused quantity of raw material
+  * Link to original **input batch**
+
+**Result:**
+
+* You generate a new batch for output (Finished)
+* Update raw batch with returned unused quantity
+* Log scrap separately (Scrap batch or tag)
+
+---
+
+### 🔹 **Step 5: Inventory Auto-Updating Based on States**
+
+**System should do:**
+
+* Deduct issued quantity from original batch (MS-001)
+* Move issued quantity to WIP when sent out
+* On return:
+
+  * Add to Finished Goods as new batch (e.g. FG-001)
+  * Add scrap to Scrap state
+  * Add unused material back to the raw batch
+
+**Result:**
+Your inventory remains 100% accurate and **state-aware**
+
+---
+
+### 🔹 **Step 6: Inventory View**
+
+**Your inventory screen should show:**
+
+\| Item         | Batch Code | Qty | UOM | State     | Source        | |
+\|--------------|------------|-----|-----|-----------|----------------|
+\| MS Sheet     | MS-001     | 17  | Sheet | Raw     | GRN-456       |
+\| MS Sheet     | MS-001     | 0   | Sheet | WIP     | JW-1001       |
+\| Mounted Plate| FG-001     | 500 | Pcs  | Finished| JW-1001       |
+\| Scrap Plate  | SCRAP-JW1001| 20 | Pcs | Scrap   | JW-1001       |
+
+---
+
+### 🔹 **Step 7: Batch Movement History **
+
+You can maintain a batch ledger:
+
+* GRN → Raw → WIP → Finished → Dispatched
+* Input batch linked to output batch
+* Helps with:
+
+  * ISO audits
+  * Vendor QC
+  * Recall investigation
+
+---
+
+### 🔹 **Step 8: Reports You Can Now Generate**
+
+| Report                       | Description                                |
+| ---------------------------- | ------------------------------------------ |
+| Batch Consumption Report     | Which batch was used where                 |
+| Job Work Yield Report        | How much output from input, scrap etc.     |
+| Scrap Report                 | Batch-wise scrap generated                 |
+| Batch Ageing Report          | How old each batch is                      |
+| Vendor Performance           | Track scrap %, efficiency from each vendor |
+| Inventory Valuation by Batch | Batch-wise cost/qty tracking               |
+
+---
+
+## 🔄 Use Cases Enabled by Batch-wise Tracking
+
+| Situation                                     | How Batch Tracking Helps                |
+| --------------------------------------------- | --------------------------------------- |
+| You get a customer complaint on product batch | Trace which raw batch was used          |
+| A raw batch has quality issues                | Stop using it in job work or production |
+| You want to dispatch only oldest material     | Use FIFO logic with batch date          |
+| Audit requires full material movement history | Easily generate traceability reports    |
+| You want to prevent duplicate or over-issue   | Batch control restricts overspending    |
+
+---
+
+## 📌 Summary: System-Wide Impact
+
+| Module     | Batch Integration Role                         |
+| ---------- | ---------------------------------------------- |
+| GRN        | Creates new batches                            |
+| Inventory  | Tracks quantity, state, and origin per batch   |
+| Job Work   | Sends and returns materials batch-wise         |
+| Production | Converts input batches into new output batches |
+| Scrap      | Separates defective quantities batch-wise      |
+| Reports    | Enables full traceability and audit readiness  |
+
+---
+
+## ✅ You Now Have:
+
+* Traceability from raw material to finished product
+* Control over every gram/sheet/piece by batch
+* Vendor accountability
+* Cleaner inventory system
+* Audit + complaint-ready infrastructure
+
+---
+
+!

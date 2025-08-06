@@ -1,0 +1,101 @@
+To **track Multi-Process Job Work with GRN (Goods Receipt Note)** efficiently in your factory management app, you need a **layered system** that captures:
+
+1. **Each process in the job work chain**
+2. **What was received after each process**
+3. **How much passed/failed inspection**
+4. **Inventory updates per stage**
+5. **Vendor cost per process**
+
+---
+
+## 🏗️ SYSTEM OVERVIEW: Multi-Process Job Work + GRN Tracking
+
+### 📦 Let’s take a real example:
+
+You're sending **MS Sheets** → to cutting → bending → zinc plating → returns as **Mounted Plate + Base Plate**
+
+---
+
+## 🔁 FLOW OVERVIEW
+
+```
+Inventory (MS Sheet)
+     ↓ (Job Work Issued)
+Cutting (Process 1) 
+     ↓ (GRN 1: Output Received + Scrap)
+Bending (Process 2)
+     ↓ (GRN 2: Output Received + Rejection)
+Zinc Plating (Process 3)
+     ↓ (GRN 3: Final Output Ready for Assembly)
+```
+
+---
+
+## 🧾 GRN TRACKING FOR EACH STAGE
+
+Each time material comes back from a **process**, generate a **GRN (Goods Receipt Note)**:
+
+| GRN No  | Job No     | Process      | Item Received     | Qty     | Scrap  | Status | Date   |
+| ------- | ---------- | ------------ | ----------------- | ------- | ------ | ------ | ------ |
+| GRN-001 | MPJOB-0001 | Cutting      | Base Plate        | 100 pcs | 10 pcs | Passed | 01-Aug |
+| GRN-002 | MPJOB-0001 | Bending      | Base Plate        | 95 pcs  | 2 pcs  | Passed | 03-Aug |
+| GRN-003 | MPJOB-0001 | Zinc Plating | Base Plate (Zinc) | 93 pcs  | 0 pcs  | Passed | 05-Aug |
+
+---
+
+## 🧠 HOW TO IMPLEMENT IN YOUR APP
+
+### 🔶 1. `grn_parent` Table (One per return entry)
+
+| Field          | Description                     |
+| -------------- | ------------------------------- |
+| `grn_id`       | GRN-2025-0001                   |
+| `job_number`   | MPJOB-0001                      |
+| `process_name` | Zinc Plating                    |
+| `vendor_id`    | From Vendor Table               |
+| `return_date`  | Date material returned          |
+| `inspected_by` | (Optional) User ID              |
+| `remarks`      | QC, scrap info, rejection notes |
+
+---
+
+### 🔷 2. `grn_child` Table (Line-wise item details per GRN)
+
+| Field               | Description                  |
+| ------------------- | ---------------------------- |
+| `grn_id`            | Foreign key to `grn_parent`  |
+| `item_id`           | e.g., ITEM-0011              |
+| `quantity_received` | How much was received        |
+| `scrap_qty`         | How much scrap/rejected      |
+| `inventory_action`  | Add to Stock, Scrap Register |
+
+---
+
+## 🔄 TRACKING JOB WORK COMPLETION
+
+You can track **process-wise completion status** by joining `job_work_processes` with `grn_parent`:
+
+| Process | Qty Sent | GRN Received | Scrap | Status      |
+| ------- | -------- | ------------ | ----- | ----------- |
+| Cutting | 100      | 98           | 2     | ✅ Completed |
+| Bending | 98       | 95           | 3     | ✅ Completed |
+| Zinc    | 95       | 95           | 0     | ✅ Completed |
+
+> 🔔 Once all processes completed and GRNs submitted, **mark full job as `Completed`**
+
+---
+
+## 📊 UI SUGGESTION
+
+In your **Job Work Report Table**, add expandable row:
+
+```
+JOB-2025-0012 – Multi-Process Job Work – Status: In Progress ⏳
+
+> ▼ View Details
+   ├─ Process 1: Cutting – 100 pcs – GRN-0001 – ✅ 98 received – 2 scrap
+   ├─ Process 2: Bending – 98 pcs – GRN-0002 – ✅ 95 received – 3 scrap
+   └─ Process 3: Zinc – 95 pcs – GRN-0003 – ✅ 95 received – 0 scrap
+```
+
+

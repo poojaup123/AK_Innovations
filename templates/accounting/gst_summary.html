@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-chart-bar"></i> GST Summary Report</h2>
+                <a href="{{ url_for('accounting.reports_dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Reports
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> GST Summary Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Coming Soon:</strong> GST Summary report functionality will be available in the next update. 
+                        This report will provide an overview of GST collections, payments, and outstanding amounts.
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-lg-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6>Total GST Collected</h6>
+                                    <h4 class="text-success">₹0.00</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6>Total GST Paid</h6>
+                                    <h4 class="text-danger">₹0.00</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6>Net GST Liability</h6>
+                                    <h4 class="text-warning">₹0.00</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

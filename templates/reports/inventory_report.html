@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Report - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-boxes"></i> Inventory Report</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('reports.dashboard') }}">Reports</a></li>
+                    <li class="breadcrumb-item active">Inventory Report</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group">
+                <a href="{{ url_for('reports.export_inventory') }}" class="btn btn-success">
+                    <i class="fas fa-file-csv"></i> Export CSV
+                </a>
+                <button onclick="window.print()" class="btn btn-outline-primary">
+                    <i class="fas fa-print"></i> Print
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-filter"></i> Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Item Type</label>
+                            <select name="item_type" class="form-select">
+                                <option value="">All Types</option>
+                                <option value="material" {{ 'selected' if request.args.get('item_type') == 'material' }}>Raw Material</option>
+                                <option value="product" {{ 'selected' if request.args.get('item_type') == 'product' }}>Finished Product</option>
+                                <option value="consumable" {{ 'selected' if request.args.get('item_type') == 'consumable' }}>Consumable</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Stock Status</label>
+                            <select name="stock_status" class="form-select">
+                                <option value="">All Items</option>
+                                <option value="low_stock" {{ 'selected' if request.args.get('stock_status') == 'low_stock' }}>Low Stock</option>
+                                <option value="in_stock" {{ 'selected' if request.args.get('stock_status') == 'in_stock' }}>In Stock</option>
+                                <option value="out_of_stock" {{ 'selected' if request.args.get('stock_status') == 'out_of_stock' }}>Out of Stock</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Search</label>
+                            <input type="text" name="search" class="form-control" placeholder="Item code or name" value="{{ request.args.get('search', '') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Filter
+                                </button>
+                                <a href="{{ url_for('reports.inventory_report') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ total_items }}</h4>
+                            <p class="mb-0">Total Items</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-boxes fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>₹{{ "%.2f"|format(total_value) }}</h4>
+                            <p class="mb-0">Total Value</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-rupee-sign fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ low_stock_count }}</h4>
+                            <p class="mb-0">Low Stock Items</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ out_of_stock_count }}</h4>
+                            <p class="mb-0">Out of Stock</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-times-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-list"></i> Inventory Details</h5>
+        </div>
+        <div class="card-body">
+            {% if items %}
+                <div class="table-responsive" style="min-height: 400px;">
+                    <table class="table table-striped table-hover table-sm" style="font-size: 0.9em;">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="min-width: 90px;">Item Code</th>
+                                <th style="min-width: 120px;">Item Name</th>
+                                <th style="min-width: 80px;">Type</th>
+
+                                <th style="min-width: 90px;">Current Stock</th>
+                                <th style="min-width: 60px;">Unit</th>
+                                <th style="min-width: 100px;">Current Stock (pcs)</th>
+                                <th style="min-width: 80px;">Min Stock</th>
+                                <th style="min-width: 90px;">Unit Weight</th>
+                                <th style="min-width: 100px;">Total Weight</th>
+                                <th style="min-width: 90px;">Unit Price</th>
+                                <th style="min-width: 90px;">Total Value</th>
+                                <th style="min-width: 80px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr class="{{ 'table-danger' if (item.current_stock or 0) == 0 else 'table-warning' if (item.current_stock or 0) <= (item.minimum_stock or 0) else '' }}">
+                                <td><strong style="font-size: 0.85em;">{{ item.code }}</strong></td>
+                                <td><strong>{{ item.name }}</strong></td>
+                                <td>
+                                    <span class="badge bg-{{ 'primary' if item.item_type == 'material' else 'success' if item.item_type == 'product' else 'info' }}">
+                                        {{ item.item_type.title() }}
+                                    </span>
+                                </td>
+                                <td>{{ "%.2f"|format(item.current_stock or 0) }}</td>
+                                <td>{{ item.unit_of_measure or 'N/A' }}</td>
+                                <td>
+                                    {% if item.uom_conversion %}
+                                        {% set inventory_qty = item.current_stock or 0 %}
+                                        {% set pieces_qty = inventory_qty * (item.uom_conversion.inventory_to_sale or 1) %}
+                                        <strong>{{ "%.0f"|format(pieces_qty) }} pcs</strong>
+                                    {% else %}
+                                        {% if item.unit_of_measure and ('pcs' in item.unit_of_measure.lower() or 'piece' in item.unit_of_measure.lower() or 'nos' in item.unit_of_measure.lower()) %}
+                                            <strong>{{ "%.0f"|format(item.current_stock or 0) }} pcs</strong>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>{{ "%.2f"|format(item.minimum_stock or 0) }}</td>
+                                <td>
+                                    {% if (item.unit_weight or 0) > 0 %}
+                                        {% set weight_val = item.unit_weight %}
+                                        {% set display_unit = 'kg' %}
+                                        {% set display_weight = weight_val %}
+                                        
+                                        {% if weight_val < 1 %}
+                                            {% set display_unit = 'g' %}
+                                            {% set display_weight = weight_val * 1000 %}
+                                        {% endif %}
+                                        
+                                        {% if item.unit_of_measure %}
+                                            {% if 'Square' in item.unit_of_measure or 'sq' in item.unit_of_measure %}
+                                                {{ "%.1f"|format(display_weight) if display_unit == 'g' else "%.3f"|format(display_weight) }} {{ display_unit }}/sq.ft
+                                            {% elif 'Meter' in item.unit_of_measure or 'Length' in item.unit_of_measure %}
+                                                {{ "%.1f"|format(display_weight) if display_unit == 'g' else "%.3f"|format(display_weight) }} {{ display_unit }}/m
+                                            {% elif 'Kilogram' in item.unit_of_measure %}
+                                                {{ "%.1f"|format(display_weight) if display_unit == 'g' else "%.3f"|format(display_weight) }} {{ display_unit }}/kg
+                                            {% elif 'Liter' in item.unit_of_measure or 'Volume' in item.unit_of_measure %}
+                                                {{ "%.1f"|format(display_weight) if display_unit == 'g' else "%.3f"|format(display_weight) }} {{ display_unit }}/L
+                                            {% else %}
+                                                {{ "%.1f"|format(display_weight) if display_unit == 'g' else "%.3f"|format(display_weight) }} {{ display_unit }}/unit
+                                            {% endif %}
+                                        {% else %}
+                                            {{ "%.1f"|format(display_weight) if display_unit == 'g' else "%.3f"|format(display_weight) }} {{ display_unit }}
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if (item.unit_weight or 0) > 0 and (item.current_stock or 0) > 0 %}
+                                        <strong>{{ "%.3f"|format((item.unit_weight or 0) * (item.current_stock or 0)) }} kg</strong>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>₹{{ "%.2f"|format(item.unit_price or 0) }}</td>
+                                <td>₹{{ "%.2f"|format((item.current_stock or 0) * (item.unit_price or 0)) }}</td>
+                                <td>
+                                    {% if (item.current_stock or 0) == 0 %}
+                                        <span class="badge bg-danger">Out of Stock</span>
+                                    {% elif (item.current_stock or 0) <= (item.minimum_stock or 0) %}
+                                        <span class="badge bg-warning">Low Stock</span>
+                                    {% else %}
+                                        <span class="badge bg-success">In Stock</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if items.pages > 1 %}
+                <nav aria-label="Page navigation" class="mt-3">
+                    <ul class="pagination">
+                        {% if items.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('reports.inventory_report', page=items.prev_num, **request.args) }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in items.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != items.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('reports.inventory_report', page=page_num, **request.args) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if items.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('reports.inventory_report', page=items.next_num, **request.args) }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5>No Items Found</h5>
+                    <p class="text-muted">No inventory items match your current filters.</p>
+                    <a href="{{ url_for('reports.inventory_report') }}" class="btn btn-primary">
+                        <i class="fas fa-times"></i> Clear Filters
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit form on filter change
+    const filterInputs = document.querySelectorAll('select[name="item_type"], select[name="stock_status"]');
+    filterInputs.forEach(function(input) {
+        input.addEventListener('change', function() {
+            this.form.submit();
+        });
+    });
+});
+</script>
+{% endblock %}

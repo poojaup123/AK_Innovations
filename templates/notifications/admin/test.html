@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}Test Notifications{% endblock %}
+
+{% block extra_css %}
+<style>
+.test-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+.test-result {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 5px;
+}
+.test-result.success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+.test-result.failure {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-flask"></i> Test Notifications</h2>
+                <a href="{{ url_for('notifications.admin_dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Notification Test -->
+    <div class="test-section">
+        <h4><i class="fas fa-paper-plane"></i> Send Test Notification</h4>
+        <p class="text-muted">Send a test notification to verify your communication channels are working correctly.</p>
+        
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="notification_type">Notification Type</label>
+                        <select class="form-control" id="notification_type" name="notification_type" required>
+                            <option value="">Select Type</option>
+                            <option value="email">📧 Email</option>
+                            <option value="sms">📱 SMS</option>
+                            <option value="whatsapp">💬 WhatsApp</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="recipient">Recipient</label>
+                        <input type="text" class="form-control" id="recipient" name="recipient" 
+                               placeholder="Email or Phone Number" required>
+                        <small class="form-text text-muted">
+                            Email: user@example.com<br>
+                            Phone: +91 9876543210
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="subject">Subject</label>
+                        <input type="text" class="form-control" id="subject" name="subject" 
+                               value="Test Notification from Factory Management System" required>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-paper-plane"></i> Send Test
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="message">Message</label>
+                <textarea class="form-control" id="message" name="message" rows="3" required>This is a test notification from your Factory Management System. All communication channels are working correctly!</textarea>
+            </div>
+        </form>
+    </div>
+
+    <!-- Quick Channel Tests -->
+    <div class="test-section">
+        <h4><i class="fas fa-broadcast-tower"></i> Quick Channel Tests</h4>
+        <p class="text-muted">Test each communication channel with predefined messages.</p>
+        
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-envelope fa-3x text-primary mb-3"></i>
+                        <h5>Email Test</h5>
+                        <p class="text-muted">Test email delivery with SendGrid</p>
+                        <button class="btn btn-primary" onclick="quickTest('email')">
+                            <i class="fas fa-paper-plane"></i> Test Email
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-sms fa-3x text-info mb-3"></i>
+                        <h5>SMS Test</h5>
+                        <p class="text-muted">Test SMS delivery with Twilio</p>
+                        <button class="btn btn-info" onclick="quickTest('sms')">
+                            <i class="fas fa-sms"></i> Test SMS
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="fab fa-whatsapp fa-3x text-success mb-3"></i>
+                        <h5>WhatsApp Test</h5>
+                        <p class="text-muted">Test WhatsApp with Twilio API</p>
+                        <button class="btn btn-success" onclick="quickTest('whatsapp')">
+                            <i class="fab fa-whatsapp"></i> Test WhatsApp
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Configuration Test -->
+    <div class="test-section">
+        <h4><i class="fas fa-cogs"></i> System Configuration Test</h4>
+        <p class="text-muted">Verify system configuration and service credentials.</p>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <button class="btn btn-warning btn-block mb-2" onclick="testConfiguration()">
+                    <i class="fas fa-cog"></i> Test System Configuration
+                </button>
+            </div>
+            <div class="col-md-6">
+                <a href="{{ url_for('notifications.bulk_test_notifications') }}" class="btn btn-info btn-block mb-2">
+                    <i class="fas fa-flask"></i> Run Comprehensive Test
+                </a>
+            </div>
+        </div>
+        
+        <div id="config-test-results" class="mt-3"></div>
+    </div>
+
+    <!-- Test Results -->
+    <div id="test-results"></div>
+
+    <!-- Common Test Scenarios -->
+    <div class="test-section">
+        <h4><i class="fas fa-scenarios"></i> Common Test Scenarios</h4>
+        <p class="text-muted">Test typical business event notifications.</p>
+        
+        <div class="row">
+            <div class="col-md-3">
+                <button class="btn btn-outline-primary btn-block mb-2" onclick="testScenario('po_created')">
+                    📋 PO Created
+                </button>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-outline-success btn-block mb-2" onclick="testScenario('grn_received')">
+                    📦 GRN Received
+                </button>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-outline-info btn-block mb-2" onclick="testScenario('job_work_issued')">
+                    🔧 Job Work Issued
+                </button>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-outline-warning btn-block mb-2" onclick="testScenario('low_stock')">
+                    ⚠️ Low Stock Alert
+                </button>
+            </div>
+        </div>
+        
+        <div id="scenario-test-results" class="mt-3"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Quick test function for individual channels
+function quickTest(channel) {
+    const adminEmail = 'admin@example.com'; // Replace with actual admin email
+    const adminPhone = '+911234567890';     // Replace with actual admin phone
+    
+    let recipient, subject, message;
+    
+    switch(channel) {
+        case 'email':
+            recipient = adminEmail;
+            subject = 'Email Channel Test';
+            message = 'This is a test email from your Factory Management System. Email notifications are working correctly!';
+            break;
+        case 'sms':
+            recipient = adminPhone;
+            subject = 'SMS Test';
+            message = 'SMS notifications are working correctly from your Factory Management System!';
+            break;
+        case 'whatsapp':
+            recipient = adminPhone;
+            subject = 'WhatsApp Test';
+            message = 'WhatsApp notifications are working correctly from your Factory Management System!';
+            break;
+    }
+    
+    // Fill form and submit
+    document.getElementById('notification_type').value = channel;
+    document.getElementById('recipient').value = recipient;
+    document.getElementById('subject').value = subject;
+    document.getElementById('message').value = message;
+    
+    // Submit form
+    document.querySelector('form').submit();
+}
+
+// Test system configuration
+function testConfiguration() {
+    const resultsDiv = document.getElementById('config-test-results');
+    resultsDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Testing configuration...</div>';
+    
+    fetch('/notifications/api/test-config')
+        .then(response => response.json())
+        .then(data => {
+            let html = '<div class="row">';
+            
+            Object.keys(data).forEach(service => {
+                const status = data[service];
+                const statusClass = status.success ? 'success' : 'danger';
+                const statusIcon = status.success ? 'check' : 'times';
+                
+                html += `
+                    <div class="col-md-4 mb-2">
+                        <div class="alert alert-${statusClass} mb-0">
+                            <i class="fas fa-${statusIcon}"></i> 
+                            <strong>${service}:</strong> ${status.message}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+        })
+        .catch(error => {
+            resultsDiv.innerHTML = '<div class="alert alert-danger">Error testing configuration: ' + error.message + '</div>';
+        });
+}
+
+// Test specific scenarios
+function testScenario(scenario) {
+    const resultsDiv = document.getElementById('scenario-test-results');
+    resultsDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Testing ' + scenario + '...</div>';
+    
+    fetch('/notifications/api/test-scenario', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({scenario: scenario})
+    })
+    .then(response => response.json())
+    .then(data => {
+        const statusClass = data.success ? 'success' : 'danger';
+        const statusIcon = data.success ? 'check' : 'times';
+        
+        resultsDiv.innerHTML = `
+            <div class="alert alert-${statusClass}">
+                <i class="fas fa-${statusIcon}"></i> 
+                <strong>${scenario.replace('_', ' ').toUpperCase()}:</strong> ${data.message}
+            </div>
+        `;
+    })
+    .catch(error => {
+        resultsDiv.innerHTML = '<div class="alert alert-danger">Error testing scenario: ' + error.message + '</div>';
+    });
+}
+
+// Update recipient placeholder based on notification type
+document.getElementById('notification_type').addEventListener('change', function() {
+    const recipientField = document.getElementById('recipient');
+    const type = this.value;
+    
+    if (type === 'email') {
+        recipientField.placeholder = 'user@example.com';
+    } else if (type === 'sms' || type === 'whatsapp') {
+        recipientField.placeholder = '+91 9876543210';
+    } else {
+        recipientField.placeholder = 'Email or Phone Number';
+    }
+});
+</script>
+{% endblock %}

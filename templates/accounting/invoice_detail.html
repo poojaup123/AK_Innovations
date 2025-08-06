@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}Invoice {{ invoice.invoice_number }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-file-invoice"></i> Invoice Details</h1>
+            <p class="text-muted">{{ invoice.invoice_number }}</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group">
+                <a href="{{ url_for('accounting.edit_invoice', id=invoice.id) }}" class="btn btn-outline-primary">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+                <a href="{{ url_for('accounting.print_invoice', id=invoice.id) }}" class="btn btn-outline-info" target="_blank">
+                    <i class="fas fa-print"></i> Print
+                </a>
+                <a href="{{ url_for('accounting.list_invoices') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Invoice Header -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Invoice Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Invoice Number:</strong></td>
+                                    <td>{{ invoice.invoice_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Type:</strong></td>
+                                    <td>
+                                        <span class="badge {% if invoice.invoice_type == 'sales' %}bg-success{% else %}bg-primary{% endif %}">
+                                            {{ invoice.invoice_type.title() }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Date:</strong></td>
+                                    <td>{{ invoice.invoice_date.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Due Date:</strong></td>
+                                    <td>
+                                        {% if invoice.due_date %}{{ invoice.due_date.strftime('%d/%m/%Y') }}{% else %}-{% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Party:</strong></td>
+                                    <td>{{ invoice.party_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>GST Number:</strong></td>
+                                    <td>{{ invoice.party_gst or '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Place of Supply:</strong></td>
+                                    <td>{{ invoice.place_of_supply or '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if invoice.status == 'draft' %}bg-secondary
+                                            {% elif invoice.status == 'sent' %}bg-warning
+                                            {% elif invoice.status == 'paid' %}bg-success
+                                            {% elif invoice.status == 'cancelled' %}bg-danger
+                                            {% endif %}">
+                                            {{ invoice.status.title() }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {% if invoice.party_address %}
+                    <div class="mt-3">
+                        <strong>Address:</strong>
+                        <div class="text-muted">{{ invoice.party_address }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Invoice Items -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Invoice Items</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Item</th>
+                                    <th>HSN Code</th>
+                                    <th class="text-center">Qty</th>
+                                    <th>Unit</th>
+                                    <th class="text-end">Rate</th>
+                                    <th class="text-center">GST%</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in invoice.invoice_items %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <strong>{{ item.item_name }}</strong>
+                                        {% if item.item_code %}<br><small class="text-muted">{{ item.item_code }}</small>{% endif %}
+                                    </td>
+                                    <td>{{ item.hsn_code or '-' }}</td>
+                                    <td class="text-center">{{ item.quantity }}</td>
+                                    <td>{{ item.unit }}</td>
+                                    <td class="text-end">₹{{ "%.2f"|format(item.rate) }}</td>
+                                    <td class="text-center">{{ item.gst_rate }}%</td>
+                                    <td class="text-end"><strong>₹{{ "%.2f"|format(item.line_total) }}</strong></td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4 text-muted">
+                                        <i class="fas fa-box-open fa-2x mb-2"></i>
+                                        <p>No items in this invoice</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Invoice Totals -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Invoice Summary</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td>Subtotal:</td>
+                            <td class="text-end">₹{{ "%.2f"|format(invoice.subtotal or 0) }}</td>
+                        </tr>
+                        {% if invoice.cgst_amount > 0 %}
+                        <tr>
+                            <td>CGST:</td>
+                            <td class="text-end">₹{{ "%.2f"|format(invoice.cgst_amount) }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if invoice.sgst_amount > 0 %}
+                        <tr>
+                            <td>SGST:</td>
+                            <td class="text-end">₹{{ "%.2f"|format(invoice.sgst_amount) }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if invoice.igst_amount > 0 %}
+                        <tr>
+                            <td>IGST:</td>
+                            <td class="text-end">₹{{ "%.2f"|format(invoice.igst_amount) }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td><strong>Total GST:</strong></td>
+                            <td class="text-end"><strong>₹{{ "%.2f"|format(invoice.total_tax or 0) }}</strong></td>
+                        </tr>
+                        <tr class="table-dark">
+                            <td><strong>Grand Total:</strong></td>
+                            <td class="text-end"><strong>₹{{ "%.2f"|format(invoice.total_amount or 0) }}</strong></td>
+                        </tr>
+                    </table>
+                    
+                    {% if invoice.status == 'draft' %}
+                    <div class="d-grid gap-2 mt-3">
+                        <form method="POST" action="{{ url_for('accounting.finalize_invoice', id=invoice.id) }}">
+                            <button type="submit" class="btn btn-success w-100" onclick="return confirm('Are you sure you want to finalize this invoice?')">
+                                <i class="fas fa-check"></i> Finalize Invoice
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Activity</h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <p class="mb-1">Invoice created</p>
+                                <small class="text-muted">{{ invoice.created_at.strftime('%d/%m/%Y %I:%M %p') }}</small>
+                            </div>
+                        </div>
+                        
+                        {% if invoice.status != 'draft' %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <p class="mb-1">Invoice finalized</p>
+                                <small class="text-muted">Status changed to {{ invoice.status }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 20px;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 15px;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -16px;
+    top: 20px;
+    width: 2px;
+    height: calc(100% - 10px);
+    background: #dee2e6;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -20px;
+    top: 5px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.timeline-content {
+    margin-left: 5px;
+}
+</style>
+{% endblock %}

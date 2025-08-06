@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Record Payment - GRN Workflow{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-credit-card"></i> Record Payment</h2>
+                <a href="{{ url_for('grn_workflow.dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Workflow
+                </a>
+            </div>
+
+            <!-- Invoice Details -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-file-invoice"></i> Invoice Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th width="40%">Invoice Number:</th>
+                                    <td><strong>{{ invoice.invoice_number }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Vendor:</th>
+                                    <td>{{ invoice.vendor_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Invoice Date:</th>
+                                    <td>{{ invoice.invoice_date.strftime('%d-%m-%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Total Amount:</th>
+                                    <td class="text-end"><strong>₹{{ "%.2f"|format(invoice.total_amount) }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Outstanding:</th>
+                                    <td class="text-end text-danger"><strong>₹{{ "%.2f"|format(invoice.outstanding_amount) }}</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-list"></i> Linked GRNs</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>GRN Number</th>
+                                        <th class="text-end">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for grn_link in invoice.grn_links %}
+                                    <tr>
+                                        <td>{{ grn_link.grn.grn_number }}</td>
+                                        <td class="text-end">₹{{ "%.2f"|format(grn_link.allocated_amount) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-money-bill-wave"></i> Payment Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Invoice Information (Simple Display) -->
+                        <div class="mb-4">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-info-circle"></i> Payment for Invoice: {{ invoice.invoice_number }}</h6>
+                                <p class="mb-0">
+                                    <strong>Outstanding Amount:</strong> ₹{{ "%.2f"|format(invoice.outstanding_amount) }}<br>
+                                    <strong>Vendor:</strong> {{ invoice.vendor_name if invoice.vendor_name else 'N/A' }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.payment_date.label(class="form-label") }}
+                                    {{ form.payment_date(class="form-control") }}
+                                    {% if form.payment_date.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.payment_date.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.payment_method.label(class="form-label") }}
+                                    {{ form.payment_method(class="form-select") }}
+                                    {% if form.payment_method.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.payment_method.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.total_payment_amount.label(class="form-label") }}
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        {{ form.total_payment_amount(class="form-control") }}
+                                    </div>
+                                    {% if form.total_payment_amount.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.total_payment_amount.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <small class="text-muted">Total payment amount</small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.bank_account_id.label(class="form-label") }}
+                                    {{ form.bank_account_id(class="form-select") }}
+                                    {% if form.bank_account_id.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.bank_account_id.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.reference_number.label(class="form-label") }}
+                                    {{ form.reference_number(class="form-control", placeholder="Cheque/UTR/Transaction reference") }}
+                                    {% if form.reference_number.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.reference_number.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.narration.label(class="form-label") }}
+                                    {{ form.narration(class="form-control", placeholder="Payment description") }}
+                                    {% if form.narration.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.narration.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Document Upload Section -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    {{ form.payment_document.label(class="form-label") }}
+                                    {{ form.payment_document(class="form-control") }}
+                                    {% if form.payment_document.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.payment_document.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <small class="text-muted">Upload receipt, bank statement, or other supporting document (PDF, JPG, PNG)</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if form.supporting_document %}
+                        <div class="mb-3">
+                            {{ form.supporting_document.label(class="form-label") }}
+                            {{ form.supporting_document(class="form-control") }}
+                            {% if form.supporting_document.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.supporting_document.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="text-muted">Upload payment receipt/bank statement (optional)</small>
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted">
+                                    This will create accounting entries:
+                                    <br>• Debit: Vendor Account
+                                    <br>• Credit: Bank/Cash Account
+                                </small>
+                            </div>
+                            <div>
+                                <a href="{{ url_for('grn_workflow.list_invoices') }}" class="btn btn-secondary me-2">Cancel</a>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save"></i> Record Payment
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

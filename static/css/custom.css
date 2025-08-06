@@ -1,0 +1,472 @@
+/* Factory Management System Custom Styles - Light Theme */
+
+/* Use minimal custom styles - rely on Bootstrap theme */
+
+/* Modal Z-Index Fix - Ensure modals appear above all other content */
+.modal {
+    z-index: 1060 !important;
+}
+
+.modal-backdrop {
+    z-index: 1059 !important;
+}
+
+.modal-dialog {
+    z-index: 1061 !important;
+}
+
+.modal-content {
+    z-index: 1062 !important;
+    position: relative;
+}
+
+.modal-footer .btn {
+    z-index: 1065 !important;
+    position: relative;
+    pointer-events: auto !important;
+}
+
+/* Universal Table Scrolling System */
+.table-responsive {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 80vh; /* Maximum height for vertical scrolling */
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
+}
+
+.table-responsive .table {
+    margin-bottom: 0;
+    min-width: 100%;
+    white-space: nowrap;
+}
+
+/* Enhanced Table Styling for Better Scrolling */
+.table-responsive .table th,
+.table-responsive .table td {
+    min-width: 120px; /* Minimum column width */
+    padding: 0.75rem 0.5rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+/* Sticky Table Headers for Vertical Scrolling */
+.table-responsive .table thead th {
+    position: sticky;
+    top: 0;
+    background-color: var(--bs-light);
+    z-index: 10;
+    border-bottom: 2px solid var(--bs-border-color);
+    font-weight: 600;
+}
+
+/* Specific Column Widths for Different Data Types */
+.table-responsive .table th.col-id,
+.table-responsive .table td.col-id { min-width: 80px; }
+
+.table-responsive .table th.col-code,
+.table-responsive .table td.col-code { min-width: 100px; }
+
+.table-responsive .table th.col-name,
+.table-responsive .table td.col-name { min-width: 150px; }
+
+.table-responsive .table th.col-description,
+.table-responsive .table td.col-description { min-width: 200px; white-space: normal; }
+
+.table-responsive .table th.col-quantity,
+.table-responsive .table td.col-quantity { min-width: 100px; text-align: right; }
+
+.table-responsive .table th.col-price,
+.table-responsive .table td.col-price { min-width: 120px; text-align: right; }
+
+.table-responsive .table th.col-date,
+.table-responsive .table td.col-date { min-width: 110px; }
+
+.table-responsive .table th.col-status,
+.table-responsive .table td.col-status { min-width: 100px; }
+
+.table-responsive .table th.col-actions,
+.table-responsive .table td.col-actions { min-width: 120px; text-align: center; }
+
+/* Custom factory-themed elements */
+.factory-header {
+    background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Dashboard card enhancements */
+.dashboard-card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Status badges with better contrast */
+.badge.bg-primary {
+    background-color: var(--bs-primary) !important;
+}
+
+.badge.bg-success {
+    background-color: var(--bs-success) !important;
+}
+
+.badge.bg-warning {
+    background-color: var(--bs-warning) !important;
+    color: var(--bs-dark) !important;
+}
+
+.badge.bg-danger {
+    background-color: var(--bs-danger) !important;
+}
+
+.badge.bg-info {
+    background-color: var(--bs-info) !important;
+}
+
+/* Table row highlighting for low stock */
+.table-warning {
+    --bs-table-bg: rgba(255, 193, 7, 0.1);
+    border-color: rgba(255, 193, 7, 0.2);
+}
+
+/* Loading spinner for reports */
+.loading-spinner {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+}
+
+.loading-spinner.show {
+    display: block;
+}
+
+/* Scrollable Table Enhancements */
+.table-container {
+    position: relative;
+    max-height: 70vh;
+    overflow-x: auto;
+    overflow-y: auto;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
+    background-color: var(--bs-body-bg);
+}
+
+.table-container .table {
+    margin-bottom: 0;
+    min-width: 800px; /* Minimum table width to force horizontal scroll */
+}
+
+.table-container .table thead th {
+    position: sticky;
+    top: 0;
+    background-color: var(--bs-light);
+    z-index: 10;
+    border-bottom: 2px solid var(--bs-border-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Purchase Order and Sales Order Form Tables */
+#poItemsTable,
+#soItemsTable {
+    min-width: 1200px;
+}
+
+#poItemsTable th,
+#poItemsTable td,
+#soItemsTable th,
+#soItemsTable td {
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+/* Input fields in tables */
+.table-responsive .form-control,
+.table-responsive .form-select {
+    min-width: 80px;
+    font-size: 0.9rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .table-responsive {
+        max-height: 60vh;
+    }
+    
+    .table-responsive .table th,
+    .table-responsive .table td {
+        min-width: 100px;
+        padding: 0.5rem 0.25rem;
+        font-size: 0.875rem;
+    }
+}
+
+/* Horizontal scroll indicator */
+.table-responsive::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    background: linear-gradient(to left, rgba(0,0,0,0.1), transparent);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.table-responsive:hover::after {
+    opacity: 1;
+}
+
+/* Print styles */
+@media print {
+    .navbar,
+    .btn,
+    .pagination,
+    .card-header .btn {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        margin-bottom: 1rem;
+    }
+    
+    .table {
+        border: 1px solid #000 !important;
+    }
+    
+    .table th,
+    .table td {
+        border: 1px solid #000 !important;
+        padding: 0.25rem !important;
+        font-size: 0.8rem !important;
+    }
+}
+
+/* Form enhancements */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Icon sizing consistency */
+.fa-2x {
+    font-size: 2em !important;
+}
+
+.fa-3x {
+    font-size: 3em !important;
+}
+
+/* Quick action buttons */
+.quick-actions .btn {
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive table improvements */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Dashboard statistics cards */
+.stat-card {
+    background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.stat-card .card-body {
+    padding: 1.5rem;
+}
+
+.stat-card h3 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.stat-card h5 {
+    font-size: 1rem;
+    opacity: 0.9;
+    margin-bottom: 0.5rem;
+}
+
+/* Navigation improvements */
+.navbar-nav .dropdown-menu {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.navbar-nav .dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Alert styling improvements */
+.alert {
+    border: none;
+    border-radius: 0.5rem;
+}
+
+.alert-success {
+    background-color: rgba(var(--bs-success-rgb), 0.1);
+    color: var(--bs-success);
+    border-left: 4px solid var(--bs-success);
+}
+
+.alert-danger {
+    background-color: rgba(var(--bs-danger-rgb), 0.1);
+    color: var(--bs-danger);
+    border-left: 4px solid var(--bs-danger);
+}
+
+.alert-warning {
+    background-color: rgba(var(--bs-warning-rgb), 0.1);
+    color: var(--bs-warning);
+    border-left: 4px solid var(--bs-warning);
+}
+
+.alert-info {
+    background-color: rgba(var(--bs-info-rgb), 0.1);
+    color: var(--bs-info);
+    border-left: 4px solid var(--bs-info);
+}
+
+/* Empty state styling */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.empty-state i {
+    opacity: 0.5;
+    margin-bottom: 1rem;
+}
+
+.empty-state h5 {
+    color: var(--bs-secondary);
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    color: var(--bs-secondary);
+    margin-bottom: 1.5rem;
+}
+
+/* Card hover effects */
+.card-hover {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Progress bars for production */
+.progress {
+    height: 0.5rem;
+}
+
+/* Custom scrollbar for tables */
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: var(--bs-gray-200);
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: var(--bs-gray-400);
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-gray-500);
+}
+
+/* Loading states */
+.btn.loading {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.btn.loading::after {
+    content: "";
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    margin-left: 0.5rem;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Utility classes */
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.border-start-primary {
+    border-left: 3px solid var(--bs-primary) !important;
+}
+
+.border-start-success {
+    border-left: 3px solid var(--bs-success) !important;
+}
+
+.border-start-warning {
+    border-left: 3px solid var(--bs-warning) !important;
+}
+
+.border-start-danger {
+    border-left: 3px solid var(--bs-danger) !important;
+}
+
+/* Remove number input spinners completely */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* Remove spinners on all number inputs */
+input[type="number"]::-webkit-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}

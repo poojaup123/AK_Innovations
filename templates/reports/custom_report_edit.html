@@ -1,0 +1,46 @@
+{% extends "reports/custom_report_builder.html" %}
+
+{% block title %}Edit {{ report.name }} - Custom Report Builder{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Pre-populate form with existing report data
+    const reportData = {{ report.get_config() | tojson }};
+    
+    // Set basic fields
+    document.getElementById('reportTypeSelect').value = '{{ report.report_type }}';
+    
+    // Trigger field update to show available fields
+    updateFieldsForReportType();
+    
+    // Pre-select fields
+    if (reportData.fields) {
+        reportData.fields.forEach(field => {
+            const checkbox = document.getElementById('field_' + field);
+            if (checkbox) {
+                checkbox.checked = true;
+            }
+        });
+    }
+    
+    // Pre-populate filters
+    if (reportData.filters) {
+        reportData.filters.forEach(filter => {
+            addFilter();
+            const filterRow = document.querySelector('.filter-row:last-child');
+            filterRow.querySelector('.filter-field').value = filter.field;
+            filterRow.querySelector('.filter-operator').value = filter.operator;
+            filterRow.querySelector('.filter-value').value = filter.value;
+        });
+    }
+    
+    // Pre-populate sorting
+    if (reportData.sort_field) {
+        document.getElementById('sortField').value = reportData.sort_field;
+        document.getElementById('sortOrder').value = reportData.sort_order || 'asc';
+    }
+});
+</script>
+{% endblock %}

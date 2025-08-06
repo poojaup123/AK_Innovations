@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Accounting Settings - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-cogs"></i> Accounting Settings</h1>
+            <p class="text-muted">Configure advanced accounting automation and reporting settings</p>
+        </div>
+    </div>
+
+    <!-- Settings Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">General Settings</h5>
+                            <p class="card-text">Auto-posting: {{ 'Enabled' if settings.auto_jv_posting else 'Disabled' }}</p>
+                        </div>
+                        <i class="fas fa-cog fa-2x"></i>
+                    </div>
+                    <a href="{{ url_for('accounting_settings.general_settings') }}" class="btn btn-light btn-sm">Configure</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Cost Centers</h5>
+                            <p class="card-text">{{ cost_centers_count }} Active Centers</p>
+                        </div>
+                        <i class="fas fa-building fa-2x"></i>
+                    </div>
+                    <a href="{{ url_for('accounting_settings.list_cost_centers') }}" class="btn btn-light btn-sm">Manage</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Ledger Mappings</h5>
+                            <p class="card-text">{{ ledger_mappings_count }} Active Mappings</p>
+                        </div>
+                        <i class="fas fa-link fa-2x"></i>
+                    </div>
+                    <a href="{{ url_for('accounting_settings.list_ledger_mappings') }}" class="btn btn-light btn-sm">Configure</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Payment Methods</h5>
+                            <p class="card-text">{{ payment_methods_count }} Active Methods</p>
+                        </div>
+                        <i class="fas fa-credit-card fa-2x"></i>
+                    </div>
+                    <a href="{{ url_for('accounting_settings.list_payment_methods') }}" class="btn btn-light btn-sm">Setup</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Settings Panel -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-tachometer-alt"></i> Quick Settings Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-robot"></i> Automation Settings</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-{{ 'check text-success' if settings.auto_grn_voucher else 'times text-danger' }}"></i> Auto GRN Vouchers</li>
+                                <li><i class="fas fa-{{ 'check text-success' if settings.auto_sales_voucher else 'times text-danger' }}"></i> Auto Sales Vouchers</li>
+                                <li><i class="fas fa-{{ 'check text-success' if settings.auto_production_voucher else 'times text-danger' }}"></i> Auto Production Vouchers</li>
+                                <li><i class="fas fa-{{ 'check text-success' if settings.auto_expense_voucher else 'times text-danger' }}"></i> Auto Expense Vouchers</li>
+                                <li><i class="fas fa-{{ 'check text-success' if settings.auto_salary_voucher else 'times text-danger' }}"></i> Auto Salary Vouchers</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-calculator"></i> Valuation & Rounding</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Inventory Method:</strong> {{ settings.inventory_valuation_method.replace('_', ' ').title() }}</li>
+                                <li><strong>Rounding:</strong> {{ settings.amount_rounding_places }} decimal places</li>
+                                <li><strong>GST Rate:</strong> {{ settings.default_gst_rate }}%</li>
+                                <li><strong>Credit Days:</strong> {{ settings.default_credit_days }} days</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie"></i> Inventory Valuation</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Current method: <strong>{{ settings.inventory_valuation_method.replace('_', ' ').title() }}</strong></p>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('accounting_settings.inventory_valuation_report') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-chart-bar"></i> Valuation Report
+                        </a>
+                        <a href="{{ url_for('accounting_settings.general_settings') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-cog"></i> Change Method
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6><i class="fas fa-info-circle"></i> System Integration</h6>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        All modules are integrated with centralized accounting. 
+                        Changes here affect the entire ERP system.
+                    </small>
+                    
+                    <div class="mt-2">
+                        <span class="badge bg-success">PO/GRN</span>
+                        <span class="badge bg-success">Sales</span>
+                        <span class="badge bg-success">Production</span>
+                        <span class="badge bg-success">Job Work</span>
+                        <span class="badge bg-success">Payroll</span>
+                        <span class="badge bg-success">Expenses</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Auto-refresh settings overview every 30 seconds
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+});
+</script>
+{% endblock %}

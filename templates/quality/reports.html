@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-chart-line me-2"></i>Quality Control Reports</h2>
+                <div>
+                    <button class="btn btn-outline-primary" onclick="window.print()">
+                        <i class="fas fa-print me-1"></i>Print Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>{{ "%.1f"|format(avg_rejection_rate) }}%</h3>
+                    <p class="mb-0">Average Rejection Rate</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h3>{{ issues_by_type|length }}</h3>
+                    <p class="mb-0">Issue Categories</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h3>{{ problem_items|length }}</h3>
+                    <p class="mb-0">Problematic Items</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>{{ monthly_trends|length }}</h3>
+                    <p class="mb-0">Months of Data</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Issues by Type -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie me-2"></i>Issues by Type</h5>
+                </div>
+                <div class="card-body">
+                    {% if issues_by_type %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Issue Type</th>
+                                        <th>Count</th>
+                                        <th>Qty Affected</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% set total_issues = issues_by_type|sum(attribute='count') %}
+                                    {% for issue_type in issues_by_type %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-primary">{{ issue_type.issue_type.title() }}</span>
+                                        </td>
+                                        <td>{{ issue_type.count }}</td>
+                                        <td>{{ "%.2f"|format(issue_type.total_affected or 0) }}</td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar" 
+                                                     style="width: {{ (issue_type.count / total_issues * 100)|round(1) }}%">
+                                                    {{ (issue_type.count / total_issues * 100)|round(1) }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No issue data available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Issues by Severity -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Issues by Severity</h5>
+                </div>
+                <div class="card-body">
+                    {% if issues_by_severity %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Severity</th>
+                                        <th>Count</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% set total_severity = issues_by_severity|sum(attribute='count') %}
+                                    {% for severity in issues_by_severity %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge 
+                                                {% if severity.severity == 'critical' %}bg-danger
+                                                {% elif severity.severity == 'high' %}bg-warning
+                                                {% elif severity.severity == 'medium' %}bg-primary
+                                                {% else %}bg-secondary{% endif %}">
+                                                {{ severity.severity.title() }}
+                                            </span>
+                                        </td>
+                                        <td>{{ severity.count }}</td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar 
+                                                    {% if severity.severity == 'critical' %}bg-danger
+                                                    {% elif severity.severity == 'high' %}bg-warning
+                                                    {% elif severity.severity == 'medium' %}bg-primary
+                                                    {% else %}bg-secondary{% endif %}" 
+                                                     style="width: {{ (severity.count / total_severity * 100)|round(1) }}%">
+                                                    {{ (severity.count / total_severity * 100)|round(1) }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No severity data available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Trends -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-line me-2"></i>Monthly Quality Trends</h5>
+                </div>
+                <div class="card-body">
+                    {% if monthly_trends %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Issues</th>
+                                        <th>Cost Impact</th>
+                                        <th>Trend</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for trend in monthly_trends %}
+                                    <tr>
+                                        <td>{{ trend.month }}</td>
+                                        <td>
+                                            <span class="badge bg-warning">{{ trend.issues }}</span>
+                                        </td>
+                                        <td>₹{{ "%.2f"|format(trend.cost or 0) }}</td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-info" 
+                                                     style="width: {{ (trend.issues / (monthly_trends|max(attribute='issues') or 1) * 100)|round(1) }}%">
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No monthly trend data available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Problematic Items -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-exclamation-circle me-2"></i>Most Problematic Items</h5>
+                </div>
+                <div class="card-body">
+                    {% if problem_items %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Item Name</th>
+                                        <th>Issue Count</th>
+                                        <th>Quantity Affected</th>
+                                        <th>Total Cost Impact</th>
+                                        <th>Quality Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in problem_items %}
+                                    <tr>
+                                        <td>{{ item.name }}</td>
+                                        <td>
+                                            <span class="badge bg-danger">{{ item.issue_count }}</span>
+                                        </td>
+                                        <td>{{ "%.2f"|format(item.affected_quantity or 0) }}</td>
+                                        <td>₹{{ "%.2f"|format(item.total_cost or 0) }}</td>
+                                        <td>
+                                            {% set quality_score = 100 - (item.issue_count * 10) %}
+                                            <div class="progress" style="height: 25px;">
+                                                <div class="progress-bar 
+                                                    {% if quality_score >= 80 %}bg-success
+                                                    {% elif quality_score >= 60 %}bg-warning
+                                                    {% else %}bg-danger{% endif %}" 
+                                                     style="width: {{ [quality_score, 0]|max }}%">
+                                                    {{ [quality_score, 0]|max|round(0) }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No problematic items data available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

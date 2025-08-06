@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header Section -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-calendar-check me-2"></i>Attendance Details</h2>
+                    <p class="text-muted mb-0">View detailed attendance information</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('hr.attendance_list') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to List
+                    </a>
+                    <a href="{{ url_for('hr.edit_attendance', id=attendance.id) }}" class="btn btn-primary">
+                        <i class="fas fa-edit me-1"></i>Edit
+                    </a>
+                    {% if current_user.is_admin() %}
+                    <a href="{{ url_for('hr.delete_attendance', id=attendance.id) }}" 
+                       class="btn btn-danger"
+                       onclick="return confirm('Delete this attendance record?')">
+                        <i class="fas fa-trash me-1"></i>Delete
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Attendance Information Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-check me-2"></i>Attendance Information
+                        <span class="badge {{ attendance.status_badge_class }} ms-2">{{ attendance.status.replace('_', ' ').title() }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-user me-2"></i>Employee Details</h6>
+                            <div class="border rounded p-3 bg-light">
+                                <div class="mb-2">
+                                    <strong>Name:</strong> {{ attendance.employee.name }}
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Employee Code:</strong> {{ attendance.employee.employee_code }}
+                                </div>
+                                {% if attendance.employee.department %}
+                                <div class="mb-2">
+                                    <strong>Department:</strong> {{ attendance.employee.department.replace('_', ' ').title() }}
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <strong>Designation:</strong> {{ attendance.employee.designation or 'N/A' }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-calendar me-2"></i>Date & Status</h6>
+                            <div class="border rounded p-3 bg-light">
+                                <div class="mb-2">
+                                    <strong>Date:</strong> {{ attendance.attendance_date.strftime('%A, %d %B %Y') }}
+                                </div>
+                                <div class="mb-2">
+                                    <strong>Status:</strong> 
+                                    <span class="badge {{ attendance.status_badge_class }}">
+                                        {{ attendance.status.replace('_', ' ').title() }}
+                                    </span>
+                                </div>
+                                {% if attendance.leave_type %}
+                                <div>
+                                    <strong>Leave Type:</strong> 
+                                    <span class="badge bg-secondary">{{ attendance.leave_type.replace('_', ' ').title() }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Information Card -->
+            {% if attendance.check_in_time or attendance.check_out_time %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Time Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <i class="fas fa-sign-in-alt fa-2x text-success mb-2"></i>
+                                <h6>Check-in Time</h6>
+                                {% if attendance.check_in_time %}
+                                    <span class="h5 text-success">{{ attendance.check_in_time.strftime('%H:%M') }}</span>
+                                {% else %}
+                                    <span class="text-muted">Not recorded</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <i class="fas fa-sign-out-alt fa-2x text-danger mb-2"></i>
+                                <h6>Check-out Time</h6>
+                                {% if attendance.check_out_time %}
+                                    <span class="h5 text-danger">{{ attendance.check_out_time.strftime('%H:%M') }}</span>
+                                {% else %}
+                                    <span class="text-muted">Not recorded</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <i class="fas fa-clock fa-2x text-info mb-2"></i>
+                                <h6>Hours Worked</h6>
+                                {% if attendance.hours_worked %}
+                                    <span class="h5 text-info">{{ "%.1f"|format(attendance.hours_worked) }}h</span>
+                                {% else %}
+                                    <span class="text-muted">0h</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <i class="fas fa-plus-circle fa-2x text-warning mb-2"></i>
+                                <h6>Overtime</h6>
+                                {% if attendance.overtime_hours and attendance.overtime_hours > 0 %}
+                                    <span class="h5 text-warning">{{ "%.1f"|format(attendance.overtime_hours) }}h</span>
+                                {% else %}
+                                    <span class="text-muted">0h</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if attendance.check_in_time and attendance.check_out_time %}
+                    <div class="alert alert-info mt-3">
+                        <h6><i class="fas fa-calculator me-2"></i>Working Hours Summary</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Regular Hours:</strong> {{ "%.1f"|format(attendance.hours_worked or 0) }} hours
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Overtime Hours:</strong> {{ "%.1f"|format(attendance.overtime_hours or 0) }} hours
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Total Hours:</strong> {{ "%.1f"|format((attendance.hours_worked or 0) + (attendance.overtime_hours or 0)) }} hours
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Notes Card -->
+            {% if attendance.notes %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ attendance.notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Record Information Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Record Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong>Marked By:</strong><br>
+                            <span class="text-muted">{{ attendance.marker.username }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Created At:</strong><br>
+                            <span class="text-muted">{{ attendance.created_at.strftime('%d %b %Y at %H:%M') }}</span>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Last Updated:</strong><br>
+                            <span class="text-muted">{{ attendance.updated_at.strftime('%d %b %Y at %H:%M') }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+ manage both inventory views in a **single unified table** for better usability and clarity.
+
+Your current setup shows:
+
+1. **Table 1** – Basic Inventory List (`Item Name`, `UOM`, `Stock`, `Price`)
+2. **Table 2** – Multi-State Inventory (`Raw`, `WIP`, `Finished`, `Scrap`)
+
+---
+
+## ✅ Why Merge These Tables?
+
+| Benefit               | Description                                    |
+| --------------------- | ---------------------------------------------- |
+| 👁️ Better Visibility | All critical inventory metrics in one glance   |
+| ⏱️ Faster Access      | Avoid toggling between views                   |
+| 📱 Mobile Friendly    | Easier to render one table than two            |
+| 📊 Better Reporting   | Export complete inventory state from one place |
+
+---
+
+## 🔄 Unified Inventory Table Design
+
+| Item Code | Item Name     | UOM | Raw Material | WIP | Finished | Scrap | Total Stock | Available | Unit Price | Stock Value | Min Stock | Type       | Actions |
+| --------- | ------------- | --- | ------------ | --- | -------- | ----- | ----------- | --------- | ---------- | ----------- | --------- | ---------- | ------- |
+| ITEM-0001 | Mounted Plate | pcs | 0.0          | 0.0 | 2000.0   | 0.0   | 2000.0      | 2000.0    | ₹5.00      | ₹10,000     | 5000      | Consumable | ✎       |
+| ITEM-0002 | MS Sheet      | nos | 62.0         | 0.0 | 5.0      | 0.0   | 67.0        | 67.0      | ₹3000      | ₹2,01,000   | 200       | Consumable | ✎       |
+
+---
+
+### 🔹 Explanation of Columns
+
+| Column       | What It Shows                                            |
+| ------------ | -------------------------------------------------------- |
+| Raw Material | Stock ready for processing                               |
+| WIP          | Sent out for job work or production                      |
+| Finished     | Ready to sell or assemble                                |
+| Scrap        | Damaged/rejected material                                |
+| Total Stock  | Raw + WIP + Finished                                     |
+| Available    | Usually = Finished, or whatever is eligible for sale/use |
+
+---
+
+### ✅ Additional UI Enhancements
+
+* 🟨 **Low Stock Warning**: Show badge (e.g., 🔴 Low) when `Available < Min Stock`
+* 🔄 **Auto-color highlights**: If Raw or Scrap > threshold → highlight
+* 🔎 **Toggle Advanced Columns**: Let users hide columns (WIP, Scrap) when not needed
+
+---
+
+## 🧠 Backend Design Suggestion
+
+Store **inventory as one table** with multiple quantity fields:
+
+```python
+class InventoryItem(db.Model):
+    id = db.Column(...)
+    item_code = db.Column(...)
+    name = db.Column(...)
+    uom = db.Column(...)
+    stock_raw = db.Column(Float)
+    stock_wip = db.Column(Float)
+    stock_finished = db.Column(Float)
+    stock_scrap = db.Column(Float)
+    unit_price = db.Column(Float)
+    min_stock = db.Column(Float)
+```
+
+✅ Total/Available can be calculated dynamically in views.
+
+---
+
+

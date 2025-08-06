@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}BOM Tree View - Factory Management System{% endblock %}
+
+{% block head %}
+<style>
+.tree-view {
+    font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin: 1rem 0;
+    line-height: 1.6;
+}
+
+.tree-node {
+    margin: 0.1rem 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 0.2rem 0;
+    transition: background-color 0.2s ease;
+}
+
+.tree-node:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+    border-radius: 4px;
+}
+
+.tree-product {
+    font-weight: bold;
+    color: #0d6efd;
+    font-size: 1.1em;
+}
+
+.tree-material {
+    color: #6f42c1;
+    font-weight: 500;
+}
+
+.tree-sub-bom {
+    color: #198754;
+    font-weight: 500;
+}
+
+.tree-connector {
+    color: #6c757d;
+    font-weight: normal;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    margin-right: 0.5rem;
+    user-select: none;
+}
+
+.tree-quantity {
+    color: #fd7e14;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+.tree-cost {
+    color: #dc3545;
+    font-size: 0.9em;
+    margin-left: 0.5rem;
+}
+
+/* Phantom BOM Styling */
+.phantom-bom {
+    opacity: 0.7;
+    border: 2px dotted #6c757d;
+    border-radius: 4px;
+    padding: 0.2rem 0.4rem;
+    background-color: rgba(108, 117, 125, 0.1);
+}
+
+.phantom-bom .tree-product,
+.phantom-bom .tree-material {
+    color: #6c757d;
+    font-style: italic;
+}
+
+.phantom-bom .tree-connector {
+    color: #adb5bd;
+}
+
+.bom-info {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196f3;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    border-radius: 0.25rem;
+}
+
+.intermediate-badge {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.8em;
+    margin-left: 0.5rem;
+    font-weight: 500;
+}
+
+.phantom-badge {
+    background-color: #6c757d;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.8em;
+    margin-left: 0.5rem;
+}
+
+.phantom-indicator {
+    color: #fd7e14;
+    font-size: 1.2em;
+    margin-left: 0.3rem;
+    filter: grayscale(50%);
+}
+
+.actions-container {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.cost-summary {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    margin-top: 0.5rem;
+    font-size: 0.9em;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-sitemap"></i> BOM Tree View</h1>
+            <p class="text-muted">Hierarchical visualization of multi-level Bill of Materials</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('production.list_bom') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-list"></i> List View
+                </a>
+                <a href="{{ url_for('production.add_bom') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add BOM
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if bom_trees %}
+        {% for tree in bom_trees %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-project-diagram"></i> 
+                    {{ tree.product.name }} ({{ tree.product.code }})
+                    {% if tree.bom.intermediate_product %}
+                        <span class="intermediate-badge">Intermediate Product</span>
+                    {% endif %}
+                    {% if tree.bom.is_phantom_bom %}
+                        <span class="phantom-badge">Phantom BOM</span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="bom-info">
+                    <strong>BOM Code:</strong> {{ tree.bom.bom_code }}<br>
+                    <strong>Output Quantity:</strong> {{ tree.bom.output_quantity or 1.0 }} units<br>
+                    <strong>Version:</strong> {{ tree.bom.version or '1.0' }}<br>
+                    {% if tree.bom.description %}
+                    <strong>Description:</strong> {{ tree.bom.description }}
+                    {% endif %}
+                </div>
+
+                <div class="tree-view">
+                    <!-- Root Product -->
+                    <div class="tree-node">
+                        <span class="tree-product">{{ tree.product.name }}</span>
+                        {% if tree.bom.output_quantity and tree.bom.output_quantity != 1.0 %}
+                            <span class="tree-quantity">({{ tree.bom.output_quantity }} units)</span>
+                        {% endif %}
+                        {% if tree.bom.intermediate_product %}
+                            <span class="intermediate-badge">Intermediate</span>
+                        {% endif %}
+                        {% if tree.bom.is_phantom_bom %}
+                            <span class="phantom-badge">Phantom BOM</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Direct Materials with Beautiful Tree Structure -->
+                    {% for material in tree.materials %}
+                        {% set is_last_item = loop.last and not tree.sub_boms %}
+                        {% set connector = '└── ' if is_last_item else '├── ' %}
+                        
+                        <!-- Check if this material has its own BOM (intermediate product) -->
+                        {% if material.is_intermediate and material.intermediate_bom %}
+                            <!-- This is an intermediate product with its own BOM -->
+                            {% set is_phantom = material.intermediate_bom.bom.is_phantom_bom %}
+                            <div class="tree-node {% if is_phantom %}phantom-bom{% endif %}">
+                                <span class="tree-connector">{{ connector }}</span>
+                                <span class="tree-material">{{ material.item.name }}</span>
+                                {% if is_phantom %}
+                                    <span class="phantom-indicator">🫥</span>
+                                    <span class="phantom-badge">(Phantom BOM)</span>
+                                {% endif %}
+                                <span class="tree-quantity">{{ material.quantity }} {{ material.unit }}</span>
+                            </div>
+                            
+                            <!-- Show sub-components of the intermediate product -->
+                            {% for sub_material in material.intermediate_bom.materials %}
+                                {% set sub_prefix = '│   ' if not is_last_item else '    ' %}
+                                {% set is_last_sub = loop.last %}
+                                {% set sub_connector = '└── ' if is_last_sub else '├── ' %}
+                                
+                                <div class="tree-node">
+                                    <span class="tree-connector">{{ sub_prefix }}{{ sub_connector }}</span>
+                                    <span class="tree-material">{{ sub_material.item.name }}</span>
+                                    <span class="tree-quantity">{{ sub_material.quantity }} {{ sub_material.unit }}</span>
+                                    {% if sub_material.cost > 0 %}
+                                        <span class="tree-cost">@ ₹{{ "%.2f"|format(sub_material.cost) }}</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Handle 3rd level nesting if needed -->
+                                {% if sub_material.is_intermediate and sub_material.intermediate_bom %}
+                                    {% for sub_sub_material in sub_material.intermediate_bom.materials %}
+                                        {% set sub_sub_prefix = sub_prefix + ('│   ' if not is_last_sub else '    ') %}
+                                        {% set is_last_sub_sub = loop.last %}
+                                        {% set sub_sub_connector = '└── ' if is_last_sub_sub else '├── ' %}
+                                        
+                                        <div class="tree-node">
+                                            <span class="tree-connector">{{ sub_sub_prefix }}{{ sub_sub_connector }}</span>
+                                            <span class="tree-material">{{ sub_sub_material.item.name }}</span>
+                                            <span class="tree-quantity">{{ sub_sub_material.quantity }} {{ sub_sub_material.unit }}</span>
+                                            {% if sub_sub_material.cost > 0 %}
+                                                <span class="tree-cost">@ ₹{{ "%.2f"|format(sub_sub_material.cost) }}</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <!-- This is a direct raw material -->
+                            <div class="tree-node">
+                                <span class="tree-connector">{{ connector }}</span>
+                                <span class="tree-material">{{ material.item.name }}</span>
+                                <span class="tree-quantity">{{ material.quantity }} {{ material.unit }}</span>
+                                {% if material.cost > 0 %}
+                                    <span class="tree-cost">@ ₹{{ "%.2f"|format(material.cost) }}</span>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+
+                    <!-- Sub-BOMs (Child BOMs) -->
+                    {% for sub_bom in tree.sub_boms %}
+                        {% set is_last_sub_bom = loop.last %}
+                        {% set connector = '└── ' if is_last_sub_bom else '├── ' %}
+                        {% set is_phantom = sub_bom.bom.is_phantom_bom %}
+                        
+                        <div class="tree-node {% if is_phantom %}phantom-bom{% endif %}">
+                            <span class="tree-connector">{{ connector }}</span>
+                            <span class="tree-product">{{ sub_bom.product.name }}</span>
+                            {% if is_phantom %}
+                                <span class="phantom-indicator">🫥</span>
+                                <span class="phantom-badge">(Phantom BOM)</span>
+                            {% endif %}
+                            {% if sub_bom.bom.output_quantity and sub_bom.bom.output_quantity != 1.0 %}
+                                <span class="tree-quantity">({{ sub_bom.bom.output_quantity }} units)</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Sub-BOM Materials -->
+                        {% for sub_material in sub_bom.materials %}
+                            {% set sub_prefix = '│   ' if not is_last_sub_bom else '    ' %}
+                            {% set is_last_sub_material = loop.last %}
+                            {% set sub_connector = '└── ' if is_last_sub_material else '├── ' %}
+                            
+                            <div class="tree-node">
+                                <span class="tree-connector">{{ sub_prefix }}{{ sub_connector }}</span>
+                                <span class="tree-material">{{ sub_material.item.name }}</span>
+                                <span class="tree-quantity">{{ sub_material.quantity }} {{ sub_material.unit }}</span>
+                                {% if sub_material.cost > 0 %}
+                                    <span class="tree-cost">@ ₹{{ "%.2f"|format(sub_material.cost) }}</span>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+
+                <!-- Cost Summary -->
+                {% if tree.bom.total_material_cost and tree.bom.total_material_cost > 0 %}
+                <div class="cost-summary">
+                    <i class="fas fa-calculator"></i> 
+                    <strong>Material Cost: ₹{{ "%.2f"|format(tree.bom.total_material_cost) }}</strong>
+                    {% if tree.bom.total_cost_per_unit and tree.bom.total_cost_per_unit != tree.bom.total_material_cost %}
+                        | Total with Overhead: ₹{{ "%.2f"|format(tree.bom.total_cost_per_unit) }}
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <div class="actions-container">
+                    <a href="{{ url_for('production.edit_bom', id=tree.bom.id) }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-edit"></i> Edit BOM
+                    </a>
+                    <a href="{{ url_for('production.add_production') }}?item_id={{ tree.product.id }}" class="btn btn-success btn-sm">
+                        <i class="fas fa-play"></i> Start Production
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-sitemap fa-3x text-muted mb-3"></i>
+                <h4>No BOMs Found</h4>
+                <p class="text-muted">Create your first Bill of Materials to see the tree structure here.</p>
+                <a href="{{ url_for('production.add_bom') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create First BOM
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Add interactive features
+document.addEventListener('DOMContentLoaded', function() {
+    // Add hover effects to tree nodes
+    const treeNodes = document.querySelectorAll('.tree-node');
+    treeNodes.forEach(node => {
+        node.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#e9ecef';
+            this.style.borderRadius = '3px';
+        });
+        node.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = 'transparent';
+        });
+    });
+
+    // Add expand/collapse functionality for large trees
+    const treeBranches = document.querySelectorAll('.tree-view');
+    treeBranches.forEach(tree => {
+        if (tree.children.length > 20) {
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'btn btn-sm btn-outline-secondary mt-2';
+            toggleBtn.innerHTML = '<i class="fas fa-compress"></i> Collapse';
+            toggleBtn.onclick = function() {
+                const nodes = tree.querySelectorAll('.tree-node');
+                const isCollapsed = tree.classList.contains('collapsed');
+                
+                if (isCollapsed) {
+                    nodes.forEach((node, index) => {
+                        if (index > 5) node.style.display = 'block';
+                    });
+                    tree.classList.remove('collapsed');
+                    this.innerHTML = '<i class="fas fa-compress"></i> Collapse';
+                } else {
+                    nodes.forEach((node, index) => {
+                        if (index > 5) node.style.display = 'none';
+                    });
+                    tree.classList.add('collapsed');
+                    this.innerHTML = '<i class="fas fa-expand"></i> Expand All';
+                }
+            };
+            tree.parentNode.appendChild(toggleBtn);
+        }
+    });
+});
+</script>
+{% endblock %}

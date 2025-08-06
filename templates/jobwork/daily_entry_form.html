@@ -1,0 +1,670 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-clock"></i> {{ title }}</h1>
+            <p class="text-muted">Quick daily entry for in-house job work progress tracking</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('jobwork.daily_entries_list') }}" class="btn btn-secondary">
+                <i class="fas fa-list"></i> View Daily Entries
+            </a>
+            <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Job Work Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-hard-hat"></i> Daily Work Entry</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Progress Tracking Info -->
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Automatic Progress Tracking & Inventory Updates:</strong> 
+                        Your daily work entries will automatically update team assignment progress percentages and inventory levels for in-house job works. 
+                        When you complete assigned quantities, your job work progress will be tracked automatically and finished goods will be added back to inventory.
+                    </div>
+                    
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Worker Information Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-info border-bottom pb-2 mb-3">
+                                    <i class="fas fa-user"></i> Worker Information
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.worker_name.label(class="form-label") }}
+                                {{ form.worker_name(class="form-select", id="worker_name_input") }}
+                                <small class="text-muted">Select your name from the employee database</small>
+                                {% if form.worker_name.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.worker_name.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.work_date.label(class="form-label") }}
+                                {{ form.work_date(class="form-control") }}
+                                {% if form.work_date.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.work_date.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Job Work Selection Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-success border-bottom pb-2 mb-3">
+                                    <i class="fas fa-tools"></i> Job Work Details
+                                </h6>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                {{ form.job_work_id.label(class="form-label") }}
+                                {{ form.job_work_id(class="form-select", id="job_work_select") }}
+                                <small class="text-muted">Select the in-house job work order you worked on today</small>
+                                {% if form.job_work_id.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.job_work_id.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Team Assignments Section (Shows when job is selected) -->
+                        <div id="team_assignments_section" class="row mb-4" style="display: none;">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-users"></i> Team Assignments for Selected Job
+                                </h6>
+                            </div>
+                            <div class="col-12">
+                                <div id="team_assignments_content">
+                                    <!-- Team assignments will be loaded here via JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Work Progress Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-warning border-bottom pb-2 mb-3">
+                                    <i class="fas fa-chart-line"></i> Today's Progress
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.hours_worked.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.hours_worked(class="form-control") }}
+                                    <span class="input-group-text">hours</span>
+                                </div>
+                                <small class="text-muted">Total hours spent on this job work today</small>
+                                {% if form.hours_worked.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.hours_worked.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.quantity_completed.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.quantity_completed(class="form-control") }}
+                                    <span class="input-group-text" id="quantity_unit">units</span>
+                                </div>
+                                <small class="text-muted">Number of units completed today</small>
+                                {% if form.quantity_completed.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quantity_completed.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Additional Progress Fields -->
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                {{ form.scrap_quantity.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.scrap_quantity(class="form-control") }}
+                                    <span class="input-group-text" id="scrap_unit">kg</span>
+                                </div>
+                                <small class="text-muted">Scrap/waste weight produced today (optional)</small>
+                                {% if form.scrap_quantity.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.scrap_quantity.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Quality and Status Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-secondary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-award"></i> Quality & Status
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.quality_status.label(class="form-label") }}
+                                {{ form.quality_status(class="form-select") }}
+                                <small class="text-muted">Overall quality of work completed</small>
+                                {% if form.quality_status.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quality_status.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.process_stage.label(class="form-label") }}
+                                {{ form.process_stage(class="form-select") }}
+                                <small class="text-muted">Current stage of the job work</small>
+                                {% if form.process_stage.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.process_stage.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Inspection Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-info border-bottom pb-2 mb-3">
+                                    <i class="fas fa-clipboard-check"></i> Inspection Details
+                                </h6>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.inspected_quantity.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.inspected_quantity(class="form-control", id="inspected_quantity") }}
+                                    <span class="input-group-text" id="inspected_unit">Unit</span>
+                                </div>
+                                <small class="text-muted">Quantity inspected for quality</small>
+                                {% if form.inspected_quantity.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.inspected_quantity.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.passed_quantity.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.passed_quantity(class="form-control", id="passed_quantity") }}
+                                    <span class="input-group-text" id="passed_unit">Unit</span>
+                                </div>
+                                <small class="text-muted">Quantity that passed inspection</small>
+                                {% if form.passed_quantity.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.passed_quantity.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.rejected_quantity.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.rejected_quantity(class="form-control", id="rejected_quantity", readonly=true) }}
+                                    <span class="input-group-text" id="rejected_unit">Unit</span>
+                                </div>
+                                <small class="text-muted">Auto-calculated: Inspected Quantity - Passed Quantity</small>
+                                {% if form.rejected_quantity.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.rejected_quantity.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Inspection Summary -->
+                        <div class="row mb-4" id="inspection_summary" style="display: none;">
+                            <div class="col-12">
+                                <div class="alert alert-light">
+                                    <h6 class="mb-2"><i class="fas fa-chart-pie"></i> Inspection Summary:</h6>
+                                    <div class="row text-center">
+                                        <div class="col-md-4">
+                                            <strong>Acceptance Rate:</strong> <span id="acceptance_rate" class="text-success">0.0%</span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <strong>Rejection Rate:</strong> <span id="rejection_rate" class="text-danger">0.0%</span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <strong>Total Accounted:</strong> <span id="total_accounted" class="text-info">0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rejection Reasons -->
+                        <div class="row mb-4" id="rejection_reasons_section" style="display: none;">
+                            <div class="col-12">
+                                <h6 class="text-warning border-bottom pb-2 mb-3">
+                                    <i class="fas fa-exclamation-triangle"></i> Rejection Reasons
+                                </h6>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                {{ form.rejection_reasons.label(class="form-label") }}
+                                {{ form.rejection_reasons(class="form-control") }}
+                                <small class="text-muted">Describe reasons for rejecting materials (scratches, dents, corrosion, quality issues, etc.)</small>
+                                {% if form.rejection_reasons.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.rejection_reasons.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Notes Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-dark border-bottom pb-2 mb-3">
+                                    <i class="fas fa-sticky-note"></i> Work Notes
+                                </h6>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                {{ form.notes.label(class="form-label") }}
+                                {{ form.notes(class="form-control") }}
+                                <small class="text-muted">Any issues, observations, or comments about today's work</small>
+                                {% if form.notes.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.notes.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </a>
+                                    {{ form.submit(class="btn btn-success") }}
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const jobWorkSelect = document.getElementById('job_work_select');
+    const teamAssignmentsSection = document.getElementById('team_assignments_section');
+    const teamAssignmentsContent = document.getElementById('team_assignments_content');
+    const workerNameInput = document.getElementById('worker_name_input');
+    
+    // Load team assignments when job work is selected
+    jobWorkSelect.addEventListener('change', function() {
+        const jobId = this.value;
+        
+        if (!jobId) {
+            teamAssignmentsSection.style.display = 'none';
+            workerNameInput.value = '';
+            return;
+        }
+        
+        // Show loading state
+        teamAssignmentsContent.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading team assignments...</div>';
+        teamAssignmentsSection.style.display = 'block';
+        
+        // Fetch team assignments
+        fetch(`/jobwork/api/job-work/${jobId}/team-assignments`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayTeamAssignments(data);
+                    // Update the quantity unit in the form
+                    const quantityUnitSpan = document.getElementById('quantity_unit');
+                    const scrapUnitSpan = document.getElementById('scrap_unit');
+                    const inspectedUnitSpan = document.getElementById('inspected_unit');
+                    const passedUnitSpan = document.getElementById('passed_unit');
+                    const rejectedUnitSpan = document.getElementById('rejected_unit');
+                    
+                    if (quantityUnitSpan && data.unit_of_measure) {
+                        quantityUnitSpan.textContent = data.unit_of_measure;
+                    }
+                    if (scrapUnitSpan && data.unit_of_measure) {
+                        scrapUnitSpan.textContent = data.unit_of_measure;
+                    }
+                    if (inspectedUnitSpan && data.unit_of_measure) {
+                        inspectedUnitSpan.textContent = data.unit_of_measure;
+                    }
+                    if (passedUnitSpan && data.unit_of_measure) {
+                        passedUnitSpan.textContent = data.unit_of_measure;
+                    }
+                    if (rejectedUnitSpan && data.unit_of_measure) {
+                        rejectedUnitSpan.textContent = data.unit_of_measure;
+                    }
+                } else {
+                    teamAssignmentsContent.innerHTML = '<div class="alert alert-warning">No team assignments found for this job work.</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading team assignments:', error);
+                teamAssignmentsContent.innerHTML = '<div class="alert alert-danger">Error loading team assignments.</div>';
+            });
+    });
+    
+    function displayTeamAssignments(data) {
+        let html = `
+            <div class="alert alert-info">
+                <strong>Job Work:</strong> ${data.job_number} - ${data.item_name}
+                ${data.is_team_work ? '<span class="badge bg-success ms-2">Team Work</span>' : '<span class="badge bg-warning ms-2">Individual Work</span>'}
+            </div>
+        `;
+        
+        if (data.team_assignments && data.team_assignments.length > 0) {
+            html += `
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Employee</th>
+                                <th>Role</th>
+                                <th>Assigned Qty</th>
+                                <th>Progress</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            data.team_assignments.forEach(assignment => {
+                const progressClass = assignment.completion_percentage >= 100 ? 'bg-success' : 
+                                    assignment.completion_percentage >= 50 ? 'bg-warning' : 'bg-danger';
+                const statusClass = assignment.status === 'completed' ? 'bg-success' : 
+                                  assignment.status === 'in_progress' ? 'bg-primary' : 'bg-secondary';
+                
+                html += `
+                    <tr>
+                        <td>
+                            <strong>${assignment.member_name}</strong><br>
+                            <small class="text-muted">${assignment.employee_code}</small>
+                        </td>
+                        <td><span class="badge bg-info">${assignment.member_role}</span></td>
+                        <td>${assignment.assigned_quantity} ${data.unit_of_measure || 'units'}</td>
+                        <td>
+                            <span class="badge ${progressClass}">${assignment.completion_percentage.toFixed(1)}%</span>
+                        </td>
+                        <td>
+                            <span class="badge ${statusClass}">${assignment.status.replace('_', ' ').toUpperCase()}</span>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="selectWorker('${assignment.member_name}')">
+                                <i class="fas fa-user-check"></i> Select
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle"></i> <strong>Quick Entry:</strong> Click "Select" next to a team member to automatically fill their name, then log their daily progress below.
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> No team assignments found for this job work.
+                    <div class="mt-2">
+                        <button type="button" class="btn btn-sm btn-success me-2" onclick="showQuickAssignForm(${data.job_id})">
+                            <i class="fas fa-user-plus"></i> Quick Assign Worker
+                        </button>
+                        <a href="/jobwork/team-assignments/${data.job_id}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-users"></i> Manage Team Assignments
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Quick Assignment Form (hidden by default) -->
+                <div id="quick_assign_form_${data.job_id}" class="card mt-3" style="display: none;">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-user-plus"></i> Quick Assign Worker to Job Work</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Worker Name</label>
+                                <input type="text" id="quick_worker_name_${data.job_id}" class="form-control" placeholder="Enter worker name">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Role</label>
+                                <select id="quick_worker_role_${data.job_id}" class="form-select">
+                                    <option value="Worker">Worker</option>
+                                    <option value="Supervisor">Supervisor</option>
+                                    <option value="Quality Control">Quality Control</option>
+                                    <option value="Machine Operator">Machine Operator</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Assigned Quantity</label>
+                                <input type="number" id="quick_assigned_qty_${data.job_id}" class="form-control" value="1" min="0.1" step="0.1">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="button" class="btn btn-success me-2" onclick="quickAssignWorker(${data.job_id})">
+                                    <i class="fas fa-check"></i> Assign Worker
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="hideQuickAssignForm(${data.job_id})">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        teamAssignmentsContent.innerHTML = html;
+    }
+    
+    // Function to select a worker (called from buttons)
+    window.selectWorker = function(workerName) {
+        workerNameInput.value = workerName;
+        workerNameInput.focus();
+        
+        // Scroll to worker information section
+        document.querySelector('.text-info').scrollIntoView({ behavior: 'smooth' });
+        
+        // Show success message
+        const successDiv = document.createElement('div');
+        successDiv.className = 'alert alert-success alert-dismissible fade show mt-2';
+        successDiv.innerHTML = `
+            <i class="fas fa-check"></i> Selected worker: <strong>${workerName}</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        workerNameInput.parentNode.appendChild(successDiv);
+        
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            if (successDiv.parentNode) {
+                successDiv.remove();
+            }
+        }, 3000);
+    };
+    
+    // Quick assignment functions
+    window.showQuickAssignForm = function(jobId) {
+        document.getElementById(`quick_assign_form_${jobId}`).style.display = 'block';
+    };
+    
+    window.hideQuickAssignForm = function(jobId) {
+        document.getElementById(`quick_assign_form_${jobId}`).style.display = 'none';
+    };
+    
+    window.quickAssignWorker = function(jobId) {
+        const workerName = document.getElementById(`quick_worker_name_${jobId}`).value.trim();
+        const workerRole = document.getElementById(`quick_worker_role_${jobId}`).value;
+        const assignedQty = parseFloat(document.getElementById(`quick_assigned_qty_${jobId}`).value);
+        
+        if (!workerName) {
+            alert('Please enter a worker name');
+            return;
+        }
+        
+        if (!assignedQty || assignedQty <= 0) {
+            alert('Please enter a valid assigned quantity');
+            return;
+        }
+        
+        // Show loading state
+        const assignButton = event.target;
+        assignButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Assigning...';
+        assignButton.disabled = true;
+        
+        // Make API call to assign worker
+        fetch('/jobwork/api/quick-assign-worker', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                job_id: jobId,
+                worker_name: workerName,
+                worker_role: workerRole,
+                assigned_quantity: assignedQty
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Hide the form and reload team assignments
+                hideQuickAssignForm(jobId);
+                
+                // Reload team assignments to show the new assignment
+                const jobWorkSelect = document.getElementById('job_work_select');
+                if (jobWorkSelect.value == jobId) {
+                    // Trigger change event to reload assignments
+                    jobWorkSelect.dispatchEvent(new Event('change'));
+                }
+                
+                // Show success message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-check"></i> ${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                teamAssignmentsContent.prepend(alertDiv);
+                
+                // Auto-select the worker in the form
+                selectWorker(workerName);
+                
+            } else {
+                alert(`Assignment failed: ${data.message}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error assigning worker:', error);
+            alert('Error occurred while assigning worker');
+        })
+        .finally(() => {
+            // Reset button state
+            assignButton.innerHTML = '<i class="fas fa-check"></i> Assign Worker';
+            assignButton.disabled = false;
+        });
+    };
+    
+    // Inspection calculation functionality
+    const inspectedQuantity = document.getElementById('inspected_quantity');
+    const passedQuantity = document.getElementById('passed_quantity');
+    const rejectedQuantity = document.getElementById('rejected_quantity');
+    const inspectionSummary = document.getElementById('inspection_summary');
+    const rejectionReasonsSection = document.getElementById('rejection_reasons_section');
+    
+    function calculateInspectionValues() {
+        const inspected = parseFloat(inspectedQuantity.value) || 0;
+        const passed = parseFloat(passedQuantity.value) || 0;
+        const rejected = Math.max(0, inspected - passed);
+        
+        // Update rejected quantity (auto-calculated)
+        rejectedQuantity.value = rejected.toFixed(2);
+        
+        // Show/hide rejection reasons section
+        if (rejected > 0) {
+            rejectionReasonsSection.style.display = 'block';
+        } else {
+            rejectionReasonsSection.style.display = 'none';
+        }
+        
+        // Calculate and display inspection summary
+        if (inspected > 0) {
+            const acceptanceRate = (passed / inspected * 100);
+            const rejectionRate = (rejected / inspected * 100);
+            
+            document.getElementById('acceptance_rate').textContent = acceptanceRate.toFixed(1) + '%';
+            document.getElementById('rejection_rate').textContent = rejectionRate.toFixed(1) + '%';
+            document.getElementById('total_accounted').textContent = inspected.toFixed(2);
+            
+            // Color coding for rates
+            const acceptanceElement = document.getElementById('acceptance_rate');
+            const rejectionElement = document.getElementById('rejection_rate');
+            
+            acceptanceElement.className = acceptanceRate >= 95 ? 'text-success' : 
+                                        acceptanceRate >= 85 ? 'text-warning' : 'text-danger';
+            rejectionElement.className = rejectionRate <= 5 ? 'text-success' : 
+                                       rejectionRate <= 15 ? 'text-warning' : 'text-danger';
+            
+            inspectionSummary.style.display = 'block';
+        } else {
+            inspectionSummary.style.display = 'none';
+        }
+    }
+    
+    // Add event listeners for inspection calculations
+    if (inspectedQuantity && passedQuantity) {
+        inspectedQuantity.addEventListener('input', calculateInspectionValues);
+        passedQuantity.addEventListener('input', calculateInspectionValues);
+    }
+});
+</script>
+{% endblock %}

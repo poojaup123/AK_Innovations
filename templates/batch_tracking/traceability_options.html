@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Traceability Options{% endblock %}
+
+{% block extra_css %}
+<style>
+.traceability-header {
+    background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.option-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+    cursor: pointer;
+}
+
+.option-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.option-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.batch-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.2s ease;
+    margin-bottom: 1rem;
+}
+
+.batch-card:hover {
+    transform: translateY(-2px);
+}
+
+.search-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Traceability Header -->
+    <div class="traceability-header">
+        <div class="text-center">
+            <h1 class="mb-0">
+                <i class="fas fa-search mr-3"></i>
+                Batch Traceability System
+            </h1>
+            <p class="mb-0 mt-2 opacity-75">
+                Track complete material journey from raw materials to finished goods
+            </p>
+        </div>
+    </div>
+
+    <!-- Quick Search Section -->
+    <div class="search-section">
+        <div class="row">
+            <div class="col-md-6">
+                <h5><i class="fas fa-search"></i> Quick Batch Search</h5>
+                <form method="GET" action="{{ url_for('batch_tracking.traceability_report') }}">
+                    <input type="hidden" name="type" value="batch">
+                    <div class="input-group">
+                        <select name="batch_id" class="form-control" required>
+                            <option value="">Select a batch to trace...</option>
+                            {% for batch in recent_batches %}
+                            <option value="{{ batch.id }}">
+                                {{ batch.batch_number }} - {{ batch.item.name }} ({{ batch.total_quantity }} {{ batch.item.unit_of_measure }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-route"></i> Trace Batch
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-6">
+                <h5><i class="fas fa-cube"></i> Item-wise Traceability</h5>
+                <form method="GET" action="{{ url_for('batch_tracking.traceability_report') }}">
+                    <input type="hidden" name="type" value="item">
+                    <div class="input-group">
+                        <select name="item_id" class="form-control" required>
+                            <option value="">Select an item to view all batches...</option>
+                            {% for item in items %}
+                            <option value="{{ item.id }}">
+                                {{ item.name }} ({{ item.code }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="input-group-append">
+                            <button class="btn btn-success" type="submit">
+                                <i class="fas fa-list"></i> View All Batches
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Traceability Options -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card option-card text-center" onclick="location.href='{{ url_for('batch_tracking.dashboard') }}'">
+                <div class="card-body">
+                    <i class="fas fa-tachometer-alt option-icon text-primary"></i>
+                    <h5 class="card-title">Batch Dashboard</h5>
+                    <p class="card-text">View all batches with process-wise breakdown and real-time status updates.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card option-card text-center" onclick="location.href='{{ url_for('batch_tracking.process_view') }}'">
+                <div class="card-body">
+                    <i class="fas fa-industry option-icon text-warning"></i>
+                    <h5 class="card-title">Process View</h5>
+                    <p class="card-text">Monitor batches by manufacturing process stages and track WIP inventory.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card option-card text-center" onclick="location.href='{{ url_for('batch_tracking.batch_movements') }}'">
+                <div class="card-body">
+                    <i class="fas fa-exchange-alt option-icon text-success"></i>
+                    <h5 class="card-title">Batch Movements</h5>
+                    <p class="card-text">Track all batch movements, transfers, and state changes with complete audit trail.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Batches -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock"></i> Recent Batches (Quick Access)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_batches %}
+                        <div class="row">
+                            {% for batch in recent_batches[:12] %}
+                            <div class="col-lg-4 col-xl-3">
+                                <div class="batch-card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="card-title mb-0">
+                                                <a href="{{ url_for('batch_tracking.batch_detail', batch_id=batch.id) }}">
+                                                    {{ batch.batch_number }}
+                                                </a>
+                                            </h6>
+                                            <span class="badge badge-{{ 'success' if batch.quality_status == 'approved' else 'warning' }}">
+                                                {{ batch.quality_status.title() }}
+                                            </span>
+                                        </div>
+                                        
+                                        <p class="card-text mb-2">
+                                            <strong>{{ batch.item.name }}</strong><br>
+                                            <small class="text-muted">{{ batch.total_quantity }} {{ batch.item.unit_of_measure }}</small>
+                                        </p>
+                                        
+                                        <p class="card-text">
+                                            <small class="text-muted">
+                                                Created: {{ batch.created_at.strftime('%d/%m/%Y') }}
+                                            </small>
+                                        </p>
+                                        
+                                        <!-- Quick Action Buttons -->
+                                        <div class="btn-group w-100">
+                                            <a href="{{ url_for('batch_tracking.batch_detail', batch_id=batch.id) }}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('batch_tracking.traceability_report', type='batch', batch_id=batch.id) }}" 
+                                               class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-route"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        {% if recent_batches|length > 12 %}
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('batch_tracking.dashboard') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-plus"></i> View All Batches
+                            </a>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                            <h5>No Batches Available</h5>
+                            <p class="text-muted">Create your first batch by receiving materials through GRN.</p>
+                            <a href="{{ url_for('grn.dashboard') }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create First GRN
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add some interactivity to option cards
+document.querySelectorAll('.option-card').forEach(card => {
+    card.addEventListener('mouseenter', function() {
+        this.style.background = 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)';
+    });
+    
+    card.addEventListener('mouseleave', function() {
+        this.style.background = 'white';
+    });
+});
+</script>
+{% endblock %}

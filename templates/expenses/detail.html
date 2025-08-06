@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+
+{% block title %}Expense Details - {{ expense.expense_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-receipt me-2"></i>Expense Details - {{ expense.expense_number }}</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('expenses.expense_list') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i>Back to List
+            </a>
+            {% if expense.status == 'pending' and (expense.requested_by_id == current_user.id or current_user.is_admin()) %}
+                <a href="{{ url_for('expenses.edit_expense', id=expense.id) }}" class="btn btn-warning">
+                    <i class="fas fa-edit me-1"></i>Edit
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Details -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>Expense Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Expense Number:</strong></td>
+                                    <td>{{ expense.expense_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Date:</strong></td>
+                                    <td>{{ expense.expense_date.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Category:</strong></td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ expense.category_display }}</span>
+                                        {% if expense.subcategory %}
+                                            <br><small class="text-muted">{{ expense.subcategory }}</small>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge {{ expense.status_badge_class }}">
+                                            {{ expense.status.title() }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Payment Method:</strong></td>
+                                    <td>
+                                        {% if expense.payment_method %}
+                                            {{ expense.payment_method.replace('_', ' ').title() }}
+                                        {% else %}
+                                            <span class="text-muted">Not specified</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Paid By:</strong></td>
+                                    <td>
+                                        {% if expense.paid_by %}
+                                            {{ expense.paid_by }}
+                                        {% else %}
+                                            <span class="text-muted">Not specified</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Requested By:</strong></td>
+                                    <td>{{ expense.requested_by.username }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created:</strong></td>
+                                    <td>{{ expense.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                </tr>
+                                {% if expense.approved_by %}
+                                <tr>
+                                    <td><strong>Approved By:</strong></td>
+                                    <td>{{ expense.approved_by.username }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Approval Date:</strong></td>
+                                    <td>{{ expense.approval_date.strftime('%d/%m/%Y %H:%M') }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if expense.payment_date %}
+                                <tr>
+                                    <td><strong>Payment Date:</strong></td>
+                                    <td>{{ expense.payment_date.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if expense.is_recurring %}
+                                <tr>
+                                    <td><strong>Recurring:</strong></td>
+                                    <td>
+                                        <span class="badge bg-info">{{ expense.recurring_frequency.title() }}</span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6>Description:</h6>
+                            <p class="text-muted">{{ expense.description }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if expense.notes %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6>Notes:</h6>
+                            <p class="text-muted">{{ expense.notes }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Supporting Documents -->
+            {% if documents %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-file-alt me-2"></i>Supporting Documents</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for document in documents %}
+                        <div class="col-md-6 mb-3">
+                            <div class="border rounded p-3 h-100">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-file me-2 text-primary"></i>
+                                    <strong>{{ document.original_filename }}</strong>
+                                </div>
+                                <div class="small text-muted mb-2">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Size: {{ (document.file_size / 1024 / 1024)|round(2) }} MB | 
+                                    Type: {{ document.mime_type.upper() if document.mime_type else 'N/A' }}
+                                </div>
+                                <div class="small text-muted mb-2">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Uploaded: {{ document.upload_date.strftime('%d/%m/%Y %I:%M %p') }}
+                                </div>
+                                {% if document.description %}
+                                <div class="small text-muted mb-2">
+                                    <i class="fas fa-comment me-1"></i>
+                                    {{ document.description }}
+                                </div>
+                                {% endif %}
+                                <div class="mt-2">
+                                    <a href="{{ url_for('documents.download_document', document_id=document.id) }}" 
+                                       class="btn btn-sm btn-outline-primary me-2">
+                                        <i class="fas fa-download me-1"></i>Download
+                                    </a>
+                                    <a href="{{ url_for('documents.view_document', document_id=document.id) }}" 
+                                       class="btn btn-sm btn-outline-secondary" target="_blank">
+                                        <i class="fas fa-eye me-1"></i>View
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Vendor Information -->
+            {% if expense.vendor_name or expense.invoice_number %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-building me-2"></i>Vendor Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Vendor Name:</strong></td>
+                                    <td>{{ expense.vendor_name or '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Contact:</strong></td>
+                                    <td>{{ expense.vendor_contact or '-' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Invoice Number:</strong></td>
+                                    <td>{{ expense.invoice_number or '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Invoice Date:</strong></td>
+                                    <td>
+                                        {% if expense.invoice_date %}
+                                            {{ expense.invoice_date.strftime('%d/%m/%Y') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Financial Summary & Actions -->
+        <div class="col-md-4">
+            <!-- Financial Summary -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-rupee-sign me-2"></i>Financial Summary</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Base Amount:</strong></td>
+                            <td class="text-end">₹{{ "%.2f"|format(expense.amount) }}</td>
+                        </tr>
+                        {% if expense.tax_amount > 0 %}
+                        <tr>
+                            <td><strong>Tax Amount:</strong></td>
+                            <td class="text-end">₹{{ "%.2f"|format(expense.tax_amount) }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr class="table-dark">
+                            <td><strong>Total Amount:</strong></td>
+                            <td class="text-end"><strong>₹{{ "%.2f"|format(expense.total_amount) }}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Admin Actions -->
+            {% if current_user.is_admin() %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-tools me-2"></i>Admin Actions</h5>
+                </div>
+                <div class="card-body">
+                    {% if expense.status == 'pending' %}
+                        <button type="button" class="btn btn-success w-100 mb-2" 
+                                onclick="approveExpense({{ expense.id }})">
+                            <i class="fas fa-check me-1"></i>Approve Expense
+                        </button>
+                        <button type="button" class="btn btn-danger w-100 mb-2" 
+                                onclick="rejectExpense({{ expense.id }})">
+                            <i class="fas fa-times me-1"></i>Reject Expense
+                        </button>
+                    {% elif expense.status == 'approved' %}
+                        <button type="button" class="btn btn-primary w-100 mb-2" 
+                                onclick="markPaid({{ expense.id }})">
+                            <i class="fas fa-money-check me-1"></i>Mark as Paid
+                        </button>
+                    {% elif expense.status == 'paid' %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-1"></i>
+                            Expense has been paid
+                        </div>
+                    {% elif expense.status == 'rejected' %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-times-circle me-1"></i>
+                            Expense was rejected
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Process Timeline -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-history me-2"></i>Process Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="timeline-title">Created</h6>
+                                <p class="timeline-description">
+                                    By {{ expense.requested_by.username }}<br>
+                                    <small class="text-muted">{{ expense.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                                </p>
+                            </div>
+                        </div>
+
+                        {% if expense.status != 'pending' %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker {% if expense.status == 'approved' or expense.status == 'paid' %}bg-success{% else %}bg-danger{% endif %}"></div>
+                            <div class="timeline-content">
+                                <h6 class="timeline-title">
+                                    {% if expense.status == 'approved' or expense.status == 'paid' %}
+                                        Approved
+                                    {% else %}
+                                        Rejected
+                                    {% endif %}
+                                </h6>
+                                <p class="timeline-description">
+                                    {% if expense.approved_by %}
+                                        By {{ expense.approved_by.username }}<br>
+                                        <small class="text-muted">{{ expense.approval_date.strftime('%d/%m/%Y %H:%M') }}</small>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if expense.status == 'paid' %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <h6 class="timeline-title">Paid</h6>
+                                <p class="timeline-description">
+                                    Payment processed<br>
+                                    <small class="text-muted">{{ expense.payment_date.strftime('%d/%m/%Y') }}</small>
+                                </p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -23px;
+    top: 5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+}
+
+.timeline-content {
+    padding-left: 10px;
+}
+
+.timeline-title {
+    margin-bottom: 5px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.timeline-description {
+    margin-bottom: 0;
+    font-size: 13px;
+}
+</style>
+
+<script>
+function approveExpense(expenseId) {
+    if (confirm('Are you sure you want to approve this expense?')) {
+        fetch(`/expenses/approve/${expenseId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error approving expense');
+        });
+    }
+}
+
+function rejectExpense(expenseId) {
+    if (confirm('Are you sure you want to reject this expense?')) {
+        fetch(`/expenses/reject/${expenseId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error rejecting expense');
+        });
+    }
+}
+
+function markPaid(expenseId) {
+    if (confirm('Mark this expense as paid?')) {
+        fetch(`/expenses/mark_paid/${expenseId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error marking expense as paid');
+        });
+    }
+}
+</script>
+{% endblock %}

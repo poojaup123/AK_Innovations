@@ -1,0 +1,511 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-clipboard-check me-2"></i>{{ title }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Inspection Workflow:</strong> Log the inspection results for received materials. Only passed quantities will be added to inventory.
+                        </div>
+
+                        <!-- Source Selection -->
+                        <div class="row mb-4">
+                            <!-- Purchase Order Selection - Hidden when job_id is in URL -->
+                            <div class="col-md-6" id="poSection" {% if request.args.get('job_id') %}style="display: none;"{% endif %}>
+                                <div class="mb-3">
+                                    {{ form.purchase_order_id.label(class="form-label") }}
+                                    {% if request.args.get('po_id') %}
+                                        {{ form.purchase_order_id(class="form-select", id="poSelect", disabled=True) }}
+                                        <!-- Hidden field to preserve the value when disabled -->
+                                        <input type="hidden" name="purchase_order_id" value="{{ form.purchase_order_id.data }}">
+                                        <div class="form-text">
+                                            <i class="fas fa-lock me-1 text-success"></i>
+                                            Purchase Order pre-selected from detail page. Items will be auto-loaded.
+                                        </div>
+                                    {% else %}
+                                        {{ form.purchase_order_id(class="form-select", id="poSelect") }}
+                                    {% endif %}
+                                    {% for error in form.purchase_order_id.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <!-- Job Work Selection - Hidden when po_id is in URL -->
+                            <div class="col-md-6" id="jobSection" {% if request.args.get('po_id') %}style="display: none;"{% endif %}>
+                                <div class="mb-3">
+                                    {{ form.job_work_id.label(class="form-label") }}
+                                    {% if request.args.get('job_id') %}
+                                        {{ form.job_work_id(class="form-select", id="jobSelect", disabled=True) }}
+                                        <!-- Hidden field to preserve the value when disabled -->
+                                        <input type="hidden" name="job_work_id" value="{{ form.job_work_id.data }}">
+                                        <div class="form-text">
+                                            <i class="fas fa-lock me-1 text-success"></i>
+                                            Job Work pre-selected from detail page. Item will be auto-loaded.
+                                        </div>
+                                    {% else %}
+                                        {{ form.job_work_id(class="form-select", id="jobSelect") }}
+                                    {% endif %}
+                                    {% for error in form.job_work_id.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <!-- Show both when neither is specified -->
+                            {% if not request.args.get('po_id') and not request.args.get('job_id') %}
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Inspection Source:</strong> Select either a Purchase Order or Job Work to inspect materials from.
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Item Selection and Classification -->
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    {{ form.item_id.label(class="form-label") }}
+                                    {{ form.item_id(class="form-select", id="itemSelect") }}
+                                    {% for error in form.item_id.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                    <div class="form-text" id="itemHelp">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        {% if request.args.get('job_id') %}
+                                            Items loaded from selected Job Work. Select the item to inspect.
+                                        {% elif request.args.get('po_id') %}
+                                            Items loaded from selected Purchase Order. Select the item to inspect.
+                                        {% else %}
+                                            Select a Purchase Order or Job Work above to automatically load available items.
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Inspection Progress Section (for Job Works) -->
+                        <div id="inspectionProgressSection" style="display: none;">
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card border-info">
+                                        <div class="card-header bg-info text-white">
+                                            <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Inspection Progress</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-3">
+                                                    <div class="text-center">
+                                                        <h5 class="text-primary mb-1" id="totalSentQty">-</h5>
+                                                        <small class="text-muted">Total Sent</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="text-center">
+                                                        <h5 class="text-success mb-1" id="alreadyInspectedQty">-</h5>
+                                                        <small class="text-muted">Already Inspected</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="text-center">
+                                                        <h5 class="text-warning mb-1" id="remainingToInspectQty">-</h5>
+                                                        <small class="text-muted">Remaining to Inspect</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="text-center">
+                                                        <div class="progress mb-1" style="height: 20px;">
+                                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                                 style="width: 0%" id="inspectionProgressBar">
+                                                                0%
+                                                            </div>
+                                                        </div>
+                                                        <small class="text-muted">Inspection Progress</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quantity Fields -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.received_quantity.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.received_quantity(class="form-control", step="0.01", id="receivedQty", autocomplete="off") }}
+                                        <span class="input-group-text" id="receivedUnit">Unit</span>
+                                    </div>
+                                    {% for error in form.received_quantity.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.inspected_quantity.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.inspected_quantity(class="form-control", step="0.01", id="inspectedQty", autocomplete="off") }}
+                                        <span class="input-group-text" id="inspectedUnit">Unit</span>
+                                    </div>
+                                    {% for error in form.inspected_quantity.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.passed_quantity.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.passed_quantity(class="form-control", step="0.01", id="passedQty", autocomplete="off") }}
+                                        <span class="input-group-text" id="passedUnit">Unit</span>
+                                    </div>
+                                    {% for error in form.passed_quantity.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rejection -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    {{ form.rejected_quantity.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.rejected_quantity(class="form-control", step="0.01", id="rejectedQty", readonly=true, autocomplete="off") }}
+                                        <span class="input-group-text" id="rejectedUnit">Unit</span>
+                                    </div>
+                                    <div class="form-text">Auto-calculated: Inspected Quantity - Passed Quantity</div>
+                                    {% for error in form.rejected_quantity.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Summary Display -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="alert alert-secondary">
+                                    <h6><i class="fas fa-calculator me-2"></i>Inspection Summary:</h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <strong>Acceptance Rate:</strong> <span id="acceptanceRate">0.0%</span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <strong>Rejection Rate:</strong> <span id="rejectionRate">0.0%</span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <strong>Total Accounted:</strong> <span id="totalAccounted">0.0</span> <span id="summaryUnit"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rejection Details -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    {{ form.rejection_reasons.label(class="form-label") }}
+                                    {{ form.rejection_reasons(class="form-control", rows="3") }}
+                                    <div class="form-text">Describe reasons for rejecting materials (scratches, dents, corrosion, quality issues, etc.)</div>
+                                    {% for error in form.rejection_reasons.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            {{ form.inspection_notes.label(class="form-label") }}
+                            {{ form.inspection_notes(class="form-control", rows="4") }}
+                            {% for error in form.inspection_notes.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('material_inspection.dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-1"></i>Log Inspection & Update Inventory
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const receivedQty = document.getElementById('receivedQty');
+    const inspectedQty = document.getElementById('inspectedQty');
+    const passedQty = document.getElementById('passedQty');
+    const damagedQty = document.getElementById('damagedQty');
+    const rejectedQty = document.getElementById('rejectedQty');
+    const poSelect = document.getElementById('poSelect');
+    const jobSelect = document.getElementById('jobSelect');
+    const itemSelect = document.getElementById('itemSelect');
+
+    // Function to calculate and update summary
+    function updateSummary() {
+        const received = parseFloat(receivedQty.value) || 0;
+        const inspected = parseFloat(inspectedQty.value) || 0;
+        const passed = parseFloat(passedQty.value) || 0;
+        
+        // Only auto-calculate rejected quantity if both inspected AND passed quantities are provided
+        let rejected = 0;
+        if (inspected > 0 && passedQty.value !== '') {
+            rejected = Math.max(0, inspected - passed);
+            rejectedQty.value = rejected.toFixed(2);
+        } else if (passedQty.value === '') {
+            // Clear rejected quantity if passed quantity is not yet entered
+            rejectedQty.value = '';
+        } else {
+            rejected = parseFloat(rejectedQty.value) || 0;
+        }
+
+        const totalAccounted = passed + rejected;
+        const acceptanceRate = inspected > 0 ? (passed / inspected * 100) : 0;
+        const rejectionRate = inspected > 0 ? (rejected / inspected * 100) : 0;
+
+        document.getElementById('acceptanceRate').textContent = acceptanceRate.toFixed(1) + '%';
+        document.getElementById('rejectionRate').textContent = rejectionRate.toFixed(1) + '%';
+        document.getElementById('totalAccounted').textContent = totalAccounted.toFixed(2);
+        
+        // Update summary unit
+        const summaryUnit = document.getElementById('summaryUnit');
+        const currentUnit = document.getElementById('receivedUnit').textContent;
+        summaryUnit.textContent = currentUnit !== 'Unit' ? currentUnit : '';
+    }
+
+    // Mutual exclusion for PO and Job Work selection
+    poSelect.addEventListener('change', function() {
+        if (this.value && this.value !== '0') {
+            jobSelect.value = '0';
+            loadPOItems(this.value);
+        } else {
+            clearItemSelect();
+        }
+    });
+
+    jobSelect.addEventListener('change', function() {
+        if (this.value && this.value !== '0') {
+            poSelect.value = '0';
+            loadJobWorkItems(this.value);
+            loadJobWorkProgress(this.value);
+        } else {
+            clearItemSelect();
+            hideInspectionProgress();
+        }
+    });
+    
+    // Function to load PO items
+    function loadPOItems(poId) {
+        const itemSelect = document.getElementById('itemSelect');
+        const itemHelp = document.getElementById('itemHelp');
+        
+        // Show loading state
+        itemSelect.innerHTML = '<option value="">Loading items...</option>';
+        itemSelect.disabled = true;
+        
+        fetch(`/inspection/api/po_items/${poId}`)
+            .then(response => response.json())
+            .then(data => {
+                itemSelect.innerHTML = '<option value="">Select Item from Purchase Order</option>';
+                
+                if (data.success && data.items.length > 0) {
+                    data.items.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.item_id;
+                        option.textContent = `${item.item_code} - ${item.item_name} (Ordered: ${item.quantity} ${item.unit})`;
+                        option.setAttribute('data-unit', item.unit);
+                        itemSelect.appendChild(option);
+                    });
+                    itemHelp.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>Items loaded from selected Purchase Order.';
+                } else {
+                    itemHelp.innerHTML = '<i class="fas fa-exclamation-triangle text-warning me-1"></i>No items found in selected Purchase Order.';
+                }
+                itemSelect.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error loading PO items:', error);
+                itemSelect.innerHTML = '<option value="">Error loading items</option>';
+                itemHelp.innerHTML = '<i class="fas fa-exclamation-circle text-danger me-1"></i>Error loading items from Purchase Order.';
+                itemSelect.disabled = false;
+            });
+    }
+    
+    // Function to load Job Work items
+    function loadJobWorkItems(jobId) {
+        const itemSelect = document.getElementById('itemSelect');
+        const itemHelp = document.getElementById('itemHelp');
+        
+        // Show loading state
+        itemSelect.innerHTML = '<option value="">Loading items...</option>';
+        itemSelect.disabled = true;
+        
+        fetch(`/inspection/api/job_items/${jobId}`)
+            .then(response => response.json())
+            .then(data => {
+                itemSelect.innerHTML = '<option value="">Select Item from Job Work</option>';
+                
+                if (data.success && data.items.length > 0) {
+                    data.items.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.item_id;
+                        option.textContent = `${item.item_code} - ${item.item_name} (Sent: ${item.quantity} ${item.unit})`;
+                        option.setAttribute('data-unit', item.unit);
+                        itemSelect.appendChild(option);
+                    });
+                    itemHelp.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>Items loaded from selected Job Work.';
+                } else {
+                    itemHelp.innerHTML = '<i class="fas fa-exclamation-triangle text-warning me-1"></i>No items found in selected Job Work.';
+                }
+                itemSelect.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error loading Job Work items:', error);
+                itemSelect.innerHTML = '<option value="">Error loading items</option>';
+                itemHelp.innerHTML = '<i class="fas fa-exclamation-circle text-danger me-1"></i>Error loading items from Job Work.';
+                itemSelect.disabled = false;
+            });
+    }
+    
+    // Function to clear item selection
+    function clearItemSelect() {
+        const itemSelect = document.getElementById('itemSelect');
+        const itemHelp = document.getElementById('itemHelp');
+        
+        itemSelect.innerHTML = '<option value="">Select Item</option>';
+        itemSelect.disabled = false;
+        itemHelp.innerHTML = '<i class="fas fa-info-circle me-1"></i>Select a Purchase Order or Job Work above to automatically load available items.';
+    }
+
+    // Clear all quantity fields on page load to prevent auto-fill
+    function clearQuantityFields() {
+        inspectedQty.value = '';
+        passedQty.value = '';
+        rejectedQty.value = '';
+        
+        // Reset summary display
+        document.getElementById('acceptanceRate').textContent = '0.0%';
+        document.getElementById('rejectionRate').textContent = '0.0%';
+        document.getElementById('totalAccounted').textContent = '0.00';
+    }
+
+    // Function to update unit labels
+    function updateUnitLabels(unit) {
+        const unitElements = ['receivedUnit', 'inspectedUnit', 'passedUnit', 'rejectedUnit'];
+        unitElements.forEach(elementId => {
+            document.getElementById(elementId).textContent = unit || 'Unit';
+        });
+        updateSummary(); // Update summary to show unit in total accounted
+    }
+    
+    // Add event listener for item selection to update units
+    itemSelect.addEventListener('change', function() {
+        if (this.value) {
+            const selectedOption = this.options[this.selectedIndex];
+            const unit = selectedOption.getAttribute('data-unit');
+            updateUnitLabels(unit);
+        } else {
+            updateUnitLabels('Unit');
+        }
+    });
+
+    // Add event listeners for calculations
+    [receivedQty, inspectedQty, passedQty].forEach(element => {
+        element.addEventListener('input', updateSummary);
+    });
+
+    // Clear fields on page load instead of running updateSummary
+    clearQuantityFields();
+    
+    // Auto-load items if PO or Job Work is pre-selected
+    const initialPOSelection = poSelect.value;
+    const initialJobSelection = jobSelect.value;
+    
+    if (initialPOSelection && initialPOSelection !== '0') {
+        loadPOItems(initialPOSelection);
+    } else if (initialJobSelection && initialJobSelection !== '0') {
+        loadJobWorkItems(initialJobSelection);
+        loadJobWorkProgress(initialJobSelection);
+    }
+    
+    // Function to load Job Work progress data
+    function loadJobWorkProgress(jobId) {
+        fetch(`/inspection/api/job_progress/${jobId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showInspectionProgress(data.progress);
+                } else {
+                    hideInspectionProgress();
+                }
+            })
+            .catch(error => {
+                console.error('Error loading Job Work progress:', error);
+                hideInspectionProgress();
+            });
+    }
+    
+    // Function to show inspection progress section
+    function showInspectionProgress(progress) {
+        const section = document.getElementById('inspectionProgressSection');
+        section.style.display = 'block';
+        
+        // Update progress data
+        document.getElementById('totalSentQty').textContent = `${progress.total_sent} ${progress.unit}`;
+        document.getElementById('alreadyInspectedQty').textContent = `${progress.already_inspected} ${progress.unit}`;
+        document.getElementById('remainingToInspectQty').textContent = `${progress.remaining_to_inspect} ${progress.unit}`;
+        
+        // Update progress bar
+        const progressBar = document.getElementById('inspectionProgressBar');
+        const percentage = progress.inspection_percentage;
+        progressBar.style.width = `${percentage}%`;
+        progressBar.textContent = `${percentage.toFixed(1)}%`;
+        
+        // Color coding for progress bar
+        progressBar.className = 'progress-bar';
+        if (percentage >= 100) {
+            progressBar.classList.add('bg-success');
+        } else if (percentage >= 50) {
+            progressBar.classList.add('bg-warning');
+        } else {
+            progressBar.classList.add('bg-danger');
+        }
+    }
+    
+    // Function to hide inspection progress section
+    function hideInspectionProgress() {
+        const section = document.getElementById('inspectionProgressSection');
+        section.style.display = 'none';
+    }
+    
+    // Set default unit labels
+    updateUnitLabels('Unit');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,212 @@
+Absolutely! Let’s now explain **how all modules in your Factory Management App integrate together** — from **Inventory → BOM → UOM → Job Work → GRN → Production → Sales** — so that the system works automatically and smartly.
+
+---
+
+## ✅ MASTER CONCEPT: "Single Source Inventory Flow"
+
+Everything — **purchase, job work, production, GRN, sales** — is linked to your **master inventory table**, and transitions between states are automated.
+
+---
+
+### 🧩 MODULE INTEGRATION OVERVIEW
+
+```mermaid
+flowchart LR
+    A[Inventory (Raw/WIP/Finished)] --> B[Job Work]
+    A --> C[Production]
+    B --> D[GRN]
+    C --> D
+    D --> E[Inventory Update]
+    E --> F[Sales]
+    E --> G[Reports]
+    A --> H[BOM]
+    H --> C
+    H --> B
+    A --> I[UOM Conversion]
+    B --> I
+    C --> I
+```
+
+---
+
+## 🧱 1. **Inventory Master Table**
+
+Your core table for tracking:
+
+| Field         | Description                        |
+| ------------- | ---------------------------------- |
+| item\_code    | Unique item identifier             |
+| name          | Item name                          |
+| qty\_raw      | Raw material qty                   |
+| qty\_wip      | Sent for job work or production    |
+| qty\_finished | Finished goods ready for sale      |
+| qty\_scrap    | Scrap/damaged qty                  |
+| uom\_id       | Linked UOM (e.g., KG, PCS, Sheets) |
+
+✅ All modules read/write from this table.
+
+---
+
+## 🧱 2. **UOM (Unit of Measure) Integration**
+
+UOM Conversion Table:
+
+| from\_uom | to\_uom | factor |
+| --------- | ------- | ------ |
+| KG        | PCS     | 8.33   |
+| Sheet     | PCS     | 400    |
+
+Used to convert during:
+
+* PO Receipt → Convert KG → PCS
+* Job Work → Convert Sheets → Output PCS
+* Production → Verify available inventory in required UOM
+
+✅ You can even support **multi-UOM** (buy in KG, produce in PCS, sell in Box).
+
+---
+
+## 🧱 3. **BOM (Bill of Materials)**
+
+| bom\_id | product\_id | component\_id | qty\_required | uom\_id |
+| ------- | ----------- | ------------- | ------------- | ------- |
+| 1       | Caster      | Mounted Plate | 2 PCS         | PCS     |
+| 1       | Caster      | Base Plate    | 1 PCS         | PCS     |
+
+BOM is used by:
+
+* **Production**: To know what’s needed to make a product
+* **Job Work**: To validate expected outputs
+* **GRN**: To confirm if output matches expected BOM
+
+✅ BOM + UOM ensures correct material planning.
+
+---
+
+## 🧱 4. **Job Work**
+
+| Field            | Description                |
+| ---------------- | -------------------------- |
+| input\_item      | e.g., MS Sheet             |
+| input\_qty       | e.g., 10 Sheets            |
+| output\_item     | e.g., Mounted Plate        |
+| expected\_output | e.g., 4000 PCS             |
+| process\_type    | Single / Multi             |
+| job\_type        | In-house / Outsourced      |
+| linked\_bom\_id  | Matches against BOM        |
+| status           | sent / partial / completed |
+
+✅ Job Work consumes `qty_raw`, updates `qty_wip`
+
+---
+
+## 🧱 5. **GRN (Goods Receipt Note)**
+
+One form to receive everything:
+
+| Field          | Description                |
+| -------------- | -------------------------- |
+| source\_type   | PO / Job Work / Production |
+| reference\_id  | Job ID / PO ID             |
+| process\_step  | Cutting, Zinc (multi-step) |
+| received\_qty  | How many received          |
+| scrap\_qty     | How many scrap             |
+| final\_item    | What item came back        |
+| date\_received | Receipt date               |
+
+✅ On receipt:
+
+* Reduces `qty_wip`
+* Increases `qty_finished` or next process `qty_wip`
+* Adds to `qty_scrap` if needed
+
+---
+
+## 🧱 6. **Production**
+
+| Field                | Description                       |
+| -------------------- | --------------------------------- |
+| product\_to\_produce | e.g., Castor Wheel                |
+| qty\_required        | e.g., 100 PCS                     |
+| bom\_id              | What materials required           |
+| status               | pending → in\_process → completed |
+
+✅ Production uses:
+
+* `qty_raw` from Inventory (via BOM)
+* Pushes WIP → Finished
+* Optionally can record `damaged`, `scrap`
+
+---
+
+## 🧱 7. **Sales**
+
+Uses `qty_finished` to dispatch:
+
+| Field        | Description       |
+| ------------ | ----------------- |
+| item\_id     | e.g., Zinc Caster |
+| qty\_sold    | 50 PCS            |
+| invoice\_no  | AUTO              |
+| customer\_id | Linked customer   |
+| date         | Dispatch date     |
+
+✅ Deducts from `qty_finished`
+
+---
+
+## 🧠 INTELLIGENT WORKFLOW (EXAMPLE)
+
+1. You purchase 10 MS Sheets (UOM: Sheet)
+2. UOM conversion: 10 Sheets = 4000 Mounted Plates
+3. Job Work Created:
+
+   * Cutting Process
+   * In-house or Vendor
+4. GRN Created:
+
+   * Received 3950 good
+   * 50 scrap
+5. Inventory auto-updates:
+
+   * WIP down
+   * Finished up
+   * Scrap recorded
+6. Production consumes Mounted + Base Plates (via BOM)
+7. Final Finished Good is ready
+8. Sales Order ships it out
+
+---
+
+## 📌 Reporting & Dashboard Integration
+
+* Inventory Dashboard:
+
+  * Stock by state
+  * WIP status by job
+* Production Efficiency:
+
+  * Input vs output vs scrap
+* UOM Traceability:
+
+  * Conversion accuracy
+* GRN/Job Work Timeline:
+
+  * Who did what, when, and how much
+
+---
+
+## ✅ Benefits of Your Integration Model
+
+| Feature                | Benefit                             |
+| ---------------------- | ----------------------------------- |
+| Single Inventory Table | Simplified flow tracking            |
+| BOM + UOM Integration  | Auto material planning              |
+| GRN-Driven Workflow    | No manual updates                   |
+| Scrap Tracking         | Process-level optimization          |
+| Multi-Company Ready    | Just add company\_id in every table |
+| Real-time Updates      | Everyone sees latest material state |
+
+---
+
+

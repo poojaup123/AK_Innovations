@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}BOM-Driven Material Planning{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-project-diagram"></i> BOM-Driven Material Planning</h2>
+                <a href="{{ url_for('manufacturing_intelligence.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+            <p class="text-muted">Automated material planning and shortage detection based on Bill of Materials</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Production Analysis -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-industry"></i> Production Requirements Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <form id="productionAnalysisForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Select Item to Produce</label>
+                                <select class="form-select" id="itemSelect" required>
+                                    <option value="">Choose an item...</option>
+                                    {% for item in items_with_bom %}
+                                    <option value="{{ item.id }}">{{ item.name }} ({{ item.code }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Planned Production Quantity</label>
+                                <input type="number" class="form-control" id="plannedQuantity" min="1" step="1" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button type="button" class="btn btn-primary" onclick="analyzeProduction()">
+                                    <i class="fas fa-search"></i> Analyze Requirements
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary ms-2" onclick="clearAnalysis()">
+                                    <i class="fas fa-times"></i> Clear
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Analysis Results -->
+                    <div id="analysisResults" class="mt-4" style="display: none;">
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-info-circle"></i> Production Analysis</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Item:</strong> <span id="analyzeItemName"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Planned Quantity:</strong> <span id="analyzePlannedQty"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Feasibility:</strong> <span id="productionFeasibility"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Material Requirements Table -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6><i class="fas fa-list"></i> Material Requirements</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm" id="requirementsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Material</th>
+                                                <th>Required</th>
+                                                <th>Available</th>
+                                                <th>Status</th>
+                                                <th>Cost</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="requirementsBody">
+                                            <!-- Requirements will be populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shortages and Purchase Suggestions -->
+                        <div id="shortageSection" class="mt-3" style="display: none;">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6><i class="fas fa-exclamation-triangle"></i> Material Shortages Detected</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Material</th>
+                                                    <th>Shortage</th>
+                                                    <th>Suggested Purchase</th>
+                                                    <th>Estimated Cost</th>
+                                                    <th>Priority</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="shortagesBody">
+                                                <!-- Shortages will be populated here -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <div class="mt-3">
+                                        <button class="btn btn-warning" onclick="generatePurchaseSuggestions()">
+                                            <i class="fas fa-shopping-cart"></i> Generate Purchase Suggestions
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOM Information -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Available BOMs</h5>
+                </div>
+                <div class="card-body">
+                    {% if items_with_bom %}
+                        <div class="list-group list-group-flush">
+                            {% for item in items_with_bom %}
+                            <div class="list-group-item">
+                                <h6 class="mb-1">{{ item.name }}</h6>
+                                <p class="mb-1 text-muted small">{{ item.code }}</p>
+                                <small class="text-muted">{{ item.description or 'No description' }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-exclamation-circle fa-3x mb-3"></i>
+                            <p>No BOMs found</p>
+                            <small>Create BOMs in Production → BOM Management</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-bar"></i> Planning Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h4 class="text-primary">{{ items_with_bom|length }}</h4>
+                            <small>Items with BOM</small>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success">0</h4>
+                            <small>Analyses Today</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Material Forecast -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-crystal-ball"></i> Material Forecast</h5>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">30-day material demand forecast</p>
+                    <button class="btn btn-sm btn-outline-info" onclick="generateForecast()">
+                        <i class="fas fa-chart-line"></i> Generate Forecast
+                    </button>
+                    
+                    <div id="forecastResults" class="mt-3" style="display: none;">
+                        <!-- Forecast results will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function analyzeProduction() {
+    const itemId = document.getElementById('itemSelect').value;
+    const plannedQty = parseFloat(document.getElementById('plannedQuantity').value);
+    
+    if (!itemId || !plannedQty) {
+        alert('Please select an item and enter planned quantity');
+        return;
+    }
+    
+    // Show loading
+    const resultsDiv = document.getElementById('analysisResults');
+    resultsDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Analyzing production requirements...</p></div>';
+    resultsDiv.style.display = 'block';
+    
+    // Make API call
+    fetch(`/manufacturing-intelligence/api/analyze-production/${itemId}?quantity=${plannedQty}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showError(data.error);
+        } else {
+            displayAnalysisResults(data);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Analysis failed. Please try again.');
+    });
+}
+
+function displayAnalysisResults(data) {
+    // Update analysis summary
+    document.getElementById('analyzeItemName').textContent = data.item;
+    document.getElementById('analyzePlannedQty').textContent = data.planned_quantity;
+    document.getElementById('productionFeasibility').innerHTML = 
+        data.can_produce ? 
+            '<span class="badge bg-success">Possible</span>' : 
+            '<span class="badge bg-danger">Blocked</span>';
+    
+    // Update requirements table
+    const tbody = document.getElementById('requirementsBody');
+    tbody.innerHTML = '';
+    
+    if (data.requirements) {
+        data.requirements.forEach(req => {
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td><strong>${req.material_name}</strong><br><small class="text-muted">${req.material_code}</small></td>
+                <td>${req.required_quantity.toFixed(2)} ${req.unit_of_measure}</td>
+                <td>${req.available_quantity.toFixed(2)} ${req.unit_of_measure}</td>
+                <td>${req.is_sufficient ? 
+                    '<span class="badge bg-success">Sufficient</span>' : 
+                    '<span class="badge bg-danger">Short</span>'}</td>
+                <td>₹${req.total_cost.toFixed(2)}</td>
+            `;
+        });
+    }
+    
+    // Show shortages if any
+    if (data.shortages && data.shortages.length > 0) {
+        displayShortages(data.shortages);
+        document.getElementById('shortageSection').style.display = 'block';
+    } else {
+        document.getElementById('shortageSection').style.display = 'none';
+    }
+    
+    // Show the results section
+    document.getElementById('analysisResults').style.display = 'block';
+}
+
+function displayShortages(shortages) {
+    const tbody = document.getElementById('shortagesBody');
+    tbody.innerHTML = '';
+    
+    shortages.forEach(shortage => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td><strong>${shortage.material_name}</strong></td>
+            <td class="text-danger">${shortage.shortage_quantity.toFixed(2)} ${shortage.unit_of_measure}</td>
+            <td>${shortage.shortage_quantity.toFixed(2)} ${shortage.unit_of_measure}</td>
+            <td>₹${shortage.shortage_cost.toFixed(2)}</td>
+            <td><span class="badge bg-warning">High</span></td>
+        `;
+    });
+}
+
+function generatePurchaseSuggestions() {
+    // This would generate purchase suggestions based on shortages
+    alert('Purchase suggestion generation feature coming soon!');
+}
+
+function generateForecast() {
+    // This would generate material forecast
+    alert('Material forecast feature coming soon!');
+}
+
+function clearAnalysis() {
+    document.getElementById('itemSelect').value = '';
+    document.getElementById('plannedQuantity').value = '';
+    document.getElementById('analysisResults').style.display = 'none';
+}
+
+function showError(message) {
+    const resultsDiv = document.getElementById('analysisResults');
+    resultsDiv.innerHTML = `
+        <div class="alert alert-danger">
+            <h5><i class="fas fa-exclamation-triangle"></i> Analysis Error</h5>
+            <p>${message}</p>
+        </div>
+    `;
+    resultsDiv.style.display = 'block';
+}
+</script>
+{% endblock %}

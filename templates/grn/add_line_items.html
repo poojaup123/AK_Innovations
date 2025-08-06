@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+
+{% block title %}Add Line Items - GRN {{ grn.grn_number }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-plus me-2"></i>Add Line Items</h2>
+                <a href="{{ url_for('grn.detail', grn_id=grn.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to GRN
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRN Information -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-receipt me-2"></i>GRN {{ grn.grn_number }}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if grn.job_work_id and grn.job_work %}
+                        <div class="col-md-3">
+                            <strong>Job Work:</strong><br>
+                            <a href="{{ url_for('jobwork.detail', id=grn.job_work.id) }}" class="text-decoration-none">
+                                {{ grn.job_work.job_number }}
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Customer:</strong><br>
+                            {{ grn.job_work.customer_name }}
+                        </div>
+                        {% elif grn.purchase_order_id and grn.purchase_order %}
+                        <div class="col-md-3">
+                            <strong>Purchase Order:</strong><br>
+                            <a href="{{ url_for('purchase.edit_purchase_order', id=grn.purchase_order.id) }}" class="text-decoration-none">
+                                {{ grn.purchase_order.po_number }}
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Supplier:</strong><br>
+                            {{ grn.purchase_order.supplier.name }}
+                        </div>
+                        {% else %}
+                        <div class="col-md-3">
+                            <strong>Type:</strong><br>
+                            <span class="text-muted">Direct GRN</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Reference:</strong><br>
+                            <span class="text-muted">-</span>
+                        </div>
+                        {% endif %}
+                        <div class="col-md-3">
+                            <strong>Received Date:</strong><br>
+                            {{ grn.received_date.strftime('%d/%m/%Y') }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Status:</strong><br>
+                            <span class="badge bg-info">{{ grn.status.title() }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Line Item Form -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-box me-2"></i>Add Line Item</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Item Information (read-only) -->
+                        {% if grn.job_work_id and grn.job_work %}
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-info-circle me-2"></i>Item Details</h6>
+                                    <strong>{{ grn.job_work.item.name }}</strong> ({{ grn.job_work.item.code }})<br>
+                                    <small class="text-muted">{{ grn.job_work.item.description or 'No description' }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% elif grn.purchase_order_id and grn.purchase_order %}
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-info-circle me-2"></i>Purchase Order Items</h6>
+                                    <p class="mb-0">Select items from the Purchase Order below:</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Quantity Section -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                {{ form.quantity_received.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.quantity_received(class="form-control") }}
+                                    <span class="input-group-text">
+                                        {% if grn.job_work_id and grn.job_work %}
+                                            {{ grn.job_work.item.unit_of_measure }}
+                                        {% else %}
+                                            Unit
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {% if form.quantity_received.errors %}
+                                    <div class="text-danger">{{ form.quantity_received.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.quantity_passed.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.quantity_passed(class="form-control") }}
+                                    <span class="input-group-text">
+                                        {% if grn.job_work_id and grn.job_work %}
+                                            {{ grn.job_work.item.unit_of_measure }}
+                                        {% else %}
+                                            Unit
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {% if form.quantity_passed.errors %}
+                                    <div class="text-danger">{{ form.quantity_passed.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.quantity_rejected.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.quantity_rejected(class="form-control") }}
+                                    <span class="input-group-text">
+                                        {% if grn.job_work_id and grn.job_work %}
+                                            {{ grn.job_work.item.unit_of_measure }}
+                                        {% else %}
+                                            Unit
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {% if form.quantity_rejected.errors %}
+                                    <div class="text-danger">{{ form.quantity_rejected.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Unit Information -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.unit_of_measure.label(class="form-label") }}
+                                {{ form.unit_of_measure(class="form-control") }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.unit_weight.label(class="form-label") }}
+                                {{ form.unit_weight(class="form-control") }}
+                            </div>
+                        </div>
+
+                        <!-- Quality Control -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                {{ form.inspection_status.label(class="form-label") }}
+                                {{ form.inspection_status(class="form-select") }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.quality_grade.label(class="form-label") }}
+                                {{ form.quality_grade(class="form-select") }}
+                            </div>
+
+                        </div>
+
+                        <!-- Process Information (for multi-process job works) -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.process_name.label(class="form-label") }}
+                                {{ form.process_name(class="form-control", placeholder="e.g., Zinc Plating, Machining") }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.process_stage.label(class="form-label") }}
+                                {{ form.process_stage(class="form-control", placeholder="e.g., Final, Intermediate") }}
+                            </div>
+                        </div>
+
+                        <!-- Tracking Information -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.batch_number.label(class="form-label") }}
+                                {{ form.batch_number(class="form-control", placeholder="Batch identification") }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.rejection_reason.label(class="form-label") }}
+                                {{ form.rejection_reason(class="form-control", placeholder="Reason if rejected") }}
+                            </div>
+                        </div>
+
+                        <!-- Serial Numbers and Remarks -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.serial_numbers.label(class="form-label") }}
+                                {{ form.serial_numbers(class="form-control", rows="3") }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.remarks.label(class="form-label") }}
+                                {{ form.remarks(class="form-control", rows="3") }}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <a href="{{ url_for('grn.detail', grn_id=grn.id) }}" class="btn btn-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Add Line Item
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Information and Summary -->
+        <div class="col-md-4">
+            {% if grn.job_work_id and grn.job_work %}
+            <!-- Job Work Summary -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Job Work Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-7">Total Sent:</div>
+                        <div class="col-5 text-end"><strong>{{ grn.job_work.quantity_sent }} {{ grn.job_work.item.unit_of_measure }}</strong></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-7">Already Received:</div>
+                        <div class="col-5 text-end">{{ grn.job_work.quantity_received or 0 }} {{ grn.job_work.item.unit_of_measure }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-7">Pending:</div>
+                        <div class="col-5 text-end"><span class="text-warning">{{ grn.job_work.pending_quantity }} {{ grn.job_work.item.unit_of_measure }}</span></div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ grn.job_work.completion_percentage }}%">
+                            {{ "%.1f"|format(grn.job_work.completion_percentage) }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% elif grn.purchase_order_id and grn.purchase_order %}
+            <!-- Purchase Order Summary -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Purchase Order Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-7">PO Number:</div>
+                        <div class="col-5 text-end"><strong>{{ grn.purchase_order.po_number }}</strong></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-7">Supplier:</div>
+                        <div class="col-5 text-end">{{ grn.purchase_order.supplier.name }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-7">Status:</div>
+                        <div class="col-5 text-end"><span class="badge bg-primary">{{ grn.purchase_order.status.title() }}</span></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-7">Items Count:</div>
+                        <div class="col-5 text-end">{{ grn.purchase_order.items|length }} items</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Current GRN Summary -->
+            {% if grn.line_items %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-list me-2"></i>Current GRN Items</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-7">Total Received:</div>
+                        <div class="col-5 text-end"><strong>{{ grn.total_quantity_received }}</strong></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-7">Passed:</div>
+                        <div class="col-5 text-end"><span class="text-success">{{ grn.total_quantity_passed }}</span></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-7">Rejected:</div>
+                        <div class="col-5 text-end"><span class="text-danger">{{ grn.total_quantity_rejected }}</span></div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-7">Acceptance Rate:</div>
+                        <div class="col-5 text-end">
+                            <span class="badge bg-{{ 'success' if grn.acceptance_rate >= 95 else 'warning' if grn.acceptance_rate >= 80 else 'danger' }}">
+                                {{ "%.1f"|format(grn.acceptance_rate) }}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Guidelines -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Guidelines</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled small">
+                        <li class="mb-1"><i class="fas fa-check text-success me-1"></i>Quantity Received should be actual received amount</li>
+                        <li class="mb-1"><i class="fas fa-check text-success me-1"></i>Passed + Rejected should equal Received</li>
+                        <li class="mb-1"><i class="fas fa-check text-success me-1"></i>Use appropriate quality grade for tracking</li>
+                        <li class="mb-1"><i class="fas fa-check text-success me-1"></i>Material classification affects inventory</li>
+                        <li><i class="fas fa-check text-success me-1"></i>Add rejection reason for quality issues</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

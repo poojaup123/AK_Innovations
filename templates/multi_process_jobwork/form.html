@@ -1,0 +1,624 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-tools"></i> {{ title }}</h1>
+            <p class="text-muted">Create job work with single or multiple processes - unified form for all job work types</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Job Works
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-plus-circle"></i> Job Work Details</h5>
+                    <p class="text-info small mb-0"><i class="fas fa-info-circle"></i> This unified form handles both single process jobs (add 1 process) and multi-process jobs (add multiple processes)</p>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="multiProcessForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Basic Job Work Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-info-circle"></i> Basic Information
+                                </h6>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Job Number</label>
+                                <input type="text" class="form-control" value="Auto-generated (JOB-YYYY-0001)" readonly>
+                                <small class="text-muted">Job number will be automatically generated when saved</small>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.item_id.label(class="form-label") }}
+                                {{ form.item_id(class="form-select") }}
+                                {% if form.item_id.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.item_id.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.total_quantity.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.total_quantity(class="form-control") }}
+                                    <span class="input-group-text">pcs</span>
+                                    <button type="button" class="btn btn-outline-info" onclick="checkInventoryStock()">
+                                        <i class="fas fa-search"></i> Check Stock
+                                    </button>
+                                </div>
+                                {% if form.total_quantity.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.total_quantity.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-info">
+                                    <i class="fas fa-info-circle"></i> This is the total raw material quantity that will go through sequential processes
+                                </small>
+                                <div id="stock-info" class="mt-2"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                {{ form.sent_date.label(class="form-label") }}
+                                {{ form.sent_date(class="form-control") }}
+                                {% if form.sent_date.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.sent_date.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.expected_return.label(class="form-label") }}
+                                {{ form.expected_return(class="form-control") }}
+                                {% if form.expected_return.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.expected_return.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12 mb-3">
+                                {{ form.notes.label(class="form-label") }}
+                                {{ form.notes(class="form-control") }}
+                                {% if form.notes.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.notes.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Processes Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-success border-bottom pb-2 mb-3">
+                                    <i class="fas fa-cogs"></i> Manufacturing Processes
+                                    <small class="text-muted">(Define the sequence of processes for this job work)</small>
+                                </h6>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Process Workflows:</strong> 
+                                    <br><strong>Sequential:</strong> Same parts go through all processes (20 plates → zinc plating → bending = each process handles 20 pieces)
+                                    <br><strong>Parallel:</strong> Different quantities for different processes (45 total = Process 1: 20 + Process 2: 25)
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div id="processes-container">
+                                    <!-- Process forms will be added here dynamically -->
+                                </div>
+                                
+                                <button type="button" class="btn btn-outline-primary" onclick="addProcess()">
+                                    <i class="fas fa-plus"></i> Add Process
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Total Cost Summary -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title"><i class="fas fa-calculator"></i> Cost Summary</h6>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold">Total Processes:</label>
+                                                <div id="total-processes" class="fs-6 fw-bold text-info">0</div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold">Total Quantity:</label>
+                                                <div id="total-quantity-summary" class="fs-6 fw-bold text-warning">0 pcs</div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-bold">Total Cost:</label>
+                                                <div id="total-cost" class="fs-5 fw-bold text-primary">₹0.00</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Create Multi-Process Job Work
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Multi-Process Job Work Form JavaScript
+let processCounter = 0;
+
+// Function to check inventory stock
+function checkInventoryStock() {
+    const itemSelect = document.getElementById('item_id');
+    const quantityInput = document.getElementById('total_quantity');
+    const stockInfo = document.getElementById('stock-info');
+    
+    if (!itemSelect.value) {
+        stockInfo.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> Please select an item first</div>';
+        return;
+    }
+    
+    const quantity = parseFloat(quantityInput.value) || 0;
+    
+    // Fetch item stock information
+    fetch(`/inventory/api/item-stock/${itemSelect.value}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const totalStock = data.total_stock || 0;
+                const rawStock = data.qty_raw || 0;
+                const wipStock = data.qty_wip || 0;
+                const finishedStock = data.qty_finished || 0;
+                const availableStock = data.available_stock || 0;
+                const unit = data.unit_of_measure || 'units';
+                
+                let alertClass = 'alert-success';
+                let icon = 'fas fa-check-circle';
+                let message = `✓ Available Stock: ${availableStock} ${unit} (Raw: ${rawStock} + Finished: ${finishedStock})`;
+                
+                // Add WIP information if exists
+                if (wipStock > 0) {
+                    message += `<br><small class="text-muted">WIP: ${wipStock} ${unit} (in process)</small>`;
+                }
+                
+                if (quantity > rawStock) {
+                    alertClass = 'alert-danger';
+                    icon = 'fas fa-exclamation-triangle';
+                    message = `✗ Insufficient Raw Materials! Raw: ${rawStock} ${unit}, Required: ${quantity} ${unit}`;
+                    if (wipStock > 0) {
+                        message += `<br><small class="text-info">Note: ${wipStock} ${unit} in WIP (requires inspection to use)</small>`;
+                    }
+                } else if (quantity > rawStock * 0.8) {
+                    alertClass = 'alert-warning';
+                    icon = 'fas fa-exclamation-triangle';
+                    message = `⚠ Low Raw Stock Warning! Raw: ${rawStock} ${unit}, Required: ${quantity} ${unit}`;
+                }
+                
+                stockInfo.innerHTML = `<div class="alert ${alertClass}"><i class="${icon}"></i> ${message}</div>`;
+            }
+        })
+        .catch(error => {
+            stockInfo.innerHTML = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Error checking stock</div>';
+        });
+}
+
+// Function to add a new process
+function addProcess() {
+    processCounter++;
+    
+    const processHtml = `
+        <div class="card mb-3 process-card" id="process-${processCounter}">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-cog"></i> Process ${processCounter}</h6>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeProcess(${processCounter})">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Process Name</label>
+                        <select class="form-select process-name" required>
+                            <option value="">Select Process</option>
+                            <option value="Zinc">Zinc</option>
+                            <option value="Cutting">Cutting</option>
+                            <option value="Bending">Bending</option>
+                            <option value="Welding">Welding</option>
+                            <option value="Painting">Painting</option>
+                            <option value="Assembly">Assembly</option>
+                            <option value="Machining">Machining</option>
+                            <option value="Polishing">Polishing</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Sequence</label>
+                        <input type="number" class="form-control sequence-number" value="${processCounter}" min="1" required>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-control quantity-input" min="0" step="0.01" required onchange="updateCostSummary()">
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Scrap</label>
+                        <input type="number" class="form-control expected-scrap" min="0" step="0.01" placeholder="0" onchange="updateCostSummary()">
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Work Type</label>
+                        <select class="form-select work-type" onchange="toggleProcessFields(${processCounter})" required>
+                            <option value="outsourced">Outsourced</option>
+                            <option value="in_house">In-House</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Rate/Unit</label>
+                        <input type="number" class="form-control rate-per-unit" min="0" step="0.01" onchange="updateCostSummary()">
+                    </div>
+                </div>
+                
+                <!-- Output Products Section -->
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <h6 class="text-success border-bottom pb-1">
+                            <i class="fas fa-arrow-right"></i> Output Products
+                            <small class="text-muted">(What finished products will be created?)</small>
+                        </h6>
+                    </div>
+                    
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label">Output Product</label>
+                        <select class="form-select output-product-select">
+                            <option value="">Select Output Product</option>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                        <small class="text-muted">Select the finished product that will be created from this process</small>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Output Quantity</label>
+                        <input type="number" class="form-control output-quantity" step="0.01" min="0" value="0.0" placeholder="Expected output">
+                        <small class="text-muted">How many units expected</small>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3 customer-field">
+                        <label class="form-label">Customer/Vendor</label>
+                        <select class="form-select customer-name">
+                            <option value="">Select Customer/Vendor</option>
+                            <!-- Options will be populated via JavaScript -->
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3 department-field" style="display: none;">
+                        <label class="form-label">Department</label>
+                        <select class="form-select department">
+                            <option value="">Select Department</option>
+                            <option value="production">Production</option>
+                            <option value="assembly">Assembly</option>
+                            <option value="quality_control">Quality Control</option>
+                            <option value="finishing">Finishing</option>
+                            <option value="packaging">Packaging</option>
+                            <option value="maintenance">Maintenance</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Expected Completion</label>
+                        <input type="date" class="form-control expected-completion">
+                    </div>
+                </div>
+                
+                <!-- Team Assignment Section (Only for In-House) -->
+                <div class="team-assignment-section" style="display: none;">
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <h6 class="text-info border-bottom pb-1">
+                                <i class="fas fa-users"></i> Team Assignment
+                                <small class="text-muted">(For In-House work)</small>
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Team Work?</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="team-work-${processCounter}" onchange="toggleTeamFields(${processCounter})">
+                                <label class="form-check-label" for="team-work-${processCounter}">
+                                    Enable team assignment for this process
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3 team-fields" style="display: none;">
+                            <label class="form-label">Max Team Members</label>
+                            <input type="number" class="form-control max-team-members" min="1" max="10" value="1" placeholder="Maximum team size">
+                        </div>
+                        
+                        <div class="col-md-3 mb-3 team-fields" style="display: none;">
+                            <label class="form-label">Team Lead</label>
+                            <select class="form-select team-lead">
+                                <option value="">Select Team Lead</option>
+                                <!-- Options will be populated from employees -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label class="form-label">Process Notes</label>
+                        <textarea class="form-control process-notes" rows="2" placeholder="Specific instructions for this process"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('processes-container').insertAdjacentHTML('beforeend', processHtml);
+    
+    // Populate customer dropdown for new process
+    populateCustomerDropdown(processCounter);
+    
+    updateCostSummary();
+    
+    // Populate output product dropdown for this process
+    populateOutputProductDropdown(processCounter);
+    
+    // Populate team lead dropdown for this process
+    populateTeamLeadDropdown(processCounter);
+}
+
+// Function to populate output product dropdown
+function populateOutputProductDropdown(processIndex) {
+    fetch('/jobwork/multi-process/api/all-items')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const processDiv = document.getElementById(`process-${processIndex}`);
+                const select = processDiv.querySelector('.output-product-select');
+                if (select) {
+                    select.innerHTML = '<option value="">Select Output Product</option>';
+                    data.items.forEach(item => {
+                        select.innerHTML += `<option value="${item.id}">${item.code} - ${item.name}</option>`;
+                    });
+                }
+            }
+        })
+        .catch(error => console.error('Error loading output products:', error));
+}
+
+// Function to populate team lead dropdown
+function populateTeamLeadDropdown(processIndex) {
+    fetch('/jobwork/multi-process/api/employees', {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const processDiv = document.getElementById(`process-${processIndex}`);
+                const select = processDiv.querySelector('.team-lead');
+                if (select) {
+                    select.innerHTML = '<option value="">Select Team Lead</option>';
+                    data.employees.forEach(emp => {
+                        select.innerHTML += `<option value="${emp.id}">${emp.employee_code} - ${emp.name} (${emp.department})</option>`;
+                    });
+                }
+            } else {
+                console.error('API returned error:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading employees:', error);
+            // Provide fallback message in dropdown
+            const processDiv = document.getElementById(`process-${processIndex}`);
+            const select = processDiv.querySelector('.team-lead');
+            if (select) {
+                select.innerHTML = '<option value="">Error loading employees</option>';
+            }
+        });
+}
+
+// Function to remove a process
+function removeProcess(processId) {
+    document.getElementById(`process-${processId}`).remove();
+    updateCostSummary();
+}
+
+// Function to toggle fields based on work type
+function toggleProcessFields(processId) {
+    const processCard = document.getElementById(`process-${processId}`);
+    const workType = processCard.querySelector('.work-type').value;
+    const customerField = processCard.querySelector('.customer-field');
+    const departmentField = processCard.querySelector('.department-field');
+    const teamSection = processCard.querySelector('.team-assignment-section');
+    
+    if (workType === 'in_house') {
+        customerField.style.display = 'none';
+        departmentField.style.display = 'block';
+        if (teamSection) {
+            teamSection.style.display = 'block';
+        }
+    } else {
+        customerField.style.display = 'block';
+        departmentField.style.display = 'none';
+        if (teamSection) {
+            teamSection.style.display = 'none';
+        }
+    }
+}
+
+// Function to toggle team assignment fields
+function toggleTeamFields(processId) {
+    const processCard = document.getElementById(`process-${processId}`);
+    const isTeamWork = processCard.querySelector(`#team-work-${processId}`).checked;
+    const teamFields = processCard.querySelectorAll('.team-fields');
+    
+    teamFields.forEach(field => {
+        field.style.display = isTeamWork ? 'block' : 'none';
+    });
+}
+
+// Function to populate customer dropdown
+function populateCustomerDropdown(processId) {
+    // This would normally fetch from an API, for now using static options
+    const customers = [
+        'ABC Manufacturing Ltd',
+        'XYZ Industries', 
+        'DIVYANSHU GUPTA',
+        'Steel Suppliers Ltd',
+        'Mumbai Engineering Works'
+    ];
+    
+    const processCard = document.getElementById(`process-${processId}`);
+    const customerSelect = processCard.querySelector('.customer-name');
+    
+    customers.forEach(customer => {
+        const option = document.createElement('option');
+        option.value = customer;
+        option.textContent = customer;
+        customerSelect.appendChild(option);
+    });
+}
+
+// Function to update cost summary
+function updateCostSummary() {
+    const processCards = document.querySelectorAll('.process-card');
+    let totalProcesses = processCards.length;
+    let totalCost = 0;
+    
+    // For sequential manufacturing, we don't add quantities - each process works on the same material
+    // The total quantity is what we specified in the main form, not sum of process quantities
+    const mainQuantity = parseFloat(document.getElementById('total_quantity').value) || 0;
+    
+    processCards.forEach(card => {
+        const quantity = parseFloat(card.querySelector('.quantity-input').value) || 0;
+        const rate = parseFloat(card.querySelector('.rate-per-unit').value) || 0;
+        totalCost += quantity * rate;
+    });
+    
+    document.getElementById('total-processes').textContent = totalProcesses;
+    document.getElementById('total-quantity-summary').textContent = `${mainQuantity} pcs (Sequential Manufacturing)`;
+    document.getElementById('total-cost').textContent = `₹${totalCost.toFixed(2)}`;
+}
+
+// Function to collect all process data for form submission
+document.getElementById('multiProcessForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const processCards = document.querySelectorAll('.process-card');
+    if (processCards.length === 0) {
+        alert('Please add at least one process before submitting.');
+        return;
+    }
+    
+    // Validate all processes have required fields
+    let isValid = true;
+    processCards.forEach((card, index) => {
+        const processName = card.querySelector('.process-name').value;
+        const quantity = card.querySelector('.quantity-input').value;
+        
+        if (!processName || !quantity || parseFloat(quantity) <= 0) {
+            alert(`Process ${index + 1}: Please fill in process name and valid quantity.`);
+            isValid = false;
+            return;
+        }
+    });
+    
+    if (!isValid) return;
+    
+    const processesData = [];
+    
+    processCards.forEach(card => {
+        const processId = card.id.split('-')[1]; // Extract process ID from card ID
+        const teamWorkCheckbox = card.querySelector(`#team-work-${processId}`);
+        
+        const processData = {
+            process_name: card.querySelector('.process-name').value,
+            sequence_number: parseInt(card.querySelector('.sequence-number').value),
+            quantity_input: parseFloat(card.querySelector('.quantity-input').value),
+            expected_scrap: parseFloat(card.querySelector('.expected-scrap').value) || 0,
+            work_type: card.querySelector('.work-type').value,
+            customer_name: card.querySelector('.customer-name').value,
+            department: card.querySelector('.department').value,
+            rate_per_unit: parseFloat(card.querySelector('.rate-per-unit').value) || 0,
+            start_date: document.getElementById('sent_date').value,
+            expected_completion: card.querySelector('.expected-completion').value,
+            notes: '',
+            output_item_id: card.querySelector('.output-product-select').value,
+            output_quantity: parseFloat(card.querySelector('.output-quantity').value) || 0,
+            is_team_work: teamWorkCheckbox ? teamWorkCheckbox.checked : false,
+            max_team_members: parseInt(card.querySelector('.max-team-members')?.value) || 1,
+            team_lead: card.querySelector('.team-lead')?.value || ''
+        };
+        
+        processesData.push(JSON.stringify(processData));
+    });
+    
+    // Remove any existing hidden process inputs to avoid duplicates
+    const existingInputs = this.querySelectorAll('input[name="processes"]');
+    existingInputs.forEach(input => input.remove());
+    
+    // Add hidden inputs for processes data
+    processesData.forEach(processJson => {
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'processes';
+        hiddenInput.value = processJson;
+        this.appendChild(hiddenInput);
+    });
+    
+    // Submit the form normally (this will include CSRF token)
+    this.submit();
+});
+
+// Initialize with one process
+document.addEventListener('DOMContentLoaded', function() {
+    addProcess();
+});
+</script>
+{% endblock %}

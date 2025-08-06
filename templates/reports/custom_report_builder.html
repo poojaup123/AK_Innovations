@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block title %}Custom Report Builder - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="fas fa-magic me-2"></i>Custom Report Builder</h1>
+                    <p class="text-muted">Create your own customized reports with specific data fields and filters</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('reports.dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Builder Form -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-cogs"></i> Build Your Report</h5>
+                </div>
+                <div class="card-body">
+                    <form id="customReportForm" method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Basic Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Report Name *</label>
+                                {{ form.name(class="form-control", placeholder="e.g., Monthly Inventory Analysis") }}
+                                <div class="form-text">Choose a descriptive name for your report</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="report_type" class="form-label">Data Source *</label>
+                                {{ form.report_type(class="form-control", id="reportTypeSelect") }}
+                                <div class="form-text">Select the primary data source for your report</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label for="description" class="form-label">Description</label>
+                                {{ form.description(class="form-control", rows="2", placeholder="Describe what this report will show...") }}
+                            </div>
+                        </div>
+                        
+                        <!-- Data Fields Selection -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-table me-2"></i>Select Data Fields</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row" id="fieldsContainer">
+                                    <div class="col-12">
+                                        <p class="text-muted mb-3">Select the data fields you want to include in your report:</p>
+                                        <div id="fieldsList" class="row">
+                                            <!-- Fields will be populated dynamically -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Filters Section -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filters & Conditions</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="filtersContainer">
+                                    <p class="text-muted mb-3">Add filters to narrow down your data:</p>
+                                    <div id="filtersList">
+                                        <!-- Filters will be added dynamically -->
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="addFilterBtn">
+                                        <i class="fas fa-plus"></i> Add Filter
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sorting Options -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-sort me-2"></i>Sorting & Grouping</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Sort By</label>
+                                        <select class="form-control" id="sortField">
+                                            <option value="">Select field to sort by</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Sort Order</label>
+                                        <select class="form-control" id="sortOrder">
+                                            <option value="asc">Ascending</option>
+                                            <option value="desc">Descending</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Export Options -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-download me-2"></i>Export Options</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="enableCSV" checked>
+                                    <label class="form-check-label" for="enableCSV">CSV Export</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="enableExcel">
+                                    <label class="form-check-label" for="enableExcel">Excel Export</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="enablePDF">
+                                    <label class="form-check-label" for="enablePDF">PDF Export</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sharing Options -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-share me-2"></i>Sharing & Access</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check">
+                                    {{ form.is_shared(class="form-check-input") }}
+                                    <label class="form-check-label" for="is_shared">
+                                        Share with other users
+                                    </label>
+                                    <div class="form-text">Allow other users to view and run this report</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-success" id="previewBtn">
+                                <i class="fas fa-eye"></i> Preview Report
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Report
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='{{ url_for('reports.custom_reports_list') }}'">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Preview Panel -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-eye me-2"></i>Report Preview</h6>
+                </div>
+                <div class="card-body">
+                    <div id="previewContainer">
+                        <p class="text-muted text-center">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Select fields and click "Preview Report" to see how your report will look
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Field Reference -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-question-circle me-2"></i>Field Reference</h6>
+                </div>
+                <div class="card-body">
+                    <div id="fieldReference">
+                        <p class="text-muted small">Select a data source to see available fields</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-eye me-2"></i>Report Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent">
+                    <!-- Preview content will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" id="saveFromPreview">
+                    <i class="fas fa-save"></i> Save This Report
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Data source configurations
+const dataSourceFields = {
+    'inventory': {
+        'name': 'Item Name',
+        'code': 'Item Code', 
+        'description': 'Description',
+        'current_stock': 'Current Stock',
+        'minimum_stock': 'Minimum Stock',
+        'unit_price': 'Unit Price',
+        'unit_of_measure': 'Unit of Measure',
+        'item_type': 'Item Type',
+        'gst_rate': 'GST Rate',
+        'hsn_code': 'HSN Code'
+    },
+    'purchase': {
+        'po_number': 'PO Number',
+        'supplier_name': 'Supplier Name',
+        'order_date': 'Order Date',
+        'expected_delivery_date': 'Expected Delivery',
+        'status': 'Status',
+        'total_amount': 'Total Amount',
+        'payment_terms': 'Payment Terms'
+    },
+    'sales': {
+        'so_number': 'SO Number',
+        'customer_name': 'Customer Name', 
+        'order_date': 'Order Date',
+        'delivery_date': 'Delivery Date',
+        'status': 'Status',
+        'total_amount': 'Total Amount'
+    },
+    'jobwork': {
+        'job_number': 'Job Number',
+        'customer_name': 'Customer',
+        'item_name': 'Item',
+        'quantity_sent': 'Quantity Sent',
+        'quantity_received': 'Quantity Received',
+        'rate_per_unit': 'Rate per Unit',
+        'work_type': 'Work Type',
+        'status': 'Status'
+    },
+    'production': {
+        'production_number': 'Production Number',
+        'item_name': 'Item to Produce',
+        'planned_quantity': 'Planned Quantity',
+        'produced_quantity': 'Produced Quantity',
+        'production_date': 'Production Date',
+        'status': 'Status'
+    },
+    'employee': {
+        'employee_code': 'Employee Code',
+        'name': 'Name',
+        'department': 'Department',
+        'designation': 'Designation',
+        'hire_date': 'Hire Date',
+        'status': 'Status',
+        'contact_number': 'Contact Number'
+    }
+};
+
+let filterCount = 0;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const reportTypeSelect = document.getElementById('reportTypeSelect');
+    const fieldsList = document.getElementById('fieldsList');
+    const sortField = document.getElementById('sortField');
+    
+    // Initialize
+    updateFieldsForReportType();
+    
+    // Event listeners
+    reportTypeSelect.addEventListener('change', updateFieldsForReportType);
+    document.getElementById('addFilterBtn').addEventListener('click', addFilter);
+    document.getElementById('previewBtn').addEventListener('click', previewReport);
+    
+    function updateFieldsForReportType() {
+        const reportType = reportTypeSelect.value;
+        const fields = dataSourceFields[reportType] || {};
+        
+        // Clear existing fields
+        fieldsList.innerHTML = '';
+        sortField.innerHTML = '<option value="">Select field to sort by</option>';
+        
+        // Add field checkboxes
+        Object.entries(fields).forEach(([key, label]) => {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'col-md-6 mb-2';
+            fieldDiv.innerHTML = `
+                <div class="form-check">
+                    <input class="form-check-input field-checkbox" type="checkbox" 
+                           value="${key}" id="field_${key}">
+                    <label class="form-check-label" for="field_${key}">
+                        ${label}
+                    </label>
+                </div>
+            `;
+            fieldsList.appendChild(fieldDiv);
+            
+            // Add to sort dropdown
+            const option = document.createElement('option');
+            option.value = key;
+            option.textContent = label;
+            sortField.appendChild(option);
+        });
+        
+        updateFieldReference(reportType);
+    }
+    
+    function updateFieldReference(reportType) {
+        const fields = dataSourceFields[reportType] || {};
+        const reference = document.getElementById('fieldReference');
+        
+        if (Object.keys(fields).length === 0) {
+            reference.innerHTML = '<p class="text-muted small">No fields available for this data source</p>';
+            return;
+        }
+        
+        let html = '<div class="small">';
+        Object.entries(fields).forEach(([key, label]) => {
+            html += `<div class="mb-1"><strong>${label}</strong> (${key})</div>`;
+        });
+        html += '</div>';
+        
+        reference.innerHTML = html;
+    }
+    
+    function addFilter() {
+        filterCount++;
+        const reportType = reportTypeSelect.value;
+        const fields = dataSourceFields[reportType] || {};
+        
+        const filterDiv = document.createElement('div');
+        filterDiv.className = 'row mb-3 filter-row';
+        filterDiv.innerHTML = `
+            <div class="col-md-3">
+                <select class="form-control filter-field">
+                    <option value="">Select Field</option>
+                    ${Object.entries(fields).map(([key, label]) => 
+                        `<option value="${key}">${label}</option>`
+                    ).join('')}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-control filter-operator">
+                    <option value="equals">Equals</option>
+                    <option value="contains">Contains</option>
+                    <option value="greater_than">Greater Than</option>
+                    <option value="less_than">Less Than</option>
+                    <option value="between">Between</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control filter-value" placeholder="Filter value">
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-outline-danger btn-sm remove-filter">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        
+        document.getElementById('filtersList').appendChild(filterDiv);
+        
+        // Add remove functionality
+        filterDiv.querySelector('.remove-filter').addEventListener('click', function() {
+            filterDiv.remove();
+        });
+    }
+    
+    function previewReport() {
+        const formData = collectFormData();
+        
+        if (!formData.fields || formData.fields.length === 0) {
+            alert('Please select at least one field to include in the report');
+            return;
+        }
+        
+        // Show loading
+        const previewContainer = document.getElementById('previewContainer');
+        previewContainer.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Generating preview...</div>';
+        
+        // Make AJAX request to generate preview
+        fetch('{{ url_for("reports.preview_custom_report") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                previewContainer.innerHTML = data.preview_html;
+            } else {
+                previewContainer.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+            }
+        })
+        .catch(error => {
+            previewContainer.innerHTML = '<div class="alert alert-danger">Error generating preview</div>';
+            console.error('Error:', error);
+        });
+    }
+    
+    function collectFormData() {
+        const selectedFields = Array.from(document.querySelectorAll('.field-checkbox:checked'))
+            .map(cb => cb.value);
+        
+        const filters = Array.from(document.querySelectorAll('.filter-row')).map(row => {
+            return {
+                field: row.querySelector('.filter-field').value,
+                operator: row.querySelector('.filter-operator').value,
+                value: row.querySelector('.filter-value').value
+            };
+        }).filter(f => f.field && f.value);
+        
+        return {
+            report_type: reportTypeSelect.value,
+            fields: selectedFields,
+            filters: filters,
+            sort_field: document.getElementById('sortField').value,
+            sort_order: document.getElementById('sortOrder').value
+        };
+    }
+    
+    // Form submission
+    document.getElementById('customReportForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = collectFormData();
+        
+        // Add form data to hidden field
+        const configInput = document.createElement('input');
+        configInput.type = 'hidden';
+        configInput.name = 'config';
+        configInput.value = JSON.stringify(formData);
+        this.appendChild(configInput);
+        
+        // Submit form
+        this.submit();
+    });
+});
+</script>
+{% endblock %}

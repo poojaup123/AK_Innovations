@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block head %}
+<style>
+.journal-entry-row {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    padding: 10px;
+}
+
+.debit-entry {
+    border-left: 4px solid #28a745;
+}
+
+.credit-entry {
+    border-left: 4px solid #dc3545;
+}
+
+.balance-indicator {
+    font-weight: bold;
+    padding: 5px 10px;
+    border-radius: 3px;
+}
+
+.balanced {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.unbalanced {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-receipt"></i> {{ title }}</h1>
+            <p class="text-muted">Create and manage accounting vouchers</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('accounting.list_vouchers') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Vouchers
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Voucher Details -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-edit"></i> Voucher Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="voucherForm" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.voucher_type_id.label.text }}</label>
+                                {{ form.voucher_type_id(class="form-select" + (" is-invalid" if form.voucher_type_id.errors else "")) }}
+                                {% if form.voucher_type_id.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.voucher_type_id.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.transaction_date.label.text }}</label>
+                                {{ form.transaction_date(class="form-control" + (" is-invalid" if form.transaction_date.errors else "")) }}
+                                {% if form.transaction_date.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.transaction_date.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.party_type.label.text }}</label>
+                                {{ form.party_type(class="form-select") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.party_id.label.text }}</label>
+                                {{ form.party_id(class="form-select") }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.reference_number.label.text }}</label>
+                                {{ form.reference_number(class="form-control") }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.total_amount.label.text }}</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.total_amount(class="form-control" + (" is-invalid" if form.total_amount.errors else ""), step="0.01") }}
+                                    {% if form.total_amount.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.total_amount.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.narration.label.text }}</label>
+                            {{ form.narration(class="form-control", rows="3") }}
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    {{ form.is_gst_applicable(class="form-check-input") }}
+                                    <label class="form-check-label" for="{{ form.is_gst_applicable.id }}">
+                                        {{ form.is_gst_applicable.label.text }}
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ form.tax_amount.label.text }}</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.tax_amount(class="form-control", step="0.01") }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">{{ form.discount_amount.label.text }}</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.discount_amount(class="form-control", step="0.01") }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Voucher
+                                </button>
+                                {% if voucher and voucher.status == 'draft' %}
+                                <button type="button" class="btn btn-success" onclick="postVoucher()">
+                                    <i class="fas fa-check"></i> Post Voucher
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Voucher Summary -->
+            {% if voucher %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h6><i class="fas fa-info-circle"></i> Voucher Summary</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Voucher No:</strong> {{ voucher.voucher_number }}</p>
+                    <p><strong>Status:</strong> 
+                        <span class="badge bg-{{ 'success' if voucher.status == 'posted' else 'warning' }}">
+                            {{ voucher.status.title() }}
+                        </span>
+                    </p>
+                    <p><strong>Created:</strong> {{ voucher.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+                    {% if voucher.posted_at %}
+                    <p><strong>Posted:</strong> {{ voucher.posted_at.strftime('%d/%m/%Y %H:%M') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Account Lookup -->
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-search"></i> Quick Account Lookup</h6>
+                </div>
+                <div class="card-body">
+                    <input type="text" class="form-control" id="accountSearch" placeholder="Search accounts...">
+                    <div id="accountResults" class="mt-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Journal Entries Section -->
+    {% if voucher %}
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-book"></i> Journal Entries</h5>
+                    {% if voucher.status == 'draft' %}
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addJournalEntryModal">
+                        <i class="fas fa-plus"></i> Add Entry
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if journal_entries %}
+                        {% set total_debit = journal_entries | selectattr('entry_type', 'equalto', 'debit') | map(attribute='amount') | sum %}
+                        {% set total_credit = journal_entries | selectattr('entry_type', 'equalto', 'credit') | map(attribute='amount') | sum %}
+                        {% set difference = total_debit - total_credit %}
+                        
+                        <!-- Balance Indicator -->
+                        <div class="mb-3">
+                            <span class="balance-indicator {{ 'balanced' if difference == 0 else 'unbalanced' }}">
+                                {% if difference == 0 %}
+                                    ✓ Balanced: Debit ₹{{ "{:,.2f}".format(total_debit) }} = Credit ₹{{ "{:,.2f}".format(total_credit) }}
+                                {% else %}
+                                    ⚠ Unbalanced: Difference ₹{{ "{:,.2f}".format(abs(difference)) }}
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <!-- Journal Entries List -->
+                        {% for entry in journal_entries %}
+                        <div class="journal-entry-row {{ 'debit-entry' if entry.entry_type == 'debit' else 'credit-entry' }}">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <strong>{{ entry.account.name }}</strong><br>
+                                    <small class="text-muted">{{ entry.account.code }}</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="badge bg-{{ 'success' if entry.entry_type == 'debit' else 'danger' }}">
+                                        {{ entry.entry_type.title() }}
+                                    </span>
+                                </div>
+                                <div class="col-md-3 text-end">
+                                    <strong>₹{{ "{:,.2f}".format(entry.amount) }}</strong>
+                                </div>
+                                <div class="col-md-2">
+                                    {% if voucher.status == 'draft' %}
+                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteJournalEntry({{ entry.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                {% if entry.narration %}
+                                <div class="col-12 mt-2">
+                                    <small class="text-muted">{{ entry.narration }}</small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <!-- Totals -->
+                        <div class="row mt-3 pt-3 border-top">
+                            <div class="col-md-6">
+                                <strong>Total Debit: ₹{{ "{:,.2f}".format(total_debit) }}</strong>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <strong>Total Credit: ₹{{ "{:,.2f}".format(total_credit) }}</strong>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-book fa-2x text-muted mb-3"></i>
+                            <h6>No Journal Entries</h6>
+                            <p class="text-muted">Add journal entries to complete this voucher</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Journal Entry Modal -->
+{% if voucher and voucher.status == 'draft' %}
+<div class="modal fade" id="addJournalEntryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Journal Entry</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="journalEntryForm">
+                    <div class="mb-3">
+                        <label class="form-label">Account</label>
+                        <select class="form-select" id="entryAccountId" required>
+                            <option value="">Select Account</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Entry Type</label>
+                        <select class="form-select" id="entryType" required>
+                            <option value="">Select Type</option>
+                            <option value="debit">Debit</option>
+                            <option value="credit">Credit</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" class="form-control" id="entryAmount" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Narration</label>
+                        <textarea class="form-control" id="entryNarration" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addJournalEntry()">Add Entry</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load accounts for journal entry
+document.addEventListener('DOMContentLoaded', function() {
+    loadAccounts();
+});
+
+function loadAccounts() {
+    fetch('{{ url_for("accounting.api_accounts") }}')
+        .then(response => response.json())
+        .then(accounts => {
+            const select = document.getElementById('entryAccountId');
+            if (select) {
+                select.innerHTML = '<option value="">Select Account</option>';
+                accounts.forEach(account => {
+                    select.innerHTML += `<option value="${account.id}">${account.name} (${account.code})</option>`;
+                });
+            }
+        });
+}
+
+function addJournalEntry() {
+    const form = document.getElementById('journalEntryForm');
+    const formData = new FormData(form);
+    
+    const data = {
+        account_id: document.getElementById('entryAccountId').value,
+        entry_type: document.getElementById('entryType').value,
+        amount: document.getElementById('entryAmount').value,
+        narration: document.getElementById('entryNarration').value
+    };
+    
+    if (!data.account_id || !data.entry_type || !data.amount) {
+        alert('Please fill all required fields');
+        return;
+    }
+    
+    fetch('{{ url_for("accounting.add_journal_entry", voucher_id=voucher.id if voucher else 0) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            location.reload();
+        } else {
+            alert(result.message);
+        }
+    });
+}
+
+function postVoucher() {
+    if (confirm('Post this voucher? This action cannot be undone.')) {
+        window.location.href = '{{ url_for("accounting.post_voucher", id=voucher.id if voucher else 0) }}';
+    }
+}
+
+// Account search functionality
+document.getElementById('accountSearch')?.addEventListener('input', function() {
+    const query = this.value;
+    if (query.length > 2) {
+        fetch(`{{ url_for("accounting.api_accounts") }}?search=${query}`)
+            .then(response => response.json())
+            .then(accounts => {
+                const results = document.getElementById('accountResults');
+                results.innerHTML = '';
+                accounts.slice(0, 5).forEach(account => {
+                    results.innerHTML += `
+                        <div class="small border-bottom py-1">
+                            <strong>${account.name}</strong> (${account.code})<br>
+                            <span class="text-muted">Balance: ₹${account.balance.toFixed(2)}</span>
+                        </div>
+                    `;
+                });
+            });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}Quick Receive Materials - {{ purchase_order.po_number }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-plus me-2"></i>Quick Receive Materials</h2>
+                <a href="{{ url_for('purchase.edit_purchase_order', id=purchase_order.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Purchase Order
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchase Order Information -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Purchase Order Details</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>PO Number:</strong><br>
+                            <span class="text-primary">{{ purchase_order.po_number }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Item:</strong><br>
+                            {{ item.name }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Ordered Quantity:</strong><br>
+                            {{ po_item.qty }} {{ po_item.uom or item.unit_of_measure }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Supplier:</strong><br>
+                            <span class="text-info">{{ purchase_order.supplier.name if purchase_order.supplier else 'N/A' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Receive Form -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-receipt me-2"></i>Receive Materials</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.received_date.label(class="form-label") }}
+                                {{ form.received_date(class="form-control") }}
+                                {% if form.received_date.errors %}
+                                    <div class="text-danger">{{ form.received_date.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.delivery_note.label(class="form-label") }}
+                                {{ form.delivery_note(class="form-control", placeholder="Optional delivery note number") }}
+                            </div>
+                        </div>
+
+                        <!-- Quantity Fields in 2x2 Grid Layout -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Received Quantity</label>
+                                <div class="input-group">
+                                    {{ form.quantity_received(class="form-control", id="quantity_received") }}
+                                    <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
+                                </div>
+                                {% if form.quantity_received.errors %}
+                                    <div class="text-danger">{{ form.quantity_received.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Inspected Quantity</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="quantity_inspected" readonly>
+                                    <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
+                                </div>
+                                <small class="text-muted">Same as received quantity</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Passed/Good Quantity</label>
+                                <div class="input-group">
+                                    {{ form.quantity_passed(class="form-control", id="quantity_passed", readonly=True) }}
+                                    <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
+                                </div>
+                                <small class="text-muted">Auto-calculated</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Rejected Quantity</label>
+                                <div class="input-group">
+                                    {{ form.quantity_rejected(class="form-control", id="quantity_rejected") }}
+                                    <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
+                                </div>
+                                {% if form.quantity_rejected.errors %}
+                                    <div class="text-danger">{{ form.quantity_rejected.errors[0] }}</div>
+                                {% endif %}
+                                <small class="text-muted">Auto-calculated: Inspected Quantity - Passed Quantity</small>
+                            </div>
+                        </div>
+
+                        <!-- Batch Information -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Batch Number</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="batch_number" name="batch_number" readonly value="{{ item.name[:3] | upper }}-AUTO-GENERATED">
+                                    <button type="button" class="btn btn-outline-info" onclick="updateBatchPreview()">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">Batch will be created automatically upon receipt</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Expiry Date (Optional)</label>
+                                <input type="date" class="form-control" id="expiry_date" name="expiry_date">
+                                <small class="text-muted">Leave blank for non-perishable items</small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.inspection_status.label(class="form-label") }}
+                                {{ form.inspection_status(class="form-select") }}
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mt-4">
+                                    {{ form.add_to_inventory(class="form-check-input") }}
+                                    {{ form.add_to_inventory.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.rejection_reason.label(class="form-label") }}
+                            {{ form.rejection_reason(class="form-control", rows="2", placeholder="Only required if items are rejected") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.remarks.label(class="form-label") }}
+                            {{ form.remarks(class="form-control", rows="3", placeholder="Any additional notes about this receipt") }}
+                        </div>
+
+                        <!-- Document Upload Section -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-paperclip me-2"></i>Supporting Documents</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    {{ form.supporting_documents.label(class="form-label") }}
+                                    {{ form.supporting_documents(class="form-control", multiple=True, accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx") }}
+                                    <small class="text-muted">Upload documents like purchase invoices, delivery challans, quality certificates, test reports, etc. (PDF, Images, Office files allowed)</small>
+                                </div>
+                                <div class="mb-0">
+                                    {{ form.document_description.label(class="form-label") }}
+                                    {{ form.document_description(class="form-control", rows="2") }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle me-2"></i>Batch Tracking Information</h6>
+                            <ul class="mb-0">
+                                <li>A new batch will be automatically created when materials are received</li>
+                                <li>Batch number format: <code>{{ item.name[:3] | upper }}-YYYYMMDD-001</code></li>
+                                <li>All received materials will be tagged with this batch for complete traceability</li>
+                                <li>You can view batch details in the Batch Tracking dashboard after receipt</li>
+                                <li><strong>Status:</strong> <span id="batch_status" class="text-muted">Ready to create batch on receipt</span></li>
+                            </ul>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <a href="{{ url_for('purchase.edit_purchase_order', id=purchase_order.id) }}" class="btn btn-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check me-1"></i>Receive Materials & Create Batch
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Card -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-calculator me-2"></i>Receipt Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-6">Total Ordered:</div>
+                        <div class="col-6 text-end"><strong>{{ po_item.qty }} {{ po_item.uom or item.unit_of_measure }}</strong></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">Already Received:</div>
+                        <div class="col-6 text-end">{{ po_item.quantity_received or 0 }} {{ po_item.uom or item.unit_of_measure }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">Pending:</div>
+                        <div class="col-6 text-end"><span class="text-warning">{{ po_item.pending_quantity }} {{ po_item.uom or item.unit_of_measure }}</span></div>
+                    </div>
+                    <hr>
+                    <div class="row mb-2">
+                        <div class="col-6">Now Receiving:</div>
+                        <div class="col-6 text-end"><span id="summary_received" class="text-info">0.00 {{ po_item.uom or item.unit_of_measure }}</span></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">Will Pass:</div>
+                        <div class="col-6 text-end"><span id="summary_passed" class="text-success">0.00 {{ po_item.uom or item.unit_of_measure }}</span></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">Will Reject:</div>
+                        <div class="col-6 text-end"><span id="summary_rejected" class="text-danger">0.00 {{ po_item.uom or item.unit_of_measure }}</span></div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-6">New Pending:</div>
+                        <div class="col-6 text-end"><span id="summary_new_pending" class="text-warning">{{ po_item.pending_quantity }} {{ po_item.uom or item.unit_of_measure }}</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Visualization -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Completion Progress</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <small class="text-muted">Current Progress</small>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {{ po_item.completion_percentage }}%">
+                                {{ "%.1f"|format(po_item.completion_percentage) }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">After This Receipt</small>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 id="new_progress_bar" style="width: {{ po_item.completion_percentage }}%">
+                                <span id="new_progress_text">{{ "%.1f"|format(po_item.completion_percentage) }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Options -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Options</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('grn.create_grn_for_po', purchase_order_id=purchase_order.id) }}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-receipt me-1"></i>Create Full GRN Instead
+                        </a>
+                        <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-tachometer-alt me-1"></i>GRN Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update batch preview
+function updateBatchPreview() {
+    const today = new Date();
+    const dateStr = today.getFullYear() + 
+                   String(today.getMonth() + 1).padStart(2, '0') + 
+                   String(today.getDate()).padStart(2, '0');
+    const batchNumber = '{{ item.name[:3] | upper }}-' + dateStr + '-001';
+    document.getElementById('batch_number').value = batchNumber;
+}
+
+// Update batch status based on quantities
+function updateBatchStatus(receivedQty) {
+    const batchStatus = document.getElementById('batch_status');
+    if (receivedQty > 0) {
+        batchStatus.innerHTML = '<span class="text-success"><i class="fas fa-check-circle me-1"></i>Ready to create batch for ' + receivedQty.toFixed(2) + ' {{ po_item.uom or item.unit_of_measure }}</span>';
+    } else {
+        batchStatus.innerHTML = '<span class="text-muted">Enter received quantity to preview batch</span>';
+    }
+}
+
+// Auto-calculate passed quantity and update summary
+function updateCalculations() {
+    const received = parseFloat(document.getElementById('quantity_received').value) || 0;
+    const rejected = parseFloat(document.getElementById('quantity_rejected').value) || 0;
+    const passed = Math.max(0, received - rejected);
+    const pendingQty = {{ po_item.pending_quantity }};
+    const orderedQty = {{ po_item.qty }};
+    const alreadyReceived = {{ po_item.quantity_received or 0 }};
+    
+    // Update passed quantity and inspected quantity
+    document.getElementById('quantity_passed').value = passed.toFixed(2);
+    document.getElementById('quantity_inspected').value = received.toFixed(2);
+    
+    // Update summary
+    document.getElementById('summary_received').textContent = received.toFixed(2) + ' {{ po_item.uom or item.unit_of_measure }}';
+    document.getElementById('summary_passed').textContent = passed.toFixed(2) + ' {{ po_item.uom or item.unit_of_measure }}';
+    document.getElementById('summary_rejected').textContent = rejected.toFixed(2) + ' {{ po_item.uom or item.unit_of_measure }}';
+    
+    const newPending = Math.max(0, pendingQty - received);
+    document.getElementById('summary_new_pending').textContent = newPending.toFixed(2) + ' {{ po_item.uom or item.unit_of_measure }}';
+    
+    // Update progress bar
+    const newReceived = alreadyReceived + received;
+    const newProgress = Math.min(100, (newReceived / orderedQty) * 100);
+    document.getElementById('new_progress_bar').style.width = newProgress + '%';
+    document.getElementById('new_progress_text').textContent = newProgress.toFixed(1) + '%';
+    
+    // Update batch status
+    updateBatchStatus(received);
+}
+
+// Add event listeners
+document.getElementById('quantity_received').addEventListener('input', updateCalculations);
+document.getElementById('quantity_rejected').addEventListener('input', updateCalculations);
+
+// Validate quantities
+document.getElementById('quantity_received').addEventListener('change', function() {
+    const received = parseFloat(this.value) || 0;
+    const maxReceive = {{ po_item.pending_quantity }};
+    
+    if (received > maxReceive) {
+        alert('Cannot receive more than pending quantity (' + maxReceive + ' {{ po_item.uom or item.unit_of_measure }})');
+        this.value = maxReceive;
+        updateCalculations();
+    }
+});
+
+document.getElementById('quantity_rejected').addEventListener('change', function() {
+    const received = parseFloat(document.getElementById('quantity_received').value) || 0;
+    const rejected = parseFloat(this.value) || 0;
+    
+    if (rejected > received) {
+        alert('Rejected quantity cannot be more than received quantity');
+        this.value = received;
+        updateCalculations();
+    }
+});
+
+// Initialize calculations and batch preview
+updateCalculations();
+updateBatchPreview();
+</script>
+{% endblock %}

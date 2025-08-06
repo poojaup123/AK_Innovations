@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Tracking Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .batch-card {
+        border-left: 4px solid #007bff;
+        transition: all 0.3s ease;
+    }
+    .batch-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    .process-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        margin-right: 0.25rem;
+        margin-bottom: 0.25rem;
+        display: inline-block;
+    }
+    .process-cutting { background-color: #ff6b6b; color: white; }
+    .process-bending { background-color: #4ecdc4; color: white; }
+    .process-welding { background-color: #45b7d1; color: white; }
+    .process-zinc { background-color: #96ceb4; color: white; }
+    .process-painting { background-color: #feca57; color: white; }
+    .process-assembly { background-color: #ff9ff3; color: white; }
+    .process-machining { background-color: #54a0ff; color: white; }
+    .process-polishing { background-color: #5f27cd; color: white; }
+    .process-raw { background-color: #6c757d; color: white; }
+    .process-finished { background-color: #28a745; color: white; }
+    .process-scrap { background-color: #dc3545; color: white; }
+    
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .quality-status-good { color: #28a745; }
+    .quality-status-defective { color: #dc3545; }
+    .quality-status-pending { color: #ffc107; }
+    .quality-status-expired { color: #6c757d; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-layer-group"></i> Batch Tracking Dashboard</h2>
+        <div class="btn-group">
+            <a href="{{ url_for('batch_tracking.process_view') }}" class="btn btn-outline-primary">
+                <i class="fas fa-industry"></i> Process View
+            </a>
+            <a href="{{ url_for('batch_tracking.traceability_report') }}" class="btn btn-outline-success">
+                <i class="fas fa-search"></i> Traceability
+            </a>
+            <a href="{{ url_for('batch_tracking.quality_control') }}" class="btn btn-outline-warning">
+                <i class="fas fa-shield-alt"></i> Quality Control
+            </a>
+            <a href="{{ url_for('batch_tracking.reset_batch_data') }}" class="btn btn-outline-danger" 
+               onclick="return confirm('This will reset all batch data with sample data. Are you sure?')">
+                <i class="fas fa-redo"></i> Reset Data
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.total_batches }}</h4>
+                        <p class="mb-0">Total Batches</p>
+                    </div>
+                    <i class="fas fa-boxes fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.active_batches }}</h4>
+                        <p class="mb-0">Active Batches</p>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.pending_inspection }}</h4>
+                        <p class="mb-0">Pending Inspection</p>
+                    </div>
+                    <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #c2185b 0%, #e91e63 100%);">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.expired_batches }}</h4>
+                        <p class="mb-0">Expired Batches</p>
+                    </div>
+                    <i class="fas fa-clock fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Process-wise Inventory Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Process-wise Inventory Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for process, quantity in [
+                            ('raw', stats.total_raw_quantity),
+                            ('wip', stats.total_wip_quantity),
+                            ('finished', stats.total_finished_quantity)
+                        ] %}
+                        <div class="col-md-4 text-center">
+                            <div class="border rounded p-3 mb-3">
+                                <h3 class="text-{{ 'secondary' if process == 'raw' else 'primary' if process == 'wip' else 'success' }}">
+                                    {{ "%.2f"|format(quantity) }}
+                                </h3>
+                                <p class="mb-0 text-muted">{{ process.title() }} Materials</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="fas fa-filter"></i> Filters</h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Item</label>
+                    <select name="item_id" class="form-select">
+                        <option value="">All Items</option>
+                        {% for item in items %}
+                        <option value="{{ item.id }}" {{ 'selected' if current_filters.item_id == item.id }}>
+                            {{ item.code }} - {{ item.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">State</label>
+                    <select name="state" class="form-select">
+                        <option value="">All States</option>
+                        <option value="raw" {{ 'selected' if current_filters.state == 'raw' }}>Raw Material</option>
+                        <option value="cutting" {{ 'selected' if current_filters.state == 'cutting' }}>Cutting</option>
+                        <option value="bending" {{ 'selected' if current_filters.state == 'bending' }}>Bending</option>
+                        <option value="welding" {{ 'selected' if current_filters.state == 'welding' }}>Welding</option>
+                        <option value="zinc" {{ 'selected' if current_filters.state == 'zinc' }}>Zinc Plating</option>
+                        <option value="painting" {{ 'selected' if current_filters.state == 'painting' }}>Painting</option>
+                        <option value="assembly" {{ 'selected' if current_filters.state == 'assembly' }}>Assembly</option>
+                        <option value="machining" {{ 'selected' if current_filters.state == 'machining' }}>Machining</option>
+                        <option value="polishing" {{ 'selected' if current_filters.state == 'polishing' }}>Polishing</option>
+                        <option value="finished" {{ 'selected' if current_filters.state == 'finished' }}>Finished</option>
+                        <option value="scrap" {{ 'selected' if current_filters.state == 'scrap' }}>Scrap</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Location</label>
+                    <input type="text" name="location" class="form-control" value="{{ current_filters.location or '' }}" placeholder="Storage location">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                    <a href="{{ url_for('batch_tracking.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Batch List -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="fas fa-list"></i> Batch Details</h6>
+            <small class="text-muted">{{ batches.total }} batches found</small>
+        </div>
+        <div class="card-body">
+            {% if batches.items %}
+            <div class="row">
+                {% for batch in batches.items %}
+                <div class="col-lg-6 col-xl-4 mb-3">
+                    <div class="card batch-card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center py-2">
+                            <strong>{{ batch.batch_code or 'N/A' }}</strong>
+                            <span class="badge bg-{{ 'success' if batch.inspection_status == 'passed' else 'warning' if batch.inspection_status == 'pending' else 'danger' }}">
+                                {{ batch.inspection_status.replace('_', ' ').title() }}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title">{{ batch.item.name if batch.item else 'Unknown Item' }}</h6>
+                            <p class="card-text text-muted small">{{ batch.item.code if batch.item else 'N/A' }}</p>
+                            
+                            <div class="mb-2">
+                                <small class="text-muted">Total: </small>
+                                <strong>{{ batch.total_quantity }} {{ batch.item.unit_of_measure if batch.item else 'Units' }}</strong>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <small class="text-muted">Available: </small>
+                                <strong>{{ batch.available_quantity }} {{ batch.item.unit_of_measure if batch.item else 'Units' }}</strong>
+                            </div>
+                            
+                            {% if batch.location %}
+                            <div class="mb-2">
+                                <small class="text-muted">Location: </small>
+                                {{ batch.location }}
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Process Status Badges -->
+                            <div class="mt-2">
+                                {% if batch.qty_inspection and batch.qty_inspection > 0 %}
+                                <span class="process-badge process-inspection bg-warning">Inspection: {{ batch.qty_inspection }}</span>
+                                {% endif %}
+                                {% if batch.qty_raw and batch.qty_raw > 0 %}
+                                <span class="process-badge process-raw bg-info">Raw: {{ batch.qty_raw }}</span>
+                                {% endif %}
+                                {% if batch.qty_wip and batch.qty_wip > 0 %}
+                                <span class="process-badge process-wip bg-primary">WIP: {{ batch.qty_wip }}</span>
+                                {% endif %}
+                                {% if batch.qty_finished and batch.qty_finished > 0 %}
+                                <span class="process-badge process-finished bg-success">Finished: {{ batch.qty_finished }}</span>
+                                {% endif %}
+                                {% if batch.qty_scrap and batch.qty_scrap > 0 %}
+                                <span class="process-badge process-scrap bg-danger">Scrap: {{ batch.qty_scrap }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="btn-group w-100">
+                                <a href="{{ url_for('batch_tracking.batch_detail', batch_id=batch.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <a href="{{ url_for('batch_tracking.traceability_report', type='batch', batch_id=batch.id) }}" class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-route"></i> Trace
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if batches.pages > 1 %}
+            <nav aria-label="Batch pagination">
+                <ul class="pagination justify-content-center mt-4">
+                    {% if batches.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('batch_tracking.dashboard', page=batches.prev_num, **current_filters) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in batches.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != batches.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('batch_tracking.dashboard', page=page_num, **current_filters) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if batches.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('batch_tracking.dashboard', page=batches.next_num, **current_filters) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No batches found</h5>
+                <p class="text-muted">Try adjusting your filter criteria</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

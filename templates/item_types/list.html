@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Item Types - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-tags"></i> Item Types Management</h1>
+            <p class="text-muted">Manage item categories and types for your inventory</p>
+        </div>
+        <div class="col-auto">
+            {% if current_user.is_admin() %}
+            <a href="{{ url_for('item_types.add_item_type') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Item Type
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if item_types %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Items Count</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            {% if current_user.is_admin() %}
+                            <th width="200">Actions</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item_type in item_types %}
+                        <tr>
+                            <td>
+                                <strong>{{ item_type.name }}</strong>
+                            </td>
+                            <td>{{ item_type.description or '-' }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ item_type.items|length }} items</span>
+                            </td>
+                            <td>
+                                {% if item_type.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item_type.created_at.strftime('%Y-%m-%d') if item_type.created_at else '-' }}</td>
+                            {% if current_user.is_admin() %}
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('item_types.edit_item_type', id=item_type.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    
+                                    <button class="btn btn-sm btn-outline-warning toggle-status" 
+                                            data-id="{{ item_type.id }}"
+                                            data-status="{{ item_type.is_active }}">
+                                        <i class="fas fa-power-off"></i>
+                                        {{ 'Deactivate' if item_type.is_active else 'Activate' }}
+                                    </button>
+                                    
+                                    {% if not item_type.items %}
+                                    <form method="POST" action="{{ url_for('item_types.delete_item_type', id=item_type.id) }}" 
+                                          class="d-inline" onsubmit="return confirm('Are you sure you want to delete this item type?')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                <h5>No item types found</h5>
+                <p class="text-muted">Create your first item type to categorize inventory items.</p>
+                {% if current_user.is_admin() %}
+                <a href="{{ url_for('item_types.add_item_type') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add First Item Type
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle status toggle
+    document.querySelectorAll('.toggle-status').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const currentStatus = this.dataset.status === 'True';
+            
+            fetch(`/item-types/toggle/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'An error occurred');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the status');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

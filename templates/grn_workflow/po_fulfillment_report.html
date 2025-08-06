@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}PO Fulfillment Report - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-chart-bar"></i> PO Fulfillment Report</h1>
+            <p class="text-muted">Track Purchase Order fulfillment through GRN workflow</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('grn_workflow.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Simple Filters (without WTForms for now) -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5><i class="fas fa-filter"></i> Filters</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="pending" {{ 'selected' if request.args.get('status') == 'pending' }}>Pending</option>
+                                <option value="partially_received" {{ 'selected' if request.args.get('status') == 'partially_received' }}>Partially Received</option>
+                                <option value="fully_received" {{ 'selected' if request.args.get('status') == 'fully_received' }}>Fully Received</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Vendor</label>
+                            <select name="vendor_id" class="form-select">
+                                <option value="">All Vendors</option>
+                                <!-- Vendor options will be populated by the route -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Date From</label>
+                            <input type="date" name="date_from" class="form-control" value="{{ request.args.get('date_from', '') }}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Date To</label>
+                            <input type="date" name="date_to" class="form-control" value="{{ request.args.get('date_to', '') }}">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Apply Filters
+                        </button>
+                    </div>
+                    <div class="col-auto">
+                        <a href="{{ url_for('grn_workflow.po_fulfillment_report') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Total POs</h5>
+                            <h2 class="mb-0">{{ fulfillment_data|length if fulfillment_data else 0 }}</h2>
+                            <small>Purchase Orders</small>
+                        </div>
+                        <i class="fas fa-file-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Fully Received</h5>
+                            <h2 class="mb-0">{{ fulfillment_data|selectattr('status', 'equalto', 'fully_received')|list|length if fulfillment_data else 0 }}</h2>
+                            <small>Complete orders</small>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Partially Received</h5>
+                            <h2 class="mb-0">{{ fulfillment_data|selectattr('status', 'equalto', 'partially_received')|list|length if fulfillment_data else 0 }}</h2>
+                            <small>Pending items</small>
+                        </div>
+                        <i class="fas fa-hourglass-half fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Pending</h5>
+                            <h2 class="mb-0">{{ fulfillment_data|selectattr('status', 'equalto', 'pending')|list|length if fulfillment_data else 0 }}</h2>
+                            <small>Not received</small>
+                        </div>
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fulfillment Data Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-table"></i> PO Fulfillment Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>PO Number</th>
+                            <th>Vendor</th>
+                            <th>Item</th>
+                            <th>Ordered Qty</th>
+                            <th>Received Qty</th>
+                            <th>Pending Qty</th>
+                            <th>Fulfillment %</th>
+                            <th>Status</th>
+                            <th>Last GRN Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if fulfillment_data %}
+                            {% for item in fulfillment_data %}
+                            <tr>
+                                <td><strong>{{ item.po_number }}</strong></td>
+                                <td>{{ item.vendor_name }}</td>
+                                <td>{{ item.item_name }}</td>
+                                <td class="text-end">{{ "%.2f"|format(item.ordered_quantity) }}</td>
+                                <td class="text-end">{{ "%.2f"|format(item.received_quantity) }}</td>
+                                <td class="text-end">{{ "%.2f"|format(item.pending_quantity) }}</td>
+                                <td class="text-end">
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar {% if item.fulfillment_percentage >= 100 %}bg-success{% elif item.fulfillment_percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ item.fulfillment_percentage }}%"
+                                             aria-valuenow="{{ item.fulfillment_percentage }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            {{ "%.1f"|format(item.fulfillment_percentage) }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if item.status == 'fully_received' %}
+                                        <span class="badge bg-success">Fully Received</span>
+                                    {% elif item.status == 'partially_received' %}
+                                        <span class="badge bg-warning">Partially Received</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.last_grn_date.strftime('%d-%m-%Y') if item.last_grn_date and item.last_grn_date != 'None' else 'Not received' }}</td>
+                                <td>
+                                    {% if item.status != 'fully_received' %}
+                                        <a href="#" 
+                                           class="btn btn-sm btn-outline-primary" 
+                                           title="Create GRN"
+                                           onclick="alert('GRN creation feature coming soon!')">
+                                            <i class="fas fa-plus"></i>
+                                        </a>
+                                    {% endif %}
+                                    <a href="#" 
+                                       class="btn btn-sm btn-outline-info" 
+                                       title="View PO"
+                                       onclick="alert('PO view feature coming soon!')">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="10" class="text-center text-muted py-4">
+                                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                                    <br>No fulfillment data found
+                                    <br><small>Try adjusting your filters or create some Purchase Orders</small>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit form when filters change
+    const form = document.querySelector('form');
+    if (form) {
+        const selects = form.querySelectorAll('select');
+        selects.forEach(select => {
+            select.addEventListener('change', function() {
+                // Optional: Auto-submit on filter change
+                // form.submit();
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

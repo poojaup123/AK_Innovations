@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-cog"></i> {{ title }}</h1>
+            <p class="text-muted">Inspect materials returned from {{ process.customer_name }} for {{ process.process_name }} process</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('material_inspection.log_inspection', job_id=job_work.id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Multi-Process View
+            </a>
+        </div>
+    </div>
+
+    <!-- Process Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-info-circle"></i> Process Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <h6>Job Number</h6>
+                            <p class="mb-0 fw-bold">{{ job_work.job_number }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Process Name</h6>
+                            <p class="mb-0">{{ process.process_name }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Customer/Vendor</h6>
+                            <p class="mb-0">{{ process.customer_name }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Work Type</h6>
+                            <p class="mb-0">{{ process.work_type.title() }}</p>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <h6>Input Quantity</h6>
+                            <p class="mb-0">{{ process.quantity_input }} {{ job_work.item.unit_of_measure }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Rate per Unit</h6>
+                            <p class="mb-0">₹{{ process.rate_per_unit }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Total Process Cost</h6>
+                            <p class="mb-0 fw-bold text-primary">₹{{ process.process_cost }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Status</h6>
+                            <span class="badge bg-{{ 'success' if process.status == 'completed' else 'warning' if process.status == 'in_progress' else 'secondary' }}">
+                                {{ process.status.replace('_', ' ').title() }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Material Inspection Form -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h5><i class="fas fa-search"></i> Material Inspection</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('material_inspection.submit_process_inspection', process_id=process.id) }}">
+                        {{ form.hidden_tag() if form else '' }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="received_quantity" class="form-label">Received Quantity</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="received_quantity" name="received_quantity" 
+                                               step="0.01" max="{{ process.quantity_input }}" required>
+                                        <span class="input-group-text">{{ job_work.item.unit_of_measure }}</span>
+                                    </div>
+                                    <div class="form-text">Maximum: {{ process.quantity_input }} {{ job_work.item.unit_of_measure }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="inspected_quantity" class="form-label">Inspected Quantity</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="inspected_quantity" name="inspected_quantity" 
+                                               step="0.01" required>
+                                        <span class="input-group-text">{{ job_work.item.unit_of_measure }}</span>
+                                    </div>
+                                    <div class="form-text">Total quantity that was inspected</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="passed_quantity" class="form-label">Passed Quantity</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="passed_quantity" name="passed_quantity" 
+                                               step="0.01" required>
+                                        <span class="input-group-text">{{ job_work.item.unit_of_measure }}</span>
+                                    </div>
+                                    <div class="form-text">Quantity that passed quality inspection</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="rejected_quantity" class="form-label">Rejected Quantity</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="rejected_quantity" name="rejected_quantity" 
+                                               step="0.01" readonly>
+                                        <span class="input-group-text">{{ job_work.item.unit_of_measure }}</span>
+                                    </div>
+                                    <div class="form-text">Auto-calculated: Inspected - Passed</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="inspection_date" class="form-label">Inspection Date</label>
+                                    <input type="date" class="form-control" id="inspection_date" name="inspection_date" 
+                                           required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="inspection_notes" class="form-label">Inspection Notes</label>
+                            <textarea class="form-control" id="inspection_notes" name="inspection_notes" rows="3" 
+                                      placeholder="Any observations or notes about the inspection..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('material_inspection.log_inspection', job_id=job_work.id) }}" class="btn btn-secondary">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check"></i> Complete Inspection
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-calculate rejected quantity and set today's date
+document.addEventListener('DOMContentLoaded', function() {
+    // Set today's date
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('inspection_date').value = today;
+    const inspectedQty = document.getElementById('inspected_quantity');
+    const passedQty = document.getElementById('passed_quantity');
+    const rejectedQty = document.getElementById('rejected_quantity');
+    const receivedQty = document.getElementById('received_quantity');
+
+    function calculateRejected() {
+        const inspected = parseFloat(inspectedQty.value) || 0;
+        const passed = parseFloat(passedQty.value) || 0;
+        rejectedQty.value = (inspected - passed).toFixed(2);
+    }
+
+    function validateQuantities() {
+        const received = parseFloat(receivedQty.value) || 0;
+        const inspected = parseFloat(inspectedQty.value) || 0;
+        
+        if (inspected > received) {
+            inspectedQty.value = received;
+        }
+        
+        calculateRejected();
+    }
+
+    inspectedQty.addEventListener('input', validateQuantities);
+    passedQty.addEventListener('input', calculateRejected);
+    receivedQty.addEventListener('input', validateQuantities);
+});
+</script>
+{% endblock %}

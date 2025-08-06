@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Valuation Dashboard - Factory Management System{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.valuation-card {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.valuation-card:hover {
+    transform: translateY(-2px);
+}
+
+.category-badge {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.bom-indicator {
+    color: #28a745;
+    font-weight: bold;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-boxes"></i> Inventory Valuation Dashboard</h1>
+            <p class="text-muted">Comprehensive inventory valuation with BOM integration</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('accounting.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Accounting
+                </a>
+                <a href="{{ url_for('inventory_valuation.accounting_entries') }}" class="btn btn-primary">
+                    <i class="fas fa-journal-whills"></i> Accounting Entries
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle"></i> Error: {{ error }}
+    </div>
+    {% else %}
+    
+    <!-- Valuation Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card valuation-card border-primary">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Raw Materials</h6>
+                    <h4 class="text-primary">₹{{ "{:,.2f}".format(valuation_summary.raw_material.value) }}</h4>
+                    <small class="text-muted">{{ valuation_summary.raw_material.count }} items</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card valuation-card border-warning">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Work in Progress</h6>
+                    <h4 class="text-warning">₹{{ "{:,.2f}".format(valuation_summary.wip.value) }}</h4>
+                    <small class="text-muted">{{ valuation_summary.wip.count }} items</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card valuation-card border-success">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Finished Goods</h6>
+                    <h4 class="text-success">₹{{ "{:,.2f}".format(valuation_summary.finished_goods.value) }}</h4>
+                    <small class="text-muted">{{ valuation_summary.finished_goods.count }} items</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card valuation-card border-info">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Semi-Finished</h6>
+                    <h4 class="text-info">₹{{ "{:,.2f}".format(valuation_summary.semi_finished.value) }}</h4>
+                    <small class="text-muted">{{ valuation_summary.semi_finished.count }} items</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card valuation-card border-secondary">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Scrap</h6>
+                    <h4 class="text-secondary">₹{{ "{:,.2f}".format(valuation_summary.scrap.value) }}</h4>
+                    <small class="text-muted">{{ valuation_summary.scrap.count }} items</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card valuation-card border-dark">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Total Value</h6>
+                    <h4 class="text-dark">₹{{ "{:,.2f}".format(total_valuation) }}</h4>
+                    <small class="text-muted">Complete inventory</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Item Listing -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> Detailed Item Valuation</h5>
+                </div>
+                <div class="card-body">
+                    {% if detailed_items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Item Code</th>
+                                    <th>Item Name</th>
+                                    <th>Category</th>
+                                    <th>Current Stock</th>
+                                    <th>Unit Value</th>
+                                    <th>Total Value</th>
+                                    <th>BOM Based</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item_data in detailed_items %}
+                                <tr>
+                                    <td><strong>{{ item_data.item.code }}</strong></td>
+                                    <td>{{ item_data.item.name }}</td>
+                                    <td>
+                                        <span class="badge category-badge bg-{% if item_data.category == 'raw_material' %}primary{% elif item_data.category == 'wip' %}warning{% elif item_data.category == 'finished_goods' %}success{% elif item_data.category == 'semi_finished' %}info{% else %}secondary{% endif %}">
+                                            {{ item_data.category.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>{{ "{:,.3f}".format(item_data.item.current_stock) }} {{ item_data.item.unit_of_measure }}</td>
+                                    <td>₹{{ "{:,.2f}".format(item_data.unit_value) }}</td>
+                                    <td><strong>₹{{ "{:,.2f}".format(item_data.total_value) }}</strong></td>
+                                    <td>
+                                        {% if item_data.has_bom %}
+                                            <span class="bom-indicator"><i class="fas fa-check-circle"></i> BOM</span>
+                                        {% else %}
+                                            <span class="text-muted">Unit Price</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item_data.has_bom %}
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewBOMCostAnalysis({{ item_data.item.id }})">
+                                            <i class="fas fa-chart-pie"></i> BOM Analysis
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Items with Stock Found</h5>
+                        <p class="text-muted">Add inventory items with stock to see valuation details.</p>
+                        <a href="{{ url_for('inventory.add_item') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add Item
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accounting Integration -->
+    {% if inventory_accounts %}
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-link"></i> Accounting Integration</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Inventory values are automatically integrated with the following accounting accounts:</p>
+                    <div class="row">
+                        {% for account in inventory_accounts %}
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 text-center">
+                                <h6>{{ account.name }}</h6>
+                                <p class="text-muted mb-0">{{ account.code }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% endif %}
+</div>
+
+<!-- BOM Cost Analysis Modal -->
+<div class="modal fade" id="bomAnalysisModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">BOM Cost Analysis</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="bomAnalysisContent">
+                <!-- Content will be loaded via AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewBOMCostAnalysis(itemId) {
+    // Show modal
+    $('#bomAnalysisModal').modal('show');
+    
+    // Show loading
+    $('#bomAnalysisContent').html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Loading analysis...</p></div>');
+    
+    // Fetch BOM cost analysis
+    fetch(`/accounting/inventory-valuation/bom-cost-analysis/${itemId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                $('#bomAnalysisContent').html(`<div class="alert alert-danger">${data.error}</div>`);
+                return;
+            }
+            
+            let html = `
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6>Item: ${data.item.code} - ${data.item.name}</h6>
+                        <p>Current Stock: ${data.item.current_stock}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>BOM: ${data.bom.code} (v${data.bom.version})</h6>
+                    </div>
+                </div>
+                
+                <h6>Material Breakdown:</h6>
+                <table class="table table-sm">
+                    <thead>
+                        <tr><th>Item</th><th>Qty Required</th><th>Unit Price</th><th>Line Cost</th></tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            data.material_breakdown.forEach(item => {
+                html += `
+                    <tr>
+                        <td>${item.item_code} - ${item.item_name}</td>
+                        <td>${item.quantity_required} ${item.uom}</td>
+                        <td>₹${item.unit_price.toFixed(2)}</td>
+                        <td>₹${item.line_cost.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+                
+                <h6>Cost Summary:</h6>
+                <table class="table table-sm">
+                    <tr><td>Material Cost:</td><td>₹${data.cost_breakdown.material_cost.toFixed(2)}</td></tr>
+                    <tr><td>Labor Cost:</td><td>₹${data.cost_breakdown.labor_cost.toFixed(2)}</td></tr>
+                    <tr><td>Overhead Cost:</td><td>₹${data.cost_breakdown.overhead_cost.toFixed(2)}</td></tr>
+                    <tr class="table-success"><td><strong>Total Cost per Unit:</strong></td><td><strong>₹${data.cost_breakdown.total_cost.toFixed(2)}</strong></td></tr>
+                </table>
+            `;
+            
+            $('#bomAnalysisContent').html(html);
+        })
+        .catch(error => {
+            $('#bomAnalysisContent').html(`<div class="alert alert-danger">Error loading analysis: ${error}</div>`);
+        });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Reports Dashboard - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-chart-bar"></i> Reports Dashboard</h1>
+            <p class="text-muted">Generate comprehensive reports and export data</p>
+        </div>
+    </div>
+
+    <!-- Report Categories -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-file-alt"></i> Available Reports</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Custom Reports Card -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card bg-primary text-white h-100">
+                                <div class="card-body d-flex flex-column">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-magic"></i>
+                                        Custom Reports <span class="badge bg-warning text-dark">NEW</span>
+                                    </h6>
+                                    <p class="card-text small flex-grow-1">
+                                        Create personalized reports with your own field selection, filters, and criteria for any data source.
+                                    </p>
+                                    <div class="mt-auto">
+                                        <a href="{{ url_for('reports.custom_reports_list') }}" class="btn btn-light btn-sm w-100">
+                                            <i class="fas fa-magic"></i> Custom Reports
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% for report in report_types %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card bg-light h-100">
+                                <div class="card-body d-flex flex-column">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-{{ 'boxes' if 'Inventory' in report.name else 'shopping-cart' if 'Purchase' in report.name else 'chart-line' if 'Sales' in report.name else 'users' if 'Employee' in report.name else 'tools' if 'Job Work' in report.name else 'cogs' }}"></i>
+                                        {{ report.name }}
+                                    </h6>
+                                    <p class="card-text small text-muted flex-grow-1">
+                                        {% if 'Inventory' in report.name %}
+                                            View inventory levels, stock values, and low stock alerts with filtering options.
+                                        {% elif 'Purchase' in report.name %}
+                                            Analyze purchase orders, supplier performance, and procurement trends.
+                                        {% elif 'Sales' in report.name %}
+                                            Track sales performance, customer orders, and revenue analysis.
+                                        {% elif 'Employee' in report.name %}
+                                            Employee listings, salary breakdowns, and department statistics.
+                                        {% elif 'Job Work' in report.name %}
+                                            Job work status, vendor performance, and material tracking.
+                                        {% elif 'Production' in report.name %}
+                                            Production orders, BOM analysis, and manufacturing metrics.
+                                        {% endif %}
+                                    </p>
+                                    <div class="mt-auto">
+                                        <a href="{{ url_for(report.url) }}" class="btn btn-primary btn-sm w-100">
+                                            <i class="fas fa-eye"></i> View Report
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Export Options -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-download"></i> Quick Exports</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('reports.export_inventory') }}" class="btn btn-outline-success btn-sm w-100">
+                                <i class="fas fa-file-csv"></i> Export Inventory CSV
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('reports.purchase_report') }}?export=csv" class="btn btn-outline-info btn-sm w-100">
+                                <i class="fas fa-file-csv"></i> Export Purchase Orders
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('reports.sales_report') }}?export=csv" class="btn btn-outline-primary btn-sm w-100">
+                                <i class="fas fa-file-csv"></i> Export Sales Orders
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{{ url_for('reports.employee_report') }}?export=csv" class="btn btn-outline-warning btn-sm w-100">
+                                <i class="fas fa-file-csv"></i> Export Employees
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Guidelines -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Report Guidelines</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <strong>Real-time Data:</strong> All reports show current system data
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-filter text-info"></i>
+                            <strong>Filtering:</strong> Use date ranges and status filters for precise data
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-download text-primary"></i>
+                            <strong>Export Options:</strong> CSV exports available for all major reports
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-clock text-warning"></i>
+                            <strong>Performance:</strong> Large datasets may take a moment to process
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie"></i> Report Features</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-calendar-alt fa-2x text-primary mb-2"></i>
+                                <h6>Date Filtering</h6>
+                                <small class="text-muted">Filter by custom date ranges</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-search fa-2x text-info mb-2"></i>
+                                <h6>Search & Filter</h6>
+                                <small class="text-muted">Find specific records quickly</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-sort fa-2x text-success mb-2"></i>
+                                <h6>Data Sorting</h6>
+                                <small class="text-muted">Sort by any column</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-file-export fa-2x text-warning mb-2"></i>
+                                <h6>CSV Export</h6>
+                                <small class="text-muted">Export to spreadsheets</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Export History -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-history"></i> Quick Access</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Frequently used reports and common data exports:</p>
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <a href="{{ url_for('reports.inventory_report') }}?low_stock=true" class="btn btn-outline-danger btn-sm w-100">
+                                <i class="fas fa-exclamation-triangle"></i> Low Stock Alert Report
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <a href="{{ url_for('reports.purchase_report') }}?status=open" class="btn btn-outline-warning btn-sm w-100">
+                                <i class="fas fa-clock"></i> Open Purchase Orders
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <a href="{{ url_for('reports.sales_report') }}?status=pending" class="btn btn-outline-info btn-sm w-100">
+                                <i class="fas fa-hourglass-half"></i> Pending Sales Orders
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <a href="{{ url_for('reports.employee_report') }}?status=active" class="btn btn-outline-success btn-sm w-100">
+                                <i class="fas fa-user-check"></i> Active Employees
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <a href="{{ url_for('reports.jobwork_report') }}?status=sent" class="btn btn-outline-primary btn-sm w-100">
+                                <i class="fas fa-paper-plane"></i> Pending Job Works
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <a href="{{ url_for('reports.production_report') }}?status=planned" class="btn btn-outline-secondary btn-sm w-100">
+                                <i class="fas fa-calendar-check"></i> Planned Productions
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add tooltips to report cards
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

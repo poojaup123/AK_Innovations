@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Production Report - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-industry"></i> Production Report</h1>
+            <p class="text-muted">Comprehensive production analysis and performance metrics</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5><i class="fas fa-filter"></i> Filters</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">End Date</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="planned" {{ 'selected' if status_filter == 'planned' }}>Planned</option>
+                        <option value="in_progress" {{ 'selected' if status_filter == 'in_progress' }}>In Progress</option>
+                        <option value="completed" {{ 'selected' if status_filter == 'completed' }}>Completed</option>
+                        <option value="cancelled" {{ 'selected' if status_filter == 'cancelled' }}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                    <a href="{{ url_for('reports.production_report') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Production Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ productions|length }}</h4>
+                            <p class="mb-0">Total Productions</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-industry fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ productions | selectattr('status', 'equalto', 'completed') | list | length }}</h4>
+                            <p class="mb-0">Completed</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ productions | selectattr('status', 'equalto', 'in_progress') | list | length }}</h4>
+                            <p class="mb-0">In Progress</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ productions | selectattr('status', 'equalto', 'planned') | list | length }}</h4>
+                            <p class="mb-0">Planned</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-calendar-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Production Details Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-table"></i> Production Details</h5>
+        </div>
+        <div class="card-body">
+            {% if productions %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Production Number</th>
+                                <th>Item</th>
+                                <th>Production Date</th>
+                                <th>Planned Quantity</th>
+                                <th>Produced Quantity</th>
+                                <th>Good Quality</th>
+                                <th>Damaged</th>
+                                <th>Efficiency</th>
+                                <th>Status</th>
+                                <th>Created By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for production in productions %}
+                            <tr>
+                                <td><strong>{{ production.production_number }}</strong></td>
+                                <td>
+                                    <div>
+                                        <strong>{{ production.produced_item.code }}</strong><br>
+                                        <small class="text-muted">{{ production.produced_item.name }}</small>
+                                    </div>
+                                </td>
+                                <td>{{ production.production_date.strftime('%m/%d/%Y') if production.production_date else '-' }}</td>
+                                <td>{{ production.quantity_planned }}</td>
+                                <td>{{ production.quantity_produced or '-' }}</td>
+                                <td>{{ production.quantity_good or '-' }}</td>
+                                <td>{{ production.quantity_damaged or '-' }}</td>
+                                <td>
+                                    {% if production.quantity_produced and production.quantity_planned %}
+                                        {% set efficiency = (production.quantity_produced / production.quantity_planned * 100) %}
+                                        <span class="badge bg-{{ 'success' if efficiency >= 100 else 'warning' if efficiency >= 80 else 'danger' }}">
+                                            {{ "%.1f"|format(efficiency) }}%
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if production.status == 'completed' else 'warning' if production.status == 'in_progress' else 'info' if production.status == 'planned' else 'danger' }}">
+                                        {{ production.status.replace('_', ' ').title() }}
+                                    </span>
+                                </td>
+                                <td>{{ production.creator.username if production.creator else '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Production Summary -->
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="fas fa-chart-bar"></i> Production Efficiency</h6>
+                            </div>
+                            <div class="card-body">
+                                {% set total_planned = productions | sum(attribute='quantity_planned') %}
+                                {% set total_produced = productions | sum(attribute='quantity_produced') %}
+                                {% set total_good = productions | sum(attribute='quantity_good') %}
+                                {% set total_damaged = productions | sum(attribute='quantity_damaged') %}
+                                
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <h5>{{ total_planned }}</h5>
+                                        <small class="text-muted">Total Planned</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <h5>{{ total_produced or 0 }}</h5>
+                                        <small class="text-muted">Total Produced</small>
+                                    </div>
+                                </div>
+                                
+                                {% if total_planned and total_produced %}
+                                    {% set overall_efficiency = (total_produced / total_planned * 100) %}
+                                    <div class="text-center mt-3">
+                                        <h4 class="text-{{ 'success' if overall_efficiency >= 100 else 'warning' if overall_efficiency >= 80 else 'danger' }}">
+                                            {{ "%.1f"|format(overall_efficiency) }}%
+                                        </h4>
+                                        <small class="text-muted">Overall Efficiency</small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="fas fa-chart-pie"></i> Quality Metrics</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <h5 class="text-success">{{ total_good or 0 }}</h5>
+                                        <small class="text-muted">Good Quality</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <h5 class="text-danger">{{ total_damaged or 0 }}</h5>
+                                        <small class="text-muted">Damaged</small>
+                                    </div>
+                                </div>
+                                
+                                {% if total_good and total_damaged %}
+                                    {% set quality_rate = (total_good / (total_good + total_damaged) * 100) %}
+                                    <div class="text-center mt-3">
+                                        <h4 class="text-{{ 'success' if quality_rate >= 95 else 'warning' if quality_rate >= 90 else 'danger' }}">
+                                            {{ "%.1f"|format(quality_rate) }}%
+                                        </h4>
+                                        <small class="text-muted">Quality Rate</small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-industry fa-3x text-muted mb-3"></i>
+                    <h5>No Production Records Found</h5>
+                    <p class="text-muted">No production records match your current filter criteria.</p>
+                    {% if start_date or end_date or status_filter %}
+                        <a href="{{ url_for('reports.production_report') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Clear Filters
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - AK Innovations Factory{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('uom.dashboard') }}">UOM Management</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('uom.conversions_list') }}">Conversions</a></li>
+                    <li class="breadcrumb-item active">{{ title }}</li>
+                </ol>
+            </nav>
+            <h2><i class="fas fa-exchange-alt"></i> {{ title }}</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Conversion Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-5">
+                                <div class="mb-3">
+                                    {{ form.from_unit.label(class="form-label") }}
+                                    {{ form.from_unit(class="form-select") }}
+                                    {% if form.from_unit.errors %}
+                                        {% for error in form.from_unit.errors %}
+                                            <div class="text-danger small">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-2 text-center">
+                                <div class="mb-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <div class="form-control-plaintext">
+                                        <i class="fas fa-arrow-right fa-2x text-primary"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="mb-3">
+                                    {{ form.to_unit.label(class="form-label") }}
+                                    {{ form.to_unit(class="form-select") }}
+                                    {% if form.to_unit.errors %}
+                                        {% for error in form.to_unit.errors %}
+                                            <div class="text-danger small">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.conversion_factor.label(class="form-label") }}
+                            {{ form.conversion_factor(class="form-control", **{"onchange": "updateExample()"}) }}
+                            {% if form.conversion_factor.errors %}
+                                {% for error in form.conversion_factor.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                            <div class="form-text">How many of the "To Unit" equals 1 of the "From Unit"</div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <strong>Example:</strong> <span id="conversionExample">Select units and enter factor to see example</span>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control") }}
+                            {% if form.notes.errors %}
+                                {% for error in form.notes.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                            <div class="form-text">Optional notes about this conversion</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('uom.conversions_list') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Conversions
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ form.submit.label.text }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-info-circle"></i> Examples</h6>
+                </div>
+                <div class="card-body">
+                    <h6>Weight Conversions</h6>
+                    <ul class="small">
+                        <li>1 Kg = 1000 g (factor: 1000)</li>
+                        <li>1 g = 0.001 Kg (factor: 0.001)</li>
+                    </ul>
+                    
+                    <h6>Length Conversions</h6>
+                    <ul class="small">
+                        <li>1 M = 100 cm (factor: 100)</li>
+                        <li>1 ft = 0.3048 M (factor: 0.3048)</li>
+                    </ul>
+                    
+                    <h6>Count Conversions</h6>
+                    <ul class="small">
+                        <li>1 Dozen = 12 Pieces (factor: 12)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateExample() {
+    const fromSelect = document.getElementById('from_unit');
+    const toSelect = document.getElementById('to_unit');
+    const factorInput = document.getElementById('conversion_factor');
+    
+    if (fromSelect.selectedOptions.length > 0 && 
+        toSelect.selectedOptions.length > 0 && 
+        factorInput.value) {
+        
+        const fromText = fromSelect.selectedOptions[0].text;
+        const toText = toSelect.selectedOptions[0].text;
+        const factor = factorInput.value;
+        
+        document.getElementById('conversionExample').textContent = 
+            `1 ${fromText} = ${factor} ${toText}`;
+    }
+}
+</script>
+{% endblock %}

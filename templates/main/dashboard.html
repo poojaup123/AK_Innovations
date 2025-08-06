@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - AK Innovations Factory Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="fas fa-industry"></i> AK Innovations Factory Management
+    </h1>
+    <p class="page-subtitle">Import or export your data, or set up real-time alerts for your system.</p>
+    <div class="d-flex justify-content-end">
+        <button class="btn btn-outline-primary btn-sm" onclick="location.href='{{ url_for('main.customize_dashboard') }}'">
+            <i class="fas fa-sliders-h"></i> Customize Dashboard
+        </button>
+    </div>
+</div>
+
+<!-- Dashboard Grid -->
+<div class="row g-4">
+    {% for user_module in user_modules %}
+        {% if user_module.module %}
+            {% set module = user_module.module %}
+            {% set preference = user_module.preference %}
+            {% set size = preference.size if preference and preference.size else 'medium' %}
+            <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
+                <div class="module-card module-{{ size }}">
+                    <div class="module-icon">
+                        <i class="{{ module.icon }}"></i>
+                    </div>
+                    <div class="module-title">{{ module.title }}</div>
+                    <div class="module-description">{{ module.description }}</div>
+                    {% if module.valid_url %}
+                        <a href="{{ module.valid_url }}" class="view-btn">View</a>
+                    {% else %}
+                        <span class="text-muted small">Coming Soon</span>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+</div>
+
+<!-- Quick Stats -->
+<div class="row mt-5">
+    <div class="col-12">
+        <h4 class="mb-3"><i class="fas fa-chart-bar"></i> Quick Overview</h4>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-primary">{{ stats.total_items }}</h5>
+                <p class="card-text small text-muted">Total Items</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-warning">{{ stats.low_stock_items }}</h5>
+                <p class="card-text small text-muted">Low Stock</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-info">{{ stats.open_purchase_orders }}</h5>
+                <p class="card-text small text-muted">Open POs</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-success">{{ stats.pending_sales_orders }}</h5>
+                <p class="card-text small text-muted">Pending SOs</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-dark">{{ stats.active_employees }}</h5>
+                <p class="card-text small text-muted">Employees</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-secondary">{{ stats.open_job_works }}</h5>
+                <p class="card-text small text-muted">Job Works</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities -->
+<div class="row mt-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-shopping-cart"></i> Recent Purchase Orders</h6>
+            </div>
+            <div class="card-body">
+                {% if recent_pos %}
+                    <div class="list-group list-group-flush">
+                        {% for po in recent_pos %}
+                        <div class="list-group-item border-0 px-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ po.po_number }}</h6>
+                                    <p class="mb-0 small text-muted">{{ po.supplier.name if po.supplier else 'N/A' }}</p>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-{{ 'success' if po.status == 'completed' else 'warning' if po.status == 'open' else 'secondary' }} mb-1">{{ po.status.title() }}</span>
+                                    <div class="small text-muted">{{ po.created_at.strftime('%m/%d') }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No purchase orders yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-handshake"></i> Recent Sales Orders</h6>
+            </div>
+            <div class="card-body">
+                {% if recent_sos %}
+                    <div class="list-group list-group-flush">
+                        {% for so in recent_sos %}
+                        <div class="list-group-item border-0 px-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ so.so_number }}</h6>
+                                    <p class="mb-0 small text-muted">{{ so.customer_name }}</p>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-{{ 'success' if so.status == 'completed' else 'warning' if so.status == 'pending' else 'secondary' }} mb-1">{{ so.status.title() }}</span>
+                                    <div class="small text-muted">{{ so.created_at.strftime('%m/%d') }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No sales orders yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Low Stock Alert -->
+{% if low_stock_items %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Low Stock Alert</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for item in low_stock_items %}
+                    <div class="col-lg-6 col-xl-4 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-truncate">{{ item.name }}</span>
+                            <span class="badge bg-danger">{{ item.current_stock or 0 }}/{{ item.minimum_stock or 0 }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+    .module-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 30px;
+        text-align: center;
+        transition: all 0.3s ease;
+        height: 200px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+    
+    .module-card:hover {
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .module-card.module-small {
+        height: 150px;
+        padding: 20px;
+    }
+    
+    .module-card.module-large {
+        height: 250px;
+        padding: 40px;
+    }
+    
+    .module-description {
+        font-size: 0.875rem;
+        color: #6c757d;
+        text-align: center;
+        margin: 8px 0;
+        line-height: 1.4;
+    }
+    
+    .module-icon {
+        font-size: 3rem;
+        color: #6c757d;
+        margin-bottom: 15px;
+    }
+    
+    .module-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #343a40;
+        margin-bottom: 15px;
+    }
+    
+    .view-btn {
+        background-color: transparent;
+        border: 1px solid #0d6efd;
+        color: #0d6efd;
+        padding: 8px 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    
+    .view-btn:hover {
+        background-color: #0d6efd;
+        color: white;
+        text-decoration: none;
+    }
+</style>
+{% endblock %}

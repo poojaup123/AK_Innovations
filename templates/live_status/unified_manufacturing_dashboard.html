@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+
+{% block title %}Manufacturing Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-chart-line me-2"></i>Manufacturing Dashboard</h2>
+            <p class="text-muted">Real-time process status and manufacturing intelligence</p>
+        </div>
+        <div>
+            <button class="btn btn-primary me-2" onclick="location.reload()">
+                <i class="fas fa-sync-alt me-1"></i>Refresh
+            </button>
+            <button class="btn btn-success" onclick="generateAlerts()">
+                <i class="fas fa-bell me-1"></i>Generate Alerts
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Cards Row -->
+    <div class="row mb-4">
+        <!-- Process Status Cards -->
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ stats.total_processes }}</h3>
+                            <small>Total Processes</small>
+                        </div>
+                        <i class="fas fa-cogs fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card bg-secondary text-white">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ stats.pending }}</h3>
+                            <small>Pending</small>
+                        </div>
+                        <i class="fas fa-clock fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ stats.in_progress }}</h3>
+                            <small>In Progress</small>
+                        </div>
+                        <i class="fas fa-play fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ stats.completed }}</h3>
+                            <small>Completed</small>
+                        </div>
+                        <i class="fas fa-check fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ stats.on_hold }}</h3>
+                            <small>On Hold</small>
+                        </div>
+                        <i class="fas fa-pause fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ stats.delayed }}</h3>
+                            <small>Delayed</small>
+                        </div>
+                        <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Intelligence Analytics Row -->
+    <div class="row mb-4">
+        <!-- Bottleneck Analysis -->
+        <div class="col-lg-6 mb-3">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-search me-2"></i>Process Bottleneck Analysis</h5>
+                    <button class="btn btn-sm btn-outline-primary" onclick="viewBottleneckDetails()">
+                        View Details
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if bottleneck_analysis and bottleneck_analysis.processes %}
+                        {% for process in bottleneck_analysis.processes[:5] %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold">{{ process.process_name|title }}</span>
+                            <div>
+                                {% if process.is_bottleneck %}
+                                    <span class="badge bg-danger">Bottleneck</span>
+                                {% else %}
+                                    <span class="badge bg-success">Normal</span>
+                                {% endif %}
+                                <small class="text-muted ms-2">{{ process.capacity_utilization|round(1) }}%</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-info-circle fa-2x mb-2"></i>
+                            <p>No bottleneck analysis data available</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Alerts -->
+        <div class="col-lg-6 mb-3">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Recent Alerts</h5>
+                    <button class="btn btn-sm btn-outline-primary" onclick="viewAllAlerts()">
+                        View All
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if active_alerts %}
+                        {% for alert in active_alerts[:5] %}
+                        <div class="alert alert-{{ 'danger' if alert.severity == 'high' else ('warning' if alert.severity == 'medium' else 'info') }} alert-dismissible fade show mb-2">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ alert.title }}</strong>
+                                    <p class="mb-0 small">{{ alert.message }}</p>
+                                </div>
+                                <small class="text-muted">{{ alert.created_at.strftime('%H:%M') }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+                            <p>No active alerts</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Real-Time Material Flow -->
+    {% if material_flow and material_flow.process_flow %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-stream me-2"></i>Real-Time Material Flow</h5>
+                    <button class="btn btn-sm btn-outline-primary" onclick="viewDetailedFlow()">
+                        Detailed View
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for process, data in material_flow.process_flow.items() %}
+                        <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                            <div class="text-center p-3 border rounded">
+                                <h6 class="text-primary">{{ process|title }}</h6>
+                                <div class="progress mb-2" style="height: 20px;">
+                                    <div class="progress-bar" role="progressbar" style="width: {{ (data.current_load / data.capacity * 100) if data.capacity > 0 else 0 }}%">
+                                        {{ data.current_load }}/{{ data.capacity }}
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    {{ ((data.current_load / data.capacity * 100) if data.capacity > 0 else 0)|round(1) }}% Utilized
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Live Process Status Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Live Process Status 
+                        <span class="badge bg-success ms-2">LIVE</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if processes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th>Job Number</th>
+                                    <th>Process</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                    <th>Work Type</th>
+                                    <th>Customer/Dept</th>
+                                    <th>Time in Status</th>
+                                    <th>Expected</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for process in processes %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('jobwork.detail', id=process.job_work.id) }}" class="text-decoration-none">
+                                            {{ process.job_work.job_number }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ process.process_name|title }}</span>
+                                    </td>
+                                    <td>
+                                        {% set status_class = {
+                                            'pending': 'secondary',
+                                            'in_progress': 'primary', 
+                                            'completed': 'success',
+                                            'on_hold': 'warning',
+                                            'delayed': 'danger'
+                                        }[process.status] or 'secondary' %}
+                                        <span class="badge bg-{{ status_class }}">
+                                            {{ process.status|replace('_', ' ')|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% set progress = ((process.output_quantity or 0) / (process.job_work.quantity or 1) * 100) %}
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" role="progressbar" style="width: {{ progress }}%">
+                                                {{ progress|round(1) }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if process.job_work.work_type == 'in_house' else 'warning' }}">
+                                            {{ process.job_work.work_type|replace('_', ' ')|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if process.job_work.work_type == 'outsourced' %}
+                                            {{ process.job_work.supplier.name if process.job_work.supplier else 'Not Assigned' }}
+                                        {% else %}
+                                            {{ process.job_work.department.name if process.job_work.department else 'Internal' }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set time_diff = (moment().utc() - process.updated_at).total_seconds() / 3600 %}
+                                        <small class="text-muted">
+                                            {% if time_diff < 1 %}
+                                                {{ (time_diff * 60)|round }}m
+                                            {% elif time_diff < 24 %}
+                                                {{ time_diff|round(1) }}h
+                                            {% else %}
+                                                {{ (time_diff / 24)|round(1) }}d
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if process.expected_completion_date %}
+                                            <small class="text-muted">{{ process.expected_completion_date.strftime('%d/%m') }}</small>
+                                        {% else %}
+                                            <small class="text-muted">Not Set</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('jobwork.detail', id=process.job_work.id) }}" 
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <button class="btn btn-outline-success btn-sm" 
+                                                    onclick="updateProcessStatus({{ process.id }}, 'completed')">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+                        <h5>No Active Processes</h5>
+                        <p>All job work processes have been completed.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// JavaScript functions for dashboard interactions
+function viewBottleneckDetails() {
+    alert('Bottleneck analysis details are integrated into this unified dashboard view.');
+}
+
+function viewAllAlerts() {
+    alert('All alerts are displayed in the Recent Alerts section above.');
+}
+
+function viewDetailedFlow() {
+    alert('Detailed material flow is shown in the Real-Time Material Flow section.');
+}
+
+function generateAlerts() {
+    fetch('/live-status/generate-alerts', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error generating alerts: ' + data.error);
+        }
+    });
+}
+
+function updateProcessStatus(processId, newStatus) {
+    if (confirm('Update process status to ' + newStatus + '?')) {
+        fetch('/live-status/update-process-status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                process_id: processId,
+                status: newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error updating status: ' + data.error);
+            }
+        });
+    }
+}
+
+// Auto-refresh every 30 seconds
+setInterval(function() {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}

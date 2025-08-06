@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}UOM Calculator - AK Innovations Factory{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('uom.dashboard') }}">UOM Management</a></li>
+                    <li class="breadcrumb-item active">Calculator</li>
+                </ol>
+            </nav>
+            <h2><i class="fas fa-calculator"></i> UOM Calculator</h2>
+            <p class="text-muted">Quick conversions for configured items</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Conversion Calculator</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-4">
+                            {{ form.item.label(class="form-label") }}
+                            {{ form.item(class="form-select", **{"onchange": "loadItemConversions()"}) }}
+                            {% if form.item.errors %}
+                                {% for error in form.item.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ form.quantity.label(class="form-label") }}
+                                    {{ form.quantity(class="form-control") }}
+                                    {% if form.quantity.errors %}
+                                        {% for error in form.quantity.errors %}
+                                            <div class="text-danger small">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.from_unit.label(class="form-label") }}
+                                    {{ form.from_unit(class="form-select") }}
+                                    {% if form.from_unit.errors %}
+                                        {% for error in form.from_unit.errors %}
+                                            <div class="text-danger small">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-1 text-center">
+                                <div class="mb-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <div class="form-control-plaintext">
+                                        <i class="fas fa-arrow-right fa-2x text-primary"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.to_unit.label(class="form-label") }}
+                                    {{ form.to_unit(class="form-select") }}
+                                    {% if form.to_unit.errors %}
+                                        {% for error in form.to_unit.errors %}
+                                            <div class="text-danger small">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-calculator"></i> Calculate Conversion
+                            </button>
+                        </div>
+                    </form>
+
+                    {% if result %}
+                    <div class="mt-4">
+                        <div class="alert alert-success">
+                            <h5><i class="fas fa-check-circle"></i> Conversion Result</h5>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <h4 class="mb-3">
+                                        {{ result.original_qty }} {{ result.from_unit.symbol }} 
+                                        <i class="fas fa-arrow-right mx-2"></i>
+                                        {{ result.converted_qty }} {{ result.to_unit.symbol }}
+                                    </h4>
+                                    <p class="mb-2">
+                                        <strong>Item:</strong> {{ result.item.name }} ({{ result.item.code }})
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Conversion Path:</strong> {{ result.conversion_path }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-info-circle"></i> How It Works</h6>
+                </div>
+                <div class="card-body">
+                    <ol class="small">
+                        <li>Select an item that has UOM conversion configured</li>
+                        <li>Enter the quantity you want to convert</li>
+                        <li>Choose the "From" unit (what you have)</li>
+                        <li>Choose the "To" unit (what you want)</li>
+                        <li>Click Calculate to see the result</li>
+                    </ol>
+                    
+                    <div class="alert alert-warning small mt-3">
+                        <strong>Note:</strong> Only conversions configured for each specific item are available.
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-lightbulb"></i> Quick Examples</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>Steel Rods</h6>
+                        <small>
+                            • 5 Kg → ? Pieces<br>
+                            • 100 Pieces → ? Kg
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Paint</h6>
+                        <small>
+                            • 10 L → ? Bottles<br>
+                            • 50 Bottles → ? L
+                        </small>
+                    </div>
+                    
+                    <div>
+                        <h6>Cable Wire</h6>
+                        <small>
+                            • 20 M → ? Pieces<br>
+                            • 40 Pieces → ? M
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadItemConversions() {
+    const itemSelect = document.getElementById('item');
+    const fromSelect = document.getElementById('from_unit');
+    const toSelect = document.getElementById('to_unit');
+    
+    if (itemSelect.value) {
+        // Fetch item UOM info via API
+        fetch(`/uom/api/item-uom-info/${itemSelect.value}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.has_conversion) {
+                    // Update unit options based on item configuration
+                    console.log('Item has UOM conversion configured:', data);
+                } else {
+                    alert('This item does not have UOM conversion configured. Please configure it first.');
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching item UOM info:', error);
+            });
+    }
+}
+</script>
+{% endblock %}

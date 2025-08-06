@@ -1,0 +1,532 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Templates - AK Innovations Factory{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('settings.dashboard') }}">Settings</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('settings.notification_settings') }}">Notifications</a></li>
+                    <li class="breadcrumb-item active">Message Templates</li>
+                </ol>
+            </nav>
+            <h2><i class="fas fa-edit"></i> Notification Message Templates</h2>
+            <p class="text-muted">Customize the content and triggers for notification messages</p>
+        </div>
+    </div>
+
+    <!-- Template Categories -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <ul class="nav nav-tabs" id="templateTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="stock-tab" data-bs-toggle="tab" data-bs-target="#stock" type="button" role="tab">
+                        <i class="fas fa-boxes"></i> Stock Alerts
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">
+                        <i class="fas fa-shopping-cart"></i> Order Updates
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="production-tab" data-bs-toggle="tab" data-bs-target="#production" type="button" role="tab">
+                        <i class="fas fa-industry"></i> Production
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="quality-tab" data-bs-toggle="tab" data-bs-target="#quality" type="button" role="tab">
+                        <i class="fas fa-shield-alt"></i> Quality Control
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="custom-tab" data-bs-toggle="tab" data-bs-target="#custom" type="button" role="tab">
+                        <i class="fas fa-plus"></i> Custom Templates
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="tab-content" id="templateTabsContent">
+        <!-- Stock Alerts Tab -->
+        <div class="tab-pane fade show active" id="stock" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-exclamation-triangle text-warning"></i> Low Stock Alert Template</h5>
+                </div>
+                <div class="card-body">
+                    <form id="stockAlertForm">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Enable Low Stock Alerts</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="stockAlertsEnabled" checked>
+                                    <label class="form-check-label" for="stockAlertsEnabled">
+                                        Send notifications when stock falls below minimum level
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Alert Frequency</label>
+                                <select class="form-select" id="stockAlertFrequency">
+                                    <option value="immediate">Immediate</option>
+                                    <option value="daily">Daily Summary</option>
+                                    <option value="weekly">Weekly Summary</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Email Subject</label>
+                                <input type="text" class="form-control" id="stockEmailSubject" 
+                                       value="🚨 Low Stock Alert: {item_name}" 
+                                       placeholder="Use {item_name}, {current_stock}, {minimum_stock} as variables">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">SMS/WhatsApp Message</label>
+                                <textarea class="form-control" id="stockSmsMessage" rows="4" 
+                                          placeholder="Use {item_name}, {current_stock}, {minimum_stock} as variables">Low stock alert for {item_name}. Current stock: {current_stock}, Minimum required: {minimum_stock}. Please reorder immediately.</textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email Message</label>
+                                <textarea class="form-control" id="stockEmailMessage" rows="4" 
+                                          placeholder="Use {item_name}, {current_stock}, {minimum_stock} as variables">We need to reorder {item_name} urgently. Current stock level ({current_stock}) has fallen below the minimum requirement ({minimum_stock}). Please place a purchase order immediately to avoid production delays.</textarea>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> Available Variables:</h6>
+                            <code>{item_name}</code> - Name of the item
+                            <code>{current_stock}</code> - Current stock quantity
+                            <code>{minimum_stock}</code> - Minimum required stock
+                            <code>{item_code}</code> - Item code/SKU
+                        </div>
+
+                        <button type="button" class="btn btn-primary" onclick="saveTemplate('stock')">
+                            <i class="fas fa-save"></i> Save Template
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary ms-2" onclick="previewTemplate('stock')">
+                            <i class="fas fa-eye"></i> Preview
+                        </button>
+                        <button type="button" class="btn btn-outline-success ms-2" onclick="testTemplate('stock')">
+                            <i class="fas fa-paper-plane"></i> Send Test
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Updates Tab -->
+        <div class="tab-pane fade" id="orders" role="tabpanel">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5><i class="fas fa-shopping-cart text-primary"></i> Purchase Order Updates</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="poUpdateForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Send notifications when PO status changes to:</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="po_open" checked>
+                                        <label class="form-check-label" for="po_open">Open (Order Placed)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="po_partial" checked>
+                                        <label class="form-check-label" for="po_partial">Partial (Partially Received)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="po_closed" checked>
+                                        <label class="form-check-label" for="po_closed">Closed (Fully Received)</label>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Email Subject</label>
+                                    <input type="text" class="form-control" value="📋 Purchase Order {po_number} - Status Update">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Message Template</label>
+                                    <textarea class="form-control" rows="3">Purchase Order {po_number} from {supplier_name} status has been updated to: {status}. Total amount: ₹{total_amount}</textarea>
+                                </div>
+
+                                <button type="button" class="btn btn-primary" onclick="saveTemplate('po_update')">
+                                    <i class="fas fa-save"></i> Save Template
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5><i class="fas fa-truck text-success"></i> Sales Order Updates</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="soUpdateForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Send notifications when SO status changes to:</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="so_confirmed" checked>
+                                        <label class="form-check-label" for="so_confirmed">Confirmed</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="so_shipped" checked>
+                                        <label class="form-check-label" for="so_shipped">Shipped</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="so_delivered" checked>
+                                        <label class="form-check-label" for="so_delivered">Delivered</label>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Email Subject</label>
+                                    <input type="text" class="form-control" value="🚚 Sales Order {so_number} - Status Update">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Message Template</label>
+                                    <textarea class="form-control" rows="3">Sales Order {so_number} for {customer_name} status has been updated to: {status}. {items_count} items in this order.</textarea>
+                                </div>
+
+                                <button type="button" class="btn btn-primary" onclick="saveTemplate('so_update')">
+                                    <i class="fas fa-save"></i> Save Template
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Production Tab -->
+        <div class="tab-pane fade" id="production" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-cogs text-info"></i> Production Completion Notifications</h5>
+                </div>
+                <div class="card-body">
+                    <form id="productionForm">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="productionEnabled" checked>
+                                    <label class="form-check-label" for="productionEnabled">
+                                        Send notifications when production is completed
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Notify For</label>
+                                <select class="form-select">
+                                    <option value="all">All Production Orders</option>
+                                    <option value="large">Large Orders Only (>100 units)</option>
+                                    <option value="important">Important Items Only</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Email Subject</label>
+                            <input type="text" class="form-control" value="✅ Production Complete: {item_name}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Message Template</label>
+                            <textarea class="form-control" rows="3">Production #{production_number} completed successfully. {quantity_produced} units of {item_name} have been produced and added to inventory.</textarea>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> Available Variables:</h6>
+                            <code>{production_number}</code> - Production order number
+                            <code>{item_name}</code> - Produced item name
+                            <code>{quantity_produced}</code> - Quantity produced
+                            <code>{production_date}</code> - Date of completion
+                        </div>
+
+                        <button type="button" class="btn btn-primary" onclick="saveTemplate('production')">
+                            <i class="fas fa-save"></i> Save Template
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quality Control Tab -->
+        <div class="tab-pane fade" id="quality" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-shield-alt text-danger"></i> Quality Issue Alerts</h5>
+                </div>
+                <div class="card-body">
+                    <form id="qualityForm">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Alert Severity Levels</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="quality_low" checked>
+                                    <label class="form-check-label" for="quality_low">Low Severity</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="quality_medium" checked>
+                                    <label class="form-check-label" for="quality_medium">Medium Severity</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="quality_high" checked>
+                                    <label class="form-check-label" for="quality_high">High Severity</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="quality_critical" checked>
+                                    <label class="form-check-label" for="quality_critical">Critical Severity</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Immediate Alerts For</label>
+                                <select class="form-select">
+                                    <option value="high_critical">High & Critical Only</option>
+                                    <option value="medium_high_critical">Medium, High & Critical</option>
+                                    <option value="all">All Severity Levels</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Email Subject</label>
+                            <input type="text" class="form-control" value="🔍 Quality Issue Alert: {item_name} ({severity})">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Message Template</label>
+                            <textarea class="form-control" rows="4">Quality Issue #{issue_id} reported for {item_name}. Severity: {severity}. Description: {description}. Immediate attention required.</textarea>
+                        </div>
+
+                        <button type="button" class="btn btn-primary" onclick="saveTemplate('quality')">
+                            <i class="fas fa-save"></i> Save Template
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Templates Tab -->
+        <div class="tab-pane fade" id="custom" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-plus text-secondary"></i> Create Custom Notification Template</h5>
+                </div>
+                <div class="card-body">
+                    <form id="customForm">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Template Name</label>
+                                <input type="text" class="form-control" placeholder="e.g., Monthly Report Alert">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Trigger Event</label>
+                                <select class="form-select">
+                                    <option value="manual">Manual Send Only</option>
+                                    <option value="schedule">Scheduled (Daily/Weekly/Monthly)</option>
+                                    <option value="threshold">Threshold Based</option>
+                                    <option value="status_change">Status Change</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Email Subject</label>
+                            <input type="text" class="form-control" placeholder="Custom notification subject">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Message Content</label>
+                            <textarea class="form-control" rows="4" placeholder="Your custom message content here..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Recipients</label>
+                            <select class="form-select" multiple>
+                                <option value="admin">Admin Users</option>
+                                <option value="managers">Managers</option>
+                                <option value="operators">Operators</option>
+                                <option value="suppliers">Suppliers</option>
+                                <option value="customers">Customers</option>
+                            </select>
+                            <div class="form-text">Hold Ctrl/Cmd to select multiple recipients</div>
+                        </div>
+
+                        <button type="button" class="btn btn-success" onclick="createCustomTemplate()">
+                            <i class="fas fa-plus"></i> Create Template
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div class="modal fade" id="previewModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Message Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs mb-3">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#preview-sms">SMS/WhatsApp</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#preview-email">Email</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="preview-sms">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div id="smsPreview" class="font-monospace"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="preview-email">
+                            <div class="card">
+                                <div class="card-header">
+                                    <strong>Subject:</strong> <span id="emailSubjectPreview"></span>
+                                </div>
+                                <div class="card-body">
+                                    <div id="emailPreview"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function saveTemplate(templateType) {
+    // Implementation for saving template
+    fetch('/settings/save_notification_template', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            template_type: templateType,
+            data: getTemplateData(templateType)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Template saved successfully!', 'success');
+        } else {
+            showAlert('Error saving template: ' + data.message, 'danger');
+        }
+    });
+}
+
+function previewTemplate(templateType) {
+    const data = getTemplateData(templateType);
+    
+    // Show preview with sample data
+    const sampleData = {
+        item_name: 'Steel Rod 12mm',
+        current_stock: 5,
+        minimum_stock: 50,
+        po_number: 'PO-2025-0123',
+        supplier_name: 'ABC Steel Ltd'
+    };
+    
+    document.getElementById('smsPreview').textContent = replacePlaceholders(data.sms_message, sampleData);
+    document.getElementById('emailSubjectPreview').textContent = replacePlaceholders(data.email_subject, sampleData);
+    document.getElementById('emailPreview').innerHTML = replacePlaceholders(data.email_message, sampleData);
+    
+    new bootstrap.Modal(document.getElementById('previewModal')).show();
+}
+
+function testTemplate(templateType) {
+    const recipient = prompt('Enter email or phone number for test:');
+    if (!recipient) return;
+    
+    fetch('/settings/test_notification_template', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            template_type: templateType,
+            recipient: recipient,
+            data: getTemplateData(templateType)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Test notification sent successfully!', 'success');
+        } else {
+            showAlert('Error sending test: ' + data.message, 'danger');
+        }
+    });
+}
+
+function getTemplateData(templateType) {
+    // Implementation to extract form data based on template type
+    if (templateType === 'stock') {
+        return {
+            enabled: document.getElementById('stockAlertsEnabled').checked,
+            frequency: document.getElementById('stockAlertFrequency').value,
+            email_subject: document.getElementById('stockEmailSubject').value,
+            sms_message: document.getElementById('stockSmsMessage').value,
+            email_message: document.getElementById('stockEmailMessage').value
+        };
+    }
+    // Add other template types as needed
+    return {};
+}
+
+function replacePlaceholders(template, data) {
+    let result = template;
+    for (const [key, value] of Object.entries(data)) {
+        result = result.replace(new RegExp(`{${key}}`, 'g'), value);
+    }
+    return result;
+}
+
+function showAlert(message, type) {
+    // Show Bootstrap alert
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.row'));
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+function createCustomTemplate() {
+    showAlert('Custom template creation feature coming soon!', 'info');
+}
+</script>
+{% endblock %}

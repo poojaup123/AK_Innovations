@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Salary Record {{ salary.salary_number }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-money-bill-wave"></i> Salary Record {{ salary.salary_number }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('hr.dashboard') }}">HR Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('hr.salary_list') }}">Salary Records</a></li>
+                    <li class="breadcrumb-item active">{{ salary.salary_number }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group">
+                <a href="{{ url_for('hr.salary_list') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+                {% if salary.status == 'pending' and current_user.is_admin() %}
+                    <a href="{{ url_for('hr.approve_salary', id=salary.id) }}" 
+                       class="btn btn-success"
+                       onclick="return confirm('Approve this salary record?')">
+                        <i class="fas fa-check"></i> Approve
+                    </a>
+                {% endif %}
+                {% if salary.status == 'approved' and current_user.is_admin() %}
+                    <a href="{{ url_for('hr.mark_salary_paid', id=salary.id) }}" 
+                       class="btn btn-primary"
+                       onclick="return confirm('Mark this salary as paid? This will create a corresponding factory expense record.')">
+                        <i class="fas fa-money-bill-wave"></i> Mark as Paid
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Employee Information -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-user"></i> Employee Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless table-sm">
+                        <tr>
+                            <td><strong>Name:</strong></td>
+                            <td>{{ salary.employee.name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Code:</strong></td>
+                            <td>{{ salary.employee.employee_code }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Designation:</strong></td>
+                            <td>{{ salary.employee.designation or 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Department:</strong></td>
+                            <td>{{ salary.employee.department or 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Salary Type:</strong></td>
+                            <td>
+                                <span class="badge bg-info">{{ salary.employee.salary_type.title() }}</span>
+                            </td>
+                        </tr>
+                    </table>
+                    <a href="{{ url_for('hr.employee_detail', id=salary.employee.id) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-user"></i> View Employee
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Salary Details -->
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-calculator"></i> Salary Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Pay Period Start</label>
+                            <p class="h6">{{ salary.pay_period_start.strftime('%d %B %Y') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Pay Period End</label>
+                            <p class="h6">{{ salary.pay_period_end.strftime('%d %B %Y') }}</p>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Component</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Basic Amount</td>
+                                    <td class="text-end">₹{{ "{:,.2f}".format(salary.basic_amount) }}</td>
+                                </tr>
+                                {% if salary.overtime_hours > 0 %}
+                                <tr>
+                                    <td>
+                                        Overtime Amount
+                                        <small class="text-muted">({{ salary.overtime_hours }} hours @ ₹{{ salary.overtime_rate }}/hr)</small>
+                                    </td>
+                                    <td class="text-end">₹{{ "{:,.2f}".format(salary.overtime_amount) }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if salary.bonus_amount > 0 %}
+                                <tr>
+                                    <td>Bonus Amount</td>
+                                    <td class="text-end">₹{{ "{:,.2f}".format(salary.bonus_amount) }}</td>
+                                </tr>
+                                {% endif %}
+                                <tr class="table-success">
+                                    <td><strong>Gross Amount</strong></td>
+                                    <td class="text-end"><strong>₹{{ "{:,.2f}".format(salary.gross_amount) }}</strong></td>
+                                </tr>
+                                {% if salary.deduction_amount > 0 %}
+                                <tr class="text-danger">
+                                    <td>Other Deductions</td>
+                                    <td class="text-end">-₹{{ "{:,.2f}".format(salary.deduction_amount) }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if salary.advance_deduction > 0 %}
+                                <tr class="text-warning">
+                                    <td>Advance Deduction</td>
+                                    <td class="text-end">-₹{{ "{:,.2f}".format(salary.advance_deduction) }}</td>
+                                </tr>
+                                {% endif %}
+                                <tr class="table-primary">
+                                    <td><strong>Net Amount</strong></td>
+                                    <td class="text-end"><strong>₹{{ "{:,.2f}".format(salary.net_amount) }}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Information -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Payment Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless table-sm">
+                        <tr>
+                            <td><strong>Payment Method:</strong></td>
+                            <td>
+                                <span class="badge bg-secondary">{{ salary.payment_method.replace('_', ' ').title() }}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                {% if salary.status == 'pending' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% elif salary.status == 'approved' %}
+                                    <span class="badge bg-success">Approved</span>
+                                {% elif salary.status == 'paid' %}
+                                    <span class="badge bg-primary">Paid</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ salary.status.title() }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Created Date:</strong></td>
+                            <td>{{ salary.created_at.strftime('%d %B %Y at %I:%M %p') }}</td>
+                        </tr>
+                        {% if salary.approved_at %}
+                        <tr>
+                            <td><strong>Approved Date:</strong></td>
+                            <td>{{ salary.approved_at.strftime('%d %B %Y at %I:%M %p') }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {% if salary.notes %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-sticky-note"></i> Notes</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ salary.notes }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

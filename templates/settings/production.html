@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Production Settings{% endblock %}
+
+{% block extra_css %}
+<style>
+.settings-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #dc3545;
+}
+
+.form-switch .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+}
+
+.setting-description {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.company-selector {
+    background: linear-gradient(135deg, #c2185b 0%, #e91e63 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-industry"></i> Production Settings</h2>
+        <a href="{{ url_for('settings_advanced.settings_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Settings
+        </a>
+    </div>
+
+    <!-- Company Selector -->
+    <div class="company-selector">
+        <h5 class="mb-3">Select Company</h5>
+        <select class="form-select" id="companySelect" onchange="loadCompanySettings()">
+            <option value="">Global Settings</option>
+            {% for company in companies %}
+            <option value="{{ company.id }}" 
+                    {% if company.id == selected_company_id %}selected{% endif %}>
+                {{ company.name }}
+            </option>
+            {% endfor %}
+        </select>
+        <small class="text-white-50 mt-2 d-block">
+            Select a company to configure company-specific production settings
+        </small>
+    </div>
+
+    <form id="productionSettingsForm">
+        <div class="row">
+            <div class="col-md-8">
+                <!-- BOM Settings -->
+                <div class="settings-section">
+                    <h5><i class="fas fa-sitemap"></i> BOM Configuration</h5>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="enable_nested_bom" name="enable_nested_bom"
+                                   {% if not settings or settings.enable_nested_bom %}checked{% endif %}>
+                            <label class="form-check-label" for="enable_nested_bom">
+                                <strong>Enable Nested BOM</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Allow multi-level BOM structures where components can have their own BOMs
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="auto_cost_calculation" name="auto_cost_calculation"
+                                   {% if not settings or settings.auto_cost_calculation %}checked{% endif %}>
+                            <label class="form-check-label" for="auto_cost_calculation">
+                                <strong>Auto Cost Calculation</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Automatically calculate production costs based on BOM and current material rates
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="link_output_to_batch" name="link_output_to_batch"
+                                   {% if not settings or settings.link_output_to_batch %}checked{% endif %}>
+                            <label class="form-check-label" for="link_output_to_batch">
+                                <strong>Link Output to Batch</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Track production output in batches for traceability
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="lock_consumption" name="lock_consumption"
+                                   {% if settings and settings.lock_consumption %}checked{% endif %}>
+                            <label class="form-check-label" for="lock_consumption">
+                                <strong>Lock Consumption</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Prevent overconsumption of materials beyond BOM requirements
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Production Control -->
+                <div class="settings-section">
+                    <h5><i class="fas fa-cogs"></i> Production Control</h5>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="allow_overproduction" name="allow_overproduction"
+                                   {% if settings and settings.allow_overproduction %}checked{% endif %}>
+                            <label class="form-check-label" for="allow_overproduction">
+                                <strong>Allow Overproduction</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Allow producing more than the planned quantity
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="overproduction_limit_percent" class="form-label">
+                            <strong>Overproduction Limit (%)</strong>
+                        </label>
+                        <input type="number" class="form-control" id="overproduction_limit_percent" name="overproduction_limit_percent" 
+                               step="0.1" min="0" max="100"
+                               value="{{ settings.overproduction_limit_percent if settings else 10.0 }}">
+                        <div class="setting-description">
+                            Maximum percentage of overproduction allowed
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="require_material_availability" name="require_material_availability"
+                                   {% if not settings or settings.require_material_availability %}checked{% endif %}>
+                            <label class="form-check-label" for="require_material_availability">
+                                <strong>Require Material Availability</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Check material availability before starting production
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="auto_reserve_materials" name="auto_reserve_materials"
+                                   {% if not settings or settings.auto_reserve_materials %}checked{% endif %}>
+                            <label class="form-check-label" for="auto_reserve_materials">
+                                <strong>Auto Reserve Materials</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Automatically reserve materials when production is planned
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quality Control -->
+                <div class="settings-section">
+                    <h5><i class="fas fa-shield-alt"></i> Quality Control</h5>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="mandatory_quality_check" name="mandatory_quality_check"
+                                   {% if settings and settings.mandatory_quality_check %}checked{% endif %}>
+                            <label class="form-check-label" for="mandatory_quality_check">
+                                <strong>Mandatory Quality Check</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Require quality inspection before production completion
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="auto_scrap_failed_items" name="auto_scrap_failed_items"
+                                   {% if settings and settings.auto_scrap_failed_items %}checked{% endif %}>
+                            <label class="form-check-label" for="auto_scrap_failed_items">
+                                <strong>Auto Scrap Failed Items</strong>
+                            </label>
+                        </div>
+                        <div class="setting-description">
+                            Automatically move failed quality items to scrap
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-secondary me-2" onclick="resetForm()">Reset</button>
+                    <button type="submit" class="btn btn-danger">Save Settings</button>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Production Guide</h6>
+                    </div>
+                    <div class="card-body">
+                        <h6>Nested BOM:</h6>
+                        <p class="small text-muted">
+                            Allows creating complex BOMs where sub-assemblies have their own BOMs. 
+                            Essential for manufacturing complex products.
+                        </p>
+
+                        <h6 class="mt-3">Cost Calculation:</h6>
+                        <p class="small text-muted">
+                            When enabled, production costs are automatically calculated based on 
+                            current material rates and BOM requirements.
+                        </p>
+
+                        <h6 class="mt-3">Consumption Lock:</h6>
+                        <p class="small text-muted">
+                            Prevents issuing more materials than specified in BOM. 
+                            Helps control material wastage.
+                        </p>
+
+                        <h6 class="mt-3">Quality Control:</h6>
+                        <p class="small text-muted">
+                            Enable mandatory quality checks to ensure product quality 
+                            before finalizing production.
+                        </p>
+
+                        <div class="alert alert-info mt-3">
+                            <small>
+                                <i class="fas fa-info-circle"></i>
+                                Production settings affect new production orders. 
+                                Existing orders will continue with their original settings.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function loadCompanySettings() {
+    const companyId = document.getElementById('companySelect').value;
+    const url = new URL(window.location.href);
+    if (companyId) {
+        url.searchParams.set('company_id', companyId);
+    } else {
+        url.searchParams.delete('company_id');
+    }
+    window.location.href = url.toString();
+}
+
+function resetForm() {
+    if (confirm('Reset all settings to default values?')) {
+        document.getElementById('productionSettingsForm').reset();
+    }
+}
+
+document.getElementById('productionSettingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    alert('Production settings save functionality coming soon!');
+});
+</script>
+{% endblock %}

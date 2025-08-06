@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-paper-plane me-2"></i>{{ title }}</h4>
+                </div>
+                <div class="card-body">
+                    <!-- PO Summary -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6><strong>Purchase Order Details:</strong></h6>
+                            <p><strong>PO Number:</strong> {{ po.po_number }}</p>
+                            <p><strong>Supplier:</strong> {{ po.supplier.name }}</p>
+                            <p><strong>Date:</strong> {{ po.order_date }}</p>
+                            <p><strong>Expected Delivery:</strong> {{ po.expected_date }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><strong>Contact Information:</strong></h6>
+                            <p><strong>Supplier Email:</strong> {{ po.supplier.email or 'Not provided' }}</p>
+                            <p><strong>Supplier Phone:</strong> {{ po.supplier.phone or 'Not provided' }}</p>
+                            <p><strong>Total Amount:</strong> ₹{{ po.total_amount or 0 }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Send Form -->
+                    <form method="POST">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="send_type" class="form-label">Send Via</label>
+                                <select name="send_type" id="send_type" class="form-select" required>
+                                    <option value="">Select Method</option>
+                                    <option value="email">Email</option>
+                                    <option value="whatsapp">WhatsApp</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="recipient" class="form-label">Recipient</label>
+                                <input type="text" name="recipient" id="recipient" class="form-control" 
+                                       placeholder="Enter email or phone number" required>
+                                <div class="form-text">
+                                    <span id="recipient-hint">Enter email address or phone number with country code</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Additional Message (Optional)</label>
+                            <textarea name="message" id="message" class="form-control" rows="4" 
+                                      placeholder="Add any additional message or instructions..."></textarea>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            The Purchase Order details will be automatically included in the message.
+                            <strong>Email will include a PDF attachment of the Purchase Order.</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('purchase.list_purchase_orders') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Purchase Orders
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-1"></i>Send Purchase Order
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sendType = document.getElementById('send_type');
+    const recipient = document.getElementById('recipient');
+    const recipientHint = document.getElementById('recipient-hint');
+
+    // Pre-fill recipient if supplier info is available
+    const supplierEmail = '{{ po.supplier.email or "" }}';
+    const supplierPhone = '{{ po.supplier.phone or "" }}';
+
+    sendType.addEventListener('change', function() {
+        if (this.value === 'email') {
+            recipient.placeholder = 'Enter email address';
+            recipientHint.textContent = 'Enter valid email address';
+            if (supplierEmail) {
+                recipient.value = supplierEmail;
+            }
+        } else if (this.value === 'whatsapp') {
+            recipient.placeholder = 'Enter phone number with country code';
+            recipientHint.textContent = 'Enter phone number with country code (e.g., +91xxxxxxxxxx)';
+            if (supplierPhone) {
+                recipient.value = supplierPhone;
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

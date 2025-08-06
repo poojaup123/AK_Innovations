@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Admin Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+.notification-stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+}
+.notification-log-row {
+    border-left: 4px solid #dee2e6;
+}
+.notification-log-row.success {
+    border-left-color: #28a745;
+}
+.notification-log-row.failed {
+    border-left-color: #dc3545;
+}
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-bell"></i> Notification System Admin</h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('notifications.admin_settings') }}" class="btn btn-primary">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
+                    <a href="{{ url_for('notifications.admin_recipients') }}" class="btn btn-info">
+                        <i class="fas fa-users"></i> Recipients
+                    </a>
+                    <a href="{{ url_for('notifications.test_notifications') }}" class="btn btn-warning">
+                        <i class="fas fa-flask"></i> Test
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card notification-stats-card">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ stats.total_sent }}</h3>
+                    <p class="mb-0">Notifications Sent</p>
+                    <small>Successfully delivered</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card notification-stats-card">
+                <div class="card-body text-center">
+                    <h3 class="mb-0 text-warning">{{ stats.total_failed }}</h3>
+                    <p class="mb-0">Failed Notifications</p>
+                    <small>Require attention</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card notification-stats-card">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ stats.active_recipients }}</h3>
+                    <p class="mb-0">Active Recipients</p>
+                    <small>Configured users</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card notification-stats-card">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ stats.total_templates }}</h3>
+                    <p class="mb-0">Active Templates</p>
+                    <small>Message templates</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Current Settings -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-cog"></i> Current Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-6">Email:</div>
+                        <div class="col-6">
+                            {% if settings and settings.email_enabled %}
+                                <span class="badge bg-success">Enabled</span>
+                            {% else %}
+                                <span class="badge bg-danger">Disabled</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">SMS:</div>
+                        <div class="col-6">
+                            {% if settings and settings.sms_enabled %}
+                                <span class="badge bg-success">Enabled</span>
+                            {% else %}
+                                <span class="badge bg-danger">Disabled</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">WhatsApp:</div>
+                        <div class="col-6">
+                            {% if settings and settings.whatsapp_enabled %}
+                                <span class="badge bg-success">Enabled</span>
+                            {% else %}
+                                <span class="badge bg-danger">Disabled</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">PO Notifications:</div>
+                        <div class="col-6">
+                            {% if settings and settings.po_notifications %}
+                                <span class="badge bg-success">On</span>
+                            {% else %}
+                                <span class="badge bg-warning">Off</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">GRN Notifications:</div>
+                        <div class="col-6">
+                            {% if settings and settings.grn_notifications %}
+                                <span class="badge bg-success">On</span>
+                            {% else %}
+                                <span class="badge bg-warning">Off</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">Sales Notifications:</div>
+                        <div class="col-6">
+                            {% if settings and settings.sales_notifications %}
+                                <span class="badge bg-success">On</span>
+                            {% else %}
+                                <span class="badge bg-warning">Off</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">HR Notifications:</div>
+                        <div class="col-6">
+                            {% if settings and settings.hr_notifications %}
+                                <span class="badge bg-success">On</span>
+                            {% else %}
+                                <span class="badge bg-warning">Off</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Logs -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <h5><i class="fas fa-list"></i> Recent Notifications</h5>
+                    <a href="{{ url_for('notifications.admin_logs') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_logs %}
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Type</th>
+                                        <th>Recipient</th>
+                                        <th>Subject</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in recent_logs %}
+                                    <tr class="notification-log-row {{ 'success' if log.success else 'failed' }}">
+                                        <td>
+                                            <small>{{ log.sent_at.strftime('%H:%M') }}</small><br>
+                                            <small class="text-muted">{{ log.sent_at.strftime('%m/%d') }}</small>
+                                        </td>
+                                        <td>
+                                            {% if log.type == 'email' %}
+                                                <i class="fas fa-envelope text-primary"></i>
+                                            {% elif log.type == 'sms' %}
+                                                <i class="fas fa-sms text-info"></i>
+                                            {% elif log.type == 'whatsapp' %}
+                                                <i class="fab fa-whatsapp text-success"></i>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>{{ log.recipient[:30] }}{% if log.recipient|length > 30 %}...{% endif %}</small>
+                                        </td>
+                                        <td>
+                                            <small>{{ log.subject[:40] if log.subject else 'No subject' }}{% if log.subject and log.subject|length > 40 %}...{% endif %}</small>
+                                        </td>
+                                        <td>
+                                            {% if log.success %}
+                                                <span class="badge badge-success badge-sm">Success</span>
+                                            {% else %}
+                                                <span class="badge badge-danger badge-sm">Failed</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-inbox fa-2x mb-3"></i>
+                            <p>No recent notifications</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Type Statistics -->
+    {% if type_stats %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie"></i> Notification Type Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for type_stat in type_stats %}
+                        <div class="col-md-4 mb-3">
+                            <div class="text-center">
+                                <h4 class="mb-0">{{ type_stat.count }}</h4>
+                                <p class="mb-1 text-capitalize">{{ type_stat.type }}</p>
+                                <small class="text-muted">
+                                    {{ type_stat.success_count }} successful, 
+                                    {{ type_stat.count - type_stat.success_count }} failed
+                                </small>
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar bg-success" style="width: {{ (type_stat.success_count / type_stat.count * 100) if type_stat.count > 0 else 0 }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('notifications.test_notifications') }}" class="btn btn-outline-primary btn-block">
+                                <i class="fas fa-flask"></i><br>
+                                Test Notifications
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('notifications.add_recipient') }}" class="btn btn-outline-success btn-block">
+                                <i class="fas fa-user-plus"></i><br>
+                                Add Recipient
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('notifications.admin_logs') }}" class="btn btn-outline-info btn-block">
+                                <i class="fas fa-history"></i><br>
+                                View Logs
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('notifications.bulk_test_notifications') }}" class="btn btn-outline-warning btn-block">
+                                <i class="fas fa-cogs"></i><br>
+                                System Test
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh dashboard every 30 seconds
+setTimeout(function() {
+    location.reload();
+}, 30000);
+
+// Load notification statistics chart
+fetch('/notifications/api/notification-stats')
+    .then(response => response.json())
+    .then(data => {
+        console.log('Notification stats loaded:', data);
+        // Chart implementation can be added here
+    })
+    .catch(error => {
+        console.error('Error loading notification stats:', error);
+    });
+</script>
+{% endblock %}

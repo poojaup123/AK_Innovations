@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Item Traceability - {{ item.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.traceability-header {
+    background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.batch-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    margin-bottom: 1rem;
+}
+
+.batch-card:hover {
+    transform: translateY(-2px);
+}
+
+.process-badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    margin: 0.1rem;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+}
+
+.process-raw { background-color: #28a745; }
+.process-cutting { background-color: #dc3545; }
+.process-bending { background-color: #fd7e14; }
+.process-welding { background-color: #ffc107; color: #000; }
+.process-zinc { background-color: #20c997; }
+.process-painting { background-color: #6f42c1; }
+.process-assembly { background-color: #e83e8c; }
+.process-machining { background-color: #17a2b8; }
+.process-polishing { background-color: #6c757d; }
+.process-finished { background-color: #198754; }
+.process-scrap { background-color: #dc3545; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Traceability Header -->
+    <div class="traceability-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-0">
+                    <i class="fas fa-cube mr-3"></i>
+                    Item Traceability Report
+                </h1>
+                <p class="mb-0 mt-2 opacity-75">
+                    <strong>{{ item.name }}</strong> ({{ item.code }})
+                </p>
+            </div>
+            <div class="col-md-4 text-right">
+                <a href="{{ url_for('batch_tracking.traceability_report') }}" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> Back to Traceability Options
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Item Information -->
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle"></i> Item Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Item Name:</dt>
+                                <dd class="col-sm-8">{{ item.name }}</dd>
+                                
+                                <dt class="col-sm-4">Item Code:</dt>
+                                <dd class="col-sm-8">{{ item.code }}</dd>
+                                
+                                <dt class="col-sm-4">Category:</dt>
+                                <dd class="col-sm-8">{{ item.category or 'N/A' }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Unit of Measure:</dt>
+                                <dd class="col-sm-8">{{ item.unit_of_measure }}</dd>
+                                
+                                <dt class="col-sm-4">Total Batches:</dt>
+                                <dd class="col-sm-8">{{ batches|length }}</dd>
+                                
+                                <dt class="col-sm-4">Current Stock:</dt>
+                                <dd class="col-sm-8">{{ item.current_stock or 0 }} {{ item.unit_of_measure }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Batches List -->
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-boxes"></i> All Batches for this Item
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if batches %}
+                        <div class="row">
+                            {% for batch in batches %}
+                            <div class="col-lg-6 col-xl-4">
+                                <div class="batch-card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="card-title mb-0">
+                                                <a href="{{ url_for('batch_tracking.batch_detail', batch_id=batch.id) }}">
+                                                    {{ batch.batch_number }}
+                                                </a>
+                                            </h6>
+                                            <span class="badge badge-{{ 'success' if batch.quality_status == 'approved' else 'warning' }}">
+                                                {{ batch.quality_status.title() }}
+                                            </span>
+                                        </div>
+                                        
+                                        <p class="card-text mb-2">
+                                            <small class="text-muted">
+                                                Created: {{ batch.created_at.strftime('%d/%m/%Y') }}
+                                                {% if batch.manufacture_date %}
+                                                    | Mfg: {{ batch.manufacture_date.strftime('%d/%m/%Y') }}
+                                                {% endif %}
+                                            </small>
+                                        </p>
+                                        
+                                        <div class="mb-2">
+                                            <strong>Total Quantity:</strong> {{ batch.total_quantity }} {{ item.unit_of_measure }}
+                                        </div>
+                                        
+                                        <!-- Process Breakdown -->
+                                        <div class="mb-3">
+                                            {% if batch.qty_raw and batch.qty_raw > 0 %}
+                                                <span class="process-badge process-raw">Raw: {{ batch.qty_raw }}</span>
+                                            {% endif %}
+                                            
+                                            {% if batch.qty_wip_cutting and batch.qty_wip_cutting > 0 %}
+                                                <span class="process-badge process-cutting">Cutting: {{ batch.qty_wip_cutting }}</span>
+                                            {% endif %}
+                                            
+                                            {% if batch.qty_wip_bending and batch.qty_wip_bending > 0 %}
+                                                <span class="process-badge process-bending">Bending: {{ batch.qty_wip_bending }}</span>
+                                            {% endif %}
+                                            
+                                            {% if batch.qty_wip_welding and batch.qty_wip_welding > 0 %}
+                                                <span class="process-badge process-welding">Welding: {{ batch.qty_wip_welding }}</span>
+                                            {% endif %}
+                                            
+                                            {% if batch.qty_wip_zinc and batch.qty_wip_zinc > 0 %}
+                                                <span class="process-badge process-zinc">Zinc: {{ batch.qty_wip_zinc }}</span>
+                                            {% endif %}
+                                            
+                                            {% if batch.qty_wip_painting and batch.qty_wip_painting > 0 %}
+                                                <span class="process-badge process-painting">Painting: {{ batch.qty_wip_painting }}</span>
+                                            {% endif %}
+                                            
+                                            {% if batch.qty_wip_assembly and batch.qty_wip_assembly > 0 %}
+                                                <span class="process-badge process-assembly">Assembly: {{ batch.qty_wip_assembly }}</span>
+                                            {% endif %}
+                                            
+                                            {% if batch.qty_wip_machining and batch.qty_wip_machining > 0 %}
+                                                <span class="process-badge process-machining">Machining: {{ batch.qty_wip_machining }}</span>
+                                            {% endif %}
+                                            
+                                            {% if batch.qty_wip_polishing and batch.qty_wip_polishing > 0 %}
+                                                <span class="process-badge process-polishing">Polishing: {{ batch.qty_wip_polishing }}</span>
+                                            {% endif %}
+                                            
+                                            {% if batch.qty_finished and batch.qty_finished > 0 %}
+                                                <span class="process-badge process-finished">Finished: {{ batch.qty_finished }}</span>
+                                            {% endif %}
+                                            
+                                            {% if batch.qty_scrap and batch.qty_scrap > 0 %}
+                                                <span class="process-badge process-scrap">Scrap: {{ batch.qty_scrap }}</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Action Buttons -->
+                                        <div class="btn-group w-100">
+                                            <a href="{{ url_for('batch_tracking.batch_detail', batch_id=batch.id) }}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i> Details
+                                            </a>
+                                            <a href="{{ url_for('batch_tracking.traceability_report', type='batch', batch_id=batch.id) }}" 
+                                               class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-route"></i> Trace
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                            <h5>No Batches Found</h5>
+                            <p class="text-muted">This item has no batches recorded in the system.</p>
+                            <a href="{{ url_for('grn.dashboard') }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create First GRN
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

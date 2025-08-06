@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-shopping-cart"></i> {{ title }}</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('help.purchase_orders_help') }}" class="btn btn-info me-2" target="_blank">
+                <i class="fas fa-question-circle"></i> Help
+            </a>
+            <a href="{{ url_for('purchase.list_purchase_orders') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Purchase Orders
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Purchase Order Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.po_number.label(class="form-label") }}
+                                {{ form.po_number(class="form-control") }}
+                                {% if form.po_number.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.po_number.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.supplier_id.label(class="form-label") }}
+                                {{ form.supplier_id(class="form-select") }}
+                                {% if form.supplier_id.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.supplier_id.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.order_date.label(class="form-label") }}
+                                {{ form.order_date(class="form-control") }}
+                                {% if form.order_date.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.order_date.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.expected_delivery.label(class="form-label") }}
+                                {{ form.expected_delivery(class="form-control") }}
+                                {% if form.expected_delivery.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.expected_delivery.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Additional PO Fields -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.payment_terms.label(class="form-label") }}
+                                {{ form.payment_terms(class="form-control") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.freight_terms.label(class="form-label") }}
+                                {{ form.freight_terms(class="form-control") }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.validity_months.label(class="form-label") }}
+                                {{ form.validity_months(class="form-control") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.delivery_notes.label(class="form-label") }}
+                                {{ form.delivery_notes(class="form-control", rows="2") }}
+                            </div>
+                        </div>
+                        
+                        <!-- Approval Section - Only show during editing -->
+                        {% if po %}
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.prepared_by.label(class="form-label") }}
+                                {{ form.prepared_by(class="form-control") }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.verified_by.label(class="form-label") }}
+                                {{ form.verified_by(class="form-control") }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.approved_by.label(class="form-label") }}
+                                {{ form.approved_by(class="form-control") }}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control", rows="3", placeholder="Special terms and conditions...") }}
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ 'Update' if po else 'Create' }} Purchase Order
+                            </button>
+                            {% if po %}
+                            <a href="{{ url_for('purchase.print_purchase_order', id=po.id) }}" class="btn btn-success" target="_blank">
+                                <i class="fas fa-print"></i> Print PO
+                            </a>
+                            {% endif %}
+                            <a href="{{ url_for('purchase.list_purchase_orders') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            {% if po %}
+            <div class="card">
+                <div class="card-header">
+                    <h5>Purchase Order Items</h5>
+                </div>
+                <div class="card-body">
+                    {% if po_items %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Qty</th>
+                                        <th>Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in po_items %}
+                                    <tr>
+                                        <td>{{ item.item.name }}</td>
+                                        <td>{{ item.quantity_ordered }}</td>
+                                        <td>₹{{ item.unit_price }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No items added yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Document Management Section - Only show for existing purchase orders -->
+            {% if po and po.id %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-paperclip me-2"></i>Supporting Documents</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{{ url_for('documents.upload_document', transaction_type='purchase_order', transaction_id=po.id) }}" 
+                       class="btn btn-outline-primary">
+                        <i class="fas fa-upload me-1"></i>Upload Documents
+                    </a>
+                    <p class="text-muted mt-2 mb-0">
+                        <small>Upload purchase contracts, invoices, and supporting documents for this purchase order.</small>
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

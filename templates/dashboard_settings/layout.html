@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Layout Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>
+                <i class="fas fa-th"></i> 
+                Dashboard Layout Settings
+            </h2>
+            <p class="text-muted">Customize which modules appear on your dashboard and how they're arranged</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-puzzle-piece"></i> 
+                        Available Modules
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="layoutForm">
+                        <div class="row">
+                            {% for module in all_modules %}
+                            {% set user_pref = user_preferences.get(module.id, {}) %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card border-{{ 'primary' if user_pref.get('is_visible', True) else 'secondary' }}">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                <h6 class="card-title mb-1">
+                                                    <i class="{{ module.icon }}"></i> 
+                                                    {{ module.title }}
+                                                </h6>
+                                                <p class="card-text small text-muted">{{ module.description }}</p>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       id="module_{{ module.id }}" 
+                                                       data-module-id="{{ module.id }}"
+                                                       {{ 'checked' if user_pref.get('is_visible', True) else '' }}>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <label class="form-label small">Size:</label>
+                                                <select class="form-select form-select-sm" 
+                                                        data-module-id="{{ module.id }}" 
+                                                        data-type="size">
+                                                    <option value="small" {{ 'selected' if user_pref.get('size') == 'small' else '' }}>Small</option>
+                                                    <option value="medium" {{ 'selected' if user_pref.get('size', 'medium') == 'medium' else '' }}>Medium</option>
+                                                    <option value="large" {{ 'selected' if user_pref.get('size') == 'large' else '' }}>Large</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small">Position:</label>
+                                                <input type="number" class="form-control form-control-sm" 
+                                                       data-module-id="{{ module.id }}" 
+                                                       data-type="position"
+                                                       value="{{ user_pref.get('position', loop.index0) }}" 
+                                                       min="0" max="20">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Layout
+                            </button>
+                            <button type="button" class="btn btn-secondary ms-2" onclick="resetToDefaults()">
+                                <i class="fas fa-undo"></i> Reset to Defaults
+                            </button>
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary ms-2">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle"></i> 
+                        Layout Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info small">
+                        <strong>Module Sizes:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li><strong>Small:</strong> Takes 1/4 of row width</li>
+                            <li><strong>Medium:</strong> Takes 1/3 of row width</li>
+                            <li><strong>Large:</strong> Takes 1/2 of row width</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-warning small">
+                        <strong>Position:</strong> Lower numbers appear first. Use 0-20 for ordering.
+                    </div>
+                    
+                    <div class="alert alert-success small">
+                        <strong>Tip:</strong> Disable modules you don't use frequently to keep your dashboard clean.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('layoutForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const preferences = {};
+    
+    // Get all module checkboxes
+    document.querySelectorAll('input[type="checkbox"][data-module-id]').forEach(checkbox => {
+        const moduleId = checkbox.dataset.moduleId;
+        const sizeSelect = document.querySelector(`select[data-module-id="${moduleId}"][data-type="size"]`);
+        const positionInput = document.querySelector(`input[data-module-id="${moduleId}"][data-type="position"]`);
+        
+        preferences[moduleId] = {
+            is_visible: checkbox.checked,
+            size: sizeSelect.value,
+            position: parseInt(positionInput.value) || 0
+        };
+    });
+    
+    fetch('{{ url_for("dashboard_settings.save_layout_preferences") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(preferences)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Dashboard layout saved successfully!', 'success');
+            // Redirect to dashboard after a short delay
+            setTimeout(() => {
+                window.location.href = '{{ url_for("main.dashboard") }}';
+            }, 1500);
+        } else {
+            showAlert('Error saving layout: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert('Error saving layout: ' + error, 'danger');
+    });
+});
+
+function resetToDefaults() {
+    if (confirm('This will reset your dashboard to the default layout. Continue?')) {
+        // Check all modules and set default values
+        document.querySelectorAll('input[type="checkbox"][data-module-id]').forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        document.querySelectorAll('select[data-type="size"]').forEach(select => {
+            select.value = 'medium';
+        });
+        document.querySelectorAll('input[data-type="position"]').forEach((input, index) => {
+            input.value = index;
+        });
+        
+        showAlert('Layout reset to defaults. Click "Save Layout" to apply changes.', 'info');
+    }
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container-fluid');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+</script>
+{% endblock %}

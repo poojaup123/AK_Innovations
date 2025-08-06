@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-box"></i> {{ title }}</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('help.item_types_help') }}" class="btn btn-info me-2" target="_blank">
+                <i class="fas fa-question-circle"></i> Help
+            </a>
+            <a href="{{ url_for('inventory.list_items') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Items
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.code.label(class="form-label") }}
+                                {{ form.code(class="form-control") }}
+                                {% if form.code.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.code.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.name.label(class="form-label") }}
+                                {{ form.name(class="form-control") }}
+                                {% if form.name.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.name.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows="3") }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.description.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.unit_of_measure.label(class="form-label") }}
+                                {{ form.unit_of_measure(class="form-select", size="1", style="max-height: 200px; overflow-y: auto;") }}
+                                {% if form.unit_of_measure.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.unit_of_measure.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Choose from 28 available units across 8 categories</div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <div class="d-flex align-items-center">
+                                    {{ form.item_type.label(class="form-label me-2") }}
+                                    <a href="{{ url_for('item_types.list_item_types') }}" 
+                                       class="btn btn-sm btn-outline-secondary" 
+                                       title="Manage Item Types">
+                                        <i class="fas fa-cog"></i>
+                                    </a>
+                                </div>
+                                {{ form.item_type(class="form-select") }}
+                                {% if form.item_type.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.item_type.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    <a href="{{ url_for('item_types.list_item_types') }}">Manage item types</a>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.unit_price.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.unit_price(class="form-control") }}
+                                </div>
+                                {% if form.unit_price.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.unit_price.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.minimum_stock.label(class="form-label") }}
+                                {{ form.minimum_stock(class="form-control") }}
+                                <div class="form-text">Alert will be shown when stock falls below this level</div>
+                                {% if form.minimum_stock.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.minimum_stock.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Unit Weight</label>
+                                <div class="input-group">
+                                    {{ form.unit_weight(class="form-control", step="0.001", id="unit_weight_field") }}
+                                    <select class="form-select" id="weight_unit_select" style="max-width: 80px;">
+                                        <option value="kg">kg</option>
+                                        <option value="g">g</option>
+                                    </select>
+                                </div>
+                                <div class="form-text" id="weight_help_text">Weight per unit (leave 0 if not applicable)</div>
+                                <input type="hidden" id="weight_in_kg" name="weight_in_kg" value="{{ form.unit_weight.data or 0 }}">
+                                {% if form.unit_weight.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.unit_weight.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            </div>
+                        </div>
+                        
+                        <script>
+                        // Enhanced weight management with kg/g conversion
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const uomSelect = document.getElementById('{{ form.unit_of_measure.id }}');
+                            const weightField = document.getElementById('unit_weight_field');
+                            const weightUnitSelect = document.getElementById('weight_unit_select');
+                            const weightHelpText = document.getElementById('weight_help_text');
+                            const weightInKgField = document.getElementById('weight_in_kg');
+                            
+                            // Convert and store weight in kg for database
+                            function updateWeightInKg() {
+                                const weight = parseFloat(weightField.value) || 0;
+                                const unit = weightUnitSelect.value;
+                                const weightInKg = unit === 'g' ? weight / 1000 : weight;
+                                weightInKgField.value = weightInKg;
+                                
+                                // Update the original field with kg value for form submission
+                                const originalWeight = weightInKg;
+                                weightField.setAttribute('data-kg-value', originalWeight);
+                            }
+                            
+                            // Update help text based on UOM and weight unit
+                            function updateWeightLabel() {
+                                const selectedOption = uomSelect.options[uomSelect.selectedIndex];
+                                const uomText = selectedOption.text;
+                                const weightUnit = weightUnitSelect.value;
+                                
+                                let contextText = '';
+                                if (uomText.includes('Pieces') || uomText.includes('Numbers')) {
+                                    contextText = `Weight per piece/unit in ${weightUnit === 'kg' ? 'kilograms' : 'grams'}`;
+                                } else if (uomText.includes('Kilogram')) {
+                                    contextText = `Weight factor in ${weightUnit === 'kg' ? 'kg/kg' : 'g/kg'} (usually 1000g for pure weight items)`;
+                                } else if (uomText.includes('Meter') || uomText.includes('Length')) {
+                                    contextText = `Weight per meter in ${weightUnit === 'kg' ? 'kilograms' : 'grams'}`;
+                                } else if (uomText.includes('Square') || uomText.includes('sq')) {
+                                    contextText = `Weight per square unit in ${weightUnit === 'kg' ? 'kilograms' : 'grams'}`;
+                                } else if (uomText.includes('Liter') || uomText.includes('Volume')) {
+                                    contextText = `Weight per liter in ${weightUnit === 'kg' ? 'kg' : 'g'} (density)`;
+                                } else {
+                                    contextText = `Weight per unit of measure in ${weightUnit === 'kg' ? 'kilograms' : 'grams'}`;
+                                }
+                                
+                                weightHelpText.textContent = contextText;
+                            }
+                            
+                            // Convert display value when unit changes
+                            function convertWeightDisplay() {
+                                const currentWeight = parseFloat(weightField.value) || 0;
+                                const newUnit = weightUnitSelect.value;
+                                const currentUnit = weightUnitSelect.getAttribute('data-current-unit') || 'kg';
+                                
+                                if (currentUnit !== newUnit && currentWeight > 0) {
+                                    if (newUnit === 'g' && currentUnit === 'kg') {
+                                        weightField.value = (currentWeight * 1000).toFixed(1);
+                                    } else if (newUnit === 'kg' && currentUnit === 'g') {
+                                        weightField.value = (currentWeight / 1000).toFixed(3);
+                                    }
+                                }
+                                
+                                weightUnitSelect.setAttribute('data-current-unit', newUnit);
+                                updateWeightInKg();
+                                updateWeightLabel();
+                            }
+                            
+                            // Initialize
+                            const currentWeight = parseFloat(weightField.value) || 0;
+                            if (currentWeight > 0 && currentWeight < 1) {
+                                // If weight is less than 1kg, default to grams
+                                weightUnitSelect.value = 'g';
+                                weightField.value = (currentWeight * 1000).toFixed(1);
+                            }
+                            weightUnitSelect.setAttribute('data-current-unit', weightUnitSelect.value);
+                            
+                            updateWeightLabel();
+                            updateWeightInKg();
+                            
+                            // Event listeners
+                            uomSelect.addEventListener('change', updateWeightLabel);
+                            weightUnitSelect.addEventListener('change', convertWeightDisplay);
+                            weightField.addEventListener('input', updateWeightInKg);
+                            
+                            // Override form submission to ensure kg value is submitted
+                            const form = weightField.closest('form');
+                            form.addEventListener('submit', function(e) {
+                                updateWeightInKg();
+                                weightField.value = weightInKgField.value; // Submit in kg
+                            });
+                        });
+                        </script>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('inventory.list_items') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <div>
+                                <button type="button" class="btn btn-outline-info me-2" onclick="previewForm()">
+                                    <i class="fas fa-eye"></i> Preview
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> {{ 'Update' if item else 'Save' }} Item
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/preview-system.js') }}"></script>
+<script>
+// Initialize preview system for inventory items
+document.addEventListener('DOMContentLoaded', function() {
+    initializePreviewSystem('inventory_item');
+});
+</script>
+{% endblock %}

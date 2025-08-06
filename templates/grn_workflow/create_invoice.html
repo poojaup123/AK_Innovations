@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block title %}Create Invoice for GRN {{ grn.grn_number }} - GRN Workflow{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-file-invoice"></i> Create Invoice for GRN {{ grn.grn_number }}</h1>
+            <p class="text-muted">Step 2 of 3-step workflow: Convert GRN to Vendor Invoice</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('grn_workflow.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-file-invoice-dollar"></i> Invoice Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.invoice_number.label(class="form-label") }}
+                                    {{ form.invoice_number(class="form-control") }}
+                                    {% if form.invoice_number.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.invoice_number.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.invoice_date.label(class="form-label") }}
+                                    {{ form.invoice_date(class="form-control") }}
+                                    {% if form.invoice_date.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.invoice_date.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.vendor_id.label(class="form-label") }}
+                            {{ form.vendor_id(class="form-select", readonly="readonly") }}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.base_amount.label(class="form-label") }}
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        {{ form.base_amount(class="form-control", id="base_amount") }}
+                                    </div>
+                                    {% if form.base_amount.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.base_amount.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.gst_amount.label(class="form-label") }}
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        {{ form.gst_amount(class="form-control", id="gst_amount") }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.freight_amount.label(class="form-label") }}
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        {{ form.freight_amount(class="form-control", id="freight_amount") }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.other_charges.label(class="form-label") }}
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        {{ form.other_charges(class="form-control", id="other_charges") }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.total_amount.label(class="form-label") }}
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                {{ form.total_amount(class="form-control", id="total_amount", readonly="readonly") }}
+                                <button type="button" class="btn btn-outline-secondary" onclick="calculateTotal()" title="Recalculate Total">
+                                    <i class="fas fa-calculator"></i>
+                                </button>
+                            </div>
+                            {% if form.total_amount.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.total_amount.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.invoice_document.label(class="form-label") }}
+                            {{ form.invoice_document(class="form-control") }}
+                            <small class="text-muted">Upload vendor invoice document (PDF, JPG, PNG)</small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('grn_workflow.dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- GRN Details -->
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-truck"></i> GRN Details</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>GRN Number:</strong></td>
+                            <td>{{ grn.grn_number }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Receipt Date:</strong></td>
+                            <td>{{ grn.received_date.strftime('%d-%m-%Y') if grn.received_date else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>PO Number:</strong></td>
+                            <td>{{ grn.purchase_order.po_number if grn.purchase_order else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Vendor:</strong></td>
+                            <td>{{ grn.purchase_order.supplier.name if grn.purchase_order else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>GRN Total:</strong></td>
+                            <td><strong>₹{{ "%.2f"|format(grn_total) }}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- GRN Line Items -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6><i class="fas fa-list"></i> Items Received</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Qty</th>
+                                    <th>Rate</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in grn.line_items %}
+                                <tr>
+                                    <td>{{ item.item.name if item.item else 'N/A' }}</td>
+                                    <td>{{ item.quantity_received }}</td>
+                                    <td>₹{{ "%.2f"|format(item.rate_per_unit if item.rate_per_unit else 0) }}</td>
+                                    <td>₹{{ "%.2f"|format(item.quantity_received * item.rate_per_unit) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Workflow Information -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6><i class="fas fa-info-circle"></i> Workflow Information</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        <i class="fas fa-check text-success"></i> <strong>Step 1:</strong> Material received (GRN created)
+                        <br><i class="fas fa-arrow-right text-primary"></i> <strong>Step 2:</strong> Create vendor invoice (current step)
+                        <br><i class="fas fa-circle text-muted"></i> <strong>Step 3:</strong> Record payment
+                    </p>
+                    
+                    <div class="alert alert-info">
+                        <small>
+                            <i class="fas fa-lightbulb"></i>
+                            This will create accounting entries to transfer the amount from GRN Clearing Account to Vendor Payable Account.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Make calculateTotal globally accessible for the button
+function calculateTotal() {
+    console.log('Calculating total...');
+    
+    // Try multiple possible field ID formats
+    function getFieldValue(fieldName) {
+        var field = document.getElementById(fieldName) || 
+                   document.querySelector('[name="' + fieldName + '"]') ||
+                   document.querySelector('input[id*="' + fieldName + '"]');
+        
+        if (field) {
+            console.log('Found field ' + fieldName + ':', field.value);
+            return parseFloat(field.value) || 0;
+        } else {
+            console.warn('Field not found:', fieldName);
+            return 0;
+        }
+    }
+    
+    function setTotalField(value) {
+        var totalField = document.getElementById('total_amount') || 
+                        document.querySelector('[name="total_amount"]') ||
+                        document.querySelector('input[id*="total_amount"]');
+        
+        if (totalField) {
+            totalField.value = value.toFixed(2);
+            console.log('Total field updated to:', totalField.value);
+            return true;
+        } else {
+            console.error('Total amount field not found!');
+            return false;
+        }
+    }
+    
+    var baseAmount = getFieldValue('base_amount');
+    var gstAmount = getFieldValue('gst_amount');
+    var freightAmount = getFieldValue('freight_amount');
+    var otherCharges = getFieldValue('other_charges');
+    
+    console.log('Values found:', { baseAmount, gstAmount, freightAmount, otherCharges });
+    
+    var totalAmount = baseAmount + gstAmount + freightAmount + otherCharges;
+    console.log('Total calculated:', totalAmount);
+    
+    if (setTotalField(totalAmount)) {
+        // Flash the total field to show it updated
+        var totalField = document.getElementById('total_amount') || 
+                        document.querySelector('[name="total_amount"]');
+        if (totalField) {
+            totalField.style.backgroundColor = '#d4edda';
+            setTimeout(function() {
+                totalField.style.backgroundColor = '';
+            }, 500);
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('GRN Invoice Calculator loaded');
+    
+    // Try to bind events to amount fields using multiple selectors
+    var fieldNames = ['base_amount', 'gst_amount', 'freight_amount', 'other_charges'];
+    var boundFields = 0;
+    
+    fieldNames.forEach(function(fieldName) {
+        var field = document.getElementById(fieldName) || 
+                   document.querySelector('[name="' + fieldName + '"]') ||
+                   document.querySelector('input[id*="' + fieldName + '"]');
+        
+        if (field) {
+            console.log('Binding events to field:', fieldName);
+            field.addEventListener('input', calculateTotal);
+            field.addEventListener('change', calculateTotal);
+            field.addEventListener('keyup', calculateTotal);
+            boundFields++;
+        } else {
+            console.error('Could not bind to field:', fieldName);
+        }
+    });
+    
+    console.log('Successfully bound to', boundFields, 'fields out of', fieldNames.length);
+    
+    // Calculate initial total after a short delay
+    setTimeout(function() {
+        console.log('Running initial calculation...');
+        calculateTotal();
+    }, 200);
+});
+</script>
+{% endblock %}

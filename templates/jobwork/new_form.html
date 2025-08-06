@@ -1,0 +1,631 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-tools"></i> {{ title }}</h1>
+            <p class="text-muted">Create new job work with BOM/Manual selection, process routing, and GRN integration</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Job Works
+            </a>
+        </div>
+    </div>
+
+    <form method="POST" id="jobWorkForm">
+        {{ form.hidden_tag() }}
+        
+        <!-- [1] Job Work Type & Basic Info -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Job Work Type & Basic Info</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 20%;">Field</th>
+                                <th style="width: 30%;">Input Type</th>
+                                <th style="width: 50%;">Example / Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Job Work Type</strong></td>
+                                <td>
+                                    {{ form.job_work_type(class="form-select", id="job_work_type") }}
+                                    {% for error in form.job_work_type.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>🔘 BOM-Based  🔘 Manual</td>
+                            </tr>
+                            <tr id="bom_row" style="display: none;">
+                                <td><strong>Select BOM (if any)</strong></td>
+                                <td>
+                                    {{ form.bom_id(class="form-select", id="bom_select") }}
+                                    {% for error in form.bom_id.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>"Mounted Plate BOM - V1"</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Job Work Title</strong></td>
+                                <td>
+                                    <div class="input-group">
+                                        {{ form.job_title(class="form-control") }}
+                                        <button type="button" class="btn btn-outline-info btn-sm" id="generateTitleBtn" onclick="autoFillJobTitle(true)" title="Auto-generate title">
+                                            <i class="fas fa-magic"></i>
+                                        </button>
+                                    </div>
+                                    {% for error in form.job_title.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>"JW-008 – Base Plate Work" <i class="fas fa-magic text-info" title="Auto-generated for Manual jobs"></i></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Work Type</strong></td>
+                                <td>
+                                    {{ form.work_type(class="form-select", id="work_type") }}
+                                    {% for error in form.work_type.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>In-house / Vendor / Machine</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Assigned To</strong></td>
+                                <td>
+                                    {{ form.assigned_to(class="form-select") }}
+                                    {% for error in form.assigned_to.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>"Faheem Welding Works"</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Send Date</strong></td>
+                                <td>
+                                    {{ form.send_date(class="form-control") }}
+                                    {% for error in form.send_date.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>2025-08-01</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Expected Return</strong></td>
+                                <td>
+                                    {{ form.expected_return(class="form-control") }}
+                                    {% for error in form.expected_return.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>2025-08-03</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- [2] Input Material & Issuance -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Input Material & Issuance</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Auto-filled from BOM or manual selection. Quantity is deducted from Raw Store on submission.
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead class="table-success">
+                            <tr>
+                                <th style="width: 25%;">Input Material</th>
+                                <th style="width: 15%;">UOM</th>
+                                <th style="width: 20%;">Available Stock</th>
+                                <th style="width: 20%;">Quantity to Issue</th>
+                                <th style="width: 20%;">Store</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    {{ form.input_material_id(class="form-select", id="input_material") }}
+                                    {% for error in form.input_material_id.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {{ form.input_uom(class="form-select") }}
+                                    {% for error in form.input_uom.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <div class="input-group">
+                                        {{ form.available_stock(class="form-control bg-light") }}
+                                        <button type="button" class="btn btn-outline-info btn-sm" id="checkStock">
+                                            <i class="fas fa-search"></i> Check
+                                        </button>
+                                    </div>
+                                </td>
+                                <td>
+                                    {{ form.quantity_to_issue(class="form-control") }}
+                                    {% for error in form.quantity_to_issue.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {{ form.store_location(class="form-select") }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- [3] Process Routing Table (Dynamic Table) -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-route me-2"></i>Process Routing Table (Dynamic Table)</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Only selected (☑️) processes are saved. Final output = product from <strong>last selected step</strong>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="processTable">
+                        <thead class="table-warning">
+                            <tr>
+                                <th style="width: 5%;"><i class="fas fa-check"></i></th>
+                                <th style="width: 8%;">Seq</th>
+                                <th style="width: 15%;">Process</th>
+                                <th style="width: 20%;">Output Product</th>
+                                <th style="width: 10%;">Qty</th>
+                                <th style="width: 8%;">UOM</th>
+                                <th style="width: 12%;">Rate (₹/unit)</th>
+                                <th style="width: 5%;">QC</th>
+                                <th style="width: 8%;">Scrap %</th>
+                                <th style="width: 20%;">Notes</th>
+                                <th style="width: 5%;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="processTableBody">
+                            <!-- Process rows will be added here dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-3">
+                    <button type="button" class="btn btn-primary" id="addProcessRow">
+                        <i class="fas fa-plus me-2"></i>Add Process
+                    </button>
+                    <button type="button" class="btn btn-info" id="loadFromBOM" style="display: none;">
+                        <i class="fas fa-download me-2"></i>Load from BOM
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- [4] Output Summary (Auto-filled) -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Output Summary (Auto-filled)</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-magic me-2"></i>
+                    This is used for <strong>GRN generation + Inventory addition</strong>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-info" id="outputSummaryTable">
+                        <thead class="table-info">
+                            <tr>
+                                <th style="width: 60%;">Output Product</th>
+                                <th style="width: 25%;">Quantity to Produce</th>
+                                <th style="width: 15%;">UOM</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td id="finalOutputProduct">-</td>
+                                <td id="finalOutputQuantity">-</td>
+                                <td id="finalOutputUOM">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- [5] Optional Notes & Attachments -->
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Optional Notes & Attachments</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th style="width: 50%;">Remarks / Instructions</th>
+                                <th style="width: 50%;">File Upload</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    {{ form.remarks(class="form-control") }}
+                                    {% for error in form.remarks.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <input type="file" class="form-control" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                                    <small class="text-muted">PDF, Images, Word documents</small>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="card">
+            <div class="card-body text-center">
+                <button type="button" class="btn btn-outline-secondary me-3" onclick="window.history.back()">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fas fa-save me-2"></i>Create Job Work
+                </button>
+            </div>
+        </div>
+
+        <!-- Hidden fields -->
+        {{ form.job_number(type="hidden") }}
+    </form>
+</div>
+
+<!-- JavaScript for dynamic functionality -->
+<script>
+let processCounter = 0;
+let processes = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize form
+    initializeForm();
+    
+    // Add event listeners
+    document.getElementById('job_work_type').addEventListener('change', function() {
+        toggleBOMSelection();
+        autoFillJobTitle();
+    });
+    document.getElementById('addProcessRow').addEventListener('click', addProcessRow);
+    document.getElementById('input_material').addEventListener('change', updateAvailableStock);
+    document.getElementById('checkStock').addEventListener('click', checkStock);
+    
+    // Check if "Manual" is already selected and auto-fill title
+    if (document.getElementById('job_work_type').value === 'manual') {
+        autoFillJobTitle();
+    }
+    
+    // Add initial process row
+    addProcessRow();
+});
+
+function initializeForm() {
+    // Auto-generate job number
+    const today = new Date();
+    const year = today.getFullYear();
+    const jobNumber = `JOB-${year}-${String(Math.floor(Math.random() * 1000) + 1).padStart(4, '0')}`;
+    document.querySelector('input[name="job_number"]').value = jobNumber;
+}
+
+function toggleBOMSelection() {
+    const jobWorkType = document.getElementById('job_work_type').value;
+    const bomRow = document.getElementById('bom_row');
+    const loadFromBOMBtn = document.getElementById('loadFromBOM');
+    
+    if (jobWorkType === 'bom_based') {
+        bomRow.style.display = 'table-row';
+        loadFromBOMBtn.style.display = 'inline-block';
+    } else {
+        bomRow.style.display = 'none';
+        loadFromBOMBtn.style.display = 'none';
+    }
+}
+
+function autoFillJobTitle(force = false) {
+    const jobWorkType = document.getElementById('job_work_type').value;
+    const titleField = document.querySelector('input[name="job_title"]');
+    
+    console.log('autoFillJobTitle called:', {jobWorkType, force, hasField: !!titleField, currentValue: titleField?.value});
+    
+    if (jobWorkType === 'manual' && titleField && (force || !titleField.value.trim())) {
+        // Show loading state
+        const generateBtn = document.getElementById('generateTitleBtn');
+        if (generateBtn) {
+            generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            generateBtn.disabled = true;
+        }
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+        
+        // Auto-generate title for manual job work
+        fetch('/jobwork/api/generate_title', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken || ''
+            },
+            credentials: 'same-origin'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('API response:', data);
+                if (data.title) {
+                    titleField.value = data.title;
+                    // Add a subtle visual indication that the title was auto-filled
+                    titleField.style.backgroundColor = '#e8f5e8';
+                    setTimeout(() => {
+                        titleField.style.backgroundColor = '';
+                    }, 2000);
+                } else if (data.error) {
+                    throw new Error(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error generating title:', error);
+                // Fallback: generate a simple title
+                const today = new Date();
+                const year = today.getFullYear();
+                const randomNum = String(Math.floor(Math.random() * 1000) + 1).padStart(3, '0');
+                titleField.value = `JW-${randomNum} – Manual Work`;
+                titleField.style.backgroundColor = '#fff3cd';
+                setTimeout(() => {
+                    titleField.style.backgroundColor = '';
+                }, 2000);
+            })
+            .finally(() => {
+                // Reset button state
+                if (generateBtn) {
+                    generateBtn.innerHTML = '<i class="fas fa-magic"></i>';
+                    generateBtn.disabled = false;
+                }
+            });
+    }
+}
+
+function addProcessRow() {
+    processCounter++;
+    const tableBody = document.getElementById('processTableBody');
+    
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>
+            <input type="checkbox" class="form-check-input process-checkbox" checked data-index="${processCounter}">
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" value="${processCounter}" min="1" data-field="sequence" data-index="${processCounter}">
+        </td>
+        <td>
+            <select class="form-select form-select-sm" data-field="process_name" data-index="${processCounter}">
+                <option value="">Select Process</option>
+                <option value="cutting">Cutting</option>
+                <option value="welding">Welding</option>
+                <option value="powder_coating">Powder Coating</option>
+                <option value="bending">Bending</option>
+                <option value="assembly">Assembly</option>
+                <option value="machining">Machining</option>
+                <option value="zinc_plating">Zinc Plating</option>
+                <option value="painting">Painting</option>
+            </select>
+        </td>
+        <td>
+            <select class="form-select form-select-sm" data-field="output_product_id" data-index="${processCounter}">
+                <option value="">Select Product</option>
+                <!-- Will be populated via AJAX -->
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" min="1" data-field="quantity" data-index="${processCounter}">
+        </td>
+        <td>
+            <select class="form-select form-select-sm" data-field="uom" data-index="${processCounter}">
+                <option value="">Select UOM</option>
+                <option value="piece">Piece</option>
+                <option value="kg">Kilogram</option>
+                <option value="sheet">Sheet</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" step="0.01" min="0" data-field="rate_per_unit" data-index="${processCounter}">
+        </td>
+        <td>
+            <input type="checkbox" class="form-check-input" data-field="quality_check" data-index="${processCounter}">
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" step="0.1" min="0" max="100" data-field="scrap_percent" data-index="${processCounter}">
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm" placeholder="e.g., Use laser cutter" data-field="notes" data-index="${processCounter}">
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeProcessRow(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tableBody.appendChild(row);
+    
+    // Add event listeners for this row
+    row.addEventListener('change', updateOutputSummary);
+    
+    // Load products for output product dropdown
+    loadProducts(row.querySelector('[data-field="output_product_id"]'));
+}
+
+function removeProcessRow(button) {
+    const row = button.closest('tr');
+    row.remove();
+    updateOutputSummary();
+}
+
+function loadProducts(selectElement) {
+    // Load products via AJAX - simplified for now
+    fetch('/api/items')
+        .then(response => response.json())
+        .then(data => {
+            selectElement.innerHTML = '<option value="">Select Product</option>';
+            data.items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = `${item.code} - ${item.name}`;
+                selectElement.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading products:', error);
+        });
+}
+
+function updateOutputSummary() {
+    const checkedRows = document.querySelectorAll('.process-checkbox:checked');
+    let lastSelectedRow = null;
+    let maxSequence = 0;
+    
+    checkedRows.forEach(checkbox => {
+        const row = checkbox.closest('tr');
+        const sequence = parseInt(row.querySelector('[data-field="sequence"]').value) || 0;
+        
+        if (sequence > maxSequence) {
+            maxSequence = sequence;
+            lastSelectedRow = row;
+        }
+    });
+    
+    if (lastSelectedRow) {
+        const outputProductSelect = lastSelectedRow.querySelector('[data-field="output_product_id"]');
+        const quantity = lastSelectedRow.querySelector('[data-field="quantity"]').value;
+        const uom = lastSelectedRow.querySelector('[data-field="uom"]').value;
+        
+        document.getElementById('finalOutputProduct').textContent = outputProductSelect.options[outputProductSelect.selectedIndex]?.text || '-';
+        document.getElementById('finalOutputQuantity').textContent = quantity || '-';
+        document.getElementById('finalOutputUOM').textContent = uom || '-';
+    } else {
+        document.getElementById('finalOutputProduct').textContent = '-';
+        document.getElementById('finalOutputQuantity').textContent = '-';
+        document.getElementById('finalOutputUOM').textContent = '-';
+    }
+}
+
+function updateAvailableStock() {
+    const materialId = document.getElementById('input_material').value;
+    if (materialId && materialId !== '0') {
+        // Fetch available stock via AJAX
+        fetch(`/api/inventory/stock/${materialId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('available_stock').value = data.available_stock || 0;
+            })
+            .catch(error => {
+                console.error('Error fetching stock:', error);
+                document.getElementById('available_stock').value = 0;
+            });
+    }
+}
+
+function checkStock() {
+    updateAvailableStock();
+}
+
+// Form submission handler
+document.getElementById('jobWorkForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Collect process data
+    const processData = [];
+    const checkedRows = document.querySelectorAll('.process-checkbox:checked');
+    
+    checkedRows.forEach(checkbox => {
+        const row = checkbox.closest('tr');
+        const index = checkbox.dataset.index;
+        
+        const processRow = {
+            sequence: row.querySelector(`[data-field="sequence"][data-index="${index}"]`).value,
+            process_name: row.querySelector(`[data-field="process_name"][data-index="${index}"]`).value,
+            output_product_id: row.querySelector(`[data-field="output_product_id"][data-index="${index}"]`).value,
+            quantity: row.querySelector(`[data-field="quantity"][data-index="${index}"]`).value,
+            uom: row.querySelector(`[data-field="uom"][data-index="${index}"]`).value,
+            rate_per_unit: row.querySelector(`[data-field="rate_per_unit"][data-index="${index}"]`).value,
+            quality_check: row.querySelector(`[data-field="quality_check"][data-index="${index}"]`).checked,
+            scrap_percent: row.querySelector(`[data-field="scrap_percent"][data-index="${index}"]`).value,
+            notes: row.querySelector(`[data-field="notes"][data-index="${index}"]`).value
+        };
+        
+        processData.push(processRow);
+    });
+    
+    // Add process data to form
+    const processInput = document.createElement('input');
+    processInput.type = 'hidden';
+    processInput.name = 'process_data';
+    processInput.value = JSON.stringify(processData);
+    this.appendChild(processInput);
+    
+    // Submit form
+    this.submit();
+});
+</script>
+
+<style>
+.table th {
+    background-color: var(--bs-table-bg);
+    border-top: 1px solid var(--bs-border-color);
+    font-weight: 600;
+}
+
+.process-checkbox {
+    transform: scale(1.2);
+}
+
+#processTable input, #processTable select {
+    font-size: 0.9rem;
+}
+
+.alert i {
+    color: inherit;
+}
+
+.card-header h5 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.form-control-sm, .form-select-sm {
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

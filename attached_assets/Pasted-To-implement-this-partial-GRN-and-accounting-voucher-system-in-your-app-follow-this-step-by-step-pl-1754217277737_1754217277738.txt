@@ -1,0 +1,112 @@
+To implement this partial GRN and accounting voucher system in your app, follow this step-by-step plan. It connects **Purchase Orders → GRNs → Invoices → Payments**, while auto-updating inventory and accounts.
+
+---
+
+## ✅ 1. Database Design (Relational Mapping)
+
+### 🗂️ Key Tables
+
+| Table Name        | Purpose                               |
+| ----------------- | ------------------------------------- |
+| `purchase_orders` | Store PO master data                  |
+| `po_items`        | Line items (product, qty, rate)       |
+| `grns`            | Each GRN record (partial/full)        |
+| `grn_items`       | Items received in each GRN            |
+| `vouchers`        | Accounting vouchers (type-based)      |
+| `voucher_entries` | Voucher lines (ledger, dr/cr, amount) |
+| `inventory`       | Tracks material stock with batch info |
+
+---
+
+## ✅ 2. GRN Workflow Logic
+
+### 🔁 When GRN is Created:
+
+1. Validate PO reference and remaining quantity.
+2. Allow user to input **actual qty received**, rate (optional), tax, freight.
+3. Auto-calculate value = qty × rate.
+4. Save entry to `grns` and `grn_items`.
+5. Generate a **Purchase Voucher**:
+
+   * Dr Inventory
+   * Cr GRN Clearing Account
+
+---
+
+## ✅ 3. Invoice Workflow Logic
+
+### 🧾 When Vendor Invoice is Uploaded:
+
+1. Link to existing GRN.
+2. Input GST, freight, etc.
+3. Create **Invoice Voucher**:
+
+   * Dr GRN Clearing A/c
+   * Dr GST Input
+   * Cr Vendor Account
+
+> You can also create auto-matching if invoice quantity ≠ GRN quantity (alert user).
+
+---
+
+## ✅ 4. Payment Workflow
+
+### 💰 When Payment is Made:
+
+1. Link to Vendor Account from Invoice.
+2. Record mode: Bank, Cash, UPI, etc.
+3. Generate **Payment Voucher**:
+
+   * Dr Vendor
+   * Cr Bank/Cash
+
+---
+
+## ✅ 5. Auto Update PO Status
+
+* On each GRN:
+
+  * Update total received quantity
+  * Show balance qty remaining
+* On Invoice:
+
+  * Track pending payments
+* On Payment:
+
+  * Clear Vendor dues
+
+---
+
+## ✅ 6. Reporting and Dashboards
+
+| Report                     | Description                     |
+| -------------------------- | ------------------------------- |
+| PO Fulfillment Report      | Shows total vs received         |
+| Vendor Outstanding Summary | Vendor-wise unpaid balances     |
+| Inventory Inward Report    | Shows material received by GRNs |
+| Journal Register           | List of all generated vouchers  |
+| GST Input Summary          | Monthly tax received report     |
+
+---
+
+## 🧠 UI Logic (Form Behavior)
+
+* **PO View** → \[“Create GRN”] → opens modal prefilled from PO
+* **GRN View** → \[“Create Invoice”] → opens invoice form
+* **Invoice View** → \[“Record Payment”] → prefilled payment screen
+
+---
+
+## 🛠 Technologies You Can Use
+
+| Part         | Suggested Stack                        |
+| ------------ | -------------------------------------- |
+| Backend      | Flask + SQLAlchemy                     |
+| Forms        | WTForms or HTML/Jinja2 + JS validation |
+| Vouchers     | Python logic, stored in DB             |
+| UI           | Bootstrap 5 + Jinja2                   |
+| PDF Exports  | WeasyPrint / xhtml2pdf                 |
+| Excel Export | `pandas` + `xlsxwriter`                |
+
+---
+

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Order - {{ po.po_number }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .letterhead {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .company-details {
+            font-size: 11px;
+            color: #333;
+        }
+        
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .invoice-to {
+            width: 50%;
+        }
+        
+        .invoice-details {
+            width: 40%;
+            text-align: right;
+        }
+        
+        .supplier-details {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .po-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .po-table th,
+        .po-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: left;
+            font-size: 10px;
+        }
+        
+        .po-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .po-table .number-col {
+            text-align: center;
+            width: 5%;
+        }
+        
+        .po-table .rm-code-col {
+            width: 10%;
+        }
+        
+        .po-table .description-col {
+            width: 25%;
+        }
+        
+        .po-table .drawing-col {
+            width: 15%;
+        }
+        
+        .po-table .hsn-col {
+            width: 10%;
+        }
+        
+        .po-table .gst-col {
+            width: 8%;
+            text-align: center;
+        }
+        
+        .po-table .uom-col {
+            width: 7%;
+            text-align: center;
+        }
+        
+        .po-table .qty-col {
+            width: 8%;
+            text-align: right;
+        }
+        
+        .po-table .rate-col {
+            width: 10%;
+            text-align: right;
+        }
+        
+        .po-table .amount-col {
+            width: 12%;
+            text-align: right;
+        }
+        
+        .total-section {
+            margin-top: 20px;
+            float: right;
+            width: 300px;
+        }
+        
+        .total-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .total-table td {
+            border: 1px solid #000;
+            padding: 5px;
+            font-size: 11px;
+        }
+        
+        .total-table .label {
+            text-align: right;
+            font-weight: bold;
+            background-color: #f5f5f5;
+        }
+        
+        .total-table .amount {
+            text-align: right;
+            width: 120px;
+        }
+        
+        .grand-total {
+            font-weight: bold;
+            background-color: #e9ecef;
+        }
+        
+        .terms-section {
+            clear: both;
+            margin-top: 40px;
+            padding-top: 20px;
+        }
+        
+        .terms-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }
+        
+        .signature-section {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .signature-box {
+            width: 200px;
+            text-align: center;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #000;
+            margin-top: 50px;
+            padding-top: 5px;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 10px;
+            }
+            
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="margin-bottom: 20px;">
+        <button onclick="window.print()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px;">
+            Print Purchase Order
+        </button>
+        <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; margin-left: 10px;">
+            Close
+        </button>
+    </div>
+
+    <!-- Document Title -->
+    <div style="text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 20px;">
+        LETTER OF INTENT
+    </div>
+
+    <!-- Company Letterhead -->
+    <div class="letterhead">
+        <div class="company-name">{{ company.company_name }}</div>
+        <div class="company-details">
+            {{ company.address_line1 }}<br>
+            {% if company.address_line2 %}{{ company.address_line2 }}<br>{% endif %}
+            {{ company.city }}, {{ company.state }} - {{ company.pin_code }}<br>
+            Phone: {{ company.phone }}
+            {% if company.email %} | Email: {{ company.email }}{% endif %}<br>
+            GST No. {{ company.gst_number }}
+            {% if company.arn_number %} | ARN No. {{ company.arn_number }}{% endif %}
+        </div>
+    </div>
+
+    <!-- Invoice Header -->
+    <div class="invoice-header">
+        <div class="invoice-to">
+            <strong>Invoice To:</strong><br>
+            {{ company.company_name }}<br>
+            {{ company.address_line1 }}<br>
+            {% if company.address_line2 %}{{ company.address_line2 }}<br>{% endif %}
+            {{ company.city }}, {{ company.state }} - {{ company.pin_code }}<br>
+            Phone: {{ company.phone }}<br>
+            GST No. {{ company.gst_number }}<br>
+            {% if company.arn_number %}ARN No. {{ company.arn_number }}{% endif %}
+        </div>
+        
+        <div class="invoice-details">
+            <strong>LOI No:</strong> {{ po.po_number }}<br>
+            <strong>LOI Date:</strong> {{ po.order_date.strftime('%d/%m/%Y') }}<br>
+            <strong>Terms of Payment:</strong> {{ po.payment_terms or '30 Days' }}<br>
+            <strong>Freight:</strong> -<br>
+            <strong>Delivery Notes:</strong> -
+        </div>
+    </div>
+
+    <!-- Supplier Details -->
+    <div>
+        <strong>Supplier Name & Address</strong>
+        <div class="supplier-details">
+            <strong>{{ po.supplier.name }}</strong><br>
+            {{ po.supplier.contact_person or '' }}<br>
+            {{ po.supplier.address or '' }}<br>
+            {{ po.supplier.phone or '' }}
+        </div>
+    </div>
+
+    <!-- Terms & Conditions -->
+    <div style="float: right; width: 300px; margin-bottom: 20px;">
+        <strong>Terms & Conditions and/or Special Notes</strong>
+        <div style="border: 1px solid #ccc; padding: 10px; height: 80px;">
+            {% if po.notes %}
+                {{ po.notes }}
+            {% else %}
+                Acceptance of this intent should be conveyed through mail within 24 hours
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Purchase Order Items Table -->
+    <table class="po-table">
+        <thead>
+            <tr>
+                <th class="number-col">No.</th>
+                <th class="rm-code-col">RM Code</th>
+                <th class="description-col">Item + Description</th>
+                <th class="drawing-col">Drawing / Spec Sheet No.</th>
+                <th class="hsn-col">HSN Code</th>
+                <th class="gst-col">GST Rate</th>
+                <th class="uom-col">UOM</th>
+                <th class="qty-col">Qty</th>
+                <th class="rate-col">Rate</th>
+                <th class="amount-col">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in po.items %}
+            <tr>
+                <td class="number-col">{{ loop.index }}</td>
+                <td class="rm-code-col">{{ item.rm_code or item.item.code }}</td>
+                <td class="description-col">
+                    <strong>{{ item.item.name }}</strong>
+                    {% if item.item_description or item.item.description %}
+                    <br><small>{{ item.item_description or item.item.description }}</small>
+                    {% endif %}
+                </td>
+                <td class="drawing-col">{{ item.drawing_spec_no or '' }}</td>
+                <td class="hsn-col">{{ item.hsn_code or item.item.hsn_code or '' }}</td>
+                <td class="gst-col">{{ item.gst_rate or item.item.gst_rate or '0.0' }}%</td>
+                <td class="uom-col">{{ item.uom or item.item.unit_of_measure }}</td>
+                <td class="qty-col">{{ item.qty or item.quantity_ordered }}</td>
+                <td class="rate-col">{{ "%.2f"|format(item.rate or item.unit_price) }}</td>
+                <td class="amount-col">{{ "%.2f"|format(item.amount or item.total_price) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Total Section -->
+    <div class="total-section">
+        <table class="total-table">
+            <tr>
+                <td class="label">Sub Total</td>
+                <td class="amount">{{ "%.2f"|format(po.total_amount / 1.18) }}</td>
+            </tr>
+            <tr>
+                <td class="label">Total GST</td>
+                <td class="amount">{{ "%.2f"|format(po.total_amount - (po.total_amount / 1.18)) }}</td>
+            </tr>
+            <tr class="grand-total">
+                <td class="label">Grand Total</td>
+                <td class="amount">{{ "%.2f"|format(po.total_amount) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Footer Information -->
+    <div style="clear: both; margin-top: 40px; font-size: 10px;">
+        <div style="float: left;">
+            <strong>Prepared By:</strong> {{ po.prepared_by or current_user.username }}<br>
+            <strong>Verified By:</strong> {{ po.verified_by or '' }}<br>
+            <strong>Approved By:</strong> {{ po.approved_by or '' }}
+        </div>
+        
+        <div style="float: right;">
+            <strong>Validity:</strong> {{ po.validity_months or 6 }} months from date<br>
+            <strong>Expected Delivery:</strong> {{ po.expected_delivery.strftime('%d/%m/%Y') if po.expected_delivery else 'TBD' }}
+        </div>
+    </div>
+
+    <div style="clear: both; margin-top: 30px; text-align: center; font-size: 10px; color: #666;">
+        This is a computer generated document and does not require signature.
+    </div>
+</body>
+</html>

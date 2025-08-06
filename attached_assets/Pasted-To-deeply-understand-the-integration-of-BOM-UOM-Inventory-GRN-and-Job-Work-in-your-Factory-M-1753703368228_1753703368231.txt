@@ -1,0 +1,137 @@
+To deeply understand the **integration of BOM, UOM, Inventory, GRN, and Job Work** in your Factory Management App, let's break it down module by module and show how they **interact** step-by-step:
+
+---
+
+## 🔄 **FULL MODULE INTEGRATION FLOW**
+
+### 🧩 1. **UOM (Unit of Measure)**
+
+UOM defines **how quantities are tracked**:
+
+* **Purchase UOM** = what you buy (e.g., Kg or Sheet)
+* **Inventory UOM** = what you store (e.g., Kg)
+* **Production/Sale UOM** = what you sell or convert to (e.g., Pieces)
+
+> **Key Use Case**:
+> You buy 1 MS Sheet (as Kg), but it makes 400 mounted plates (pieces).
+> UOM defines this mapping: `1 Sheet = 400 Mounted Plates`.
+
+---
+
+### 🧾 2. **BOM (Bill of Materials)**
+
+Defines the **recipe for production**:
+
+* Output: Mounted Plate
+* Input: MS Sheet (UOM = Kg or Sheets)
+* Quantity: 1 sheet = 400 pcs
+
+> Example:
+> BOM: To make 400 Mounted Plates
+> 🔸 Required: 1 MS Sheet
+> 🔸 Labor, overhead, margin = defined in BOM
+> 🔸 Output UOM = pcs
+
+---
+
+### 📦 3. **Inventory**
+
+Tracks **stock at every state**:
+
+| State    | Description                               |
+| -------- | ----------------------------------------- |
+| Raw      | Initial MS Sheets                         |
+| WIP      | Sheets given for job work                 |
+| Finished | Mounted plates or other finished products |
+| Scrap    | Any loss or damaged output from processes |
+
+→ Based on BOM and UOM, **automated inventory movement** happens:
+
+* Job Work created → move Raw → WIP
+* GRN received → move WIP → Finished + Scrap
+
+---
+
+### 🛠️ 4. **Job Work**
+
+Handles **in-house or outsourced processing**:
+
+| Input      | Process      | Output             |
+| ---------- | ------------ | ------------------ |
+| MS Sheet   | Cutting      | 400 Mounted Plates |
+| Mounted    | Zinc Plating | Zinced Plates      |
+| Zinc Plate | Bending      | Final Castor Body  |
+
+> **Integration with BOM and UOM**:
+
+* Job Work input = MS Sheet (UOM-aware)
+* Output = Based on BOM conversion (e.g., 1 sheet → 400 pcs)
+* Job Work form auto-picks UOM conversion & BOM to calculate expected output
+
+---
+
+### 📥 5. **GRN (Goods Receipt Note)**
+
+When Job Work is completed, GRN is used to **receive** finished goods:
+
+* Receive based on Job Work
+* Track:
+
+  * Output Quantity (finished goods)
+  * Scrap Quantity
+  * Quality Inspected / Passed / Rejected
+* Automatically update:
+
+  * WIP Stock: ↓
+  * Finished Stock: ↑
+  * Scrap: ↑
+
+---
+
+## 🔗 **How They All Link**
+
+1. **Create BOM**
+
+   * Define product → materials → output
+   * UOM ensures correct quantity mapping
+
+2. **Inventory**
+
+   * MS Sheet enters inventory in Kg or Sheet
+   * System uses UOM to track exact stock in pcs
+
+3. **Create Job Work**
+
+   * Pick process: e.g. Cutting
+   * Input = MS Sheet
+   * Output = Mounted Plate (based on BOM and UOM)
+   * Inventory: Raw ↓ WIP ↑
+
+4. **Create GRN**
+
+   * After job work is done
+   * Receive:
+
+     * 400 pcs Finished
+     * 10 pcs Scrap
+   * Inventory: WIP ↓, Finished ↑, Scrap ↑
+
+5. **Production / Next Step**
+
+   * Same process can repeat for Zinc, Bending, Assembly etc.
+
+---
+
+## ✅ **BENEFITS OF THIS INTEGRATION**
+
+| Feature       | Benefit                                         |
+| ------------- | ----------------------------------------------- |
+| **UOM**       | Tracks unit conversion automatically            |
+| **BOM**       | Ensures correct material usage and costing      |
+| **Inventory** | Shows real-time material stage                  |
+| **Job Work**  | Tracks every outsourced/in-house process        |
+| **GRN**       | Ensures material receipt, scrap, and inspection |
+
+---
+
+Would you like a working **code model + sample DB schema** or a **workflow UI diagram** based on this logic?

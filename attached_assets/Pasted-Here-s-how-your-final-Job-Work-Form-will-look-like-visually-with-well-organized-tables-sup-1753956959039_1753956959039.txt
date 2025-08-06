@@ -1,0 +1,115 @@
+Here’s how your **final Job Work Form** will look like visually, with **well-organized tables**, supporting all your features:
+
+✅ BOM or Manual
+✅ Process routing
+✅ Output by last step
+✅ UOM
+✅ Rate, scrap, QC
+✅ Material issue + GRN integration
+
+---
+
+## 🧾 ✨ **Job Work Form UI – Table Layout**
+
+---
+
+### 🔘 **\[1] Job Work Type & Basic Info**
+
+| Field               | Input Type  | Example / Note              |
+| ------------------- | ----------- | --------------------------- |
+| Job Work Type       | Dropdown    | 🔘 BOM-Based  🔘 Manual     |
+| Select BOM (if any) | Dropdown    | "Mounted Plate BOM - V1"    |
+| Job Work Title      | Text        | "JW-008 – Base Plate Work"  |
+| Work Type           | Dropdown    | In-house / Vendor / Machine |
+| Assigned To         | Dropdown    | "Faheem Welding Works"      |
+| Send Date           | Date Picker | 2025-08-01                  |
+| Expected Return     | Date Picker | 2025-08-03                  |
+
+---
+
+### 📦 **\[2] Input Material & Issuance**
+
+| Input Material | UOM   | Available Stock | Quantity to Issue | Store     |
+| -------------- | ----- | --------------- | ----------------- | --------- |
+| MS Sheet       | Sheet | 120             | 3                 | Raw Store |
+
+✅ Auto-filled from BOM or manual selection
+✅ Quantity is deducted from `Raw Store` on submission
+
+---
+
+### 🔁 **\[3] Process Routing Table (Dynamic Table)**
+
+| ✅  | Seq | Process        | Output Product | Qty  | UOM   | Rate (₹/unit) | QC | Scrap % | Notes            |
+| -- | --- | -------------- | -------------- | ---- | ----- | ------------- | -- | ------- | ---------------- |
+| ☑️ | 1   | Cutting        | Base Plate Cut | 1200 | Piece | 0.50          | ⬜  | 2%      | Use laser cutter |
+| ☑️ | 2   | Welding        | Welded Plate   | 1200 | Piece | 1.20          | ☑️ | 1.5%    | Fixture Type B   |
+| ☑️ | 3   | Powder Coating | Coated Plate   | 1200 | Piece | 0.75          | ☑️ | 1%      | RAL 7024 finish  |
+
+✅ **Only selected (☑️) processes** are saved
+✅ Final output = product from **last selected step** → here: **Coated Plate**, 1200, Piece
+
+---
+
+### 📦 **\[4] Output Summary (Auto-filled)**
+
+| Output Product | Quantity to Produce | UOM   |
+| -------------- | ------------------- | ----- |
+| Coated Plate   | 1200                | Piece |
+
+✅ This is used for **GRN generation + Inventory addition**
+
+---
+
+### 📝 **\[5] Optional Notes & Attachments**
+
+| Remarks / Instructions            | File Upload    |
+| --------------------------------- | -------------- |
+| "Priority job. Ensure QC report." | \[Choose File] |
+
+---
+
+### 📄 **\[6] On Job Completion – GRN Form**
+
+| Product Returned | Quantity | UOM   | QC Passed | Store          | GRN No. |
+| ---------------- | -------- | ----- | --------- | -------------- | ------- |
+| Coated Plate     | 1200     | Piece | ☑️ Yes    | Finished Goods | GRN-020 |
+
+✅ Adds **1200 Coated Plates** to **Finished Goods Inventory**
+✅ Reference = JW-008
+
+---
+
+## 🧠 Backend Tables Used
+
+### 🔹 `job_work`
+
+* job\_type, input\_material, output\_product, qty, uom, assigned\_to
+
+### 🔹 `job_work_process`
+
+* process\_name, output\_product, output\_qty, uom, rate, scrap, qc
+
+### 🔹 `inventory_movement`
+
+* from\_store, to\_store, product, qty, uom, reason (Job Work Issue/Return)
+
+### 🔹 `grn`
+
+* source = job work, linked to output from final process
+
+---
+
+## ✅ Summary of Table Sections
+
+| Section             | Purpose                            |
+| ------------------- | ---------------------------------- |
+| Job Info            | BOM/manual selection + dates       |
+| Input Material      | Raw material issuance & stock      |
+| Process Routing     | Full control over production steps |
+| Output Summary      | Auto-calculated output product     |
+| Completion → GRN    | Finished goods GRN                 |
+| Notes & Attachments | Optional but helpful               |
+
+---
+

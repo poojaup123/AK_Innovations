@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-money-bill-wave"></i> {{ title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('hr.dashboard') }}">HR Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('hr.salary_list') }}">Salary Records</a></li>
+                    <li class="breadcrumb-item active">{{ title }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('hr.salary_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-money-bill-wave"></i> Salary Record Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Basic Information Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2 mb-3">
+                                    <i class="fas fa-info-circle"></i> Basic Information
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.salary_number.label(class="form-label") }}
+                                {{ form.salary_number(class="form-control") }}
+                                {% if form.salary_number.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.salary_number.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.employee_id.label(class="form-label") }}
+                                {{ form.employee_id(class="form-select", id="employee_id", onchange="loadEmployeeHireDate()") }}
+                                {% if form.employee_id.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.employee_id.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.pay_period_start.label(class="form-label") }}
+                                {{ form.pay_period_start(class="form-control", id="pay_period_start") }}
+                                {% if form.pay_period_start.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.pay_period_start.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i> 
+                                    Auto-populated with employee's hire date when selected
+                                </small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.pay_period_end.label(class="form-label") }}
+                                {{ form.pay_period_end(class="form-control") }}
+                                {% if form.pay_period_end.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.pay_period_end.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Attendance-Based Calculation Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-info border-bottom pb-2 mb-3">
+                                    <i class="fas fa-calendar-check"></i> Attendance-Based Calculation
+                                </h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.daily_rate.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.daily_rate(class="form-control", id="daily_rate") }}
+                                </div>
+                                {% if form.daily_rate.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.daily_rate.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Amount paid per working day</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="d-grid">
+                                    <label class="form-label">&nbsp;</label>
+                                    {{ form.calculate_attendance(class="btn btn-info") }}
+                                </div>
+                                <small class="text-muted">Calculate salary based on actual attendance</small>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                {{ form.expected_working_days.label(class="form-label") }}
+                                {{ form.expected_working_days(class="form-control bg-light", readonly=True) }}
+                                <small class="text-muted">Total working days in period</small>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                {{ form.actual_days_worked.label(class="form-label") }}
+                                {{ form.actual_days_worked(class="form-control bg-light", readonly=True) }}
+                                <small class="text-muted">Days from attendance records</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.basic_amount.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.basic_amount(class="form-control bg-light", id="basic_amount", readonly=True) }}
+                                </div>
+                                {% if form.basic_amount.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.basic_amount.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Days worked × Daily rate</small>
+                            </div>
+                        </div>
+
+                        <!-- Overtime & Additional Amounts Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-success border-bottom pb-2 mb-3">
+                                    <i class="fas fa-clock"></i> Overtime & Additional Amounts
+                                </h6>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                {{ form.overtime_hours.label(class="form-label") }}
+                                {{ form.overtime_hours(class="form-control bg-light", id="overtime_hours", readonly=True) }}
+                                {% if form.overtime_hours.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.overtime_hours.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">From attendance records</small>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                {{ form.overtime_rate.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.overtime_rate(class="form-control", id="overtime_rate", onchange="calculateTotals()") }}
+                                </div>
+                                {% if form.overtime_rate.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.overtime_rate.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Rate per overtime hour</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.bonus_amount.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.bonus_amount(class="form-control", id="bonus_amount", onchange="calculateTotals()") }}
+                                </div>
+                                {% if form.bonus_amount.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.bonus_amount.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.deduction_amount.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.deduction_amount(class="form-control", id="deduction_amount", onchange="calculateTotals()") }}
+                                </div>
+                                {% if form.deduction_amount.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.deduction_amount.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.advance_deduction.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.advance_deduction(class="form-control", id="advance_deduction", onchange="calculateTotals()") }}
+                                </div>
+                                {% if form.advance_deduction.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.advance_deduction.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.payment_method.label(class="form-label") }}
+                                {{ form.payment_method(class="form-select") }}
+                                {% if form.payment_method.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.payment_method.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Notes Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-info border-bottom pb-2 mb-3">
+                                    <i class="fas fa-sticky-note"></i> Additional Information
+                                </h6>
+                            </div>
+                            <div class="col-12 mb-3">
+                                {{ form.notes.label(class="form-label") }}
+                                {{ form.notes(class="form-control") }}
+                                {% if form.notes.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.notes.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('hr.salary_list') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            {{ form.submit(class="btn btn-success") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calculation Summary Card -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-calculator"></i> Salary Summary</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td>Basic Amount:</td>
+                            <td class="text-end" id="display_basic">₹0.00</td>
+                        </tr>
+                        <tr>
+                            <td>Overtime Amount:</td>
+                            <td class="text-end" id="display_overtime">₹0.00</td>
+                        </tr>
+                        <tr>
+                            <td>Bonus Amount:</td>
+                            <td class="text-end" id="display_bonus">₹0.00</td>
+                        </tr>
+                        <tr class="table-success">
+                            <td><strong>Gross Amount:</strong></td>
+                            <td class="text-end"><strong id="display_gross">₹0.00</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Other Deductions:</td>
+                            <td class="text-end text-danger" id="display_deductions">₹0.00</td>
+                        </tr>
+                        <tr>
+                            <td>Advance Deduction:</td>
+                            <td class="text-end text-warning" id="display_advance">₹0.00</td>
+                        </tr>
+                        <tr class="table-primary">
+                            <td><strong>Net Amount:</strong></td>
+                            <td class="text-end"><strong id="display_net">₹0.00</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function calculateTotals() {
+    const basic = parseFloat(document.getElementById('basic_amount').value) || 0;
+    const overtimeHours = parseFloat(document.getElementById('overtime_hours').value) || 0;
+    const overtimeRate = parseFloat(document.getElementById('overtime_rate').value) || 0;
+    const bonus = parseFloat(document.getElementById('bonus_amount').value) || 0;
+    const deductions = parseFloat(document.getElementById('deduction_amount').value) || 0;
+    const advance = parseFloat(document.getElementById('advance_deduction').value) || 0;
+    
+    const overtimeAmount = overtimeHours * overtimeRate;
+    const grossAmount = basic + overtimeAmount + bonus;
+    const netAmount = grossAmount - deductions - advance;
+    
+    // Update display
+    document.getElementById('display_basic').textContent = '₹' + basic.toFixed(2);
+    document.getElementById('display_overtime').textContent = '₹' + overtimeAmount.toFixed(2);
+    document.getElementById('display_bonus').textContent = '₹' + bonus.toFixed(2);
+    document.getElementById('display_gross').textContent = '₹' + grossAmount.toFixed(2);
+    document.getElementById('display_deductions').textContent = '₹' + deductions.toFixed(2);
+    document.getElementById('display_advance').textContent = '₹' + advance.toFixed(2);
+    document.getElementById('display_net').textContent = '₹' + netAmount.toFixed(2);
+}
+
+// Load employee hire date and set as pay period start
+function loadEmployeeHireDate() {
+    const employeeId = document.getElementById('employee_id').value;
+    
+    if (!employeeId || employeeId == '0') {
+        document.getElementById('pay_period_start').value = '';
+        return;
+    }
+    
+    // Show loading indicator
+    const payPeriodStartField = document.getElementById('pay_period_start');
+    const originalValue = payPeriodStartField.value;
+    payPeriodStartField.style.backgroundColor = '#f8f9fa';
+    payPeriodStartField.disabled = true;
+    
+    // Fetch employee hire date
+    fetch(`{{ url_for('hr.get_employee_hire_date', employee_id=0) }}`.replace('0', employeeId))
+        .then(response => response.json())
+        .then(data => {
+            payPeriodStartField.style.backgroundColor = '';
+            payPeriodStartField.disabled = false;
+            
+            if (data.success && data.hire_date) {
+                payPeriodStartField.value = data.hire_date;
+                
+                // Show success message
+                const helpText = payPeriodStartField.parentElement.querySelector('.text-muted');
+                if (helpText) {
+                    helpText.innerHTML = `<i class="fas fa-check text-success"></i> Set to ${data.name}'s hire date: ${data.hire_date}`;
+                    setTimeout(() => {
+                        helpText.innerHTML = '<i class="fas fa-info-circle"></i> Auto-populated with employee\'s hire date when selected';
+                    }, 3000);
+                }
+            } else {
+                console.warn('Could not load hire date for employee');
+                payPeriodStartField.value = originalValue;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading employee hire date:', error);
+            payPeriodStartField.style.backgroundColor = '';
+            payPeriodStartField.disabled = false;
+            payPeriodStartField.value = originalValue;
+        });
+}
+
+// Initialize calculation on page load
+document.addEventListener('DOMContentLoaded', function() {
+    calculateTotals();
+});
+</script>
+{% endblock %}

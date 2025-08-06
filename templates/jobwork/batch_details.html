@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Details #{{ batch.id }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-info-circle"></i> Batch Details #{{ batch.id }}</h1>
+            <p class="text-muted">Complete traceability information for job work batch processing</p>
+        </div>
+        <div class="col-auto">
+            {% if batch.status in ['issued', 'in_progress'] %}
+            <a href="{{ url_for('jobwork.batch_return') }}?batch_id={{ batch.id }}" class="btn btn-success">
+                <i class="fas fa-undo"></i> Process Return
+            </a>
+            {% endif %}
+            <a href="{{ url_for('jobwork.batch_tracking') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Tracking
+            </a>
+        </div>
+    </div>
+
+    <!-- Basic Information -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info me-2"></i>Batch Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Batch ID:</strong></td>
+                                    <td>#{{ batch.id }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Job Work:</strong></td>
+                                    <td>
+                                        {% if batch.job_work %}
+                                            <a href="{{ url_for('jobwork.view_job_work', job_id=batch.job_work.id) }}" class="text-decoration-none">
+                                                {{ batch.job_work.job_number }} - {{ batch.job_work.job_title }}
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Process Name:</strong></td>
+                                    <td><span class="badge bg-info">{{ batch.process_name }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Input Batch:</strong></td>
+                                    <td>
+                                        {% if batch.input_batch %}
+                                            <span class="badge bg-secondary">{{ batch.input_batch.batch_number }}</span>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        {% if batch.status == 'issued' %}
+                                            <span class="badge bg-warning">Issued</span>
+                                        {% elif batch.status == 'in_progress' %}
+                                            <span class="badge bg-info">In Progress</span>
+                                        {% elif batch.status == 'returned' %}
+                                            <span class="badge bg-success">Returned</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ batch.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Issue Date:</strong></td>
+                                    <td>{{ batch.issue_date.strftime('%d %b %Y %H:%M') if batch.issue_date else 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Return Date:</strong></td>
+                                    <td>{{ batch.return_date.strftime('%d %b %Y %H:%M') if batch.return_date else 'Not returned yet' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Days in Process:</strong></td>
+                                    <td>
+                                        {% set days = batch.days_in_process %}
+                                        {% if days > 7 %}
+                                            <span class="badge bg-danger">{{ days }} days</span>
+                                        {% elif days > 3 %}
+                                            <span class="badge bg-warning">{{ days }} days</span>
+                                        {% else %}
+                                            <span class="badge bg-success">{{ days }} days</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Output Batch:</strong></td>
+                                    <td>
+                                        {% if batch.output_batch_code %}
+                                            <span class="badge bg-primary">{{ batch.output_batch_code }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Not created yet</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Quality Status:</strong></td>
+                                    <td>
+                                        {% if batch.quality_status == 'approved' %}
+                                            <span class="badge bg-success">Approved</span>
+                                        {% elif batch.quality_status == 'rejected' %}
+                                            <span class="badge bg-danger">Rejected</span>
+                                        {% elif batch.quality_status == 'rework' %}
+                                            <span class="badge bg-warning">Rework</span>
+                                        {% elif batch.quality_status %}
+                                            <span class="badge bg-secondary">{{ batch.quality_status }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Not inspected</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quantity Summary -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Quantity Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="p-3 bg-light rounded">
+                                <h4 class="text-primary mb-1">{{ batch.quantity_issued or 0 }}</h4>
+                                <small class="text-muted">Issued</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="p-3 bg-light rounded">
+                                <h4 class="text-success mb-1">{{ batch.quantity_finished or 0 }}</h4>
+                                <small class="text-muted">Finished</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded">
+                                <h4 class="text-danger mb-1">{{ batch.quantity_scrap or 0 }}</h4>
+                                <small class="text-muted">Scrap</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded">
+                                <h4 class="text-warning mb-1">{{ batch.quantity_returned_unused or 0 }}</h4>
+                                <small class="text-muted">Unused</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if batch.yield_percentage is not none %}
+                    <div class="mt-3 text-center">
+                        <h5 class="mb-1">Yield Rate</h5>
+                        {% set yield_pct = batch.yield_percentage %}
+                        {% if yield_pct >= 90 %}
+                            <span class="badge bg-success fs-6">{{ "%.1f"|format(yield_pct) }}%</span>
+                        {% elif yield_pct >= 75 %}
+                            <span class="badge bg-warning fs-6">{{ "%.1f"|format(yield_pct) }}%</span>
+                        {% else %}
+                            <span class="badge bg-danger fs-6">{{ "%.1f"|format(yield_pct) }}%</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quality Control & Notes -->
+    {% if batch.qc_notes or batch.batch_notes %}
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-white">
+            <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Quality Control & Notes</h5>
+        </div>
+        <div class="card-body">
+            {% if batch.qc_notes %}
+            <div class="mb-3">
+                <h6><i class="fas fa-check-circle me-2"></i>QC Notes</h6>
+                <div class="alert alert-info">
+                    {{ batch.qc_notes }}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if batch.batch_notes %}
+            <div>
+                <h6><i class="fas fa-sticky-note me-2"></i>Batch Notes</h6>
+                <div class="alert alert-secondary">
+                    {{ batch.batch_notes | replace('\n', '<br>') | safe }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Input Batch History -->
+    {% if input_batch_history %}
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-history me-2"></i>Input Batch Processing History</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Batch ID</th>
+                            <th>Process</th>
+                            <th>Issue Date</th>
+                            <th>Return Date</th>
+                            <th>Quantity Issued</th>
+                            <th>Quantity Finished</th>
+                            <th>Yield %</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hist_batch in input_batch_history %}
+                        <tr {% if hist_batch.id == batch.id %}class="table-warning"{% endif %}>
+                            <td>
+                                <a href="{{ url_for('jobwork.batch_details', batch_id=hist_batch.id) }}" class="text-decoration-none">
+                                    #{{ hist_batch.id }}
+                                    {% if hist_batch.id == batch.id %}<i class="fas fa-eye text-warning ms-1" title="Current Batch"></i>{% endif %}
+                                </a>
+                            </td>
+                            <td><span class="badge bg-info">{{ hist_batch.process_name }}</span></td>
+                            <td>{{ hist_batch.issue_date.strftime('%d %b %Y') if hist_batch.issue_date else 'N/A' }}</td>
+                            <td>{{ hist_batch.return_date.strftime('%d %b %Y') if hist_batch.return_date else 'In Process' }}</td>
+                            <td>{{ hist_batch.quantity_issued or 0 }}</td>
+                            <td>{{ hist_batch.quantity_finished or 0 }}</td>
+                            <td>
+                                {% if hist_batch.yield_percentage is not none %}
+                                    {% set yield_pct = hist_batch.yield_percentage %}
+                                    {% if yield_pct >= 90 %}
+                                        <span class="badge bg-success">{{ "%.1f"|format(yield_pct) }}%</span>
+                                    {% elif yield_pct >= 75 %}
+                                        <span class="badge bg-warning">{{ "%.1f"|format(yield_pct) }}%</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">{{ "%.1f"|format(yield_pct) }}%</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if hist_batch.status == 'issued' %}
+                                    <span class="badge bg-warning">Issued</span>
+                                {% elif hist_batch.status == 'in_progress' %}
+                                    <span class="badge bg-info">In Progress</span>
+                                {% elif hist_batch.status == 'returned' %}
+                                    <span class="badge bg-success">Returned</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ hist_batch.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Inspector Information -->
+    {% if batch.inspected_by %}
+    <div class="card">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="fas fa-user-check me-2"></i>Inspector Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Inspected By:</strong> User ID #{{ batch.inspected_by }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Inspection Date:</strong> 
+                    {{ batch.inspected_at.strftime('%d %b %Y %H:%M') if batch.inspected_at else 'N/A' }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.table-borderless td {
+    border: none;
+    padding: 0.25rem 0.5rem;
+}
+
+.table-borderless tr:first-child td {
+    padding-top: 0;
+}
+
+.fs-6 {
+    font-size: 1rem !important;
+}
+
+.alert {
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+.badge {
+    font-size: 0.8rem;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

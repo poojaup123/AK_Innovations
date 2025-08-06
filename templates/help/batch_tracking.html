@@ -1,0 +1,202 @@
+{% extends "help/base_help.html" %}
+
+{% block title %}Batch Tracking Help - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="text-center mb-4">
+    <h1><i class="fas fa-barcode"></i> Batch Tracking Guide</h1>
+    <p class="lead">Complete traceability from raw materials to finished products</p>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-info-circle"></i> What is Batch Tracking?</h3>
+    <p>Batch tracking provides complete traceability of materials throughout the manufacturing process. Each batch has a unique identifier that follows the material from receipt through production to final delivery.</p>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-route"></i> Batch Lifecycle</h3>
+    <div class="row">
+        <div class="col-md-2">
+            <div class="category-card text-center">
+                <div class="category-header text-primary">
+                    <i class="fas fa-truck"></i> Receipt
+                </div>
+                <p>Batch created when materials arrive</p>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="category-card text-center">
+                <div class="category-header text-info">
+                    <i class="fas fa-warehouse"></i> Storage
+                </div>
+                <p>Batch stored in designated location</p>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="category-card text-center">
+                <div class="category-header text-warning">
+                    <i class="fas fa-cogs"></i> Production
+                </div>
+                <p>Batch consumed in manufacturing</p>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="category-card text-center">
+                <div class="category-header text-secondary">
+                    <i class="fas fa-exchange-alt"></i> Transfer
+                </div>
+                <p>Batch moved between processes</p>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="category-card text-center">
+                <div class="category-header text-success">
+                    <i class="fas fa-check"></i> Completion
+                </div>
+                <p>Finished product batches created</p>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="category-card text-center">
+                <div class="category-header text-danger">
+                    <i class="fas fa-shipping-fast"></i> Dispatch
+                </div>
+                <p>Batch shipped to customer</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-tags"></i> Batch Information</h3>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="help-example">
+                <strong>Basic Information:</strong>
+                <ul>
+                    <li>Batch Number (unique identifier)</li>
+                    <li>Item Code and Description</li>
+                    <li>Quantity and Unit of Measure</li>
+                    <li>Manufacturing Date</li>
+                    <li>Expiry Date (if applicable)</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="help-example">
+                <strong>Process Information:</strong>
+                <ul>
+                    <li>Current Process/Location</li>
+                    <li>Quality Status</li>
+                    <li>Supplier Information</li>
+                    <li>Production Order Reference</li>
+                    <li>Processing History</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-layer-group"></i> Multi-State Tracking</h3>
+    <p>Batches are tracked through different manufacturing states:</p>
+    <div class="row">
+        <div class="col-md-3">
+            <div class="category-card">
+                <div class="category-header text-primary">
+                    <i class="fas fa-cube"></i> Raw Material
+                </div>
+                <p>Materials as received from suppliers</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="category-card">
+                <div class="category-header text-warning">
+                    <i class="fas fa-cogs"></i> Work in Progress
+                </div>
+                <p>Materials being processed</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="category-card">
+                <div class="category-header text-success">
+                    <i class="fas fa-check-circle"></i> Finished Goods
+                </div>
+                <p>Completed products ready for sale</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="category-card">
+                <div class="category-header text-danger">
+                    <i class="fas fa-trash"></i> Scrap
+                </div>
+                <p>Rejected or unusable material</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-search"></i> Traceability Features</h3>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="help-tip">
+                <strong>Forward Traceability:</strong> Track where specific batches went and which products they became part of
+            </div>
+            <div class="help-tip">
+                <strong>Backward Traceability:</strong> Identify which raw material batches were used in a finished product
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="help-tip">
+                <strong>Supplier Traceability:</strong> Link finished products back to original suppliers
+            </div>
+            <div class="help-tip">
+                <strong>Process Traceability:</strong> Track which processes and operators worked on each batch
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-shield-alt"></i> Quality Management</h3>
+    <p>Batch tracking supports comprehensive quality control:</p>
+    <ul>
+        <li><strong>Incoming Inspection:</strong> Record quality status upon receipt</li>
+        <li><strong>Process Quality:</strong> Track quality at each manufacturing stage</li>
+        <li><strong>Final Inspection:</strong> Ensure products meet specifications</li>
+        <li><strong>Customer Complaints:</strong> Quickly identify affected batches</li>
+        <li><strong>Recall Management:</strong> Precise identification of products to recall</li>
+    </ul>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-calendar-alt"></i> Expiry Management</h3>
+    <p>For time-sensitive materials:</p>
+    <div class="help-example">
+        <strong>FIFO (First In, First Out):</strong> Automatic suggestion to use older batches first
+    </div>
+    <div class="help-example">
+        <strong>Expiry Alerts:</strong> Notifications for approaching expiry dates
+    </div>
+    <div class="help-example">
+        <strong>Shelf Life Tracking:</strong> Calculate remaining useful life
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-file-alt"></i> Batch Reports</h3>
+    <p>Available reports include:</p>
+    <ul>
+        <li><strong>Batch Movement Report:</strong> Complete history of batch transactions</li>
+        <li><strong>Batch Genealogy:</strong> Family tree showing parent-child relationships</li>
+        <li><strong>Where Used Report:</strong> Shows where specific batches were consumed</li>
+        <li><strong>Lot Traceability:</strong> End-to-end tracking from supplier to customer</li>
+        <li><strong>Expiry Report:</strong> Batches approaching expiry</li>
+    </ul>
+</div>
+
+<div class="help-warning">
+    <strong>Critical for Compliance:</strong> Batch tracking is essential for ISO certification, customer audits, regulatory compliance, and effective recall management.
+</div>
+{% endblock %}

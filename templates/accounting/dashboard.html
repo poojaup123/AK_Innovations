@@ -1,0 +1,430 @@
+{% extends "base.html" %}
+
+{% block title %}Accounting Dashboard - Factory Management System{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.stats-card {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+
+.stats-icon {
+    font-size: 2.5rem;
+    opacity: 0.7;
+}
+
+.positive-amount {
+    color: #28a745;
+}
+
+.negative-amount {
+    color: #dc3545;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-calculator"></i> Accounting Dashboard</h1>
+            <p class="text-muted">Complete financial overview and management</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('accounting.add_voucher') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> New Voucher
+                </a>
+                <a href="{{ url_for('accounting.add_payment') }}" class="btn btn-success">
+                    <i class="fas fa-money-bill-wave"></i> Record Payment
+                </a>
+                <a href="{{ url_for('accounting.reports_dashboard') }}" class="btn btn-info">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </a>
+                <a href="{{ url_for('accounting.integration_flowchart') }}" class="btn btn-secondary">
+                    <i class="fas fa-sitemap"></i> Integration Flow
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card border-primary">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Total Assets</h6>
+                            <h4 class="positive-amount">₹{{ "{:,.2f}".format(stats.total_assets or 0) }}</h4>
+                        </div>
+                        <i class="fas fa-building stats-icon text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-warning">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Total Liabilities</h6>
+                            <h4 class="negative-amount">₹{{ "{:,.2f}".format(stats.total_liabilities or 0) }}</h4>
+                        </div>
+                        <i class="fas fa-credit-card stats-icon text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-success">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Net Worth</h6>
+                            <h4 class="{{ 'positive-amount' if stats.net_worth >= 0 else 'negative-amount' }}">
+                                ₹{{ "{:,.2f}".format(stats.net_worth or 0) }}
+                            </h4>
+                        </div>
+                        <i class="fas fa-chart-line stats-icon text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-info">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Profit/Loss</h6>
+                            <h4 class="{{ 'positive-amount' if stats.profit_loss >= 0 else 'negative-amount' }}">
+                                ₹{{ "{:,.2f}".format(stats.profit_loss or 0) }}
+                            </h4>
+                        </div>
+                        <i class="fas fa-balance-scale stats-icon text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-muted">Outstanding Receivables</h6>
+                    <h5 class="positive-amount">₹{{ "{:,.2f}".format(stats.outstanding_receivables or 0) }}</h5>
+                    <small class="text-muted">Amount to be collected</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-muted">Outstanding Payables</h6>
+                    <h5 class="negative-amount">₹{{ "{:,.2f}".format(stats.outstanding_payables or 0) }}</h5>
+                    <small class="text-muted">Amount to be paid</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-muted">Total Inventory Value</h6>
+                    <h5 class="text-info">₹{{ "{:,.2f}".format(stats.inventory_valuation.total or 0) }}</h5>
+                    <small class="text-muted">Current stock valuation</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Inventory Valuation Breakdown -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-boxes"></i> Inventory Valuation Breakdown</h5>
+                    <a href="{{ url_for('inventory_valuation.dashboard') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye"></i> Detailed View
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h6 class="text-muted">Raw Materials</h6>
+                                <h5 class="text-primary">₹{{ "{:,.2f}".format(stats.inventory_valuation.raw_material or 0) }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h6 class="text-muted">Work in Progress</h6>
+                                <h5 class="text-warning">₹{{ "{:,.2f}".format(stats.inventory_valuation.wip or 0) }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h6 class="text-muted">Finished Goods</h6>
+                                <h5 class="text-success">₹{{ "{:,.2f}".format(stats.inventory_valuation.finished_goods or 0) }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 border rounded">
+                                <h6 class="text-muted">Scrap Value</h6>
+                                <h5 class="text-secondary">₹{{ "{:,.2f}".format(stats.inventory_valuation.scrap or 0) }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Monthly Transactions moved here -->
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6 class="text-muted">Monthly Transactions</h6>
+                                <h5 class="text-primary">{{ stats.monthly_vouchers or 0 }}</h5>
+                                <small class="text-muted">Posted vouchers this month</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Monthly Expense Trend -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-line"></i> Monthly Expense Trend</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="expenseChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bank Balances -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-university"></i> Bank Balances</h5>
+                </div>
+                <div class="card-body">
+                    {% if bank_accounts %}
+                        {% for bank_account in bank_accounts %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>{{ bank_account.bank_name }}</strong><br>
+                                <small class="text-muted">****{{ bank_account.account_number[-4:] if bank_account.account_number else '0000' }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="{{ 'positive-amount' if bank_account.current_balance >= 0 else 'negative-amount' }}">
+                                    ₹{{ "{:,.2f}".format(bank_account.current_balance or 0) }}
+                                </span>
+                            </div>
+                        </div>
+                        {% if not loop.last %}<hr>{% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No bank accounts configured</p>
+                        <a href="{{ url_for('accounting.add_account') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-plus"></i> Add Account
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-list"></i> Recent Transactions</h5>
+                    <a href="/accounting/vouchers" class="btn btn-outline-primary btn-sm">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_vouchers %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Voucher No.</th>
+                                        <th>Type</th>
+                                        <th>Party</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for voucher in recent_vouchers %}
+                                    <tr>
+                                        <td>{{ voucher.transaction_date.strftime('%d/%m/%Y') }}</td>
+                                        <td><strong>{{ voucher.voucher_number }}</strong></td>
+                                        <td>{{ voucher.voucher_type.name }}</td>
+                                        <td>{{ voucher.party.name if voucher.party else '-' }}</td>
+                                        <td class="text-end">₹{{ "{:,.2f}".format(voucher.total_amount) }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if voucher.status == 'posted' else 'warning' }}">
+                                                {{ voucher.status.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('accounting.view_voucher', id=voucher.id) }}" 
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-center text-muted">No recent transactions</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('accounting.list_accounts') }}" class="btn btn-outline-primary w-100 mb-2">
+                                <i class="fas fa-list-ul"></i><br>
+                                Chart of Accounts
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('accounting.list_invoices') }}" class="btn btn-outline-primary w-100 mb-2">
+                                <i class="fas fa-file-invoice"></i><br>
+                                Invoices
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('accounting.add_payment') }}" class="btn btn-outline-success w-100 mb-2">
+                                <i class="fas fa-hand-holding-usd"></i><br>
+                                Record Payment
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('accounting.trial_balance') }}" class="btn btn-outline-info w-100 mb-2">
+                                <i class="fas fa-balance-scale"></i><br>
+                                Trial Balance
+                            </a>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('accounting.profit_loss') }}" class="btn btn-outline-warning w-100 mb-2">
+                                <i class="fas fa-chart-pie"></i><br>
+                                P&L Statement
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('accounting.add_invoice') }}" class="btn btn-outline-secondary w-100 mb-2">
+                                <i class="fas fa-plus"></i><br>
+                                Create Invoice
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('accounting.gst_summary') }}" class="btn btn-outline-info w-100 mb-2">
+                                <i class="fas fa-percentage"></i><br>
+                                GST Summary
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('accounting.balance_sheet') }}" class="btn btn-outline-dark w-100 mb-2">
+                                <i class="fas fa-file-alt"></i><br>
+                                Balance Sheet
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Expense Trend Chart
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('expenseChart');
+    if (ctx) {
+        const expenseChart = new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Monthly Expenses',
+                    data: [12000, 15000, 8000, 22000, 18000, 25000],
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₹' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Expenses: ₹' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

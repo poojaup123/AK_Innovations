@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-file-invoice"></i> {{ title }}</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('accounting.list_invoices') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Invoices
+            </a>
+        </div>
+    </div>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Invoice Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ form.invoice_type.label(class="form-label") }}
+                        {{ form.invoice_type(class="form-select") }}
+                        {% if form.invoice_type.errors %}
+                            <div class="text-danger">{{ form.invoice_type.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.party_id.label(class="form-label") }}
+                        {{ form.party_id(class="form-select") }}
+                        {% if form.party_id.errors %}
+                            <div class="text-danger">{{ form.party_id.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.invoice_date.label(class="form-label") }}
+                        {{ form.invoice_date(class="form-control") }}
+                        {% if form.invoice_date.errors %}
+                            <div class="text-danger">{{ form.invoice_date.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        {{ form.due_date.label(class="form-label") }}
+                        {{ form.due_date(class="form-control") }}
+                        {% if form.due_date.errors %}
+                            <div class="text-danger">{{ form.due_date.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.place_of_supply.label(class="form-label") }}
+                        {{ form.place_of_supply(class="form-control") }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.reference_type.label(class="form-label") }}
+                        {{ form.reference_type(class="form-select") }}
+                    </div>
+                </div>
+                
+                {% if form.reference_id %}
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        {{ form.reference_id.label(class="form-label") }}
+                        {{ form.reference_id(class="form-control") }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Create Invoice
+                </button>
+                <a href="{{ url_for('accounting.list_invoices') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

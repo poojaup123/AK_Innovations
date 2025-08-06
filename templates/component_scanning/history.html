@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Detection History - Component Scanning{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('component_scanning.dashboard') }}">Component Scanning</a>
+                    </li>
+                    <li class="breadcrumb-item active">Detection History</li>
+                </ol>
+            </nav>
+            <h1><i class="fas fa-history"></i> Detection History</h1>
+            <p class="text-muted">View all your component detection sessions</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('component_scanning.upload_image') }}" class="btn btn-primary">
+                <i class="fas fa-upload"></i> New Detection
+            </a>
+        </div>
+    </div>
+
+    <!-- Detection Sessions -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-list"></i> Detection Sessions</h5>
+        </div>
+        <div class="card-body">
+            {% if detections.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Session ID</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Components</th>
+                                <th>Processing Time</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for detection in detections.items %}
+                            <tr>
+                                <td>
+                                    <code>{{ detection.session_id[:8] }}...</code>
+                                </td>
+                                <td>{{ detection.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    {% if detection.status == 'completed' %}
+                                        <span class="badge bg-success">Completed</span>
+                                    {% elif detection.status == 'processing' %}
+                                        <span class="badge bg-warning">Processing</span>
+                                    {% elif detection.status == 'failed' %}
+                                        <span class="badge bg-danger">Failed</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ detection.status|title }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ detection.total_components_detected or 0 }}</strong>
+                                </td>
+                                <td>
+                                    {% if detection.processing_time %}
+                                        {{ "%.1f"|format(detection.processing_time) }}s
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if detection.status == 'completed' %}
+                                        <a href="{{ url_for('component_scanning.view_results', session_id=detection.session_id) }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        {% if detection.svg_layout_path %}
+                                            <a href="{{ url_for('component_scanning.download_layout', session_id=detection.session_id) }}" 
+                                               class="btn btn-sm btn-success">
+                                                <i class="fas fa-download"></i> SVG
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                    
+                                    <form method="POST" action="{{ url_for('component_scanning.delete_session', session_id=detection.session_id) }}" 
+                                          style="display: inline;" onsubmit="return confirm('Delete this detection session?')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if detections.pages > 1 %}
+                <nav aria-label="Detection history pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if detections.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('component_scanning.detection_history', page=detections.prev_num) }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in detections.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != detections.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('component_scanning.detection_history', page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if detections.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('component_scanning.detection_history', page=detections.next_num) }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5>No Detection History</h5>
+                    <p class="text-muted">You haven't run any component detections yet.</p>
+                    <a href="{{ url_for('component_scanning.upload_image') }}" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Start Your First Detection
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

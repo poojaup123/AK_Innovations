@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Dashboard - AK Innovations Factory Management{% endblock %}
+
+{% block head %}
+<style>
+.stats-card {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+    margin-bottom: 1.5rem;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+
+.stats-icon {
+    font-size: 2.5rem;
+    opacity: 0.7;
+}
+
+.positive-amount {
+    color: #28a745;
+}
+
+.negative-amount {
+    color: #dc3545;
+}
+
+.content-section {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+}
+
+.content-section .card-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    border-radius: 10px 10px 0 0;
+    padding: 1rem 1.5rem;
+}
+
+.item-row {
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid #f1f3f4;
+    transition: background-color 0.2s;
+}
+
+.item-row:hover {
+    background-color: #f8f9fa;
+}
+
+.item-row:last-child {
+    border-bottom: none;
+}
+
+.badge-inventory {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-warehouse"></i> Inventory Dashboard</h1>
+            <p class="text-muted">Real-time inventory monitoring and control</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('inventory.add_item') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Item
+                </a>
+                <a href="{{ url_for('inventory.multi_state_view') }}" class="btn btn-info">
+                    <i class="fas fa-layer-group"></i> Multi-State View
+                </a>
+                <a href="{{ url_for('inventory.export_items') }}" class="btn btn-success">
+                    <i class="fas fa-file-excel"></i> Export
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card border-primary">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Total Items</h6>
+                            <h4 class="positive-amount">{{ stats.total_items }}</h4>
+                        </div>
+                        <i class="fas fa-cubes stats-icon text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-warning">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Low Stock</h6>
+                            <h4 class="text-warning">{{ stats.low_stock_items }}</h4>
+                        </div>
+                        <i class="fas fa-exclamation-triangle stats-icon text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-success">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Stock Value</h6>
+                            <h4 class="positive-amount">₹{{ "{:,.0f}".format(stats.total_stock_value) }}</h4>
+                        </div>
+                        <i class="fas fa-chart-line stats-icon text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-danger">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Out of Stock</h6>
+                            <h4 class="negative-amount">{{ stats.out_of_stock_items }}</h4>
+                        </div>
+                        <i class="fas fa-times-circle stats-icon text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Categories -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-muted">Raw Materials</h6>
+                    <h3 class="text-info">{{ stats.raw_material_items }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-muted">Work in Progress</h6>
+                    <h3 class="text-warning">{{ stats.wip_items }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-muted">Finished Goods</h6>
+                    <h3 class="text-success">{{ stats.finished_goods_items }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-muted">Scrap Items</h6>
+                    <h3 class="text-secondary">{{ stats.scrap_items }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Items and UOM Distribution -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="content-section">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-clock"></i> Recently Added Items</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_items %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th class="text-center">Stock</th>
+                                        <th class="text-center">Price</th>
+                                        <th class="text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in recent_items %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ item.code }}</strong>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                {{ item.name[:35] }}{{ '...' if item.name|length > 35 else '' }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ item.item_type.replace('_', ' ').title() }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <strong>{{ item.current_stock or 0 }}</strong>
+                                            <small class="text-muted d-block">{{ item.unit_of_measure }}</small>
+                                        </td>
+                                        <td class="text-center">
+                                            ₹{{ "%.2f"|format(item.unit_price or 0) }}
+                                        </td>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-outline-primary" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                            <h6>No recent items</h6>
+                            <p class="text-muted">Add your first inventory item to see activity here</p>
+                            <a href="{{ url_for('inventory.add_item') }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add First Item
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="content-section">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Unit Distribution</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if uom_stats %}
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Unit</th>
+                                        <th class="text-center">Items</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for uom, count in uom_stats %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ uom.upper() }}</strong>
+                                            <small class="text-muted d-block">{{ count }} items</small>
+                                        </td>
+                                        <td class="text-center">
+                                            <h6 class="mb-0">{{ count }}</h6>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-ruler fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">No units defined</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="content-section">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('inventory.list_items') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-list"></i> View All Items
+                        </a>
+                        <a href="{{ url_for('inventory.multi_state_view') }}" class="btn btn-outline-info">
+                            <i class="fas fa-layer-group"></i> Multi-State View
+                        </a>
+                        <a href="{{ url_for('inventory.unified_view') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-th-large"></i> Unified View
+                        </a>
+                        <a href="{{ url_for('inventory.export_items') }}" class="btn btn-outline-success">
+                            <i class="fas fa-file-excel"></i> Generate Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Dashboard functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Add smooth hover effects
+    const cards = document.querySelectorAll('.stats-card, .content-section');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+        });
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+});
+
+// Refresh dashboard data
+function refreshDashboard() {
+    window.location.reload();
+}
+</script>
+{% endblock %}

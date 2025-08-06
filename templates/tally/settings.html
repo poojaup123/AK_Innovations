@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Tally Settings - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-cog me-2"></i>Tally Integration Settings</h2>
+            <p class="text-muted">Configure Tally integration parameters and mapping settings</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('tally.dashboard') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Integration Guide -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>Tally Integration Guide</h5>
+                </div>
+                <div class="card-body">
+                    <h6>How to Sync Data with Tally:</h6>
+                    <ol>
+                        <li><strong>Export Masters:</strong> First export Chart of Accounts (Ledgers) and Stock Items to create master data in Tally</li>
+                        <li><strong>Import in Tally:</strong> Use Tally's Gateway of Tally > Import Data to import the XML files</li>
+                        <li><strong>Export Vouchers:</strong> Export transactions as vouchers with appropriate date ranges</li>
+                        <li><strong>Verify & Post:</strong> Review imported data in Tally and post vouchers</li>
+                        <li><strong>Mark as Synced:</strong> Use the sync status page to mark successfully imported records</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mapping Settings -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-map me-2"></i>Account Mapping</h6>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-primary">Default Tally Account Mapping:</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Suppliers:</strong></td>
+                            <td>Sundry Creditors</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Customers:</strong></td>
+                            <td>Sundry Debtors</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Sales:</strong></td>
+                            <td>Sales Accounts</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Cash Payments:</strong></td>
+                            <td>Cash</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Bank Transfers:</strong></td>
+                            <td>Bank Account</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-receipt me-2"></i>Expense Categories Mapping</h6>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-warning">Factory Expense Categories → Tally Ledgers:</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Utilities:</strong></td>
+                            <td>Utilities Expenses</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Maintenance:</strong></td>
+                            <td>Maintenance Expenses</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Salary:</strong></td>
+                            <td>Salary Expenses</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Materials:</strong></td>
+                            <td>Materials Expenses</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Overhead:</strong></td>
+                            <td>Overhead Expenses</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Transport:</strong></td>
+                            <td>Transport Expenses</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Others:</strong></td>
+                            <td>Other Expenses</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GST Configuration -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-percent me-2"></i>GST Configuration</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-success">GST Features Exported:</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success me-2"></i>GSTIN numbers for suppliers/customers</li>
+                                <li><i class="fas fa-check text-success me-2"></i>HSN codes for stock items</li>
+                                <li><i class="fas fa-check text-success me-2"></i>GST rates from item master</li>
+                                <li><i class="fas fa-check text-success me-2"></i>GST registration type detection</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-lightbulb me-2"></i>Tip:</h6>
+                                <p class="mb-0">Ensure GST rates and HSN codes are correctly configured in your item master before exporting to maintain GST compliance in Tally.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Configuration -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-download me-2"></i>Export Configuration</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-address-book fa-2x text-primary mb-2"></i>
+                                    <h6>Ledger Export</h6>
+                                    <ul class="list-unstyled small text-start">
+                                        <li>• Supplier/Customer names</li>
+                                        <li>• Address information</li>
+                                        <li>• GST registration details</li>
+                                        <li>• Contact information</li>
+                                        <li>• Parent group assignment</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-boxes fa-2x text-success mb-2"></i>
+                                    <h6>Stock Item Export</h6>
+                                    <ul class="list-unstyled small text-start">
+                                        <li>• Item names and codes</li>
+                                        <li>• Category grouping</li>
+                                        <li>• Unit of measure</li>
+                                        <li>• Opening stock balance</li>
+                                        <li>• HSN codes and GST rates</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-receipt fa-2x text-warning mb-2"></i>
+                                    <h6>Voucher Export</h6>
+                                    <ul class="list-unstyled small text-start">
+                                        <li>• Purchase/Sales vouchers</li>
+                                        <li>• Payment/Journal entries</li>
+                                        <li>• Stock movement details</li>
+                                        <li>• Reference numbers</li>
+                                        <li>• Date-wise filtering</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Best Practices -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-star me-2"></i>Best Practices</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-success">✓ Do:</h6>
+                            <ul>
+                                <li>Export masters before vouchers</li>
+                                <li>Verify data in Tally before posting</li>
+                                <li>Export in chronological order</li>
+                                <li>Mark records as synced after successful import</li>
+                                <li>Keep regular backups of Tally data</li>
+                                <li>Test with small date ranges first</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-danger">✗ Don't:</h6>
+                            <ul>
+                                <li>Export incomplete transactions</li>
+                                <li>Import duplicate vouchers</li>
+                                <li>Ignore GST validation errors</li>
+                                <li>Skip data verification in Tally</li>
+                                <li>Export without proper date filters</li>
+                                <li>Forget to reconcile after import</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "help/base_help.html" %}
+
+{% block title %}Purchase Orders Help - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="text-center mb-4">
+    <h1><i class="fas fa-shopping-cart"></i> Purchase Orders Guide</h1>
+    <p class="lead">Complete guide to managing supplier purchases</p>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-info-circle"></i> Overview</h3>
+    <p>Purchase Orders (PO) manage the procurement of materials, tools, and services from suppliers. They integrate with inventory, accounting, and GRN systems for complete procurement workflow.</p>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-flow-chart"></i> Purchase Order Workflow</h3>
+    <div class="row">
+        <div class="col-md-2">
+            <div class="category-card text-center">
+                <div class="category-header text-primary">Draft</div>
+                <p>PO being prepared</p>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="category-card text-center">
+                <div class="category-header text-info">Sent</div>
+                <p>PO sent to supplier</p>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="category-card text-center">
+                <div class="category-header text-warning">Confirmed</div>
+                <p>Supplier confirmed order</p>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="category-card text-center">
+                <div class="category-header text-primary">Partial</div>
+                <p>Partially received</p>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="category-card text-center">
+                <div class="category-header text-success">Received</div>
+                <p>Fully received</p>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="category-card text-center">
+                <div class="category-header text-danger">Cancelled</div>
+                <p>Order cancelled</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-plus"></i> Creating Purchase Orders</h3>
+    <div class="help-tip">
+        <strong>Supplier Selection:</strong> Choose from registered suppliers or add new ones as needed
+    </div>
+    <div class="help-tip">
+        <strong>Item Selection:</strong> Add items with quantities, rates, and specifications
+    </div>
+    <div class="help-tip">
+        <strong>Terms & Conditions:</strong> Include payment terms, delivery schedule, and quality requirements
+    </div>
+    <div class="help-tip">
+        <strong>Tax Calculation:</strong> GST is automatically calculated based on item HSN codes and supplier GST registration
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-truck"></i> Goods Receipt (GRN)</h3>
+    <p>When materials arrive:</p>
+    <ol>
+        <li><strong>Create GRN:</strong> Record what was actually received</li>
+        <li><strong>Quality Check:</strong> Inspect materials and record quality status</li>
+        <li><strong>Update Inventory:</strong> Stock levels are automatically updated</li>
+        <li><strong>Invoice Matching:</strong> Match supplier invoice with GRN</li>
+        <li><strong>Payment Processing:</strong> Generate payment vouchers</li>
+    </ol>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-calculator"></i> Cost Tracking</h3>
+    <p>Purchase orders track various costs:</p>
+    <ul>
+        <li><strong>Item Cost:</strong> Base price of materials</li>
+        <li><strong>Transportation:</strong> Freight and delivery charges</li>
+        <li><strong>GST:</strong> Input tax credit tracking</li>
+        <li><strong>Other Charges:</strong> Handling, insurance, etc.</li>
+    </ul>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-file-alt"></i> Required Information</h3>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="help-example">
+                <strong>Supplier Details:</strong>
+                <ul>
+                    <li>Company name and address</li>
+                    <li>GST number</li>
+                    <li>Contact person and phone</li>
+                    <li>Payment terms</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="help-example">
+                <strong>Item Details:</strong>
+                <ul>
+                    <li>Item code and description</li>
+                    <li>Quantity and unit of measure</li>
+                    <li>Rate and total amount</li>
+                    <li>Delivery schedule</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="help-warning">
+    <strong>Important:</strong> Always verify supplier information and maintain updated supplier master data for accurate GST compliance and payment processing.
+</div>
+{% endblock %}

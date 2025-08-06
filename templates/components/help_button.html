@@ -1,0 +1,6 @@
+{# Reusable help button component #}
+{% macro help_button(help_route, button_text="Help", button_class="btn btn-info") %}
+<a href="{{ url_for(help_route) }}" class="{{ button_class }}" target="_blank">
+    <i class="fas fa-question-circle"></i> {{ button_text }}
+</a>
+{% endmacro %}

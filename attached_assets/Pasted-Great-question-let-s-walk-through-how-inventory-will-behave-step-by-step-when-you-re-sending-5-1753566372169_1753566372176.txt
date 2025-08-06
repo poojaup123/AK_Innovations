@@ -1,0 +1,90 @@
+Great question — let's walk through **how inventory will behave step-by-step** when you're sending 50 out of 100 raw plates for **cutting + blanking**, and then receiving them back:
+
+---
+
+### 🔄 STEP-BY-STEP INVENTORY FLOW (Example: Mounted Plate)
+
+You start with:
+
+> 🏭 **Inventory: 100 Mounted Plates (Raw)**
+
+---
+
+### ✅ **1. Send 50 for Job Work (Cutting + Blanking)**
+
+Action:
+You raise a **Job Work Out** for 50 plates.
+
+📦 Inventory impact:
+
+| Inventory Category           | Qty |
+| ---------------------------- | --- |
+| Raw Material (Mounted Plate) | 50  |
+| Under Process / WIP          | 50  |
+
+So now:
+
+* 50 plates still remain as raw stock
+* 50 plates are **moved** to a separate “Under Process” status
+
+You don’t lose them — just logically split the stock.
+
+---
+
+### ✅ **2. Receive Back 48 Plates (after job work)**
+
+Let’s say 2 plates were **rejected or scrapped** during the process.
+
+📦 Inventory impact:
+
+| Inventory Category   | Qty |
+| -------------------- | --- |
+| Finished (Processed) | 48  |
+| Scrap / Rejected     | 2   |
+| Under Process / WIP  | -50 |
+
+You now **remove 50 from WIP**, and **add 48 to Finished**, 2 to Scrap.
+
+---
+
+### 📊 FINAL INVENTORY STATUS
+
+| Type                | Quantity |
+| ------------------- | -------- |
+| Raw Material        | 50       |
+| Finished Goods      | 48       |
+| Scrap / Rejected    | 2        |
+| Under Process (WIP) | 0        |
+
+---
+
+### 🧩 How to Track in Your App
+
+In your system, you’ll maintain separate **logical stock statuses**, like:
+
+| Table       | Field / Status Example |
+| ----------- | ---------------------- |
+| `inventory` | `qty_raw` = 50         |
+| `inventory` | `qty_wip` = 0          |
+| `inventory` | `qty_finished` = 48    |
+| `inventory` | `qty_scrap` = 2        |
+
+OR track each transaction in an `inventory_movements` table with type:
+
+* Job Work Out
+* Job Work In
+* Scrap
+* Transfer
+
+---
+
+### 📦 Why This Is Powerful
+
+1. 📉 You avoid mixing up raw and finished stock
+2. 📋 You can see WIP at any time
+3. 🔄 You can **reverse** or track any batch/job-wise stock
+4. 🔍 Helps in precise cost + material traceability
+
+---
+
+Would you like a **sample inventory table design or job work screen** for this?

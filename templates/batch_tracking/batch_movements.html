@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Movements{% endblock %}
+
+{% block extra_css %}
+<style>
+.movements-header {
+    background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.movement-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 1rem;
+    transition: transform 0.2s ease;
+}
+
+.movement-card:hover {
+    transform: translateY(-2px);
+}
+
+.movement-type {
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.movement-type.issue { background-color: #dc3545; color: white; }
+.movement-type.receive { background-color: #28a745; color: white; }
+.movement-type.transfer { background-color: #17a2b8; color: white; }
+.movement-type.consume { background-color: #fd7e14; color: white; }
+.movement-type.produce { background-color: #6f42c1; color: white; }
+
+.timeline-container {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 2rem;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -1.5rem;
+    top: 0.5rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background-color: #007bff;
+}
+
+.timeline-item::after {
+    content: '';
+    position: absolute;
+    left: -1rem;
+    top: 1.5rem;
+    width: 2px;
+    height: calc(100% - 1rem);
+    background-color: #dee2e6;
+}
+
+.timeline-item:last-child::after {
+    display: none;
+}
+
+.filter-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Movements Header -->
+    <div class="movements-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-0">
+                    <i class="fas fa-exchange-alt mr-3"></i>
+                    Batch Movements & Transfers
+                </h1>
+                <p class="mb-0 mt-2 opacity-75">
+                    Complete audit trail of all batch movements across manufacturing processes
+                </p>
+            </div>
+            <div class="col-md-4 text-right">
+                <a href="{{ url_for('batch_tracking.dashboard') }}" class="btn btn-light">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <form method="GET" class="row align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Batch Number</label>
+                <input type="text" name="batch_number" class="form-control" 
+                       value="{{ request.args.get('batch_number', '') }}" 
+                       placeholder="Enter batch number...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Movement Type</label>
+                <select name="movement_type" class="form-control">
+                    <option value="">All Types</option>
+                    <option value="issue" {{ 'selected' if request.args.get('movement_type') == 'issue' }}>Issue</option>
+                    <option value="receive" {{ 'selected' if request.args.get('movement_type') == 'receive' }}>Receive</option>
+                    <option value="transfer" {{ 'selected' if request.args.get('movement_type') == 'transfer' }}>Transfer</option>
+                    <option value="consume" {{ 'selected' if request.args.get('movement_type') == 'consume' }}>Consume</option>
+                    <option value="produce" {{ 'selected' if request.args.get('movement_type') == 'produce' }}>Produce</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Date Range</label>
+                <select name="date_range" class="form-control">
+                    <option value="">All Time</option>
+                    <option value="today" {{ 'selected' if request.args.get('date_range') == 'today' }}>Today</option>
+                    <option value="week" {{ 'selected' if request.args.get('date_range') == 'week' }}>This Week</option>
+                    <option value="month" {{ 'selected' if request.args.get('date_range') == 'month' }}>This Month</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Filter
+                </button>
+                <a href="{{ url_for('batch_tracking.batch_movements') }}" class="btn btn-outline-secondary ml-2">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Movements List -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history"></i> 
+                        Recent Batch Movements
+                        {% if movements %}
+                            <span class="badge badge-secondary ml-2">{{ movements|length }}</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if movements %}
+                        <div class="timeline-container">
+                            {% for movement in movements %}
+                            <div class="timeline-item">
+                                <div class="movement-card">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <span class="movement-type issue">
+                                                        Job Work
+                                                    </span>
+                                                    <h6 class="mb-0 ml-3">
+                                                        <a href="{{ url_for('batch_tracking.batch_detail', batch_id=movement.batch.id) }}">
+                                                            {{ movement.batch.batch_number }}
+                                                        </a>
+                                                    </h6>
+                                                </div>
+                                                
+                                                <p class="mb-2">
+                                                    <strong>{{ movement.batch.item.name }}</strong>
+                                                    {% if movement.batch.item.code %}
+                                                        <small class="text-muted">({{ movement.batch.item.code }})</small>
+                                                    {% endif %}
+                                                </p>
+                                                
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <p class="mb-1">
+                                                            <strong>Quantity:</strong> {{ movement.quantity_issued or 0 }} {{ movement.batch.item.unit_of_measure }}
+                                                        </p>
+                                                        <p class="mb-1">
+                                                            <strong>Job Work:</strong> 
+                                                            <span class="badge badge-info">{{ movement.job_work.job_work_number }}</span>
+                                                        </p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <p class="mb-1">
+                                                            <strong>Status:</strong> 
+                                                            <span class="badge badge-{{ 'success' if movement.status == 'completed' else 'warning' }}">{{ movement.status.title() if movement.status else 'Pending' }}</span>
+                                                        </p>
+                                                        {% if movement.received_date %}
+                                                        <p class="mb-1">
+                                                            <strong>Received:</strong> {{ movement.quantity_received or 0 }} units
+                                                        </p>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                
+                                                {% if movement.notes %}
+                                                <p class="mb-0 text-muted">
+                                                    <small><strong>Notes:</strong> {{ movement.notes }}</small>
+                                                </p>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-4 text-right">
+                                                <small class="text-muted d-block">
+                                                    {{ movement.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                                </small>
+                                                {% if movement.issued_date %}
+                                                <small class="text-muted d-block">
+                                                    Issued: {{ movement.issued_date.strftime('%d/%m/%Y') }}
+                                                </small>
+                                                {% endif %}
+                                                
+                                                <div class="btn-group btn-group-sm mt-2">
+                                                    <a href="{{ url_for('batch_tracking.batch_detail', batch_id=movement.batch.id) }}" 
+                                                       class="btn btn-outline-primary" title="View Batch">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="{{ url_for('batch_tracking.traceability_report', type='batch', batch_id=movement.batch.id) }}" 
+                                                       class="btn btn-outline-success" title="Trace Batch">
+                                                        <i class="fas fa-route"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                            <h5>No Movements Found</h5>
+                            {% if request.args %}
+                                <p class="text-muted">No movements match your current filter criteria.</p>
+                                <a href="{{ url_for('batch_tracking.batch_movements') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-times"></i> Clear Filters
+                                </a>
+                            {% else %}
+                                <p class="text-muted">No batch movements have been recorded yet.</p>
+                                <a href="{{ url_for('grn.dashboard') }}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Create First GRN
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

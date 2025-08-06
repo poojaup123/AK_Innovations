@@ -1,0 +1,112 @@
+{% extends "help/base_help.html" %}
+
+{% block title %}Inventory Management Help - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="text-center mb-4">
+    <h1><i class="fas fa-warehouse"></i> Inventory Management Guide</h1>
+    <p class="lead">Complete guide to managing your factory inventory</p>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-info-circle"></i> Overview</h3>
+    <p>The Inventory Management system tracks all materials, products, and components throughout your manufacturing process. It supports multi-state inventory tracking, batch management, and real-time stock monitoring.</p>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-layer-group"></i> Multi-State Inventory</h3>
+    <p>Items are tracked in different states throughout the manufacturing process:</p>
+    <div class="row">
+        <div class="col-md-3">
+            <div class="category-card">
+                <div class="category-header text-primary">
+                    <i class="fas fa-cube"></i> Raw Material
+                </div>
+                <p>Items as received from suppliers, ready for production</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="category-card">
+                <div class="category-header text-warning">
+                    <i class="fas fa-cogs"></i> Work in Progress
+                </div>
+                <p>Items currently being processed or in job work</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="category-card">
+                <div class="category-header text-success">
+                    <i class="fas fa-check-circle"></i> Finished Goods
+                </div>
+                <p>Completed items ready for sale or shipment</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="category-card">
+                <div class="category-header text-danger">
+                    <i class="fas fa-trash"></i> Scrap
+                </div>
+                <p>Rejected or unusable material</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-barcode"></i> Adding New Items</h3>
+    <div class="help-tip">
+        <strong>Item Code:</strong> Unique identifier for the item. Use a consistent naming convention (e.g., MTL-001, PRD-001)
+    </div>
+    <div class="help-tip">
+        <strong>HSN Code:</strong> Required for GST compliance. Use proper HSN codes for accurate tax calculation
+    </div>
+    <div class="help-tip">
+        <strong>Unit of Measure:</strong> Choose the most appropriate unit for tracking this item (Pcs, Kg, M, etc.)
+    </div>
+    <div class="help-tip">
+        <strong>Minimum Stock:</strong> Set alert level to prevent stockouts
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-exchange-alt"></i> Stock Movements</h3>
+    <p>Stock movements are automatically tracked through:</p>
+    <ul>
+        <li><strong>Purchase Orders:</strong> Increases raw material stock when received</li>
+        <li><strong>Production:</strong> Converts raw materials to finished goods</li>
+        <li><strong>Job Work:</strong> Moves items between different WIP states</li>
+        <li><strong>Sales Orders:</strong> Reduces finished goods stock when shipped</li>
+        <li><strong>Manual Adjustments:</strong> For corrections and physical count updates</li>
+    </ul>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-tags"></i> Batch Tracking</h3>
+    <p>Batch tracking provides complete traceability:</p>
+    <div class="help-example">
+        <strong>Benefits:</strong>
+        <ul>
+            <li>Quality control and recall management</li>
+            <li>Expiry date tracking</li>
+            <li>Manufacturing process history</li>
+            <li>Supplier traceability</li>
+        </ul>
+    </div>
+</div>
+
+<div class="help-section">
+    <h3><i class="fas fa-chart-line"></i> Inventory Reports</h3>
+    <p>Available reports include:</p>
+    <ul>
+        <li><strong>Stock Summary:</strong> Current stock levels by item</li>
+        <li><strong>Low Stock Alert:</strong> Items below minimum stock level</li>
+        <li><strong>Stock Movement:</strong> Transaction history for any period</li>
+        <li><strong>Batch Report:</strong> Batch-wise stock analysis</li>
+        <li><strong>Valuation Report:</strong> Inventory value calculation</li>
+    </ul>
+</div>
+
+<div class="help-warning">
+    <strong>Important:</strong> Always verify stock movements are accurately recorded. Incorrect inventory data affects production planning, costing, and financial reporting.
+</div>
+{% endblock %}

@@ -1,0 +1,119 @@
+To import **Tally Master Data** (like Items, Ledgers, UOMs, GST rates, etc.) into your factory management app, you can follow this structured process.
+
+---
+
+## ✅ Step-by-Step Guide: Import Tally Master Data
+
+### 🧾 1. **Export Data from Tally**
+
+Tally allows exporting data in multiple formats:
+
+| Data Type       | Export From       | Format to Use   |
+| --------------- | ----------------- | --------------- |
+| Items / Stock   | Inventory Masters | XML or Excel    |
+| Ledgers         | Accounts Masters  | XML or Excel    |
+| UOMs            | Units of Measure  | Excel preferred |
+| GST / Tax Rates | Statutory Masters | XML/Excel       |
+
+> 📌 **Recommended Format**: Excel (.xls/.xlsx) for easy mapping
+
+---
+
+### ⚙️ 2. **Sample Export Fields from Tally**
+
+| Tally Master Type | Common Fields Exported                                   |
+| ----------------- | -------------------------------------------------------- |
+| Item Master       | Name, Alias, Group, Units, GST Rate, Opening Balance     |
+| Ledger Master     | Name, Ledger Group, GSTIN, Opening Balance, Type (Party) |
+| UOM               | Unit Name, Symbol, Decimal Places                        |
+| Tax Rates         | Name, Percentage, Ledger Linked                          |
+
+---
+
+### 🔁 3. **Map to Your App’s Models**
+
+Create a mapping structure like:
+
+#### 🧱 Inventory Item Mapping
+
+| Tally Field | App Field            |
+| ----------- | -------------------- |
+| Name        | `item.name`          |
+| Units       | `item.uom_id`        |
+| GST Rate    | `item.gst_rate`      |
+| Opening Qty | `item.opening_stock` |
+| Value       | `item.opening_value` |
+
+#### 🧾 Ledger Mapping
+
+| Tally Field     | App Field        |
+| --------------- | ---------------- |
+| Ledger Name     | `ledger.name`    |
+| Ledger Group    | `ledger.type`    |
+| Opening Balance | `ledger.opening` |
+| GSTIN           | `ledger.gstin`   |
+
+---
+
+### 🛠️ 4. **Import Tools in Your App**
+
+Add an **“Import Master Data”** feature under `Settings > Tally Integration`:
+
+* ✅ Upload Excel or XML
+* ✅ Show preview & allow column mapping
+* ✅ Validate data (e.g., UOM must exist, GST valid)
+* ✅ Save into your tables
+
+---
+
+### 🧪 5. **Validation Logic**
+
+* ✔ Skip duplicates or update
+* ✔ Warn if UOM not matched
+* ✔ GST % must be valid (0%, 5%, 12%, etc.)
+* ✔ Ledger names must be unique within type
+
+---
+
+## 🔄 Optional: XML Parsing (if using XML)
+
+Tally XML format can be read using Python `xml.etree.ElementTree` or `BeautifulSoup`.
+
+Sample XML tag for stock item:
+
+```xml
+<STOCKITEM NAME="MS SHEET">
+  <BASICUNITS>Kgs</BASICUNITS>
+  <GSTDETAILS>
+    <GST_RATE>18</GST_RATE>
+  </GSTDETAILS>
+</STOCKITEM>
+```
+
+---
+
+## ✅ Suggested Import Flow
+
+```
+[Settings]
+   └── [Tally Integration]
+           └── [Import Master Data]
+                     ├── Upload File (.xls or .xml)
+                     ├── Preview Mapping
+                     ├── Import & Confirm
+                     └── View Import Logs
+```
+
+---
+
+### ✅ Key Benefits
+
+* No need to re-enter master data
+* Keeps your factory system synced with Tally
+* Reduces errors in naming, UOMs, GST, ledgers
+
+---
+
+Would you like a **ready-made Excel format** you can export from Tally and directly import into your app?
+
+Or should I help you build the **upload + mapping logic** into your Flask system?

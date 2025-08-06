@@ -1,0 +1,106 @@
+Great question! Sending **notifications** at the right moments improves visibility, prevents delays, and keeps vendors/customers/staff informed. Below is a complete guide on **when and where to trigger notifications** across your Factory Management System.
+
+---
+
+## 🔔 **Notification Points – Full Workflow Integration**
+
+### 🔹 1. **Purchase Order**
+
+| Event                  | Notify                   | Reason                         |
+| ---------------------- | ------------------------ | ------------------------------ |
+| PO Created             | ✅ Vendor                 | Inform that PO has been issued |
+| PO Approved (Optional) | ✅ Internal Purchase Head | Approval workflow              |
+| PO Partially Fulfilled | ✅ Buyer/Internal Store   | Follow up on pending GRN       |
+
+---
+
+### 🔹 2. **GRN (Goods Receipt Note)**
+
+| Event                       | Notify              | Reason                     |
+| --------------------------- | ------------------- | -------------------------- |
+| GRN Created                 | ✅ Internal Accounts | Accounting update          |
+| Material Received Partially | ✅ Purchase Head     | Pending material alert     |
+| Material Rejected           | ✅ Vendor, QC Head   | For replacement/correction |
+
+---
+
+### 🔹 3. **Job Work**
+
+| Event                    | Notify                     | Reason                          |
+| ------------------------ | -------------------------- | ------------------------------- |
+| Job Work Issued          | ✅ Job Work Vendor          | Inform job work is dispatched   |
+| Job Work Delayed         | ✅ Internal Production Head | Follow-up or reassignment       |
+| Job Work Output Received | ✅ Store & Accounts         | Update inventory and accounting |
+
+---
+
+### 🔹 4. **Production**
+
+| Event                    | Notify                   | Reason                           |
+| ------------------------ | ------------------------ | -------------------------------- |
+| Production Order Created | ✅ Production Supervisor  | To start operations              |
+| Raw Material Shortage    | ✅ Store or Purchase Team | Trigger PO or issue from stock   |
+| Production Completed     | ✅ QC, Store, Accounts    | Start inspection or GRN creation |
+
+---
+
+### 🔹 5. **Sales Order**
+
+| Event                      | Notify                | Reason                    |
+| -------------------------- | --------------------- | ------------------------- |
+| SO Created                 | ✅ Internal Sales Team | Confirm booking           |
+| Material Ready to Dispatch | ✅ Logistics/Customer  | Dispatch coordination     |
+| Invoice Generated          | ✅ Customer            | Official billing document |
+| Payment Overdue            | ✅ Customer, Sales     | Payment follow-up         |
+
+---
+
+### 🔹 6. **Accounts**
+
+| Event                       | Notify                  | Reason        |
+| --------------------------- | ----------------------- | ------------- |
+| Vendor Payment Due          | ✅ Accounts Payable Team | Avoid overdue |
+| Customer Payment Received   | ✅ Sales + Accounts      | Confirmation  |
+| Journal Voucher Auto-posted | ✅ Internal Accountant   | Audit trail   |
+
+---
+
+### 🔹 7. **Inventory**
+
+| Event                   | Notify                 | Reason                     |
+| ----------------------- | ---------------------- | -------------------------- |
+| Item Low in Stock       | ✅ Store/Purchase Team  | Trigger re-order           |
+| Scrap Exceeds Threshold | ✅ Production/QA Head   | Investigate quality issues |
+| Transfer Complete       | ✅ Destination Location | Acknowledge receipt        |
+
+---
+
+## 🔧 Notification Channels to Use
+
+| Channel              | Use Case                             |
+| -------------------- | ------------------------------------ |
+| **Email**            | Invoices, PO copies, vendor comms    |
+| **WhatsApp**         | Instant alerts, job work, follow-ups |
+| **SMS**              | Payment due, quick summaries         |
+| **System Bell Icon** | Internal task/user alerts            |
+
+---
+
+## 💡 Suggested Notification Settings (via Admin Panel)
+
+Let admin **enable/disable** notifications like:
+
+* [x] Enable WhatsApp Alerts for Job Work
+* [x] Notify on GRN Rejection
+* [x] Notify Vendor on PO
+* [ ] Notify Customer on Dispatch
+
+Also add:
+
+* Preferred language (EN/HIN)
+* Notification template editor
+* Time-based summary option (daily, immediate)
+
+---
+
+Would you like a **visual dashboard layout** for managing all notifications or a **template system** to define message format per event?

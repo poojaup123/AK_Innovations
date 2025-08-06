@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Recipients{% endblock %}
+
+{% block extra_css %}
+<style>
+.recipient-card {
+    border-left: 4px solid #007bff;
+    transition: all 0.3s ease;
+}
+.recipient-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-left-color: #28a745;
+}
+.recipient-role {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+}
+.notification-type-badge {
+    font-size: 0.7rem;
+    margin: 0.1rem;
+}
+.event-subscription {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 0.5rem;
+    margin: 0.25rem 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-users"></i> Notification Recipients</h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('notifications.add_recipient') }}" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Add Recipient
+                    </a>
+                    <a href="{{ url_for('notifications.admin_dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4>{{ recipients|length }}</h4>
+                    <p class="mb-0">Total Recipients</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4>{{ recipients|selectattr('is_active')|list|length }}</h4>
+                    <p class="mb-0">Active Recipients</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4>{{ recipients|selectattr('is_external')|list|length }}</h4>
+                    <p class="mb-0">External Recipients</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h4>{{ recipients|rejectattr('is_active')|list|length }}</h4>
+                    <p class="mb-0">Inactive Recipients</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recipients List -->
+    <div class="row">
+        {% if recipients %}
+            {% for recipient in recipients %}
+            <div class="col-lg-6 mb-4">
+                <div class="card recipient-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">
+                                <i class="fas fa-user"></i> {{ recipient.name }}
+                                {% if not recipient.is_active %}
+                                <span class="badge bg-danger ms-2">Inactive</span>
+                                {% endif %}
+                                {% if recipient.is_external %}
+                                <span class="badge bg-info ms-2">External</span>
+                                {% endif %}
+                            </h6>
+                            {% if recipient.role %}
+                            <span class="recipient-role">{{ recipient.role.replace('_', ' ').title() }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ url_for('notifications.edit_recipient', id=recipient.id) }}" 
+                               class="btn btn-outline-primary" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{{ url_for('notifications.delete_recipient', id=recipient.id) }}" 
+                               class="btn btn-outline-danger" title="Delete"
+                               onclick="return confirm('Are you sure you want to delete this recipient?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Contact Information -->
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <small class="text-muted">Email:</small><br>
+                                {% if recipient.email %}
+                                <i class="fas fa-envelope text-primary"></i> {{ recipient.email }}
+                                {% else %}
+                                <span class="text-muted">Not provided</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-sm-6">
+                                <small class="text-muted">Phone:</small><br>
+                                {% if recipient.phone %}
+                                <i class="fas fa-phone text-success"></i> {{ recipient.phone }}
+                                {% else %}
+                                <span class="text-muted">Not provided</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Notification Channels -->
+                        <div class="mb-3">
+                            <small class="text-muted">Notification Channels:</small><br>
+                            {% if recipient.notification_types %}
+                                {% set channels = recipient.notification_types.split(',') %}
+                                {% for channel in channels %}
+                                    {% if channel == 'email' %}
+                                    <span class="badge bg-primary notification-type-badge">
+                                        <i class="fas fa-envelope"></i> Email
+                                    </span>
+                                    {% elif channel == 'sms' %}
+                                    <span class="badge bg-success notification-type-badge">
+                                        <i class="fas fa-sms"></i> SMS
+                                    </span>
+                                    {% elif channel == 'whatsapp' %}
+                                    <span class="badge bg-success notification-type-badge">
+                                        <i class="fab fa-whatsapp"></i> WhatsApp
+                                    </span>
+                                    {% elif channel == 'in_app' %}
+                                    <span class="badge bg-info notification-type-badge">
+                                        <i class="fas fa-bell"></i> In-App
+                                    </span>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">No channels configured</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Event Subscriptions -->
+                        <div class="event-subscription">
+                            <small class="text-muted">Event Subscriptions:</small><br>
+                            <div class="row">
+                                <div class="col-6">
+                                    {% if recipient.po_events %}
+                                    <small><i class="fas fa-check text-success"></i> Purchase Orders</small><br>
+                                    {% endif %}
+                                    {% if recipient.grn_events %}
+                                    <small><i class="fas fa-check text-success"></i> GRN Events</small><br>
+                                    {% endif %}
+                                    {% if recipient.job_work_events %}
+                                    <small><i class="fas fa-check text-success"></i> Job Work</small><br>
+                                    {% endif %}
+                                </div>
+                                <div class="col-6">
+                                    {% if recipient.production_events %}
+                                    <small><i class="fas fa-check text-success"></i> Production</small><br>
+                                    {% endif %}
+                                    {% if recipient.sales_events %}
+                                    <small><i class="fas fa-check text-success"></i> Sales Events</small><br>
+                                    {% endif %}
+                                    {% if recipient.accounts_events %}
+                                    <small><i class="fas fa-check text-success"></i> Accounts</small><br>
+                                    {% endif %}
+                                    {% if recipient.hr_events %}
+                                    <small><i class="fas fa-check text-success"></i> HR Events</small><br>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Summary Settings -->
+                            <div class="mt-2">
+                                <small class="text-muted">Summary:</small>
+                                {% if recipient.immediate_notifications %}
+                                <span class="badge bg-warning notification-type-badge">Immediate</span>
+                                {% endif %}
+                                {% if recipient.daily_summary %}
+                                <span class="badge bg-secondary notification-type-badge">Daily</span>
+                                {% endif %}
+                                {% if recipient.weekly_summary %}
+                                <span class="badge bg-secondary notification-type-badge">Weekly</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Last Updated -->
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> Last updated: 
+                                {{ recipient.updated_at.strftime('%Y-%m-%d %H:%M') if recipient.updated_at else 'Never' }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5>No Recipients Configured</h5>
+                        <p class="text-muted">Start by adding notification recipients to manage who receives system notifications.</p>
+                        <a href="{{ url_for('notifications.add_recipient') }}" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i> Add First Recipient
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

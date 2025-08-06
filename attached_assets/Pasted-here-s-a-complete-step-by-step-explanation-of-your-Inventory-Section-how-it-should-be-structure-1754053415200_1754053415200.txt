@@ -1,0 +1,160 @@
+here's a complete step-by-step explanation of your **Inventory Section**, how it should be structured with **batch-wise tracking**, and how all modules will interact in a clean, unified way:
+
+---
+
+## ✅ **Inventory System – Unified Architecture with Batch Tracking**
+
+### 🎯 Core Goal:
+
+Avoid separate messy tables by having one **main inventory master table** with supporting child tables for tracking stock states, batches, movements, and usage.
+
+---
+
+## 🔧 1. Inventory Master Table (Parent)
+
+| Column             | Description                              |
+| ------------------ | ---------------------------------------- |
+| `item_code`        | Unique ID like `ITEM-0001`               |
+| `name`             | Product name (e.g., Mounted Plate)       |
+| `type`             | Raw Material, Consumable, Finished Good  |
+| `uom`              | pcs, kg, nos, etc.                       |
+| `unit_weight`      | Weight per UOM (e.g., 48g/unit)          |
+| `min_stock`        | Minimum alert quantity                   |
+| `unit_price`       | Base purchase or production cost         |
+| `hsn_code` / `gst` | Tax fields (optional)                    |
+| `is_batch_tracked` | Checkbox: If batch-wise tracking enabled |
+
+This table is **static**, with basic metadata.
+
+---
+
+## 📦 2. Batch Table (Child)
+
+| Column          | Description                            |
+| --------------- | -------------------------------------- |
+| `batch_id`      | Auto: e.g., `MS-001`, `FG-001`         |
+| `item_code`     | Foreign key to inventory               |
+| `location`      | Raw Store / WIP / Finished / Scrap     |
+| `quantity`      | Available in that batch                |
+| `initial_qty`   | Quantity when batch was created        |
+| `date_received` | GRN or production receive date         |
+| `expiry_date`   | (Optional) for expirable items         |
+| `status`        | Available / Reserved / Rejected / Used |
+| `source_type`   | GRN / Job Work / Production            |
+| `source_ref`    | GRN number / Job ID / Production ID    |
+
+---
+
+## 🔄 3. Inventory Movement Log (Transactions)
+
+Every movement or update (e.g., issue to job work, return from job work, scrap) creates a transaction here:
+
+| Column       | Description                          |
+| ------------ | ------------------------------------ |
+| `txn_id`     | Unique transaction                   |
+| `item_code`  | Item involved                        |
+| `batch_id`   | Affected batch                       |
+| `quantity`   | Quantity added/removed               |
+| `from_state` | Raw / WIP / Finished                 |
+| `to_state`   | WIP / Finished / Scrap               |
+| `txn_type`   | GRN / Production / Job Work / Return |
+| `ref_doc`    | Challan / PO / Production ID         |
+| `txn_date`   | Date of movement                     |
+
+---
+
+## 🔄 4. Where Each Module Integrates
+
+### 📥 GRN / Purchase:
+
+* On receiving material, **create new batch** in `Raw Store`.
+* Assign unique batch ID (`MS-001`) with received quantity.
+* Update `Batch Table` and `Inventory Master`.
+
+### ⚙️ Job Work:
+
+* When creating job work, select:
+
+  * **Input Material + Batch**
+  * Quantity issued (from batch)
+* Auto move `qty` from Raw Store → WIP in `Batch Table`
+* On return:
+
+  * Update `WIP → Finished`
+  * Auto create **new finished batch** with ID (e.g., FG-001)
+  * Log any scrap and unused returned raw (back to Raw Store)
+
+### 🏭 Production:
+
+* Similar to job work:
+
+  * Consume `batch` of raw materials
+  * Produce new batch of finished goods
+  * Update `Batch Table` and log all in `Transaction Table`
+
+### 📦 Scrap Management:
+
+* When scrap is reported:
+
+  * Update `Scrap Quantity` in batch
+  * Add log in transaction table with reason
+
+### 🚚 Sales Order:
+
+* While picking goods for dispatch:
+
+  * Select from **available batches** in Finished Store
+  * FIFO/LIFO logic can be applied
+  * Mark sold quantity in `Batch Table`
+
+---
+
+## 📊 Inventory Dashboard – Working
+
+### Widgets
+
+* ✅ Total Items
+* ⚠️ Low Stock Items (compare min\_stock vs available)
+* 💲 Stock Value (sum of all finished batches × unit price)
+* ❌ Out of Stock (items with 0 stock in all states)
+
+### Multi-State Table (breakdown by state)
+
+| Column | Raw | WIP | Finished | Scrap | Total | Available |
+| ------ | --- | --- | -------- | ----- | ----- | --------- |
+
+You compute these by:
+
+* Aggregating all batch records by state.
+* Available = Finished – Reserved for Sales
+
+---
+
+## 📘 Batch Tracking View
+
+A dedicated tab that shows:
+
+| Batch ID | Item | Qty | State | Location | Source | Last Used |
+| -------- | ---- | --- | ----- | -------- | ------ | --------- |
+
+You can:
+
+* View how much was consumed, scrapped, sold
+* Trace full history per batch (lot traceability)
+
+---
+
+## 📄 Summary
+
+### 🔁 One Inventory Table → Clean
+
+* **Parent Table**: Master item info
+* **Child Batch Table**: All physical quantity with batch traceability
+* **Movement Table**: Every stock update (full audit trail)
+
+### ✅ Benefits:
+
+* Batch-wise control without creating multiple confusing tables
+* Real-time state tracking (Raw, WIP, FG, Scrap)
+* Fully integrated across GRN, Job Work, Production, Sales
+* Traceability and audit-ready

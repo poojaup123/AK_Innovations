@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Vendor Outstanding Report - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-balance-scale"></i> Vendor Outstanding Report</h1>
+            <p class="text-muted">Track outstanding payments to vendors</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('grn_workflow.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Total Outstanding</h5>
+                            <h2 class="mb-0">₹{{ "%.2f"|format(outstanding_data|sum(attribute='outstanding_amount')|float if outstanding_data else 0) }}</h2>
+                            <small>Amount payable</small>
+                        </div>
+                        <i class="fas fa-money-bill-wave fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Vendors</h5>
+                            <h2 class="mb-0">{{ outstanding_data|map(attribute='vendor_name')|unique|list|length if outstanding_data else 0 }}</h2>
+                            <small>With outstanding</small>
+                        </div>
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Overdue</h5>
+                            <h2 class="mb-0">{{ outstanding_data|selectattr('days_outstanding', 'gt', 30)|list|length if outstanding_data else 0 }}</h2>
+                            <small>Over 30 days</small>
+                        </div>
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Invoices</h5>
+                            <h2 class="mb-0">{{ outstanding_data|length if outstanding_data else 0 }}</h2>
+                            <small>Outstanding invoices</small>
+                        </div>
+                        <i class="fas fa-file-invoice fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Outstanding Data Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-table"></i> Vendor Outstanding Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Vendor</th>
+                            <th>Invoice Number</th>
+                            <th>Invoice Date</th>
+                            <th>Due Date</th>
+                            <th>Invoice Amount</th>
+                            <th>Outstanding Amount</th>
+                            <th>Days Outstanding</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if outstanding_data %}
+                            {% for item in outstanding_data %}
+                            <tr class="{% if item.days_outstanding > 30 %}table-danger{% elif item.days_outstanding > 15 %}table-warning{% endif %}">
+                                <td><strong>{{ item.vendor_name }}</strong></td>
+                                <td>{{ item.invoice_number }}</td>
+                                <td>{{ item.invoice_date.strftime('%d-%m-%Y') if item.invoice_date else 'N/A' }}</td>
+                                <td>{{ item.due_date.strftime('%d-%m-%Y') if item.due_date else 'N/A' }}</td>
+                                <td class="text-end">₹{{ "%.2f"|format(item.invoice_amount) }}</td>
+                                <td class="text-end"><strong>₹{{ "%.2f"|format(item.outstanding_amount) }}</strong></td>
+                                <td class="text-center">
+                                    {% if item.days_outstanding > 30 %}
+                                        <span class="badge bg-danger">{{ item.days_outstanding }} days</span>
+                                    {% elif item.days_outstanding > 15 %}
+                                        <span class="badge bg-warning">{{ item.days_outstanding }} days</span>
+                                    {% else %}
+                                        <span class="badge bg-info">{{ item.days_outstanding }} days</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.outstanding_amount > 0 %}
+                                        <span class="badge bg-warning">Outstanding</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Paid</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.outstanding_amount > 0 %}
+                                        <a href="#" 
+                                           class="btn btn-sm btn-outline-success" 
+                                           title="Record Payment"
+                                           onclick="alert('Payment recording feature coming soon!')">
+                                            <i class="fas fa-money-bill"></i>
+                                        </a>
+                                    {% endif %}
+                                    <a href="{{ url_for('grn_workflow.view_invoice', invoice_id=item.invoice_id) }}" 
+                                       class="btn btn-sm btn-outline-info" 
+                                       title="View Invoice">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-4">
+                                    <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+                                    <br>No outstanding payments found
+                                    <br><small>All vendor invoices are paid or no invoices created yet</small>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Highlight overdue items
+    const rows = document.querySelectorAll('tr[class*="table-"]');
+    rows.forEach(row => {
+        if (row.classList.contains('table-danger')) {
+            // Add animation for overdue items
+            row.style.animation = 'pulse 2s infinite';
+        }
+    });
+});
+
+// Add pulse animation for overdue items
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes pulse {
+        0% { background-color: rgba(220, 53, 69, 0.1); }
+        50% { background-color: rgba(220, 53, 69, 0.2); }
+        100% { background-color: rgba(220, 53, 69, 0.1); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

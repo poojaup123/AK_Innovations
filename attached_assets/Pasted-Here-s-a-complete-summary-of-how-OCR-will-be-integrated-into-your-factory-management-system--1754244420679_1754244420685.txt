@@ -1,0 +1,185 @@
+Here’s a **complete summary** of how OCR will be **integrated into your factory management system** using only **open-source tools** — combining **PaddleOCR**, **Tesseract**, **EasyOCR**, **LayoutParser**, and **OpenCV**, with editable preview, auto-mapping to modules, and fallback logic.
+
+---
+
+## 🧠 **Goal**
+
+Enable your system to automatically extract structured data (like invoice numbers, items, vendors, etc.) from **scanned PDFs, images, and handwritten documents**, and populate forms like:
+
+* GRNs
+* Job Work Returns
+* Vendor Invoices
+* Customer POs
+* Production Sheets
+* Delivery Challans
+
+---
+
+## 🏗️ **Complete Architecture Overview**
+
+### 📥 1. **Upload Document**
+
+User uploads `.pdf`, `.jpg`, `.png`, etc. from:
+
+* GRN form
+* PO page
+* Job Work return
+* Invoice section
+
+---
+
+### 🎨 2. **Image Preprocessing (OpenCV)**
+
+Improves OCR accuracy:
+
+* Convert to grayscale
+* Remove noise
+* Deskew
+* Resize and sharpen
+* Binarize if needed
+
+---
+
+### 🧱 3. **Layout Detection (LayoutParser)**
+
+Detects:
+
+* Table blocks
+* Headers
+* Footers
+* Zones to apply OCR more accurately
+
+---
+
+### 🧠 4. **OCR Engines (Layered Fallback System)**
+
+| Engine          | Role                                                |
+| --------------- | --------------------------------------------------- |
+| **Tesseract**   | Fast, good for clear, printed documents             |
+| **PaddleOCR**   | Best for complex layouts and low-res images         |
+| **EasyOCR**     | Backup engine for multilingual or tricky zones      |
+| **DocTR** (opt) | For AI-based OCR + layout in one (if GPU available) |
+
+**Fallback Logic:**
+If Tesseract fails (low confidence or missing key fields), use PaddleOCR → EasyOCR.
+
+---
+
+### 📊 5. **Field Extraction & Mapping**
+
+Using:
+
+* `Regex` for structured field patterns (Invoice No., Date)
+* `spaCy` for entity detection
+* Custom Python mapping logic
+* Pre-trained templates per module
+
+---
+
+### 🖥️ 6. **Editable Preview UI**
+
+* Show extracted fields and item table
+* Highlight confidence
+* User corrects mistakes
+* Final confirmation → data pushed to form
+
+---
+
+### 💾 7. **Database & Linkage**
+
+| Table         | Purpose                                   |
+| ------------- | ----------------------------------------- |
+| `ocr_results` | Stores extracted raw & structured text    |
+| `documents`   | File metadata & path                      |
+| Linked Table  | e.g., `grn`, `job_work_return`, `invoice` |
+
+* OCR data is linked to the record it fills (PO, GRN, etc.)
+* Original file is stored with each transaction
+* Audit trail maintained
+
+---
+
+## 🔁 **Reusable Modules (Common OCR Service)**
+
+You’ll have a central OCR processing module (e.g., `/ocr/process`), which takes:
+
+* File
+* Module type (PO, GRN, Invoice)
+* Reference ID (optional)
+
+Returns:
+
+* Structured JSON
+* Form-ready values
+* Confidence scores
+
+---
+
+## ⚙️ **Admin Settings Panel**
+
+| Setting                  | Description                   |
+| ------------------------ | ----------------------------- |
+| Default OCR engine       | Tesseract / PaddleOCR / DocTR |
+| Fallback engine enable   | Yes/No                        |
+| OCR confidence threshold | e.g., 70%                     |
+| Save raw text            | For admin/debugging           |
+| Show editable preview    | On/Off                        |
+
+---
+
+## 📍 **Integration Points by Module**
+
+| Module         | Uses OCR To Extract                               |
+| -------------- | ------------------------------------------------- |
+| **PO**         | Customer PO No., item list, qty, price            |
+| **GRN**        | Vendor, DC No., item details from printed challan |
+| **Job Work**   | Quantity returned, output batch, scrap qty        |
+| **Invoice**    | Invoice No., date, GST, item table                |
+| **Production** | Machine, operator, material from handwritten logs |
+
+---
+
+## 🔐 **Security and Storage**
+
+* Store all scanned docs in `/uploads/ocr_docs/`
+* Access control per user role
+* Each OCR result linked to original form (audit trail)
+
+---
+
+## 📈 **Reporting & Dashboard**
+
+* OCR History: See past uploads, extracted results, and status
+* Retry failed OCR
+* View accuracy per engine
+* Usage report: No. of OCRs done per module
+
+---
+
+## ✅ Benefits
+
+✔️ No manual entry from scanned documents
+✔️ Reduced data entry errors
+✔️ Fast form filling (auto-fill)
+✔️ Full traceability (file + data + links)
+✔️ Works offline (no cloud dependency)
+
+---
+
+## 🧰 Final Open-Source Tools Used
+
+| Tool             | Purpose                        |
+| ---------------- | ------------------------------ |
+| **Tesseract**    | OCR engine                     |
+| **PaddleOCR**    | OCR engine for complex layouts |
+| **EasyOCR**      | OCR backup engine              |
+| **OpenCV**       | Image preprocessing            |
+| **LayoutParser** | Layout block detection         |
+| **Regex/spaCy**  | Field extraction from text     |
+| **Flask**        | Backend integration            |
+| **Bootstrap**    | UI for editable preview        |
+| **SQLAlchemy**   | DB ORM for results storage     |
+
+---
+
+Would you like the **Flask implementation plan**, **editable HTML preview**, or **database schema and migration files** next?

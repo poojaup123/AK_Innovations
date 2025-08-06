@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Company Users - {{ company.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-users"></i> Users - {{ company.name }}</h2>
+        <a href="{{ url_for('settings_advanced.company_management') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Companies
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Assigned Users -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Assigned Users</h5>
+                </div>
+                <div class="card-body">
+                    {% if assigned_users %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Assigned Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user, access in assigned_users %}
+                                <tr>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <span class="badge badge-{{ 'danger' if user.is_admin() else 'primary' }}">
+                                            {{ 'Admin' if user.is_admin() else 'Staff' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ access.assigned_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger" 
+                                                onclick="removeUserFromCompany({{ user.id }}, '{{ user.username }}')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No users assigned to this company</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Available Users -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Available Users</h5>
+                </div>
+                <div class="card-body">
+                    {% if unassigned_users %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in unassigned_users %}
+                                <tr>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <span class="badge badge-{{ 'danger' if user.is_admin() else 'primary' }}">
+                                            {{ 'Admin' if user.is_admin() else 'Staff' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-success" 
+                                                onclick="assignUserToCompany({{ user.id }}, '{{ user.username }}')">
+                                            <i class="fas fa-plus"></i> Assign
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <p class="text-muted">All users are assigned to this company</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function assignUserToCompany(userId, username) {
+    if (confirm(`Assign "${username}" to this company?`)) {
+        fetch(`/settings/companies/{{ company.id }}/users/assign`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: userId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error assigning user');
+        });
+    }
+}
+
+function removeUserFromCompany(userId, username) {
+    if (confirm(`Remove "${username}" from this company?`)) {
+        fetch(`/settings/companies/{{ company.id }}/users/remove`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: userId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error removing user');
+        });
+    }
+}
+</script>
+{% endblock %}

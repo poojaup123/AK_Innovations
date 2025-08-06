@@ -1,0 +1,148 @@
+Great question — this is a **multi-level BOM (nested BOM)** use case, and it’s very common in manufacturing.
+
+Let’s break it down and explain how to handle it **logically**, **in your app**, and how **data flows across levels** like:
+
+---
+
+### 🧱 **Scenario: Nested BOM**
+
+| Stage | Material      | Process          | Output        |
+| ----- | ------------- | ---------------- | ------------- |
+| 1     | MS Sheet      | Cutting/Job Work | Mounted Plate 
+| 2     | Mounted Plate | Assembly         | Castor Wheel  |
+
+---
+
+## 🔄 **Logical Flow of Nested BOM**
+
+### 🔹 1. **Level 1: MS Sheet → Mounted Plate**
+
+* **BOM 1**:
+
+  * Input: 1 MS Sheet → Output: 400 Mounted Plates
+* This job work goes through:
+
+  * Inventory deduction (`MS Sheet - n`)
+  * Job Work → GRN → Inventory Update (`Mounted Plate +400`)
+
+### 🔹 2. **Level 2: Mounted Plate → Castor**
+
+* **BOM 2**:
+
+  * Input: Mounted Plate + Base Plate + Nut/Bolt → 1 Castor Wheel
+* Production Form:
+
+  * Checks available stock of Mounted Plate from previous job
+  * Uses BOM 2 to consume parts
+  * Adds output to `Finished Inventory`
+
+---
+
+## 🧩 **How to Handle in Your App**
+
+### ✅ 1. **Model BOM as a Tree**
+
+* Allow **output item of one BOM** to be **input of another BOM**
+* Example:
+
+```python
+BOM:
+    id = 1
+    product = Mounted Plate
+    input_items = [MS Sheet]
+
+BOM:
+    id = 2
+    product = Castor Wheel
+    input_items = [Mounted Plate, Base Plate, Nut/Bolt]
+```
+
+* Your **BOM table** should allow a product that is also an output from another BOM (parent/child BOM support).
+
+---
+
+### ✅ 2. **Inventory Dependency Check**
+
+* When doing production for Castor Wheel:
+
+  * System auto-checks:
+
+    * Mounted Plate stock → from Level 1 BOM GRN
+    * If insufficient → alerts: "Run Job Work for MS Sheet → Mounted Plate"
+
+---
+
+### ✅ 3. **Auto Trigger Suggestions**
+
+* If stock not available:
+
+  * **Suggestion engine**: “Mounted Plate required: 200. Available: 50. Do you want to create Job Work for MS Sheet?”
+
+---
+
+### ✅ 4. **Multi-Level BOM Cost Rollup**
+
+* Cost of 1 Castor Wheel = sum of:
+
+  * Cost of mounted plate (from BOM 1)
+  * Base plate + nut/bolt
+  * Labor/process cost
+
+---
+
+## 📦 **Inventory Handling**
+
+* Mounted Plate:
+
+  * Starts as WIP (from MS Sheet job work)
+  * Becomes finished (via GRN)
+  * Consumed again as raw for Castor
+
+> So same item (`Mounted Plate`) behaves as:
+>
+> * Finished goods (from MS Sheet)
+> * Raw material (for Castor)
+
+To handle this:
+
+* Use a **multi-state inventory**:
+
+  * Track Mounted Plate in `qty_finished` when it is output
+  * Deduct from `qty_raw` when used in another BOM
+
+---
+
+## 🧠 Summary Flow
+
+```
+[MS Sheet] (Inventory)
+   ↓
+  [Job Work: Cutting]
+   ↓
+[GRN → Mounted Plate + Scrap]
+   ↓
+[Inventory: Mounted Plate (Finished)]
+   ↓
+[Production: Castor Wheel]
+   ↓
+[BOM: Mounted + Base + Nut/Bolt]
+   ↓
+[Inventory: Castor Wheel (Finished)]
+```
+
+---
+
+## ✅ Suggestions for You
+
+| Improvement Area        | Recommendation                                     |
+| ----------------------- | -------------------------------------------------- |
+| BOM Table               | Allow multi-level (parent-child) relationships     |
+| BOM UI                  | Tree or nested table to show dependencies          |
+| Production Form         | Auto-fetch nested BOMs or suggest job work         |
+| Inventory Model         | Allow same item to behave as output/input in flows |
+| Job Work Creation Logic | Trigger from BOM need if not enough intermediate   |
+| Cost Calculation        | Roll up nested BOM costs automatically             |
+
+---
+
+Would you like a **nested BOM flowchart** for this scenario or a **dynamic UI suggestion** for managing it?

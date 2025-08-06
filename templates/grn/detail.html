@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+
+{% block title %}GRN {{ grn.grn_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-receipt me-2"></i>GRN {{ grn.grn_number }}</h2>
+                <div>
+                    <a href="{{ url_for('grn.list_grns') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-list me-1"></i>All GRNs
+                    </a>
+                    <a href="{{ url_for('grn.view_grn_batches', grn_id=grn.id) }}" class="btn btn-outline-info">
+                        <i class="fas fa-barcode me-1"></i>View Batches
+                    </a>
+                    {% if grn.status != 'completed' %}
+                    <a href="{{ url_for('grn.add_line_items', grn_id=grn.id) }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Add Items
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- GRN Information -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>GRN Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>GRN Number:</strong><br>
+                            <span class="text-primary">{{ grn.grn_number }}</span>
+                        </div>
+                        {% if grn.job_work %}
+                        <div class="col-md-4">
+                            <strong>Job Work:</strong><br>
+                            <a href="{{ url_for('jobwork.detail', id=grn.job_work.id) }}" class="text-decoration-none">
+                                {{ grn.job_work.job_number }}
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Customer:</strong><br>
+                            {{ grn.job_work.customer_name }}
+                        </div>
+                        {% elif grn.purchase_order %}
+                        <div class="col-md-4">
+                            <strong>Purchase Order:</strong><br>
+                            <a href="{{ url_for('purchase.edit_purchase_order', id=grn.purchase_order.id) }}" class="text-decoration-none">
+                                {{ grn.purchase_order.po_number }}
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Supplier:</strong><br>
+                            {{ grn.purchase_order.supplier.name }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>Received Date:</strong><br>
+                            {{ grn.received_date.strftime('%d/%m/%Y') }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Received By:</strong><br>
+                            {{ grn.receiver.username }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Status:</strong><br>
+                            <span class="badge bg-{{ 'success' if grn.status == 'completed' else 'info' if grn.status == 'received' else 'warning' if grn.status == 'inspected' else 'secondary' }}">
+                                {{ grn.status.title() }}
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if grn.delivery_note or grn.transporter_name or grn.vehicle_number %}
+                    <div class="row mb-3">
+                        {% if grn.delivery_note %}
+                        <div class="col-md-4">
+                            <strong>Delivery Note:</strong><br>
+                            {{ grn.delivery_note }}
+                        </div>
+                        {% endif %}
+                        {% if grn.transporter_name %}
+                        <div class="col-md-4">
+                            <strong>Transporter:</strong><br>
+                            {{ grn.transporter_name }}
+                        </div>
+                        {% endif %}
+                        {% if grn.vehicle_number %}
+                        <div class="col-md-4">
+                            <strong>Vehicle Number:</strong><br>
+                            {{ grn.vehicle_number }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if grn.remarks %}
+                    <div class="row">
+                        <div class="col-12">
+                            <strong>Remarks:</strong><br>
+                            <p class="text-muted">{{ grn.remarks }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Line Items -->
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-list me-2"></i>Line Items</h5>
+                    <span class="badge bg-primary">{{ grn.line_items|length }} items</span>
+                </div>
+                <div class="card-body">
+                    {% if grn.line_items %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Product Received</th>
+                                        <th>Source/Sent Item</th>
+                                        <th>Quantities</th>
+                                        <th>Status</th>
+                                        <th>Inventory Destination</th>
+                                        <th>Batches Created</th>
+                                        <th>Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for line in grn.line_items %}
+                                    <tr>
+                                        <td>
+                                            <strong class="text-primary">{{ line.item.name }}</strong><br>
+                                            <small class="text-muted">{{ line.item.code }}</small>
+                                        </td>
+                                        <td>
+                                            {% if grn.job_work %}
+                                                <!-- Job Work: Show original sent item -->
+                                                <div class="mb-1">
+                                                    <small class="text-muted">Originally Sent:</small><br>
+                                                    <strong>{{ grn.job_work.item.name }}</strong><br>
+                                                    <small class="text-info">{{ grn.job_work.quantity_sent }} {{ grn.job_work.item.unit_of_measure }}</small>
+                                                </div>
+                                                {% if grn.job_work.bom_id and grn.job_work.bom %}
+                                                <small class="badge bg-info">BOM Transformation</small>
+                                                {% elif grn.job_work.work_type in ['multi_process', 'unified'] %}
+                                                <small class="badge bg-warning">Multi-Process</small>
+                                                {% else %}
+                                                <small class="badge bg-secondary">Regular Job Work</small>
+                                                {% endif %}
+                                            {% elif grn.purchase_order %}
+                                                <!-- Purchase Order: Show PO item -->
+                                                <div class="mb-1">
+                                                    <small class="text-muted">From Purchase Order:</small><br>
+                                                    {% for po_item in grn.purchase_order.items %}
+                                                        {% if po_item.item_id == line.item_id %}
+                                                        <strong>{{ po_item.item.name }}</strong><br>
+                                                        <small class="text-info">Ordered: {{ po_item.qty }} {{ po_item.item.unit_of_measure }}</small>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                                <small class="badge bg-success">Purchase Order</small>
+                                            {% else %}
+                                                <small class="text-muted">Direct Receipt</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="small">
+                                                <div class="text-info">
+                                                    <i class="fas fa-arrow-down"></i> <strong>{{ line.quantity_received }}</strong> {{ line.unit_of_measure or line.item.unit_of_measure }}
+                                                </div>
+                                                <div class="text-success">
+                                                    <i class="fas fa-check"></i> {{ line.quantity_passed }} passed
+                                                </div>
+                                                {% if line.quantity_rejected > 0 %}
+                                                <div class="text-danger">
+                                                    <i class="fas fa-times"></i> {{ line.quantity_rejected }} rejected
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if line.inspection_status == 'passed' else 'danger' if line.inspection_status == 'rejected' else 'warning' if line.inspection_status == 'partial' else 'secondary' }}">
+                                                {{ line.inspection_status.title() }}
+                                            </span>
+                                            {% if line.quality_grade %}
+                                            <br><small class="badge bg-secondary mt-1">{{ line.quality_grade }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if grn.job_work %}
+                                                <!-- Job Work items typically go to Finished Goods -->
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-box"></i> Finished Goods
+                                                </span>
+                                                <br><small class="text-muted">From Job Work</small>
+                                            {% elif grn.purchase_order %}
+                                                <!-- Purchase Order items go to Raw Material -->
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-industry"></i> Raw Material
+                                                </span>
+                                                <br><small class="text-muted">From Supplier</small>
+                                            {% else %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="fas fa-warehouse"></i> General Stock
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <!-- Show created batches -->
+                                            {% set batch_count = 0 %}
+                                            {% for batch in line.created_batches if line.created_batches %}
+                                                {% set batch_count = batch_count + 1 %}
+                                                <div class="small mb-1">
+                                                    <a href="{{ url_for('inventory.batch_detail', batch_id=batch.id) }}" class="text-decoration-none">
+                                                        <span class="badge bg-info">{{ batch.batch_number }}</span>
+                                                    </a>
+                                                    <br><small class="text-muted">{{ batch.quantity }} {{ batch.unit_of_measure }}</small>
+                                                </div>
+                                            {% endfor %}
+                                            {% if batch_count == 0 %}
+                                                <small class="text-muted">
+                                                    <i class="fas fa-plus-circle"></i> 
+                                                    <a href="{{ url_for('grn.view_grn_batches', grn_id=grn.id) }}" class="text-decoration-none">
+                                                        View Batches
+                                                    </a>
+                                                </small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if line.rejection_reason %}
+                                                <small class="text-danger">
+                                                    <i class="fas fa-exclamation-triangle"></i> {{ line.rejection_reason }}
+                                                </small>
+                                            {% elif line.remarks %}
+                                                <small class="text-muted">{{ line.remarks }}</small>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                            <h5>No items added yet</h5>
+                            <p class="text-muted">Add line items to complete this GRN.</p>
+                            {% if grn.status != 'completed' %}
+                            <a href="{{ url_for('grn.add_line_items', grn_id=grn.id) }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Add First Item
+                            </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary and Actions -->
+        <div class="col-lg-4">
+            <!-- Summary Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Receipt Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-7">Total Received:</div>
+                        <div class="col-5 text-end"><strong>{{ grn.total_quantity_received }}</strong></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-7">Passed:</div>
+                        <div class="col-5 text-end"><span class="text-success">{{ grn.total_quantity_passed }}</span></div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-7">Rejected:</div>
+                        <div class="col-5 text-end"><span class="text-danger">{{ grn.total_quantity_rejected }}</span></div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-7">Acceptance Rate:</div>
+                        <div class="col-5 text-end">
+                            <span class="badge bg-{{ 'success' if grn.acceptance_rate >= 95 else 'warning' if grn.acceptance_rate >= 80 else 'danger' }}">
+                                {{ "%.1f"|format(grn.acceptance_rate) }}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GRN Workflow Actions -->
+            {% if grn.status == 'completed' and grn.purchase_order %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Workflow Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <!-- Check if vendor invoice already exists -->
+                        {% set has_invoice = grn.vendor_invoices and grn.vendor_invoices|length > 0 %}
+                        
+                        {% if not has_invoice %}
+                        <a href="{{ url_for('grn_workflow.create_invoice_for_grn', grn_id=grn.id) }}" class="btn btn-success btn-sm">
+                            <i class="fas fa-file-invoice me-1"></i>Raise Bill / Create Invoice
+                        </a>
+                        {% else %}
+                        <div class="alert alert-info py-2 mb-2">
+                            <small><i class="fas fa-check-circle me-1"></i>Invoice already created</small>
+                        </div>
+                        {% endif %}
+                        
+                        <a href="{{ url_for('grn_workflow.dashboard') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-stream me-1"></i>View GRN Workflow
+                        </a>
+                        
+                        {% if has_invoice %}
+                        <a href="{{ url_for('grn_workflow.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-eye me-1"></i>View All Invoices
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Inspection Status -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-search me-2"></i>Inspection Status</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Status:</strong>
+                        <span class="badge bg-{{ 'success' if grn.inspection_status == 'passed' else 'danger' if grn.inspection_status == 'rejected' else 'warning' }}">
+                            {{ grn.inspection_status.title() if grn.inspection_status else 'Pending' }}
+                        </span>
+                    </div>
+                    
+                    {% if grn.inspected_by %}
+                    <div class="mb-3">
+                        <strong>Inspected By:</strong><br>
+                        {{ grn.inspector.username }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if grn.inspected_at %}
+                    <div class="mb-3">
+                        <strong>Inspected At:</strong><br>
+                        {{ grn.inspected_at.strftime('%d/%m/%Y %H:%M') }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <strong>All Items Inspected:</strong>
+                        {% if grn.is_fully_inspected %}
+                            <span class="badge bg-success">Yes</span>
+                        {% else %}
+                            <span class="badge bg-warning">Pending</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Work Status - Only show for Job Work GRNs -->
+            {% if grn.job_work %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-tools me-2"></i>Job Work Status</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Total Sent:</strong><br>
+                        {{ grn.job_work.quantity_sent }} {{ grn.job_work.item.unit_of_measure }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Total Received:</strong><br>
+                        {{ grn.job_work.quantity_received or 0 }} {{ grn.job_work.item.unit_of_measure }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Pending:</strong><br>
+                        <span class="text-warning">{{ grn.job_work.pending_quantity }} {{ grn.job_work.item.unit_of_measure }}</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ grn.job_work.completion_percentage }}%">
+                            {{ "%.1f"|format(grn.job_work.completion_percentage) }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Purchase Order Status - Only show for PO GRNs -->
+            {% if grn.purchase_order %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Purchase Order Status</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>PO Status:</strong><br>
+                        <span class="badge bg-{{ 'success' if grn.purchase_order.status == 'closed' else 'warning' if grn.purchase_order.status == 'partial' else 'info' }}">
+                            {{ grn.purchase_order.status.title() }}
+                        </span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Order Date:</strong><br>
+                        {{ grn.purchase_order.order_date.strftime('%d/%m/%Y') }}
+                    </div>
+                    {% if grn.purchase_order.expected_date %}
+                    <div class="mb-2">
+                        <strong>Expected Date:</strong><br>
+                        {{ grn.purchase_order.expected_date.strftime('%d/%m/%Y') }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

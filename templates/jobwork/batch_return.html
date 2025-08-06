@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Return - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-undo"></i> Job Work Batch Return</h1>
+            <p class="text-muted">Process return of materials from job work with finished goods, scrap, and unused materials</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('jobwork.batch_tracking') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Batch Tracking
+            </a>
+        </div>
+    </div>
+
+    <form method="POST" id="batchReturnForm">
+        {{ form.hidden_tag() }}
+        
+        <!-- Job Work & Batch Selection -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-search me-2"></i>Select Job Work & Batch</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="job_work_id" class="form-label">Job Work</label>
+                        {{ form.job_work_id(class="form-select", id="job_work_id", onchange="loadJobWorkBatches(this.value)") }}
+                        {% for error in form.job_work_id.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="batch_record_id" class="form-label">Batch Record</label>
+                        {{ form.batch_record_id(class="form-select", id="batch_record_id", onchange="generateOutputBatchCode()") }}
+                        {% for error in form.batch_record_id.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quantity Details -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Return Quantities</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Enter the quantities for each category. Total should not exceed issued quantity.
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="quantity_finished" class="form-label">Finished Goods Quantity</label>
+                        {{ form.quantity_finished(class="form-control", step="0.01", min="0") }}
+                        {% for error in form.quantity_finished.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="quantity_scrap" class="form-label">Scrap Quantity</label>
+                        {{ form.quantity_scrap(class="form-control", step="0.01", min="0") }}
+                        {% for error in form.quantity_scrap.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="quantity_returned_unused" class="form-label">Unused Material Returned</label>
+                        {{ form.quantity_returned_unused(class="form-control", step="0.01", min="0") }}
+                        {% for error in form.quantity_returned_unused.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Total Processed</label>
+                        <input type="text" class="form-control" id="total_processed" readonly>
+                        <small class="text-muted">Auto-calculated sum</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Batch & Quality Control -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Output Batch & Quality Control</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="output_batch_code" class="form-label">Output Batch Code</label>
+                        {{ form.output_batch_code(class="form-control", id="output_batch_code") }}
+                        {% for error in form.output_batch_code.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                        <small class="text-muted">Auto-generated or enter custom</small>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="quality_status" class="form-label">Quality Status</label>
+                        {{ form.quality_status(class="form-select") }}
+                        {% for error in form.quality_status.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="qc_notes" class="form-label">QC Notes</label>
+                        {{ form.qc_notes(class="form-control", rows="2") }}
+                        {% for error in form.qc_notes.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <label for="return_notes" class="form-label">Return Notes</label>
+                        {{ form.return_notes(class="form-control", rows="3", placeholder="Any additional notes about the return process...") }}
+                        {% for error in form.return_notes.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="card">
+            <div class="card-body text-center">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save"></i> Process Batch Return
+                </button>
+                <a href="{{ url_for('jobwork.batch_tracking') }}" class="btn btn-secondary btn-lg ms-3">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Auto-calculate total processed quantity
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityFields = ['quantity_finished', 'quantity_scrap', 'quantity_returned_unused'];
+    const totalField = document.getElementById('total_processed');
+    
+    function calculateTotal() {
+        let total = 0;
+        quantityFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field && field.value) {
+                total += parseFloat(field.value) || 0;
+            }
+        });
+        totalField.value = total.toFixed(2);
+    }
+    
+    // Add event listeners to quantity fields
+    quantityFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', calculateTotal);
+        }
+    });
+    
+    // Initial calculation
+    calculateTotal();
+});
+</script>
+{% endblock %}

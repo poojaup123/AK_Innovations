@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Order - {{ po.po_number }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.3;
+            margin: 0;
+            padding: 20px;
+            color: #000;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 18px;
+            margin: 0;
+            font-weight: bold;
+        }
+        .header .format-info {
+            font-size: 10px;
+            text-align: right;
+            margin-bottom: 10px;
+        }
+        .po-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .company-info {
+            width: 45%;
+        }
+        .po-details {
+            width: 45%;
+            text-align: right;
+        }
+        .po-details table {
+            width: 100%;
+            margin-left: auto;
+        }
+        .po-details table td {
+            padding: 2px 5px;
+            border: none;
+        }
+        .supplier-section {
+            margin-bottom: 20px;
+        }
+        .supplier-info {
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .items-table th,
+        .items-table td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: center;
+            font-size: 10px;
+        }
+        .items-table th {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+        .items-table .text-left {
+            text-align: left;
+        }
+        .items-table .text-right {
+            text-align: right;
+        }
+        .totals {
+            width: 300px;
+            margin-left: auto;
+            margin-bottom: 20px;
+        }
+        .totals table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .totals td {
+            padding: 4px 8px;
+            border: 1px solid #000;
+        }
+        .totals .total-label {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+        .conditions {
+            margin-bottom: 20px;
+        }
+        .conditions h3 {
+            font-size: 12px;
+            margin: 10px 0 5px 0;
+        }
+        .conditions ol {
+            padding-left: 20px;
+            margin: 0;
+        }
+        .conditions li {
+            margin-bottom: 5px;
+            font-size: 10px;
+        }
+        .amount-words {
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        .signatures {
+            margin-top: 30px;
+        }
+        .signatures table {
+            width: 100%;
+        }
+        .signatures td {
+            padding: 20px 0;
+            text-align: center;
+            border-bottom: 1px solid #000;
+        }
+        .computer-generated {
+            text-align: center;
+            font-size: 10px;
+            margin: 20px 0;
+        }
+        .delivery-schedule {
+            margin-top: 30px;
+            page-break-before: always;
+        }
+        .delivery-schedule h2 {
+            text-align: center;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .delivery-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .delivery-table th,
+        .delivery-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: center;
+            font-size: 10px;
+        }
+        .delivery-table th {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+        .delivery-table .text-left {
+            text-align: left;
+        }
+        .page-footer {
+            position: fixed;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 10px;
+        }
+        @media print {
+            body { margin: 0; }
+            .page-break { page-break-after: always; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>LETTER OF INTENT</h1>
+    </div>
+
+    <!-- Page Header -->
+    <div class="format-info">
+        LOI Format No : FAC/U1&U2/PUR/QSF/06<br>
+        Page 1 of {{ '2' if po.delivery_schedules else '1' }}
+    </div>
+
+    <!-- PO Information Section -->
+    <div class="po-info">
+        <div class="company-info">
+            <strong>Invoice To:</strong><br>
+            <strong>Your Company Name</strong><br><br>
+            Your Company Address Line 1<br>
+            Your Company Address Line 2<br>
+            City, State - PIN Code<br><br>
+            Phone: +91-XXX-XXXXXXX<br>
+            GST No. XXAABCRXXXXMXZC<br>
+            ARN No. AAXXXXXXXGX
+        </div>
+        <div class="po-details">
+            <table>
+                <tr>
+                    <td><strong>LOI No</strong></td>
+                    <td>: {{ po.po_number }}</td>
+                </tr>
+                <tr>
+                    <td><strong>LOI Date</strong></td>
+                    <td>: {{ po.order_date.strftime('%d/%m/%Y') }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Terms of Payment</strong></td>
+                    <td>: {{ po.payment_terms or '30 Days' }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Freight</strong></td>
+                    <td>: {{ po.freight_terms or '' }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Delivery Notes</strong></td>
+                    <td>: {{ po.delivery_notes or '' }}</td>
+                </tr>
+            </table>
+            <div style="margin-top: 10px; font-size: 10px;">
+                Acceptance of this intent should be conveyed through mail within 24 hours.
+            </div>
+        </div>
+    </div>
+
+    <!-- Supplier Information -->
+    <div class="supplier-section">
+        <div style="display: flex; justify-content: space-between;">
+            <div style="width: 45%;">
+                <strong>Supplier Name & Address</strong><br>
+                <div class="supplier-info">
+                    <strong>{{ po.supplier.name }}</strong><br><br>
+                    {{ po.supplier.address or '' }}<br>
+                    {% if po.supplier.phone %}{{ po.supplier.phone }}<br>{% endif %}
+                    {% if po.supplier.gst_number %}Supplier GST No.: {{ po.supplier.gst_number }}{% endif %}
+                </div>
+            </div>
+            <div style="width: 45%;">
+                <strong>Terms & Conditions and/or Special Notes</strong><br>
+                <div style="background: #f9f9f9; padding: 10px; border: 1px solid #ddd; min-height: 100px;">
+                    {{ po.notes or '' }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Items Table -->
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>No.</th>
+                <th>RM Code</th>
+                <th>Item + Description</th>
+                <th>Drawing / Spec Sheet No.</th>
+                <th>HSN Code</th>
+                <th>GST Rate</th>
+                <th>UOM</th>
+                <th>Qty</th>
+                <th>Rate</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in po.items %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ item.item.code }}</td>
+                <td class="text-left">{{ item.item.name.upper() }}</td>
+                <td>{{ item.drawing_spec_no or '' }}</td>
+                <td>{{ item.hsn_code or item.item.hsn_code or '' }}</td>
+                <td>GST {{ item.gst_rate or item.item.gst_rate or 18 }}%</td>
+                <td>{{ item.item.unit_of_measure.upper() }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(item.quantity_ordered) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(item.unit_price) }}</td>
+                <td class="text-right">{{ "{:,.2f}".format(item.total_price) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Totals Section -->
+    <div class="totals">
+        <table>
+            <tr>
+                <td class="total-label">Sub Total</td>
+                <td class="text-right">{{ "{:,.2f}".format(po.subtotal) }}</td>
+            </tr>
+            <tr>
+                <td class="total-label">IGST 18%</td>
+                <td class="text-right">{{ "{:,.2f}".format(po.gst_amount) }}</td>
+            </tr>
+            <tr>
+                <td class="total-label">Grand Total</td>
+                <td class="text-right"><strong>{{ "{:,.2f}".format(po.total_amount) }}</strong></td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Terms and Conditions -->
+    <div class="conditions">
+        <strong>Conditions for Supplies/Services :</strong>
+        <ol>
+            <li>All material has to be accompanied with Test Report and PQS.</li>
+            <li>Invoice must mention our PO# and date, Drawing# or specification#</li>
+            <li>Item name on invoice should match with that in the PO.</li>
+            <li>Identify Each Package with Minimum data of, RM Code, Item Description, Qty/Package, Mfg. Date, Supplier Name.</li>
+            <li>Do not send any excess material.In case we receive any excess quantity, It may be sent back on 'To pay basis'.</li>
+            <li>In case the physical count of shipped material is different from the invoice quantity, 10% of invoice value will be deduct.</li>
+            <li>Material must reach our unit before 3 PM for it to be unloaded the same day. Else the material may have to be unloaded on the next working day.</li>
+            <li>Validity of this Intent is {{ po.validity_months or 6 }} Months from the date of issue, subject to clause 8.</li>
+            <li>Delivery should be as per this intent or as communicated through mail.Intent may be cancelled with out intimation in the event of non delivery as per agreed schedule.</li>
+            <li>Vendor to keep sufficient raw material to meet delivery schedule.</li>
+            <li>Jurisdiction Hyderabad. Unresolved Disputes/ Differences shall be referred to Arbitration of a sole Arbitrator appointed by the purchaser, in accordance with the Arbitration and Conciliation Act 1996 and rules framed there under.</li>
+        </ol>
+    </div>
+
+    <!-- Amount in Words -->
+    <div class="amount-words">
+        In Words : {{ amount_words|upper }} RUPEES ONLY
+    </div>
+
+    <div style="display: flex; justify-content: space-between; margin: 20px 0;">
+        <div>Excise Details:</div>
+        <div style="text-align: right;">
+            <strong>Scan QR Code for Google Map Location</strong><br>
+            <div style="width: 50px; height: 50px; border: 1px solid #000; margin: 5px 0;">[QR CODE]</div>
+        </div>
+    </div>
+
+    <!-- Signatures -->
+    <div class="signatures">
+        <table>
+            <tr>
+                <td><strong>Prepared By</strong><br><br>{{ po.prepared_by or '' }}</td>
+                <td><strong>Verified By</strong><br><br>{{ po.verified_by or '' }}</td>
+                <td><strong>Approved By</strong><br><br>{{ po.approved_by or '' }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="computer-generated">
+        <strong>This is computer generated document hence signature is not required</strong>
+    </div>
+
+    <!-- Delivery Schedule (if exists) -->
+    {% if po.delivery_schedules %}
+    <div class="delivery-schedule page-break">
+        <h2>Delivery Schedule</h2>
+
+        <table class="delivery-table">
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>RM Code</th>
+                    <th>Item Description</th>
+                    <th>UOM</th>
+                    <th>Total Qty</th>
+                    <th>Qty & Sch Delivery Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for schedule in po.delivery_schedules %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ schedule.item.code }}</td>
+                    <td class="text-left">{{ schedule.item.name.upper() }}</td>
+                    <td>{{ schedule.item.unit_of_measure.upper() }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(schedule.quantity) }}</td>
+                    <td>{{ "{:,.0f}".format(schedule.quantity) }}# {{ schedule.delivery_date.strftime('%d-%m-%Y') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="margin-top: 30px; text-align: center;">
+            <strong>LOI No :{{ po.po_number }}</strong>
+            <span style="float: right;">Page {{ '2' if po.delivery_schedules else '1' }} of {{ '2' if po.delivery_schedules else '1' }}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        // Auto print when loaded
+        window.onload = function() {
+            window.print();
+        }
+    </script>
+</body>
+</html>

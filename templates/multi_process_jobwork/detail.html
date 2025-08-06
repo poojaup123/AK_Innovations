@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Multi-Process Job Work Details - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-cogs"></i> {{ job.job_number }}</h1>
+            <p class="text-muted">Multi-Process Job Work Details</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('multi_process_jobwork.list_multi_process_jobs') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Overall Progress -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-line"></i> Overall Progress</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <h6>Item</h6>
+                            <p class="mb-0">{{ job.item.name }}</p>
+                            <small class="text-muted">{{ job.item.code }}</small>
+                        </div>
+                        <div class="col-md-2">
+                            <h6>Total Quantity</h6>
+                            <p class="mb-0 fs-5 fw-bold text-primary">{{ job.quantity_sent }} pcs</p>
+                        </div>
+                        <div class="col-md-2">
+                            <h6>Total Processes</h6>
+                            <p class="mb-0 fs-5 fw-bold text-info">{{ processes|length }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6>Overall Progress</h6>
+                            <div class="progress mb-2" style="height: 25px;">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: {{ overall_progress }}%" 
+                                     aria-valuenow="{{ overall_progress }}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    {{ "%.1f"|format(overall_progress) }}%
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <h6>Status</h6>
+                            {% if overall_progress == 100 %}
+                                <span class="badge bg-success">Completed</span>
+                            {% elif overall_progress > 0 %}
+                                <span class="badge bg-primary">In Progress</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Pending</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Work Information -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-info-circle"></i> Job Work Details</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Job Number:</strong></td>
+                            <td>{{ job.job_number }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Start Date:</strong></td>
+                            <td>{{ job.sent_date.strftime('%d %b %Y') if job.sent_date else 'Not set' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Expected Completion:</strong></td>
+                            <td>{{ job.expected_return.strftime('%d %b %Y') if job.expected_return else 'Not set' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Created By:</strong></td>
+                            <td>{{ job.creator.username if job.creator else 'Unknown' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Created At:</strong></td>
+                            <td>{{ job.created_at.strftime('%d %b %Y %H:%M') if job.created_at else 'Unknown' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-calculator"></i> Cost Summary</h6>
+                </div>
+                <div class="card-body">
+                    {% set total_cost = processes|sum(attribute='process_cost') %}
+                    {% set completed_cost = processes|selectattr('status', 'equalto', 'completed')|sum(attribute='process_cost') %}
+                    
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Total Estimated Cost:</strong></td>
+                            <td class="text-end">₹{{ "%.2f"|format(total_cost) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Completed Process Cost:</strong></td>
+                            <td class="text-end">₹{{ "%.2f"|format(completed_cost) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Pending Cost:</strong></td>
+                            <td class="text-end">₹{{ "%.2f"|format(total_cost - completed_cost) }}</td>
+                        </tr>
+                        <tr class="border-top">
+                            <td><strong>Cost per Unit:</strong></td>
+                            <td class="text-end fw-bold">₹{{ "%.2f"|format(total_cost / job.quantity_sent if job.quantity_sent > 0 else 0) }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Processes Details -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-cogs"></i> Manufacturing Processes</h5>
+                    <small class="text-muted">Sequential manufacturing workflow</small>
+                </div>
+                <div class="card-body">
+                    {% if processes %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Sequence</th>
+                                        <th>Process</th>
+                                        <th>Type</th>
+                                        <th>Vendor/Department</th>
+                                        <th>Input Qty</th>
+                                        <th>Output Qty</th>
+                                        <th>Scrap Qty</th>
+                                        <th>Rate</th>
+                                        <th>Cost</th>
+                                        <th>Progress</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for process in processes %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-info">{{ process.sequence_number }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ process.process_badge_class }}">
+                                                {{ process.process_name }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if process.work_type == 'outsourced' %}
+                                                <span class="badge bg-warning">Outsourced</span>
+                                            {% else %}
+                                                <span class="badge bg-info">In-House</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if process.work_type == 'outsourced' %}
+                                                {{ process.customer_name or 'Not assigned' }}
+                                            {% else %}
+                                                {{ process.department or 'Not assigned' }}
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ process.quantity_input }} pcs</td>
+                                        <td>{{ process.output_quantity or 0 }} pcs</td>
+                                        <td>{{ process.quantity_scrap or 0 }} pcs</td>
+                                        <td>₹{{ "%.2f"|format(process.rate_per_unit) }}</td>
+                                        <td>₹{{ "%.2f"|format(process.process_cost) }}</td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                {% set progress = process.completion_percentage %}
+                                                <div class="progress-bar {% if progress == 100 %}bg-success{% elif progress > 0 %}bg-primary{% else %}bg-secondary{% endif %}" 
+                                                     role="progressbar" 
+                                                     style="width: {{ progress }}%" 
+                                                     aria-valuenow="{{ progress }}" 
+                                                     aria-valuemin="0" aria-valuemax="100">
+                                                    {{ "%.0f"|format(progress) }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ process.status_badge_class }}">
+                                                {{ process.status.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if process.status != 'completed' %}
+                                                <a href="{{ url_for('multi_process_jobwork.update_process', process_id=process.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary" title="Update Progress">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            {% else %}
+                                                <span class="text-success" title="Process Completed">
+                                                    <i class="fas fa-check-circle"></i>
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No processes defined for this job work.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Process Timeline -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-timeline"></i> Process Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        {% for process in processes %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker {% if process.status == 'completed' %}bg-success{% elif process.status == 'in_progress' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                {{ process.sequence_number }}
+                            </div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">
+                                    {{ process.process_name }}
+                                    <small class="text-muted">
+                                        ({{ process.quantity_input }} pcs → 
+                                        {% if process.quantity_output %}{{ process.quantity_output }} pcs completed{% else %}{{ process.output_quantity }} pcs expected{% endif %})
+                                    </small>
+                                </h6>
+                                <p class="mb-1">
+                                    <span class="badge {{ process.status_badge_class }}">{{ process.status.replace('_', ' ').title() }}</span>
+                                    {% if process.work_type == 'outsourced' %}
+                                        at {{ process.customer_name or 'TBD' }}
+                                    {% else %}
+                                        in {{ process.department or 'TBD' }} department
+                                    {% endif %}
+                                </p>
+                                {% if process.start_date %}
+                                    <small class="text-muted">
+                                        Started: {{ process.start_date.strftime('%d %b %Y') }}
+                                        {% if process.actual_completion %}
+                                            | Completed: {{ process.actual_completion.strftime('%d %b %Y') }}
+                                        {% elif process.expected_completion %}
+                                            | Expected: {{ process.expected_completion.strftime('%d %b %Y') }}
+                                        {% endif %}
+                                    </small>
+                                {% endif %}
+                                {% if process.notes %}
+                                    <p class="small text-muted mt-1">{{ process.notes }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notes Section -->
+    {% if job.notes %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-sticky-note"></i> Job Work Notes</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ job.notes }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -22px;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 12px;
+    border: 3px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 3px solid #007bff;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}UOM Management - AK Innovations Factory{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">UOM Management</li>
+                </ol>
+            </nav>
+            <h2><i class="fas fa-balance-scale"></i> Unit of Measure Management</h2>
+            <p class="text-muted">Manage conversions between different units (Kg ↔ Pieces, etc.)</p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center bg-primary text-white">
+                <div class="card-body">
+                    <i class="fas fa-ruler fa-2x mb-2"></i>
+                    <h4>{{ total_units }}</h4>
+                    <p class="mb-0">Total Units</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center bg-success text-white">
+                <div class="card-body">
+                    <i class="fas fa-exchange-alt fa-2x mb-2"></i>
+                    <h4>{{ total_conversions }}</h4>
+                    <p class="mb-0">Active Conversions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center bg-info text-white">
+                <div class="card-body">
+                    <i class="fas fa-boxes fa-2x mb-2"></i>
+                    <h4>{{ items_with_conversions }}</h4>
+                    <p class="mb-0">Items Configured</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center bg-warning text-white">
+                <div class="card-body">
+                    <i class="fas fa-history fa-2x mb-2"></i>
+                    <h4>{{ conversion_logs_count }}</h4>
+                    <p class="mb-0">Total Conversions</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('uom.add_unit') }}" class="btn btn-primary btn-lg w-100 mb-2">
+                                <i class="fas fa-plus"></i><br>Add Unit
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('uom.add_conversion') }}" class="btn btn-success btn-lg w-100 mb-2">
+                                <i class="fas fa-exchange-alt"></i><br>Add Conversion
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('uom.add_item_conversion') }}" class="btn btn-info btn-lg w-100 mb-2">
+                                <i class="fas fa-cog"></i><br>Configure Item
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('uom.calculator') }}" class="btn btn-warning btn-lg w-100 mb-2">
+                                <i class="fas fa-calculator"></i><br>Calculator
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Unit Categories -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-layer-group"></i> Unit Categories</h6>
+                </div>
+                <div class="card-body">
+                    {% if unit_categories %}
+                        {% for category, count in unit_categories %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>{{ category }}</span>
+                            <span class="badge bg-primary">{{ count }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No units configured yet.</p>
+                    {% endif %}
+                    
+                    <hr>
+                    <a href="{{ url_for('uom.units_list') }}" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="fas fa-list"></i> View All Units
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Item Conversions -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-clock"></i> Recent Item Conversions</h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_item_conversions %}
+                        {% for conversion in recent_item_conversions %}
+                        <div class="mb-3 p-2 border rounded">
+                            <strong>{{ conversion.item.name }}</strong><br>
+                            <small class="text-muted">
+                                Buy: {{ conversion.purchase_unit.symbol }} → 
+                                Stock: {{ conversion.inventory_unit.symbol }} → 
+                                Sell: {{ conversion.sale_unit.symbol }}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No item conversions configured yet.</p>
+                    {% endif %}
+                    
+                    <hr>
+                    <a href="{{ url_for('uom.item_conversions_list') }}" class="btn btn-outline-success btn-sm w-100">
+                        <i class="fas fa-list"></i> View All Item Conversions
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Items Without Conversions -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-exclamation-triangle text-warning"></i> Items Needing Setup</h6>
+                </div>
+                <div class="card-body">
+                    {% if items_without_conversions %}
+                        {% for item in items_without_conversions %}
+                        <div class="mb-2 p-2 border rounded d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ item.name }}</strong><br>
+                                <small class="text-muted">{{ item.item_code }}</small>
+                            </div>
+                            <a href="{{ url_for('uom.add_item_conversion') }}?item={{ item.id }}" class="btn btn-sm btn-outline-warning">Setup</a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-success">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <p>All items have UOM conversions configured!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Common UOM Examples -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-lightbulb"></i> Common UOM Conversion Examples</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>Weight ↔ Count</h6>
+                            <p class="small text-muted">
+                                <strong>Example:</strong> Steel rods<br>
+                                • Purchase: Kg<br>
+                                • Inventory: Kg<br>
+                                • Sale: Pieces<br>
+                                <em>Conversion: 1 Kg = 40 pieces (25g per piece)</em>
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Length ↔ Count</h6>
+                            <p class="small text-muted">
+                                <strong>Example:</strong> Cable wire<br>
+                                • Purchase: Meters<br>
+                                • Inventory: Meters<br>
+                                • Sale: Pieces (fixed lengths)<br>
+                                <em>Conversion: 1 meter = 2 pieces (0.5m each)</em>
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Volume ↔ Count</h6>
+                            <p class="small text-muted">
+                                <strong>Example:</strong> Paint<br>
+                                • Purchase: Liters<br>
+                                • Inventory: Liters<br>
+                                • Sale: Bottles<br>
+                                <em>Conversion: 1 liter = 4 bottles (250ml each)</em>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

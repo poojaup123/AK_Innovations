@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}Production Dashboard - Factory Management System{% endblock %}
+
+{% block head %}
+<style>
+.stats-card {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+
+.stats-icon {
+    font-size: 2.5rem;
+    opacity: 0.7;
+}
+
+.positive-amount {
+    color: #28a745;
+}
+
+.negative-amount {
+    color: #dc3545;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-industry"></i> Production Command Center</h1>
+            <p class="text-muted">Real-time production monitoring and control</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('production.add_production') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Start Production
+                </a>
+                <a href="{{ url_for('production.list_bom') }}" class="btn btn-success">
+                    <i class="fas fa-sitemap"></i> Manage BOM
+                </a>
+                <a href="{{ url_for('reports.production_report') }}" class="btn btn-info">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Production Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card border-primary">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Production Target</h6>
+                            <h4 class="text-primary">{{ stats.total_productions or 0 }}</h4>
+                        </div>
+                        <i class="fas fa-bullseye stats-icon text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-warning">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Pending Review</h6>
+                            <h4 class="text-warning">{{ stats.planned_productions or 0 }}</h4>
+                        </div>
+                        <i class="fas fa-clock stats-icon text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-success">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Active Job Stages</h6>
+                            <h4 class="text-success">{{ stats.in_progress_productions or 0 }}</h4>
+                        </div>
+                        <i class="fas fa-cogs stats-icon text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-info">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Cost per Unit</h6>
+                            <h4 class="text-info">₹{{ "{:,.2f}".format(stats.avg_cost_per_unit or 0) }}</h4>
+                        </div>
+                        <i class="fas fa-calculator stats-icon text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-muted">Material Cost/unit</h6>
+                    <h5 class="text-primary">₹{{ "{:,.2f}".format(stats.avg_material_cost or 0) }}</h5>
+                    <small class="text-muted">Average material cost</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-muted">Labor Cost</h6>
+                    <h5 class="text-warning">₹{{ "{:,.2f}".format(stats.avg_labor_cost or 0) }}</h5>
+                    <small class="text-muted">Total labor expenses</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stats-card">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-muted">Efficiency</h6>
+                    <h5 class="positive-amount">{{ "{:.1f}%".format(stats.avg_efficiency or 0) }}</h5>
+                    <small class="text-muted">Production efficiency</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Smart Actions -->
+    <div class="row mb-4">
+        <div class="col">
+            <h5><i class="fas fa-bolt"></i> Smart Actions</h5>
+            <div class="row">
+                <div class="col-md-3">
+                    <a href="{{ url_for('production.list_productions') }}" class="btn btn-primary btn-block w-100">
+                        <i class="fas fa-list"></i> View All Productions
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('production.list_bom') }}" class="btn btn-info btn-block w-100">
+                        <i class="fas fa-sitemap"></i> Manage BOM
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('production.list_productions') }}?status=planned" class="btn btn-warning btn-block w-100">
+                        <i class="fas fa-clipboard-check"></i> Planned Orders
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('reports.production_report') }}" class="btn btn-secondary btn-block w-100">
+                        <i class="fas fa-chart-bar"></i> Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Production Overview -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-line"></i> Production Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="p-3">
+                                <h4 class="text-primary">{{ stats.total_productions or 0 }}</h4>
+                                <small class="text-muted">Total Orders</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3">
+                                <h4 class="text-warning">{{ stats.planned_productions or 0 }}</h4>
+                                <small class="text-muted">Planned</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3">
+                                <h4 class="text-success">{{ stats.in_progress_productions or 0 }}</h4>
+                                <small class="text-muted">In Progress</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3">
+                                <h4 class="text-info">{{ stats.completed_productions or 0 }}</h4>
+                                <small class="text-muted">Completed</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Production -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-calendar-day"></i> Today's Production</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_productions %}
+                        {% for production in recent_productions %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>{{ production.item.name if production.item else 'Unknown Item' }}</strong><br>
+                                <small class="text-muted">{{ production.status }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-{{ 'success' if production.status == 'completed' else 'warning' }}">
+                                    {{ production.quantity or 0 }}
+                                </span>
+                            </div>
+                        </div>
+                        {% if not loop.last %}<hr>{% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No production orders today</p>
+                        <a href="{{ url_for('production.add_production') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-plus"></i> Start Production
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Production Orders -->
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-list"></i> Recent Production Orders</h5>
+                    <a href="{{ url_for('production.list_productions') }}" class="btn btn-outline-primary btn-sm">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_productions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Order No.</th>
+                                        <th>Item</th>
+                                        <th>Quantity</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for production in recent_productions %}
+                                    <tr>
+                                        <td>{{ production.created_at.strftime('%d-%m-%Y') if production.created_at else 'N/A' }}</td>
+                                        <td>{{ production.production_number or 'N/A' }}</td>
+                                        <td>{{ production.item.name if production.item else 'Unknown' }}</td>
+                                        <td>{{ production.quantity or 0 }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if production.status == 'completed' else 'warning' if production.status == 'in_progress' else 'secondary' }}">
+                                                {{ production.status.title() if production.status else 'Unknown' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('production.view_production', id=production.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No recent production orders found.</p>
+                        <div class="text-center">
+                            <a href="{{ url_for('production.add_production') }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create First Production Order
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}

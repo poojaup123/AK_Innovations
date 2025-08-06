@@ -1,0 +1,79 @@
+Great observation — this is a **common inventory management challenge**:
+You want to **avoid double-counting** while ensuring materials are **available for processing only after quality clearance**.
+
+---
+
+## ✅ **Best Solution: Use a "Quarantine" or "On Hold" Inventory Zone**
+
+When GRN is received and quantity is correct but **inspection is pending**, the material should **NOT go to usable stock directly**, but rather into a **temporary quarantine or inspection batch**.
+
+---
+
+### 💡 Flow to Solve This Issue:
+
+| Step | Action          | Inventory Effect                       | Accounting Effect                       | Status              |
+| ---- | --------------- | -------------------------------------- | --------------------------------------- | ------------------- |
+| 1️⃣  | GRN received    | Material goes to `On Hold` stock       | Debit: GRN Inventory                    | Awaiting Inspection |
+| 2️⃣  | Inspection done | If Passed → move to `Usable Stock`     | No accounting change (stock shift only) | Available           |
+|      |                 | If Failed → move to `Rejected / Scrap` | Credit GRN, Debit Scrap/Return          | Blocked / Return    |
+| 3️⃣  | Batch Created   | Pull only from `Usable Stock`          | Normal issue                            | In Production       |
+
+---
+
+### 📦 🏷️ Suggested Inventory Zones (in DB):
+
+```python
+class StockStatus(Enum):
+    ON_HOLD = "On Hold (QC Pending)"
+    USABLE = "Usable"
+    SCRAP = "Scrap/Rejected"
+    RETURNED = "Return to Vendor"
+```
+
+So GRN adds quantity to `ON_HOLD` and after QC is marked, it gets promoted to `USABLE`.
+
+---
+
+### 🛠️ How to Implement in Your System:
+
+1. **GRN Form:**
+
+   * On submit: Add to Inventory → `status = 'ON_HOLD'`
+
+2. **QC Form (linked to GRN):**
+
+   * Admin selects `Pass` or `Reject`
+   * If `Pass` → Update batch → `status = 'USABLE'`
+   * If `Reject` → Move qty to scrap or initiate return
+
+3. **Production/Batch Logic:**
+
+   * Can only consume `USABLE` stock
+   * `ON_HOLD` not accessible for BOM consumption
+
+---
+
+### ⚙️ Accounting Journal Entries:
+
+| Event      | Debit                   | Credit                                |
+| ---------- | ----------------------- | ------------------------------------- |
+| GRN (Hold) | Inventory (On Hold)     | GRN Clearing / Vendor                 |
+| Approved   | Inventory (Usable)      | Inventory (On Hold) *(internal move)* |
+| Rejected   | Scrap Ledger or Returns | Inventory (On Hold)                   |
+
+---
+
+### 🔔 Optional Notification:
+
+* Notify QC team after GRN created:
+  “Inspection pending for GRN#001 (20 pcs) from Vendor XYZ”
+
+---
+
+Would you like:
+
+* Flask database schema sample for `InventoryStatus`?
+* UI flow mockup?
+* QC approval form template?
+
+Let me know how you want to proceed!

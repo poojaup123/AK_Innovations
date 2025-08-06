@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-money-bill"></i> Record Receipt</h2>
+                <a href="{{ url_for('accounting.dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Accounting
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-plus"></i> Add Receipt Voucher</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" class="row g-3">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="col-md-6">
+                            {{ form.party_id.label(class="form-label") }}
+                            {{ form.party_id(class="form-select") }}
+                            {% if form.party_id.errors %}
+                                <div class="text-danger">{{ form.party_id.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            {{ form.receipt_date.label(class="form-label") }}
+                            {{ form.receipt_date(class="form-control") }}
+                            {% if form.receipt_date.errors %}
+                                <div class="text-danger">{{ form.receipt_date.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            {{ form.receipt_mode.label(class="form-label") }}
+                            {{ form.receipt_mode(class="form-select") }}
+                            {% if form.receipt_mode.errors %}
+                                <div class="text-danger">{{ form.receipt_mode.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            {{ form.bank_account_id.label(class="form-label") }}
+                            {{ form.bank_account_id(class="form-select") }}
+                            {% if form.bank_account_id.errors %}
+                                <div class="text-danger">{{ form.bank_account_id.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            {{ form.amount.label(class="form-label") }}
+                            {{ form.amount(class="form-control") }}
+                            {% if form.amount.errors %}
+                                <div class="text-danger">{{ form.amount.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            {{ form.reference_number.label(class="form-label") }}
+                            {{ form.reference_number(class="form-control") }}
+                            {% if form.reference_number.errors %}
+                                <div class="text-danger">{{ form.reference_number.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-12">
+                            {{ form.narration.label(class="form-label") }}
+                            {{ form.narration(class="form-control") }}
+                            {% if form.narration.errors %}
+                                <div class="text-danger">{{ form.narration.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Create Receipt Voucher
+                            </button>
+                            <a href="{{ url_for('accounting.dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

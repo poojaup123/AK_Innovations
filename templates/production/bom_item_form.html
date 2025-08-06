@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-cubes"></i> {{ title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('production.dashboard') }}">Production</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('production.list_bom') }}">Bill of Materials</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('production.edit_bom', id=bom.id) }}">{{ bom.bom_code }}</a></li>
+                    <li class="breadcrumb-item active">{{ title }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-cubes"></i> Material Information</h5>
+                    <small class="text-muted">BOM: {{ bom.bom_code }} - {{ bom.product.name if bom.product else 'Unknown Product' }}</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Basic Material Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.material_id.label(class="form-label") }}
+                                    {{ form.material_id(class="form-select") }}
+                                    {% if form.material_id.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.material_id.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.qty_required.label(class="form-label") }}
+                                    {{ form.qty_required(class="form-control", step="0.001") }}
+                                    {% if form.qty_required.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.qty_required.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.uom_id.label(class="form-label") }}
+                                    {{ form.uom_id(class="form-select") }}
+                                    {% if form.uom_id.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.uom_id.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <small class="text-muted">Unit of measure for this material (optional)</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.unit_cost.label(class="form-label") }}
+                                    {{ form.unit_cost(class="form-control", step="0.01") }}
+                                    {% if form.unit_cost.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.unit_cost.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <small class="text-muted">Cost per unit (optional)</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Process Information -->
+                        <div class="card mt-3">
+                            <div class="card-header bg-info text-white">
+                                <h6><i class="fas fa-cogs"></i> Process Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.process_step.label(class="form-label") }}
+                                            {{ form.process_step(class="form-control") }}
+                                            {% if form.process_step.errors %}
+                                                <div class="text-danger">
+                                                    {% for error in form.process_step.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <small class="text-muted">Process step where this material is used</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.process_name.label(class="form-label") }}
+                                            {{ form.process_name(class="form-control") }}
+                                            {% if form.process_name.errors %}
+                                                <div class="text-danger">
+                                                    {% for error in form.process_name.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <small class="text-muted">Name of the process (optional)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quality & Scrap Information -->
+                        <div class="card mt-3">
+                            <div class="card-header bg-warning">
+                                <h6><i class="fas fa-check-circle"></i> Quality & Scrap Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.scrap_percent.label(class="form-label") }}
+                                            {{ form.scrap_percent(class="form-control", step="0.1") }}
+                                            {% if form.scrap_percent.errors %}
+                                                <div class="text-danger">
+                                                    {% for error in form.scrap_percent.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <small class="text-muted">Expected scrap percentage (optional)</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="form-check mt-4">
+                                                {{ form.is_critical(class="form-check-input") }}
+                                                <label class="form-check-label" for="{{ form.is_critical.id }}">
+                                                    Critical Material
+                                                </label>
+                                            </div>
+                                            <small class="text-muted">Mark if this material is critical for production</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Supplier Information -->
+                        <div class="card mt-3">
+                            <div class="card-header bg-success text-white">
+                                <h6><i class="fas fa-truck"></i> Supplier Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.default_supplier_id.label(class="form-label") }}
+                                            {{ form.default_supplier_id(class="form-select") }}
+                                            {% if form.default_supplier_id.errors %}
+                                                <div class="text-danger">
+                                                    {% for error in form.default_supplier_id.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <small class="text-muted">Preferred supplier for this material (optional)</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.substitute_materials.label(class="form-label") }}
+                                            {{ form.substitute_materials(class="form-control") }}
+                                            {% if form.substitute_materials.errors %}
+                                                <div class="text-danger">
+                                                    {% for error in form.substitute_materials.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <small class="text-muted">Alternative materials (comma-separated codes)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6><i class="fas fa-sticky-note"></i> Additional Notes</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    {{ form.remarks.label(class="form-label") }}
+                                    {{ form.remarks(class="form-control") }}
+                                    {% if form.remarks.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.remarks.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Material
+                                </button>
+                                <a href="{{ url_for('production.edit_bom', id=bom.id) }}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Back to BOM
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Material Summary Sidebar -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> BOM Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>BOM:</strong> {{ bom.bom_code }}</p>
+                    <p><strong>Product:</strong> {{ bom.product.name if bom.product else 'Unknown Product' }}</p>
+                    <p><strong>Current Materials:</strong> {{ bom.items|length }}</p>
+                    
+                    {% if bom.items %}
+                        <h6 class="mt-3">Existing Materials:</h6>
+                        <div class="list-group list-group-flush">
+                            {% for item in bom.items %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ item.material.name if item.material else 'Unknown Material' }}</h6>
+                                        <small>{{ item.qty_required }} {{ item.unit or 'pcs' }}</small>
+                                    </div>
+                                    {% if item.is_critical %}
+                                        <span class="badge bg-danger">Critical</span>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-lightbulb"></i> Material Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> Only Material and Quantity are required</li>
+                        <li><i class="fas fa-check text-success"></i> UOM selection is optional</li>
+                        <li><i class="fas fa-check text-success"></i> Unit cost helps with BOM costing</li>
+                        <li><i class="fas fa-check text-success"></i> Mark critical materials for priority tracking</li>
+                        <li><i class="fas fa-check text-success"></i> Set supplier preferences for procurement</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

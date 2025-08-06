@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Document - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-edit"></i> Edit Document</h1>
+            <p class="text-muted">Update document information for "{{ document.original_filename }}"</p>
+        </div>
+        <div class="col-auto">
+            {% if document.reference_type == 'purchase_order' %}
+                <a href="{{ url_for('purchase.po_detail', id=document.reference_id) }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Purchase Order
+                </a>
+            {% elif document.reference_type == 'sales_order' %}
+                <a href="{{ url_for('sales.so_detail', id=document.reference_id) }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Sales Order
+                </a>
+            {% elif document.reference_type == 'job_work' %}
+                <a href="{{ url_for('jobwork.job_detail', id=document.reference_id) }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Job Work
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle"></i> Document Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.document_category.label(class="form-label") }}
+                            {{ form.document_category(class="form-select") }}
+                            {% if form.document_category.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.document_category.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows="4") }}
+                            {% if form.description.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.description.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            {% if document.reference_type == 'purchase_order' %}
+                                <a href="{{ url_for('purchase.po_detail', id=document.reference_id) }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            {% elif document.reference_type == 'sales_order' %}
+                                <a href="{{ url_for('sales.so_detail', id=document.reference_id) }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            {% elif document.reference_type == 'job_work' %}
+                                <a href="{{ url_for('jobwork.job_detail', id=document.reference_id) }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            {% else %}
+                                <a href="#" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            {% endif %}
+                            
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-file"></i> Document Details</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless table-sm">
+                        <tr>
+                            <td><strong>Filename:</strong></td>
+                            <td>{{ document.original_filename }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>File Type:</strong></td>
+                            <td>
+                                <i class="fas fa-file"></i>
+                                {{ document.mime_type.upper() if document.mime_type else 'N/A' }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Size:</strong></td>
+                            <td>{{ format_file_size(document.file_size) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Uploaded By:</strong></td>
+                            <td>{{ document.uploader.username }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Upload Date:</strong></td>
+                            <td>{{ document.upload_date.strftime('%d %b %Y at %I:%M %p') }}</td>
+                        </tr>
+                    </table>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('documents.view_document', document_id=document.id) }}" 
+                           class="btn btn-outline-primary btn-sm" target="_blank">
+                            <i class="fas fa-eye"></i> View Document
+                        </a>
+                        <a href="{{ url_for('documents.download_document', document_id=document.id) }}" 
+                           class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-download"></i> Download
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

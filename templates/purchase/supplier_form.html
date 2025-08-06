@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-handshake"></i> 
+                    {% if title == 'Add Supplier' %}Add Business Partner{% else %}{{ title }}{% endif %}
+                </h2>
+                <a href="{{ url_for('purchase.list_suppliers') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Business Partners
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Partner Type Selection -->
+                        <div class="mb-4">
+                            {{ form.partner_type.label(class="form-label") }}
+                            {{ form.partner_type(class="form-select") }}
+                            {% if form.partner_type.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.partner_type.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Basic Information Section -->
+                        <h5 class="mb-3 text-primary"><i class="fas fa-info-circle"></i> Basic Information</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.name.label(class="form-label") }}
+                                {{ form.name(class="form-control") }}
+                                {% if form.name.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.name.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.contact_person.label(class="form-label") }}
+                                {{ form.contact_person(class="form-control") }}
+                                {% if form.contact_person.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.contact_person.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.phone.label(class="form-label") }}
+                                {{ form.phone(class="form-control") }}
+                                {% if form.phone.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.phone.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.email.label(class="form-label") }}
+                                {{ form.email(class="form-control") }}
+                                {% if form.email.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.email.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        
+                        <!-- Compliance Information Section -->
+                        <h5 class="mb-3 text-warning"><i class="fas fa-file-contract"></i> Compliance Information</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.gst_number.label(class="form-label") }}
+                                {{ form.gst_number(class="form-control") }}
+                                <small class="text-muted">Mandatory for GST transactions</small>
+                                {% if form.gst_number.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.gst_number.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.pan_number.label(class="form-label") }}
+                                {{ form.pan_number(class="form-control") }}
+                                <small class="text-muted">Optional, for compliance purposes</small>
+                                {% if form.pan_number.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.pan_number.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        
+                        <!-- Address Information Section -->
+                        <h5 class="mb-3 text-info"><i class="fas fa-map-marker-alt"></i> Address Information</h5>
+                        <div class="mb-3">
+                            {{ form.address.label(class="form-label") }}
+                            {{ form.address(class="form-control", rows="3") }}
+                            {% if form.address.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.address.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.city.label(class="form-label") }}
+                                {{ form.city(class="form-control") }}
+                                {% if form.city.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.city.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.state.label(class="form-label") }}
+                                {{ form.state(class="form-control") }}
+                                {% if form.state.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.state.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.pin_code.label(class="form-label") }}
+                                {{ form.pin_code(class="form-control") }}
+                                {% if form.pin_code.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.pin_code.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        
+                        <!-- Banking Information Section -->
+                        <h5 class="mb-3 text-success"><i class="fas fa-university"></i> Banking Information <small class="text-muted">(Optional)</small></h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.account_number.label(class="form-label") }}
+                                {{ form.account_number(class="form-control") }}
+                                <small class="text-muted">For payment processing</small>
+                                {% if form.account_number.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.account_number.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.bank_name.label(class="form-label") }}
+                                {{ form.bank_name(class="form-control") }}
+                                {% if form.bank_name.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.bank_name.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.ifsc_code.label(class="form-label") }}
+                                {{ form.ifsc_code(class="form-control") }}
+                                {% if form.ifsc_code.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.ifsc_code.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check mt-4 pt-2">
+                                    {{ form.is_active(class="form-check-input") }}
+                                    {{ form.is_active.label(class="form-check-label") }}
+                                </div>
+                                {% if form.is_active.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.is_active.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        
+                        <!-- Transportation Section (for transporters) -->
+                        <div id="transportation-section" style="display: none;">
+                            <h5 class="mb-3 text-primary"><i class="fas fa-truck"></i> Transportation Information</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    {{ form.freight_rate_per_unit.label(class="form-label") }}
+                                    {{ form.freight_rate_per_unit(class="form-control", step="0.01") }}
+                                    <small class="text-muted">Freight rate amount</small>
+                                    {% if form.freight_rate_per_unit.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.freight_rate_per_unit.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    {{ form.freight_unit_type.label(class="form-label") }}
+                                    {{ form.freight_unit_type(class="form-select") }}
+                                    <small class="text-muted">Billing unit for freight charges</small>
+                                    {% if form.freight_unit_type.errors %}
+                                        <div class="text-danger small">
+                                            {% for error in form.freight_unit_type.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <hr class="my-4">
+                        </div>
+                        
+                        <!-- Additional Information Section -->
+                        <h5 class="mb-3 text-secondary"><i class="fas fa-notes-medical"></i> Additional Information</h5>
+                        <div class="mb-3">
+                            {{ form.remarks.label(class="form-label") }}
+                            {{ form.remarks(class="form-control", rows="3") }}
+                            <small class="text-muted">Any special notes about this business partner</small>
+                            {% if form.remarks.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.remarks.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('purchase.list_suppliers') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Business Partner
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show/hide transportation section based on partner type
+function toggleTransportationSection() {
+    const partnerType = document.getElementById('partner_type').value;
+    const transportationSection = document.getElementById('transportation-section');
+    
+    if (partnerType === 'transporter' || partnerType === 'both') {
+        transportationSection.style.display = 'block';
+    } else {
+        transportationSection.style.display = 'none';
+        // Clear freight rate if not transporter
+        if (partnerType !== 'both') {
+            document.getElementById('freight_rate_per_unit').value = '0.0';
+            document.getElementById('freight_unit_type').value = 'per_km';
+        }
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener to partner type field
+    document.getElementById('partner_type').addEventListener('change', toggleTransportationSection);
+    
+    // Initialize on page load
+    toggleTransportationSection();
+});
+</script>
+{% endblock %}

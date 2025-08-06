@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-users-cog"></i> User Management</h1>
+            <p class="text-muted">Manage system users and their access permissions.</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('settings.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Settings
+            </a>
+        </div>
+    </div>
+
+    <!-- Current User Profile -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-user-edit"></i> My Profile
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Change Username</h6>
+                    <form method="POST" action="{{ url_for('settings.change_username') }}" class="mb-4">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="new_username" 
+                                   value="{{ current_user.username }}" required>
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-save"></i> Update Username
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <h6>Change Password</h6>
+                    <button class="btn btn-outline-warning" onclick="showChangePasswordModal()">
+                        <i class="fas fa-key"></i> Change Password
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users List -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-users"></i> System Users
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>
+                                <strong>{{ user.username }}</strong>
+                                {% if user.id == current_user.id %}
+                                    <span class="badge bg-primary ms-1">You</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                {% if user.role == 'admin' %}
+                                    <span class="badge bg-danger">Admin</span>
+                                {% else %}
+                                    <span class="badge bg-info">Staff</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-success">Active</span>
+                            </td>
+                            <td>{{ user.created_at.strftime('%m/%d/%Y') if user.created_at else '-' }}</td>
+                            <td>
+                                {% if user.id != current_user.id %}
+                                <div class="btn-group btn-group-sm">
+                                    {% if user.role != 'admin' %}
+                                    <a href="{{ url_for('settings.user_permissions', user_id=user.id) }}" class="btn btn-outline-primary" title="Manage Permissions">
+                                        <i class="fas fa-user-shield"></i>
+                                    </a>
+                                    {% endif %}
+                                    <button class="btn btn-outline-warning" onclick="resetPassword({{ user.id }}, '{{ user.username }}')" title="Reset Password">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" onclick="deleteUser({{ user.id }}, '{{ user.username }}')" title="Delete User">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">Current User</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <i class="fas fa-users fa-2x text-muted mb-3"></i>
+                                <p class="text-muted">No users found</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add New User -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-user-plus"></i> Add New User
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('settings.create_user') }}">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="role" class="form-label">Role</label>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="staff">Staff</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required minlength="6">
+                            <div class="form-text">Minimum 6 characters</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i> Create User
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Password Reset Modal - Fixed Version -->
+<div class="modal" id="resetPasswordModal" tabindex="-1" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;">
+    <div class="modal-dialog" style="position: relative; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10001;">
+        <div class="modal-content" style="position: relative; z-index: 10002;">
+            <div class="modal-header">
+                <h5 class="modal-title">Reset Password</h5>
+                <button type="button" class="btn-close" onclick="closeResetModal()" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Reset password for user <strong id="resetUsername"></strong>:</p>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="radio" name="resetType" id="generatePassword" value="generate" checked>
+                    <label class="form-check-label" for="generatePassword">
+                        Generate random password
+                    </label>
+                </div>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="radio" name="resetType" id="customPassword" value="custom">
+                    <label class="form-check-label" for="customPassword">
+                        Set custom password
+                    </label>
+                </div>
+                
+                <div id="customPasswordInput" style="display: none;" class="mb-3">
+                    <label for="newPassword" class="form-label">New Password</label>
+                    <input type="password" class="form-control" id="newPassword" minlength="6" placeholder="Enter new password (min 6 characters)">
+                    <div class="form-text">Minimum 6 characters required</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeResetModal()">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirmResetPassword" style="z-index: 10005; position: relative;">Reset Password</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Change My Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('settings.change_password') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="current_password" class="form-label">Current Password</label>
+                        <input type="password" class="form-control" id="current_password" 
+                               name="current_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="new_password" 
+                               name="new_password" required minlength="6">
+                        <div class="form-text">Minimum 6 characters</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm_new_password" class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" id="confirm_new_password" 
+                               name="confirm_new_password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Change Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete user <strong id="deleteUsername"></strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteUser">Delete User</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentUserId = null;
+
+function showChangePasswordModal() {
+    new bootstrap.Modal(document.getElementById('changePasswordModal')).show();
+}
+
+function resetPassword(userId, username) {
+    currentUserId = userId;
+    document.getElementById('resetUsername').textContent = username;
+    
+    // Show modal with custom display (bypass Bootstrap modal backdrop issues)
+    const modalElement = document.getElementById('resetPasswordModal');
+    modalElement.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+}
+
+function closeResetModal() {
+    const modalElement = document.getElementById('resetPasswordModal');
+    modalElement.style.display = 'none';
+    document.body.style.overflow = ''; // Restore scrolling
+    
+    // Reset form
+    document.getElementById('generatePassword').checked = true;
+    document.getElementById('customPassword').checked = false;
+    document.getElementById('customPasswordInput').style.display = 'none';
+    document.getElementById('newPassword').value = '';
+}
+
+// Handle password reset type toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const generateRadio = document.getElementById('generatePassword');
+    const customRadio = document.getElementById('customPassword');
+    const customInput = document.getElementById('customPasswordInput');
+    
+    if (generateRadio && customRadio && customInput) {
+        generateRadio.addEventListener('change', function() {
+            if (this.checked) {
+                customInput.style.display = 'none';
+            }
+        });
+        
+        customRadio.addEventListener('change', function() {
+            if (this.checked) {
+                customInput.style.display = 'block';
+                document.getElementById('newPassword').focus();
+            }
+        });
+    }
+});
+
+function deleteUser(userId, username) {
+    currentUserId = userId;
+    document.getElementById('deleteUsername').textContent = username;
+    new bootstrap.Modal(document.getElementById('deleteUserModal')).show();
+}
+
+// Enhanced event handler for password reset with better error handling
+document.addEventListener('DOMContentLoaded', function() {
+    const resetButton = document.getElementById('confirmResetPassword');
+    if (resetButton) {
+        resetButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (currentUserId) {
+                // Get reset type and custom password if selected
+                const resetType = document.querySelector('input[name="resetType"]:checked').value;
+                const customPassword = resetType === 'custom' ? document.getElementById('newPassword').value : null;
+                
+                // Validate custom password if selected
+                if (resetType === 'custom') {
+                    if (!customPassword || customPassword.length < 6) {
+                        alert('Please enter a password with at least 6 characters.');
+                        return;
+                    }
+                }
+                
+                // Disable button during processing
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting...';
+                
+                const requestData = {
+                    reset_type: resetType
+                };
+                
+                if (customPassword) {
+                    requestData.custom_password = customPassword;
+                }
+                
+                fetch(`{{ url_for('settings.reset_user_password', user_id=0) }}`.replace('0', currentUserId), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        if (data.is_custom) {
+                            alert('Password reset successful. Custom password has been set.');
+                        } else {
+                            alert(`Password reset successful. New password: ${data.new_password}`);
+                        }
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                        // Re-enable button
+                        this.disabled = false;
+                        this.innerHTML = 'Reset Password';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error resetting password: ' + error.message);
+                    // Re-enable button
+                    this.disabled = false;
+                    this.innerHTML = 'Reset Password';
+                });
+                
+                closeResetModal();
+            }
+        });
+    }
+});
+
+document.getElementById('confirmDeleteUser').addEventListener('click', function() {
+    if (currentUserId) {
+        fetch(`{{ url_for('settings.delete_user', user_id=0) }}`.replace('0', currentUserId), {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('User deleted successfully');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error deleting user: ' + error.message);
+        });
+        
+        bootstrap.Modal.getInstance(document.getElementById('deleteUserModal')).hide();
+    }
+});
+
+// Password confirmation validation
+document.getElementById('confirm_password').addEventListener('input', function() {
+    const password = document.getElementById('password').value;
+    const confirmPassword = this.value;
+    
+    if (password !== confirmPassword) {
+        this.setCustomValidity('Passwords do not match');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+
+// New password confirmation validation
+document.getElementById('confirm_new_password').addEventListener('input', function() {
+    const newPassword = document.getElementById('new_password').value;
+    const confirmNewPassword = this.value;
+    
+    if (newPassword !== confirmNewPassword) {
+        this.setCustomValidity('Passwords do not match');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+</script>
+{% endblock %}

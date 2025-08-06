@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}Customize Dashboard - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-cog"></i> Customize Dashboard</h1>
+            <p class="text-muted">Choose which modules to display on your dashboard and arrange them as needed.</p>
+        </div>
+        <div class="col-auto">
+            <form method="POST" action="{{ url_for('main.reset_dashboard_preferences') }}" style="display: inline;">
+                <button type="submit" class="btn btn-outline-secondary" onclick="return confirm('Are you sure you want to reset dashboard to default layout?')">
+                    <i class="fas fa-undo"></i> Reset to Default
+                </button>
+            </form>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Customization Interface -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-th-large"></i> Dashboard Modules</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">Drag and drop modules to reorder them. Use the checkboxes to show/hide modules.</p>
+            
+            <div id="modules-container" class="sortable-container">
+                {% for module in all_modules %}
+                <div class="module-item" data-module-id="{{ module.id }}">
+                    <div class="module-item-content">
+                        <div class="module-drag-handle">
+                            <i class="fas fa-grip-vertical"></i>
+                        </div>
+                        <div class="module-checkbox">
+                            <input type="checkbox" 
+                                   id="module_{{ module.id }}" 
+                                   {% if module.id not in user_preferences or user_preferences[module.id]['is_visible'] %}checked{% endif %}>
+                        </div>
+                        <div class="module-info">
+                            <div class="module-icon">
+                                <i class="{{ module.icon }}"></i>
+                            </div>
+                            <div class="module-details">
+                                <h6 class="module-title">{{ module.title }}</h6>
+                                <small class="module-description text-muted">{{ module.description }}</small>
+                            </div>
+                        </div>
+                        <div class="module-size">
+                            <select class="form-select form-select-sm module-size-select">
+                                <option value="small" 
+                                        {% if module.id in user_preferences and user_preferences[module.id]['size'] == 'small' %}selected{% endif %}>
+                                    Small
+                                </option>
+                                <option value="medium" 
+                                        {% if module.id not in user_preferences or user_preferences[module.id]['size'] == 'medium' %}selected{% endif %}>
+                                    Medium
+                                </option>
+                                <option value="large" 
+                                        {% if module.id in user_preferences and user_preferences[module.id]['size'] == 'large' %}selected{% endif %}>
+                                    Large
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="mt-4">
+                <button type="button" id="save-preferences" class="btn btn-primary" onclick="savePreferences()">
+                    <i class="fas fa-save"></i> Save Preferences
+                </button>
+                <button type="button" id="select-all" class="btn btn-outline-secondary" onclick="selectAll()">
+                    <i class="fas fa-check-square"></i> Select All
+                </button>
+                <button type="button" id="deselect-all" class="btn btn-outline-secondary" onclick="deselectAll()">
+                    <i class="fas fa-square"></i> Deselect All
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.sortable-container {
+    min-height: 200px;
+}
+
+.module-item {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+}
+
+.module-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.module-item.ui-sortable-helper {
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    transform: rotate(3deg);
+    z-index: 1000;
+}
+
+.module-item-content {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    gap: 16px;
+}
+
+.module-drag-handle {
+    cursor: grab;
+    color: #6c757d;
+    font-size: 18px;
+}
+
+.module-drag-handle:active {
+    cursor: grabbing;
+}
+
+.module-checkbox input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+}
+
+.module-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.module-icon {
+    font-size: 24px;
+    color: #495057;
+    width: 40px;
+    text-align: center;
+}
+
+.module-details {
+    flex: 1;
+}
+
+.module-title {
+    margin: 0;
+    font-weight: 600;
+    color: #212529;
+}
+
+.module-description {
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.module-size {
+    min-width: 120px;
+}
+
+.module-size-select {
+    width: 100%;
+}
+
+.ui-sortable-placeholder {
+    height: 80px;
+    background: #e9ecef;
+    border: 2px dashed #6c757d;
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+<script>
+// Global functions accessible from onclick handlers
+window.selectAll = function() {
+    console.log('Select All clicked');
+    document.querySelectorAll('.module-checkbox input[type="checkbox"]').forEach(function(checkbox) {
+        checkbox.checked = true;
+    });
+};
+
+window.deselectAll = function() {
+    console.log('Deselect All clicked');
+    document.querySelectorAll('.module-checkbox input[type="checkbox"]').forEach(function(checkbox) {
+        checkbox.checked = false;
+    });
+};
+
+window.showAlert = function(type, message) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Remove existing alerts
+    const existingAlerts = document.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    // Add new alert at the top of the container
+    const container = document.querySelector('.container');
+    container.insertAdjacentHTML('afterbegin', alertHtml);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(function() {
+        const currentAlert = document.querySelector('.alert');
+        if (currentAlert) {
+            currentAlert.remove();
+        }
+    }, 5000);
+};
+
+window.savePreferences = function() {
+    console.log('Save preferences function called');
+    const saveBtn = document.getElementById('save-preferences');
+    const originalText = saveBtn.innerHTML;
+    
+    // Show loading state
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    
+    const preferences = [];
+    const moduleItems = document.querySelectorAll('#modules-container .module-item');
+    
+    moduleItems.forEach(function(moduleItem, index) {
+        const moduleId = moduleItem.getAttribute('data-module-id');
+        const checkbox = moduleItem.querySelector('.module-checkbox input[type="checkbox"]');
+        const sizeSelect = moduleItem.querySelector('.module-size-select');
+        
+        preferences.push({
+            module_id: parseInt(moduleId),
+            is_visible: checkbox.checked,
+            position: index,
+            size: sizeSelect.value
+        });
+    });
+    
+    console.log('Preferences to save:', preferences);
+
+    fetch('{{ url_for("main.save_dashboard_preferences") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(preferences)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Response received:', data);
+        if (data.success) {
+            // Show success state
+            saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+            showAlert('success', 'Dashboard preferences saved! Redirecting...');
+            
+            // Redirect to dashboard
+            setTimeout(function() {
+                window.location.href = '{{ url_for("main.dashboard") }}';
+            }, 800);
+        } else {
+            // Reset button on error
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalText;
+            showAlert('danger', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Reset button on error
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
+        showAlert('danger', 'Error saving preferences: ' + error.message);
+    });
+};
+
+$(document).ready(function() {
+    console.log('Dashboard customization page loaded');
+    console.log('jQuery version:', $.fn.jquery);
+    
+    // Make modules sortable
+    $("#modules-container").sortable({
+        handle: ".module-drag-handle",
+        placeholder: "ui-sortable-placeholder",
+        tolerance: "pointer",
+        cursor: "grabbing"
+    });
+});
+</script>
+{% endblock %}

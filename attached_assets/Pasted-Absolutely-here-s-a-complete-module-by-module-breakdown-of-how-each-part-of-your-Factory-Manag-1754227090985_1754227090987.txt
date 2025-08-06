@@ -1,0 +1,175 @@
+Absolutely — here’s a complete **module-by-module breakdown** of how each part of your Factory Management System connects with the **centralized Accounts section**, just like a full ERP (e.g. Tally):
+
+---
+
+## 🧾 CENTRAL ACCOUNT SECTION – THE CORE
+
+All modules update this for:
+
+* 💵 Voucher generation (Purchase, Sale, Payment, Journal)
+* 📚 Ledger balances (Customer, Vendor, Inventory, Bank, GST)
+* 📈 Financial Reports (P\&L, Balance Sheet, GST Summary, Outstanding, etc.)
+
+---
+
+## 🔗 CONNECTIONS: MODULE BY MODULE
+
+### 1️⃣ **Purchase Order (PO)**
+
+| Event                      | Accounting Action                                        |
+| -------------------------- | -------------------------------------------------------- |
+| PO Created                 | No entry — just procurement intent                       |
+| GRN Created (Partial/Full) | Dr Inventory, Cr GRN Clearing A/c (via Purchase Voucher) |
+| Invoice Received           | Dr GRN Clearing, Dr GST Input, Cr Vendor A/c             |
+| Payment Made               | Dr Vendor A/c, Cr Bank/Cash                              |
+
+✅ *Auto-voucher generation starts from GRN.*
+
+---
+
+### 2️⃣ **Sales Order (SO)**
+
+| Event            | Accounting Action                         |
+| ---------------- | ----------------------------------------- |
+| SO Created       | No entry yet — demand booked              |
+| Stock Delivered  | Dr COGS, Cr Inventory (Stock Out Voucher) |
+| Invoice Raised   | Dr Customer, Cr Sales, Cr GST Output      |
+| Payment Received | Dr Bank/Cash, Cr Customer                 |
+
+✅ *Tracks revenue, receivables, and GST Output.*
+
+---
+
+### 3️⃣ **Job Work**
+
+| Event                   | Accounting Action                      |
+| ----------------------- | -------------------------------------- |
+| Material Sent to Vendor | No entry (ownership not transferred)   |
+| Job Work GRN (output)   | Dr WIP/Inventory, Cr Job Work Vendor   |
+| Scrap Tracked           | Optional — Dr Scrap Loss, Cr Inventory |
+| Vendor Paid             | Dr Job Work Vendor, Cr Bank/Cash       |
+
+✅ *Tracks manufacturing cost via vendor.*
+
+---
+
+### 4️⃣ **Production**
+
+| Event                | Accounting Action                                    |
+| -------------------- | ---------------------------------------------------- |
+| Production Started   | Dr WIP, Cr Raw Material Inventory                    |
+| Production Completed | Dr Finished Goods, Cr WIP                            |
+| Machine & Labor Cost | Dr Factory OH, Cr Salary/Machine Ledger (if tracked) |
+
+✅ *WIP and FG valuation handled, COGS can be derived from BOM.*
+
+---
+
+### 5️⃣ **Inventory**
+
+| Event               | Accounting Action                           |
+| ------------------- | ------------------------------------------- |
+| GRN                 | Inventory increase                          |
+| Issue to Production | Inventory decrease (Raw)                    |
+| Scrap Entry         | Decrease Inventory or move to scrap account |
+| Stock Transfer      | No accounting unless cross-company          |
+
+✅ *Inventory value impacts balance sheet.*
+
+---
+
+### 6️⃣ **BOM (Bill of Material)**
+
+| Role                   | Accounting Use                                    |
+| ---------------------- | ------------------------------------------------- |
+| Defines cost structure | Used to estimate COGS                             |
+| Intermediate products  | Helps track nested costs via batch movement       |
+| Phantom BOM            | Skips stock, directly affects parent product cost |
+
+✅ *Links to cost rollup & variance reports.*
+
+---
+
+### 7️⃣ **Payroll / Salary**
+
+| Event             | Accounting Action               |
+| ----------------- | ------------------------------- |
+| Salary Calculated | Dr Salary A/c, Cr Payables      |
+| Advance Given     | Dr Advance A/c, Cr Bank         |
+| Salary Paid       | Dr Payable/Advance A/c, Cr Bank |
+
+✅ *Wage costs impact factory overhead or direct labor costs.*
+
+---
+
+### 8️⃣ **Expenses**
+
+| Event                 | Accounting Action                              |
+| --------------------- | ---------------------------------------------- |
+| Overhead Paid         | Dr Expense Ledger (Electricity, Rent), Cr Bank |
+| CapEx Entry (Machine) | Dr Fixed Assets, Cr Vendor/Bank                |
+
+✅ *Tracks indirect costs, CapEx, and admin expenses.*
+
+---
+
+### 9️⃣ **TAX / GST**
+
+| Event                      | Accounting Action                         |
+| -------------------------- | ----------------------------------------- |
+| Purchase GST Input         | Dr GST Input                              |
+| Sale GST Output            | Cr GST Output                             |
+| Return Filing / Adjustment | Transfer Input–Output → Cr/Dr GST Payable |
+
+✅ *Auto-populates GST returns and compliance summaries.*
+
+---
+
+### 🔟 **Payments & Receipts**
+
+\| From Vendors           | Vendor A/c Cleared                                |
+\| From Customers         | Receivables Settled                               |
+\| Loan/Advance           | Tracked under Advances or Loan ledger             |
+
+✅ *All cashflow events are tracked here.*
+
+---
+
+## 🧩 SUMMARY TABLE
+
+| Module     | Voucher Types Used    | Account Impact             |
+| ---------- | --------------------- | -------------------------- |
+| PO         | Purchase, Journal     | Vendor, Inventory, GST     |
+| SO         | Sales, Receipt, Stock | Customer, Sales, Inventory |
+| GRN        | Purchase              | Inventory, GRN Clearing    |
+| Invoice    | Journal, GST          | GST Input/Output           |
+| Job Work   | Journal, Payment      | WIP, Job Vendor            |
+| Production | Journal               | Raw → WIP → FG             |
+| Payroll    | Journal, Payment      | Salary, Advances           |
+| Expense    | Journal               | Factory OH, Admin OH       |
+| TDS / GST  | Tax Journal           | GST A/c, Payable           |
+| Payment    | Bank / Cash           | Bank, Customer/Vendor      |
+
+---
+
+## 💡 How to Implement?
+
+* Every action (GRN, Invoice, Production) should trigger an accounting service.
+* Use a `voucher_generator.py` module.
+* Show **voucher preview** before posting (optional approval).
+* Link **ledger configuration** from Settings panel.
+* Allow user to filter vouchers by:
+
+  * Date
+  * Type
+  * Linked Document (PO/SO/GRN etc.)
+
+---
+
+Would you like me to generate:
+
+* The full ERD of this account integration?
+* UI for vouchers or ledger reports?
+* Ledger mapping admin panel?
+
+Let me know your next move!

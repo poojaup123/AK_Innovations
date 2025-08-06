@@ -1,0 +1,704 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table td.text-center, .table td.align-middle {
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+    .btn-group .btn {
+        border-radius: 0.25rem !important;
+        margin-right: 2px;
+    }
+    .btn-group .btn:last-child {
+        margin-right: 0;
+    }
+    #soItemsTable .text-center {
+        min-width: 80px;
+    }
+    #soItemsTable td {
+        padding: 8px 6px;
+    }
+    #soItemsTable .input-group {
+        margin-bottom: 0;
+        min-width: 120px;
+        width: 100%;
+    }
+    #soItemsTable .form-control-sm {
+        font-size: 0.875rem;
+    }
+    #soItemsTable .input-group-text {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+        background-color: var(--bs-light);
+        border-color: var(--bs-border-color);
+    }
+    #soItemsTable .input-group .form-control {
+        border-right: none;
+        min-width: 80px;
+        text-align: center;
+    }
+    #soItemsTable .form-control {
+        font-size: 0.9rem;
+        padding: 0.375rem 0.5rem;
+    }
+    #soItemsTable .fw-bold {
+        font-weight: 600 !important;
+        color: var(--bs-dark);
+    }
+    #soItemsTable td.text-center {
+        font-weight: 600;
+    }
+    #soItemsTable th {
+        background-color: var(--bs-gray-100);
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+        border-bottom: 2px solid var(--bs-gray-300);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-chart-line"></i> {{ title }}</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('sales.list_sales_orders') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Sales Orders
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Sales Order Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="sales-order-form">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.so_number.label(class="form-label") }}
+                                {{ form.so_number(class="form-control") }}
+                                {% if form.so_number.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.so_number.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.customer_id.label(class="form-label") }}
+                                {{ form.customer_id(class="form-select") }}
+                                {% if form.customer_id.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.customer_id.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.order_date.label(class="form-label") }}
+                                {{ form.order_date(class="form-control") }}
+                                {% if form.order_date.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.order_date.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.delivery_date.label(class="form-label") }}
+                                {{ form.delivery_date(class="form-control") }}
+                                {% if form.delivery_date.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.delivery_date.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Additional SO Fields -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.payment_terms.label(class="form-label") }}
+                                {{ form.payment_terms(class="form-control") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.freight_terms.label(class="form-label") }}
+                                {{ form.freight_terms(class="form-control") }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-{% if so %}4{% else %}6{% endif %} mb-3">
+                                {{ form.validity_months.label(class="form-label") }}
+                                {{ form.validity_months(class="form-control") }}
+                            </div>
+                            {% if so and current_user.role == 'admin' %}
+                            <div class="col-md-4 mb-3">
+                                {{ form.status.label(class="form-label") }}
+                                {{ form.status(class="form-control") }}
+                                {% if form.status.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.status.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle text-info"></i> 
+                                    <strong>Note:</strong> Changing status to "Confirmed" will automatically deduct inventory quantities.
+                                </div>
+                            </div>
+                            {% elif so %}
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Status</label>
+                                <div class="form-control-plaintext">
+                                    <span class="badge bg-{% if so.status == 'draft' %}secondary{% elif so.status == 'confirmed' %}primary{% elif so.status == 'delivered' %}success{% else %}danger{% endif %}">
+                                        {{ so.status.title() }}
+                                    </span>
+                                </div>
+                                <div class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i> Only admins can change order status
+                                </div>
+                            </div>
+                            {% endif %}
+                            <div class="col-md-{% if so %}4{% else %}6{% endif %} mb-3">
+                                {{ form.delivery_notes.label(class="form-label") }}
+                                {{ form.delivery_notes(class="form-control", rows="2") }}
+                            </div>
+                        </div>
+                        
+                        <!-- Approval Section - Only show during editing -->
+                        {% if so %}
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ form.prepared_by.label(class="form-label") }}
+                                {{ form.prepared_by(class="form-control") }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.verified_by.label(class="form-label") }}
+                                {{ form.verified_by(class="form-control") }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.approved_by.label(class="form-label") }}
+                                {{ form.approved_by(class="form-control") }}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control", rows="3", placeholder="Special terms and conditions...") }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.notes.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Order Items Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Sales Order Items</h5>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="addSOItem()">
+                        <i class="fas fa-plus"></i> Add Item
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" style="overflow-x: auto;">
+                        <style>
+                            #soItemsTable { min-width: 1200px; table-layout: auto; }
+                            #soItemsTable input, #soItemsTable select, #soItemsTable textarea { 
+                                min-width: 100%; 
+                                box-sizing: border-box; 
+                            }
+                            #soItemsTable .input-group { min-width: 120px; white-space: nowrap; }
+                            .table-responsive { 
+                                max-height: 600px; 
+                                overflow-y: auto; 
+                            }
+                        </style>
+                        <table class="table table-bordered" id="soItemsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="min-width: 50px;">No.</th>
+                                    <th style="min-width: 100px;">Item Code</th>
+                                    <th style="min-width: 200px;">Item + Description</th>
+                                    <th style="min-width: 120px;">Specification</th>
+                                    <th style="min-width: 100px;">HSN Code</th>
+                                    <th style="min-width: 120px;">GST Rate</th>
+                                    <th style="min-width: 80px;">UOM</th>
+                                    <th style="min-width: 100px;">Qty</th>
+                                    <th style="min-width: 130px;">Rate</th>
+                                    <th style="min-width: 130px;">Amount</th>
+                                    <th style="min-width: 80px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="soItemsBody">
+                                {% if so_items %}
+                                    {% for item in so_items %}
+                                    <tr data-item-id="{{ item.id }}">
+                                        <td class="align-middle text-center">{{ loop.index }}</td>
+                                        <td class="align-middle text-center"><strong>{{ item.item.code }}</strong></td>
+                                        <td class="align-middle">{{ item.item.name }}<br><small class="text-muted">{{ item.item.description }}</small></td>
+                                        <td class="align-middle">{{ item.item.specification or '-' }}</td>
+                                        <td class="align-middle text-center"><strong>{{ item.item.hsn_code or '-' }}</strong></td>
+                                        <td class="align-middle text-center"><strong>{{ item.item.gst_rate or 18.0 }}%</strong></td>
+                                        <td class="align-middle text-center"><strong>{{ item.item.unit_of_measure }}</strong></td>
+                                        <td class="align-middle">{{ item.quantity_ordered }}</td>
+                                        <td class="align-middle">₹{{ item.unit_price }}</td>
+                                        <td class="align-middle">₹{{ item.total_price }}</td>
+                                        <td class="align-middle text-center">
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-danger btn-sm" onclick="removeSOItem({{ item.id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% endif %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-light">
+                                    <td colspan="9" class="text-end"><strong>Sub Total:</strong></td>
+                                    <td><span id="subTotal">₹0.00</span></td>
+                                    <td class="text-center"></td>
+                                </tr>
+                                <tr class="table-light">
+                                    <td colspan="9" class="text-end"><strong>Total GST:</strong></td>
+                                    <td><span id="totalGST">₹0.00</span></td>
+                                    <td class="text-center"></td>
+                                </tr>
+                                <tr class="table-dark">
+                                    <td colspan="9" class="text-end text-white"><strong>Grand Total:</strong></td>
+                                    <td class="text-white"><strong><span id="grandTotal">₹0.00</span></strong></td>
+                                    <td class="text-center"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% if not so_items %}
+                        <div class="text-center py-4">
+                            <p class="text-muted mb-0">No items added yet. Click "Add Item" to get started.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let itemCounter = 0;
+
+// Define items data for JavaScript use
+const itemsData = [
+    {% for item in items %}
+    {
+        id: {{ item.id }},
+        code: "{{ item.code }}",
+        name: "{{ item.name }}",
+        description: "{{ item.description or '' }}",
+        hsn_code: "{{ item.hsn_code or '' }}",
+        gst_rate: {{ item.gst_rate or 18.0 }},
+        unit_of_measure: "{{ item.unit_of_measure }}",
+        unit_price: {{ item.unit_price or 0.0 }},
+        bom_rate: {{ item.bom_rate or item.unit_price or 0.0 }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
+function addSOItem() {
+    itemCounter++;
+    const tbody = document.getElementById('soItemsBody');
+    const rowCount = tbody.rows.length + 1;
+    
+    const row = tbody.insertRow();
+    row.innerHTML = `
+        <td class="align-middle text-center">${rowCount}</td>
+        <td class="align-middle">
+            <input type="text" class="form-control form-control-sm text-center fw-bold" name="item_code_new_${itemCounter}" placeholder="Item Code" readonly>
+        </td>
+        <td class="align-middle">
+            <select class="form-control form-control-sm" name="item_id_new_${itemCounter}" onchange="populateSOItemDetails(this)">
+                <option value="">Select Item</option>
+            </select>
+            <textarea class="form-control form-control-sm mt-1" name="description_new_${itemCounter}" 
+                      rows="2" placeholder="Item description" readonly></textarea>
+        </td>
+        <td class="align-middle">
+            <input type="text" class="form-control form-control-sm" name="specification_new_${itemCounter}" placeholder="Specification">
+        </td>
+        <td class="align-middle">
+            <input type="text" class="form-control form-control-sm text-center fw-bold" name="hsn_code_new_${itemCounter}" placeholder="HSN Code" readonly>
+        </td>
+        <td class="align-middle">
+            <div class="input-group input-group-sm" style="min-width: 120px; white-space: nowrap;">
+                <input type="number" class="form-control" name="gst_rate_new_${itemCounter}" 
+                       step="0.01" min="0" max="100" placeholder="18" onchange="updateSOSubTotal()" style="min-width: 80px; flex: 1;">
+                <span class="input-group-text" style="white-space: nowrap;">%</span>
+            </div>
+        </td>
+        <td class="align-middle">
+            <input type="text" class="form-control form-control-sm text-center fw-bold" name="uom_new_${itemCounter}" placeholder="UOM" readonly style="min-width: 80px;">
+        </td>
+        <td class="align-middle">
+            <input type="number" class="form-control form-control-sm" name="qty_new_${itemCounter}" 
+                   step="0.01" min="0" onchange="calculateSOAmount(this)" placeholder="0" style="min-width: 100px;">
+        </td>
+        <td class="align-middle">
+            <input type="number" class="form-control form-control-sm" name="rate_new_${itemCounter}" 
+                   step="0.01" min="0" onchange="calculateSOAmount(this)" placeholder="0.00" style="min-width: 130px;">
+        </td>
+        <td class="align-middle">
+            <input type="number" class="form-control form-control-sm" name="amount_new_${itemCounter}" 
+                   readonly placeholder="0.00" style="min-width: 130px;">
+        </td>
+        <td class="align-middle text-center">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-success btn-sm" onclick="saveSOItem(this.closest('tr'))" title="Save Item">
+                    <i class="fas fa-save"></i>
+                </button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeSORow(this)" title="Remove Row">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </td>
+    `;
+    
+    // Populate the item dropdown
+    const selectElement = row.querySelector('select[name*="item_id"]');
+    itemsData.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = `${item.code} - ${item.name}`;
+        option.dataset.code = item.code;
+        option.dataset.name = item.name;
+        option.dataset.description = item.description;
+        option.dataset.hsn = item.hsn_code;
+        option.dataset.gst = item.gst_rate;
+        option.dataset.uom = item.unit_of_measure;
+        option.dataset.price = item.bom_rate || item.unit_price;
+        selectElement.appendChild(option);
+    });
+    
+    // Remove "no items" message if it exists
+    const noItemsMessage = document.querySelector('.text-center.py-4');
+    if (noItemsMessage) {
+        noItemsMessage.remove();
+    }
+}
+
+function populateSOItemDetails(selectElement) {
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    
+    if (selectedOption.value) {
+        const row = selectElement.closest('tr');
+        
+        // Find all input fields in this row
+        const itemCodeInput = row.querySelector(`input[name*="item_code"]`);
+        const descriptionTextarea = row.querySelector(`textarea[name*="description"]`);
+        const hsnInput = row.querySelector(`input[name*="hsn_code"]`);
+        const gstInput = row.querySelector(`input[name*="gst_rate"]`);
+        const uomInput = row.querySelector(`input[name*="uom"]`);
+        const rateInput = row.querySelector(`input[name*="rate"]:not([name*="gst"])`);
+        
+        // Debug logging for field mapping
+        console.log('=== SALES ORDER FIELD MAPPING DEBUG ===');
+        console.log('Selected item data:');
+        console.log('- Code:', selectedOption.dataset.code);
+        console.log('- GST Rate:', selectedOption.dataset.gst);
+        console.log('- Unit Price:', selectedOption.dataset.price);
+        console.log('Field targets:');
+        console.log('- GST Input found:', !!gstInput, gstInput ? gstInput.name : 'NOT FOUND');
+        console.log('- Rate Input found:', !!rateInput, rateInput ? rateInput.name : 'NOT FOUND');
+        
+        // Double-check field identification
+        const allRateInputs = row.querySelectorAll('input[name*="rate"]');
+        console.log('All rate-related inputs in row:', Array.from(allRateInputs).map(inp => inp.name));
+
+        // Populate the fields
+        if (itemCodeInput) itemCodeInput.value = selectedOption.dataset.code || '';
+        if (descriptionTextarea) descriptionTextarea.value = selectedOption.dataset.description || '';
+        if (hsnInput) hsnInput.value = selectedOption.dataset.hsn || '';
+        if (gstInput) {
+            gstInput.value = selectedOption.dataset.gst || '18';
+            console.log('✓ GST Rate set to:', gstInput.value);
+        }
+        if (uomInput) uomInput.value = selectedOption.dataset.uom || '';
+        if (rateInput) {
+            rateInput.value = selectedOption.dataset.price || '0.00';
+            console.log('✓ Rate set to:', rateInput.value);
+        }
+        
+        // Calculate amount if quantity is already entered
+        calculateSOAmount(rateInput);
+    }
+}
+
+function calculateSOAmount(inputElement) {
+    const row = inputElement.closest('tr');
+    const qtyInput = row.querySelector(`input[name*="qty"]`);
+    const rateInput = row.querySelector(`input[name*="rate"]`);
+    const amountInput = row.querySelector(`input[name*="amount"]`);
+    
+    if (qtyInput && rateInput && amountInput) {
+        const qty = parseFloat(qtyInput.value) || 0;
+        const rate = parseFloat(rateInput.value) || 0;
+        const amount = qty * rate;
+        amountInput.value = amount.toFixed(2);
+        
+        // Update subtotal
+        updateSOSubTotal();
+    }
+}
+
+function updateSOSubTotal() {
+    let subTotal = 0;
+    let totalGST = 0;
+    
+    // Calculate subtotal and GST for each row
+    const tableRows = document.querySelectorAll('#soItemsTable tbody tr');
+    tableRows.forEach(row => {
+        const qtyInput = row.querySelector('input[name*="qty"]');
+        const rateInput = row.querySelector('input[name*="rate"]:not([name*="gst"])');
+        const gstInput = row.querySelector('input[name*="gst_rate"]');
+        const amountInput = row.querySelector('input[name*="amount"]');
+        
+        if (qtyInput && rateInput && gstInput && amountInput) {
+            const qty = parseFloat(qtyInput.value) || 0;
+            const rate = parseFloat(rateInput.value) || 0;
+            const gstRate = parseFloat(gstInput.value) || 0;
+            
+            const lineAmount = qty * rate;
+            const lineGST = (lineAmount * gstRate) / 100;
+            
+            subTotal += lineAmount;
+            totalGST += lineGST;
+        }
+    });
+    
+    const grandTotal = subTotal + totalGST;
+    
+    // Update display
+    const subTotalElement = document.getElementById('subTotal');
+    const totalGSTElement = document.getElementById('totalGST');
+    const grandTotalElement = document.getElementById('grandTotal');
+    
+    if (subTotalElement) {
+        subTotalElement.textContent = `₹${subTotal.toFixed(2)}`;
+    }
+    if (totalGSTElement) {
+        totalGSTElement.textContent = `₹${totalGST.toFixed(2)}`;
+    }
+    if (grandTotalElement) {
+        grandTotalElement.textContent = `₹${grandTotal.toFixed(2)}`;
+    }
+}
+
+function removeSORow(button) {
+    const row = button.closest('tr');
+    row.remove();
+    
+    // Update row numbers
+    const tbody = document.getElementById('soItemsBody');
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach((row, index) => {
+        row.cells[0].textContent = index + 1;
+    });
+    
+    // Update subtotal
+    updateSOSubTotal();
+    
+    // Show "no items" message if table is empty
+    if (rows.length === 0) {
+        const tableContainer = document.querySelector('#soItemsTable').closest('.card-body');
+        const noItemsDiv = document.createElement('div');
+        noItemsDiv.className = 'text-center py-4';
+        noItemsDiv.innerHTML = '<p class="text-muted mb-0">No items added yet. Click "Add Item" to get started.</p>';
+        tableContainer.appendChild(noItemsDiv);
+    }
+}
+
+function removeSOItem(itemId) {
+    if (confirm('Are you sure you want to remove this item?')) {
+        // Make AJAX call to remove the item from the database
+        fetch(`/sales/remove_item/${itemId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const row = document.querySelector(`tr[data-item-id="${itemId}"]`);
+                if (row) {
+                    row.remove();
+                    updateSOSubTotal();
+                    // Show success message
+                    showMessage(data.message, 'success');
+                }
+            } else {
+                showMessage(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('Error removing item', 'danger');
+        });
+    }
+}
+
+function saveSOItem(row) {
+    const selectElement = row.querySelector('select[name*="item_id"]');
+    const qtyInput = row.querySelector('input[name*="qty"]');
+    const rateInput = row.querySelector('input[name*="rate"]');
+    
+    if (!selectElement.value || !qtyInput.value || !rateInput.value) {
+        showMessage('Please fill in all required fields (Item, Quantity, Rate)', 'warning');
+        return;
+    }
+    
+    // Get SO ID from the form or URL
+    const soId = getSalesOrderId();
+    if (!soId) {
+        showMessage('Sales Order must be saved first before adding items', 'warning');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('item_id', selectElement.value);
+    formData.append('quantity', qtyInput.value);
+    formData.append('unit_price', rateInput.value);
+    
+    fetch(`/sales/add_item/${soId}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            // Reload the page to show the saved item
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showMessage(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Error saving item', 'danger');
+    });
+}
+
+function getSalesOrderId() {
+    // Extract SO ID from URL path
+    const pathParts = window.location.pathname.split('/');
+    const editIndex = pathParts.indexOf('edit');
+    if (editIndex !== -1 && editIndex + 1 < pathParts.length) {
+        return pathParts[editIndex + 1];
+    }
+    return null;
+}
+
+function showMessage(message, type) {
+    // Create and show a Bootstrap alert
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Insert at the top of the main content
+    const mainContent = document.querySelector('.container-fluid');
+    mainContent.insertBefore(alertDiv, mainContent.firstChild);
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+
+// Calculate initial subtotal on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateSOSubTotal();
+});
+</script>
+
+    <!-- Form Actions - Save/Cancel Buttons -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('sales.list_sales_orders') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" form="sales-order-form" class="btn btn-primary">
+                            <i class="fas fa-save"></i> {{ 'Update' if so else 'Save' }} Sales Order
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Management Section - Only show for existing sales orders -->
+    {% if so and so.id %}
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-paperclip me-2"></i>Supporting Documents</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{{ url_for('documents.upload_document', transaction_type='sales_order', transaction_id=so.id) }}" 
+                       class="btn btn-outline-primary">
+                        <i class="fas fa-upload me-1"></i>Upload Documents
+                    </a>
+                    <p class="text-muted mt-2 mb-0">
+                        <small>Upload invoices, contracts, and supporting documents for this sales order.</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

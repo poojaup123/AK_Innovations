@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Custom Reports - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="fas fa-magic me-2"></i>Custom Reports</h1>
+                    <p class="text-muted">Create and manage your personalized reports</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('reports.create_custom_report') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create New Report
+                    </a>
+                    <a href="{{ url_for('reports.dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Reports -->
+    {% if my_reports %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>My Reports ({{ my_reports|length }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for report in my_reports %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 border-primary">
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title text-primary">{{ report.name }}</h6>
+                                        <span class="badge bg-primary">{{ report.report_type_display }}</span>
+                                    </div>
+                                    
+                                    {% if report.description %}
+                                    <p class="card-text small text-muted flex-grow-1">{{ report.description }}</p>
+                                    {% endif %}
+                                    
+                                    <div class="mt-auto">
+                                        <div class="small text-muted mb-2">
+                                            <i class="fas fa-calendar me-1"></i>Created: {{ report.created_at.strftime('%b %d, %Y') }}
+                                            {% if report.is_shared %}
+                                                <span class="badge bg-success ms-2">Shared</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="btn-group w-100" role="group">
+                                            <a href="{{ url_for('reports.view_custom_report', report_id=report.id) }}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                            <a href="{{ url_for('reports.edit_custom_report', report_id=report.id) }}" 
+                                               class="btn btn-sm btn-outline-secondary">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+                                            <a href="{{ url_for('reports.export_custom_report', report_id=report.id) }}" 
+                                               class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-download"></i> Export
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    onclick="deleteReport({{ report.id }}, '{{ report.name }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Shared Reports -->
+    {% if shared_reports %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-share me-2"></i>Shared Reports ({{ shared_reports|length }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for report in shared_reports %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 border-info">
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title text-info">{{ report.name }}</h6>
+                                        <span class="badge bg-info">{{ report.report_type_display }}</span>
+                                    </div>
+                                    
+                                    {% if report.description %}
+                                    <p class="card-text small text-muted flex-grow-1">{{ report.description }}</p>
+                                    {% endif %}
+                                    
+                                    <div class="mt-auto">
+                                        <div class="small text-muted mb-2">
+                                            <i class="fas fa-user me-1"></i>By: {{ report.creator.username }}
+                                            <i class="fas fa-calendar ms-2 me-1"></i>{{ report.created_at.strftime('%b %d, %Y') }}
+                                        </div>
+                                        
+                                        <div class="btn-group w-100" role="group">
+                                            <a href="{{ url_for('reports.view_custom_report', report_id=report.id) }}" 
+                                               class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                            <a href="{{ url_for('reports.export_custom_report', report_id=report.id) }}" 
+                                               class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-download"></i> Export
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Empty State -->
+    {% if not my_reports and not shared_reports %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-magic fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No Custom Reports Yet</h4>
+                    <p class="text-muted mb-4">Create your first custom report to get personalized insights from your data</p>
+                    <a href="{{ url_for('reports.create_custom_report') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create Your First Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Getting Started Guide -->
+    {% if not my_reports %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Getting Started with Custom Reports</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <i class="fas fa-database fa-2x text-primary mb-2"></i>
+                                <h6>Choose Data Source</h6>
+                                <small class="text-muted">Select from inventory, purchase orders, sales, employees, and more</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <i class="fas fa-table fa-2x text-success mb-2"></i>
+                                <h6>Select Fields</h6>
+                                <small class="text-muted">Pick exactly the data columns you need for your analysis</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <i class="fas fa-filter fa-2x text-info mb-2"></i>
+                                <h6>Add Filters</h6>
+                                <small class="text-muted">Apply conditions to focus on specific data ranges or criteria</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle text-danger"></i> Delete Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the report <strong id="reportNameToDelete"></strong>?</p>
+                <p class="text-muted small">This action cannot be undone. All execution history will also be deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete Report
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function deleteReport(reportId, reportName) {
+    document.getElementById('reportNameToDelete').textContent = reportName;
+    document.getElementById('deleteForm').action = `/reports/custom/${reportId}/delete`;
+    
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+</script>
+{% endblock %}
