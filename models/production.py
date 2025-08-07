@@ -11,7 +11,7 @@ class ProductionOrder(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     po_number = db.Column(db.String(50), unique=True, nullable=False)
-    bom_id = db.Column(db.Integer, db.ForeignKey('bom.id'), nullable=False)
+    bom_id = db.Column(db.Integer, db.ForeignKey('boms.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     
     # Quantities
