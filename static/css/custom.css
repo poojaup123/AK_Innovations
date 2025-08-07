@@ -127,9 +127,9 @@ h6, .h6 { font-size: 1rem; }      /* 16px */
 
 /* Job Work Dashboard Cards - Compact Horizontal Layout */
 .dashboard-card {
-    flex: 1 !important; /* Equal width distribution */
-    min-width: 140px !important; /* Minimum width for readability */
-    max-width: 200px !important; /* Maximum width to prevent oversized cards */
+    flex: 1 1 0 !important; /* Force equal width regardless of content */
+    width: 0 !important; /* Reset width to ensure flex basis works */
+    min-width: 0 !important; /* Allow flex to shrink if needed */
 }
 
 /* Use minimal custom styles - rely on Bootstrap theme */
