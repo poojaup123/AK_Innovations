@@ -181,9 +181,10 @@
                 <h5 class="mb-0"><i class="fas fa-route me-2"></i>Process Routing Table (Dynamic Table)</h5>
             </div>
             <div class="card-body">
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    Only selected (☑️) processes are saved. Final output = product from <strong>last selected step</strong>
+                <div class="alert alert-info">
+                    <i class="fas fa-magic me-2"></i>
+                    <strong>Smart Auto-Selection:</strong> Output products are automatically selected based on your input material and process type. 
+                    <br><small class="text-muted">• Intermediate processes → WIP products • Final process → Finished goods • You can override any selection if needed</small>
                 </div>
                 
                 <div class="table-responsive">
@@ -316,7 +317,16 @@ document.addEventListener('DOMContentLoaded', function() {
         autoFillJobTitle();
     });
     document.getElementById('addProcessRow').addEventListener('click', addProcessRow);
-    document.getElementById('input_material').addEventListener('change', updateAvailableStock);
+    document.getElementById('input_material').addEventListener('change', function() {
+        updateAvailableStock();
+        // Re-trigger auto-selection for all existing process rows
+        document.querySelectorAll('[data-field="process_name"]').forEach(processSelect => {
+            if (processSelect.value) {
+                const index = processSelect.dataset.index;
+                autoSelectOutputProduct(index);
+            }
+        });
+    });
     document.getElementById('checkStock').addEventListener('click', checkStock);
     
     // Check if "Manual" is already selected and auto-fill title
@@ -444,9 +454,10 @@ function addProcessRow() {
         </td>
         <td>
             <select class="form-select form-select-sm" data-field="output_product_id" data-index="${processCounter}">
-                <option value="">Select Product</option>
-                <!-- Will be populated via AJAX -->
+                <option value="">Auto-select based on process</option>
+                <!-- Will be auto-populated based on process logic -->
             </select>
+            <small class="text-muted">Auto-selected intelligently</small>
         </td>
         <td>
             <input type="number" class="form-control form-control-sm" min="1" data-field="quantity" data-index="${processCounter}">
@@ -483,6 +494,12 @@ function addProcessRow() {
     // Add event listeners for this row
     row.addEventListener('change', updateOutputSummary);
     
+    // Add process change listener for intelligent output product selection
+    const processSelect = row.querySelector('[data-field="process_name"]');
+    processSelect.addEventListener('change', function() {
+        autoSelectOutputProduct(processCounter);
+    });
+    
     // Load products for output product dropdown
     loadProducts(row.querySelector('[data-field="output_product_id"]'));
 }
@@ -493,17 +510,116 @@ function removeProcessRow(button) {
     updateOutputSummary();
 }
 
-function loadProducts(selectElement) {
-    // Load products via AJAX - simplified for now
+function autoSelectOutputProduct(processIndex) {
+    const row = document.querySelector(`[data-index="${processIndex}"]`).closest('tr');
+    const processSelect = row.querySelector('[data-field="process_name"]');
+    const outputSelect = row.querySelector('[data-field="output_product_id"]');
+    const selectedProcess = processSelect.value;
+    
+    if (!selectedProcess) return;
+    
+    // Get input material from the form
+    const inputMaterialSelect = document.getElementById('input_material');
+    const inputMaterialId = inputMaterialSelect.value;
+    
+    if (!inputMaterialId || inputMaterialId === '0') {
+        // If no input material selected, load all products
+        loadProducts(outputSelect);
+        return;
+    }
+    
+    // Check if this is the final process (highest sequence number among checked processes)
+    const allCheckedRows = document.querySelectorAll('.process-checkbox:checked');
+    const currentSequence = parseInt(row.querySelector('[data-field="sequence"]').value) || 0;
+    let isLastProcess = true;
+    
+    allCheckedRows.forEach(checkbox => {
+        const otherRow = checkbox.closest('tr');
+        const otherSequence = parseInt(otherRow.querySelector('[data-field="sequence"]').value) || 0;
+        if (otherSequence > currentSequence) {
+            isLastProcess = false;
+        }
+    });
+    
+    // Auto-select output product based on logic
+    if (isLastProcess) {
+        // Final process: Use the finished goods version
+        autoSelectFinishedProduct(outputSelect, inputMaterialId, selectedProcess);
+    } else {
+        // Intermediate process: Use WIP version
+        autoSelectWIPProduct(outputSelect, inputMaterialId, selectedProcess);
+    }
+}
+
+function autoSelectFinishedProduct(outputSelect, inputMaterialId, process) {
+    // For the final process, try to find the finished goods version
+    fetch(`/api/items/finished-product/${inputMaterialId}?process=${process}`)
+        .then(response => response.json())
+        .then(data => {
+            outputSelect.innerHTML = '<option value="">Auto-selected</option>';
+            if (data.product) {
+                const option = document.createElement('option');
+                option.value = data.product.id;
+                option.textContent = `${data.product.code} - ${data.product.name}`;
+                option.selected = true;
+                outputSelect.appendChild(option);
+                
+                // Visual feedback
+                outputSelect.style.backgroundColor = '#e8f5e8';
+                setTimeout(() => outputSelect.style.backgroundColor = '', 2000);
+            }
+            // Also load other options
+            loadProducts(outputSelect, false);
+        })
+        .catch(error => {
+            console.log('Auto-selection failed, loading all products');
+            loadProducts(outputSelect);
+        });
+}
+
+function autoSelectWIPProduct(outputSelect, inputMaterialId, process) {
+    // For intermediate processes, create/find WIP version
+    fetch(`/api/items/wip-product/${inputMaterialId}?process=${process}`)
+        .then(response => response.json())
+        .then(data => {
+            outputSelect.innerHTML = '<option value="">Auto-selected</option>';
+            if (data.product) {
+                const option = document.createElement('option');
+                option.value = data.product.id;
+                option.textContent = `${data.product.code} - ${data.product.name} (WIP)`;
+                option.selected = true;
+                outputSelect.appendChild(option);
+                
+                // Visual feedback
+                outputSelect.style.backgroundColor = '#fff3cd';
+                setTimeout(() => outputSelect.style.backgroundColor = '', 2000);
+            }
+            // Also load other options
+            loadProducts(outputSelect, false);
+        })
+        .catch(error => {
+            console.log('Auto-selection failed, loading all products');
+            loadProducts(outputSelect);
+        });
+}
+
+function loadProducts(selectElement, clearFirst = true) {
+    // Load products via AJAX
     fetch('/api/items')
         .then(response => response.json())
         .then(data => {
-            selectElement.innerHTML = '<option value="">Select Product</option>';
+            if (clearFirst) {
+                selectElement.innerHTML = '<option value="">Select Product</option>';
+            }
             data.items.forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.id;
-                option.textContent = `${item.code} - ${item.name}`;
-                selectElement.appendChild(option);
+                // Check if option already exists
+                const existingOption = Array.from(selectElement.options).find(opt => opt.value === item.id.toString());
+                if (!existingOption) {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = `${item.code} - ${item.name}`;
+                    selectElement.appendChild(option);
+                }
             });
         })
         .catch(error => {

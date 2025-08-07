@@ -856,3 +856,112 @@ def export_unified_inventory_items(items):
     response.headers['Content-Disposition'] = f'attachment; filename=unified_multi_state_inventory_{date.today()}.csv'
     
     return response
+
+
+@inventory_bp.route('/api/items/finished-product/<int:input_material_id>')
+@login_required
+def get_finished_product(input_material_id):
+    """Get the finished product version of an input material"""
+    try:
+        input_item = Item.query.get(input_material_id)
+        if not input_item:
+            return jsonify({'error': 'Input material not found'}), 404
+        
+        process = request.args.get('process', '')
+        
+        # Try to find existing finished goods version
+        # Look for items with similar name but marked as finished_good
+        base_name = input_item.name.replace('Raw Material', '').replace('RM', '').strip()
+        
+        # Search for finished goods with similar base name
+        finished_product = Item.query.filter(
+            Item.item_type == 'finished_good',
+            or_(
+                Item.name.contains(base_name),
+                Item.description.contains(base_name)
+            )
+        ).first()
+        
+        if not finished_product:
+            # Create a new finished goods item if it doesn't exist
+            finished_name = f"{base_name} - Finished"
+            finished_code = f"FG-{input_item.code.replace('RM-', '').replace('RAW-', '')}"
+            
+            # Check if code already exists
+            existing = Item.query.filter_by(code=finished_code).first()
+            if existing:
+                finished_code = f"{finished_code}-{input_material_id}"
+            
+            finished_product = Item(
+                code=finished_code,
+                name=finished_name,
+                description=f"Finished product from {input_item.name}",
+                item_type='finished_good',
+                unit_of_measure=input_item.unit_of_measure,
+                unit_price=input_item.unit_price * 1.3 if input_item.unit_price else 0,  # Add 30% value addition
+                category=input_item.category,
+                current_stock=0
+            )
+            
+            db.session.add(finished_product)
+            db.session.commit()
+        
+        return jsonify({
+            'product': {
+                'id': finished_product.id,
+                'code': finished_product.code,
+                'name': finished_product.name,
+                'uom': finished_product.unit_of_measure
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Error finding finished product: {str(e)}'}), 500
+
+
+@inventory_bp.route('/api/items/wip-product/<int:input_material_id>')
+@login_required
+def get_wip_product(input_material_id):
+    """Get or create WIP version of an input material for intermediate processes"""
+    try:
+        input_item = Item.query.get(input_material_id)
+        if not input_item:
+            return jsonify({'error': 'Input material not found'}), 404
+        
+        process = request.args.get('process', '')
+        
+        # Create WIP product name based on process
+        base_name = input_item.name.replace('Raw Material', '').replace('RM', '').strip()
+        wip_name = f"{base_name} - {process.title()} WIP"
+        wip_code = f"WIP-{input_item.code.replace('RM-', '').replace('RAW-', '')}-{process.upper()[:3]}"
+        
+        # Check if WIP item already exists
+        wip_product = Item.query.filter_by(code=wip_code).first()
+        
+        if not wip_product:
+            # Create new WIP item
+            wip_product = Item(
+                code=wip_code,
+                name=wip_name,
+                description=f"Work in Progress: {input_item.name} after {process}",
+                item_type='work_in_progress',
+                unit_of_measure=input_item.unit_of_measure,
+                unit_price=input_item.unit_price * 1.1 if input_item.unit_price else 0,  # Add 10% value
+                category=input_item.category,
+                current_stock=0
+            )
+            
+            db.session.add(wip_product)
+            db.session.commit()
+        
+        return jsonify({
+            'product': {
+                'id': wip_product.id,
+                'code': wip_product.code,
+                'name': wip_product.name,
+                'uom': wip_product.unit_of_measure
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Error finding WIP product: {str(e)}'}), 500
