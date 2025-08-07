@@ -21,13 +21,13 @@ production_bp = Blueprint('production', __name__)
 @login_required
 def dashboard():
     # Enhanced production statistics
-    total_productions = Production.query.count()
-    planned_productions = Production.query.filter_by(status='planned').count()
-    in_progress_productions = Production.query.filter_by(status='in_progress').count()
-    completed_productions = Production.query.filter_by(status='completed').count()
+    total_productions = ProductionOrder.query.count()
+    planned_productions = ProductionOrder.query.filter_by(status='planned').count()
+    in_progress_productions = ProductionOrder.query.filter_by(status='in_progress').count()
+    completed_productions = ProductionOrder.query.filter_by(status='completed').count()
     
     # Calculate cost metrics from completed productions
-    completed_prods = Production.query.filter_by(status='completed').all()
+    completed_prods = ProductionOrder.query.filter_by(status='completed').all()
     avg_cost_per_unit = 0
     avg_material_cost = 0
     avg_labor_cost = 0
@@ -78,16 +78,16 @@ def dashboard():
     }
     
     # Recent productions
-    recent_productions = Production.query.order_by(Production.created_at.desc()).limit(10).all()
+    recent_productions = ProductionOrder.query.order_by(ProductionOrder.created_at.desc()).limit(10).all()
     
     # Active productions with BOM processes for pipeline view
-    active_productions = Production.query.filter(
-        Production.status.in_(['planned', 'in_progress'])
-    ).order_by(Production.created_at.desc()).limit(5).all()
+    active_productions = ProductionOrder.query.filter(
+        ProductionOrder.status.in_(['planned', 'in_progress'])
+    ).order_by(ProductionOrder.created_at.desc()).limit(5).all()
     
     # Today's production summary
     from datetime import date
-    today_productions = Production.query.filter_by(production_date=date.today()).all()
+    today_productions = ProductionOrder.query.filter_by(order_date=date.today()).all()
     
     # Products with BOM
     products_with_bom = db.session.query(Item).join(BOM).filter(BOM.is_active == True).all()
@@ -105,11 +105,11 @@ def list_productions():
     page = request.args.get('page', 1, type=int)
     status_filter = request.args.get('status', '', type=str)
     
-    query = Production.query
+    query = ProductionOrder.query
     if status_filter:
         query = query.filter_by(status=status_filter)
     
-    productions = query.order_by(Production.created_at.desc()).paginate(
+    productions = query.order_by(ProductionOrder.created_at.desc()).paginate(
         page=page, per_page=20, error_out=False)
     
     return render_template('production/list.html', productions=productions, status_filter=status_filter)
@@ -121,7 +121,7 @@ def list_productions():
 def api_get_available_batches_for_production(production_id):
     """Get available material batches for a production order"""
     try:
-        production = Production.query.get_or_404(production_id)
+        production = ProductionOrder.query.get_or_404(production_id)
         bom = production.bom
         
         if not bom:
@@ -173,7 +173,7 @@ def api_get_available_batches_for_production(production_id):
 def api_issue_materials_for_production(production_id):
     """Issue materials from specific batches for production"""
     try:
-        production = Production.query.get_or_404(production_id)
+        production = ProductionOrder.query.get_or_404(production_id)
         data = request.json
         batch_selections = data.get('batch_selections', [])
         
@@ -228,7 +228,7 @@ def api_issue_materials_for_production(production_id):
 def api_complete_production(production_id):
     """Complete production and create output batches"""
     try:
-        production = Production.query.get_or_404(production_id)
+        production = ProductionOrder.query.get_or_404(production_id)
         data = request.json
         
         quantity_good = data.get('quantity_good', 0)
@@ -278,7 +278,7 @@ def api_complete_production(production_id):
 def api_get_production_batch_consumption(production_id):
     """Get batch consumption details for a production"""
     try:
-        production = Production.query.get_or_404(production_id)
+        production = ProductionOrder.query.get_or_404(production_id)
         production_batches = ProductionBatch.query.filter_by(production_id=production_id).all()
         
         consumption_data = []
@@ -306,7 +306,7 @@ def api_get_production_batch_consumption(production_id):
 @login_required
 def view(production_id):
     """View production details"""
-    production = Production.query.get_or_404(production_id)
+    production = ProductionOrder.query.get_or_404(production_id)
     
     # Get the item being produced
     item = Item.query.get(production.item_id) if production.item_id else None
@@ -341,7 +341,7 @@ def add_production():
     
     if form.validate_on_submit():
         # Check if production number already exists
-        existing_production = Production.query.filter_by(production_number=form.production_number.data).first()
+        existing_production = ProductionOrder.query.filter_by(po_number=form.production_number.data).first()
         if existing_production:
             flash('Production number already exists', 'danger')
             return render_template('production/form.html', form=form, title='Add Production')
@@ -500,7 +500,7 @@ def edit_production(id):
 @production_bp.route('/update_status/<int:id>/<status>')
 @login_required
 def update_status(id, status):
-    production = Production.query.get_or_404(id)
+    production = ProductionOrder.query.get_or_404(id)
     if status in ['planned', 'in_progress', 'completed']:
         production.status = status
         db.session.commit()
