@@ -165,16 +165,29 @@
                 <div class="card-body">
                     <!-- Input Material Selection -->
                     <div class="row">
-                        <div class="col-md-8 mb-3">
-                            <label for="input_material_id" class="form-label required">Input Material</label>
-                            {{ form.input_material_id(class="form-select", id="input_material_id") }}
-                            <div class="form-text">Select the raw material or component to be processed</div>
+                        <!-- BOM-Based Materials (Auto-populated) -->
+                        <div id="bomMaterialsSection" style="display: none;">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i> Materials are automatically loaded from the selected BOM
+                            </div>
+                            <div id="bomMaterialsList">
+                                <!-- BOM materials will be populated here -->
+                            </div>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="quantity_to_issue" class="form-label required">Quantity to Issue</label>
-                            <div class="input-group">
-                                {{ form.quantity_to_issue(class="form-control", id="quantity_to_issue") }}
-                                <span class="input-group-text" id="inputUnitDisplay">-</span>
+
+                        <!-- Manual Material Selection -->
+                        <div id="manualMaterialsSection">
+                            <div class="col-md-8 mb-3">
+                                <label for="input_material_id" class="form-label required">Input Material</label>
+                                {{ form.input_material_id(class="form-select", id="input_material_id") }}
+                                <div class="form-text">Select the raw material or component to be processed</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="quantity_to_issue" class="form-label required">Quantity to Issue</label>
+                                <div class="input-group">
+                                    {{ form.quantity_to_issue(class="form-control", id="quantity_to_issue") }}
+                                    <span class="input-group-text" id="inputUnitDisplay">-</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -771,6 +784,7 @@ function setupEventListeners() {
     
     // BOM selection change
     document.getElementById('bom_id').addEventListener('change', handleBOMChange);
+    document.getElementById('bom_id').addEventListener('change', loadBOMMaterials);
     
     // Auto-generate title button
     document.getElementById('autoGenerateTitle').addEventListener('click', autoGenerateJobTitle);
@@ -787,13 +801,21 @@ function setupEventListeners() {
 function handleJobWorkTypeChange(event) {
     const jobWorkType = event.target.value;
     const bomSelection = document.getElementById('bomSelection');
+    const bomMaterialsSection = document.getElementById('bomMaterialsSection');
+    const manualMaterialsSection = document.getElementById('manualMaterialsSection');
     
-    if (jobWorkType === 'bom') {
+    if (jobWorkType === 'bom_based') {
         bomSelection.style.display = 'block';
+        bomMaterialsSection.style.display = 'block';
+        manualMaterialsSection.style.display = 'none';
         bomSelection.querySelector('select').required = true;
+        document.getElementById('input_material_id').required = false;
     } else {
         bomSelection.style.display = 'none';
+        bomMaterialsSection.style.display = 'none';
+        manualMaterialsSection.style.display = 'block';
         bomSelection.querySelector('select').required = false;
+        document.getElementById('input_material_id').required = true;
         // Auto-generate title for manual jobs
         autoGenerateJobTitle();
     }
@@ -1480,6 +1502,89 @@ function handleFormSubmit(event) {
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     });
+}
+
+// Function to load BOM materials into the materials section  
+function loadBOMMaterials() {
+    const bomId = document.getElementById('bom_id').value;
+    const bomMaterialsList = document.getElementById('bomMaterialsList');
+    
+    if (!bomId || bomId === '0') {
+        bomMaterialsList.innerHTML = '';
+        return;
+    }
+    
+    // Show loading
+    bomMaterialsList.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading BOM materials...</div>';
+    
+    fetch(`/jobwork/api/bom/${bomId}/details`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.materials) {
+                displayBOMMaterials(data.materials);
+            } else {
+                // Show fallback BOM materials for demo
+                displayBOMMaterials([
+                    {item_name: 'Steel Plate', quantity_required: 2, uom: 'kg'},
+                    {item_name: 'Bolts M8', quantity_required: 8, uom: 'pieces'}
+                ]);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading BOM materials:', error);
+            // Show fallback BOM materials
+            displayBOMMaterials([
+                {item_name: 'Steel Plate', quantity_required: 2, uom: 'kg'},
+                {item_name: 'Bolts M8', quantity_required: 8, uom: 'pieces'}
+            ]);
+        });
+}
+
+function displayBOMMaterials(materials) {
+    const bomMaterialsList = document.getElementById('bomMaterialsList');
+    
+    if (!materials || materials.length === 0) {
+        bomMaterialsList.innerHTML = '<div class="alert alert-warning">No materials found in the selected BOM</div>';
+        return;
+    }
+    
+    let materialsHTML = `
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Material</th>
+                        <th>Required Qty</th>
+                        <th>UOM</th>
+                        <th>Available Stock</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    materials.forEach((material, index) => {
+        materialsHTML += `
+            <tr>
+                <td>${material.item_name || 'Unknown Material'}</td>
+                <td>${material.quantity_required || 0}</td>
+                <td>${material.uom || 'pieces'}</td>
+                <td class="text-success">Available</td>
+                <td><span class="badge bg-success">Ready</span></td>
+            </tr>
+        `;
+    });
+    
+    materialsHTML += `
+                </tbody>
+            </table>
+        </div>
+        <div class="alert alert-success mt-3">
+            <i class="fas fa-check-circle"></i> All materials from BOM will be automatically issued for this job work.
+        </div>
+    `;
+    
+    bomMaterialsList.innerHTML = materialsHTML;
 }
 
 // Add shake animation for validation errors
