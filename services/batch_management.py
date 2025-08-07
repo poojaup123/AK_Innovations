@@ -41,21 +41,30 @@ class BatchManager:
                 expiry_date = datetime.now().date() + timedelta(days=item.shelf_life_days)
             
             # Determine batch quantities and status based on add_to_inventory flag
+            # IMPORTANT: Only use quantity_passed (good stock) for batch quantities
+            # Rejected quantities should be handled separately in scrap tracking
+            quantity_passed = grn_line_item.quantity_passed or 0
+            quantity_rejected = grn_line_item.quantity_rejected or 0
+            
             # When add_to_inventory=True, bypass inspection and go directly to inventory
             if add_to_inventory:
                 # Direct to inventory - approved material (bypassing inspection)
-                qty_raw = grn_line_item.quantity_received
+                # Only good quantities go to raw material state
+                qty_raw = quantity_passed
                 qty_inspection = 0.0
+                qty_scrap = 0.0  # Rejected quantities handled separately in item.qty_scrap
                 quality_status = 'good'
                 storage_location = 'MAIN-STORE'
             else:
-                # Hold in inspection area
+                # Hold in inspection area (good quantities only)
                 qty_raw = 0.0
-                qty_inspection = grn_line_item.quantity_received
+                qty_inspection = quantity_passed  # Only good quantities await inspection
+                qty_scrap = 0.0  # Rejected quantities handled at item level
                 quality_status = 'pending_inspection'
                 storage_location = 'INSPECTION-AREA'
             
             # Create new batch using InventoryBatch model
+            # IMPORTANT: Batch only tracks good quantities, rejected quantities handled at item level
             batch = InventoryBatch(
                 item_id=item.id,
                 batch_code=batch_number,
@@ -64,8 +73,9 @@ class BatchManager:
                 expiry_date=expiry_date,
                 qty_raw=qty_raw,
                 qty_inspection=qty_inspection,
+                qty_scrap=qty_scrap,  # Initialize scrap to 0 in batch
                 location=storage_location,
-                purchase_rate=grn_line_item.quantity_received * (getattr(grn_line_item, 'rate_per_unit', 0) or 0),
+                purchase_rate=quantity_passed * (getattr(grn_line_item, 'rate_per_unit', 0) or 0),  # Rate only for good quantities
                 inspection_status=quality_status,
                 grn_id=grn_line_item.grn_id,
                 uom=item.unit_of_measure or 'PCS',
@@ -75,7 +85,7 @@ class BatchManager:
             db.session.add(batch)
             db.session.flush()  # Get the batch ID
             
-            # Record batch movement
+            # Record batch movement (only for good quantities)
             BatchMovementLedger.create_movement(
                 ref_type='GRN',
                 ref_id=grn_line_item.grn_id,
@@ -83,24 +93,24 @@ class BatchManager:
                 batch_id=batch.id,
                 item_id=item.id,
                 from_state=None,
-                to_state='Raw',
-                quantity=grn_line_item.quantity_received,
+                to_state='Raw' if add_to_inventory else 'Inspection',
+                quantity=quantity_passed,  # Only good quantities tracked in batch movements
                 unit_of_measure=item.unit_of_measure,
                 vendor_id=getattr(grn_line_item.grn, 'supplier_id', None),
                 storage_location=batch.location,
                 cost_per_unit=getattr(grn_line_item, 'rate_per_unit', 0) or 0.0,
-                total_cost=(grn_line_item.quantity_received * (getattr(grn_line_item, 'rate_per_unit', 0) or 0.0)),
+                total_cost=(quantity_passed * (getattr(grn_line_item, 'rate_per_unit', 0) or 0.0)),
                 movement_date=grn_line_item.grn.received_date,
-                notes=f"Material received from GRN {grn_line_item.grn.grn_number}"
+                notes=f"Good material received from GRN {grn_line_item.grn.grn_number} (Passed: {quantity_passed}, Rejected: {quantity_rejected})"
             )
             
-            # Create accounting valuation entry for inventory receipt
+            # Create accounting valuation entry for inventory receipt (only for good quantities)
             try:
                 from services.accounting_automation import AccountingAutomation
                 cost_per_unit = getattr(grn_line_item, 'rate_per_unit', 0) or 0.0
-                total_valuation = grn_line_item.quantity_received * cost_per_unit
+                total_valuation = quantity_passed * cost_per_unit  # Only value good quantities
                 AccountingAutomation.create_inventory_valuation_entry(
-                    item, grn_line_item.quantity_received, total_valuation, 'receipt'
+                    item, quantity_passed, total_valuation, 'receipt'
                 )
             except Exception as e:
                 print(f"Warning: Could not create accounting entry: {e}")
@@ -113,7 +123,7 @@ class BatchManager:
                 report.update_from_movement(movement)
             
             db.session.commit()
-            return batch, "Batch created successfully"
+            return batch, f"Batch {batch.batch_code} created successfully with {quantity_passed} good units (Rejected: {quantity_rejected} handled separately)"
             
         except Exception as e:
             db.session.rollback()
