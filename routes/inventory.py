@@ -264,7 +264,7 @@ def batch_wise_view():
             parent_child_data.append(parent_data)
     
     # Get recent batch movements
-    from models.batch_movement import BatchMovementLedger
+    from models.batch import BatchMovementLedger
     recent_movements = BatchMovementLedger.query.order_by(desc(BatchMovementLedger.created_at)).limit(10).all()
     
     # Get filter options
