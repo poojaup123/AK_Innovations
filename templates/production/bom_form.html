@@ -45,18 +45,16 @@
                 <i class="fas fa-calculator"></i> Costing & Overhead
             </button>
         </li>
-        {% if bom %}
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="components-tab" data-bs-toggle="tab" data-bs-target="#components" type="button" role="tab">
-                <i class="fas fa-boxes"></i> Components <span class="badge bg-primary">{{ bom.items|length }}</span>
+                <i class="fas fa-boxes"></i> Components {% if bom %}<span class="badge bg-primary">{{ bom.items|length }}</span>{% endif %}
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="processes-tab" data-bs-toggle="tab" data-bs-target="#processes" type="button" role="tab">
-                <i class="fas fa-cogs"></i> Manufacturing Processes
+                <i class="fas fa-cogs"></i> Manufacturing Processes {% if bom and bom.processes %}<span class="badge bg-info">{{ bom.processes|length }}</span>{% endif %}
             </button>
         </li>
-        {% endif %}
     </ul>
 
     <div class="tab-content" id="bomTabContent">
@@ -313,19 +311,21 @@
             </div>
         </div>
 
-        {% if bom %}
         <!-- Components Tab -->
         <div class="tab-pane fade" id="components" role="tabpanel">
             <div class="card border-top-0">
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5><i class="fas fa-boxes"></i> BOM Components</h5>
+                        {% if bom %}
                         <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#addComponentForm">
                             <i class="fas fa-plus"></i> Add Component
                         </button>
+                        {% endif %}
                     </div>
                 </div>
                 
+                {% if bom %}
                 <!-- Collapsible Add Component Form -->
                 <div class="collapse" id="addComponentForm">
                     <div class="card-body border-bottom bg-light">
@@ -718,6 +718,23 @@
                         <p class="text-muted">Click "Add Component" to start building your BOM.</p>
                     </div>
                     {% endif %}
+                {% else %}
+                <!-- Empty state for new BOM -->
+                <div class="card-body">
+                    <div class="text-center py-5">
+                        <i class="fas fa-info-circle fa-3x text-primary mb-3"></i>
+                        <h5 class="text-primary">Save BOM First</h5>
+                        <p class="text-muted">Please save the basic information first, then you can add components and processes.</p>
+                        <p class="small text-muted">After saving, you'll be able to:</p>
+                        <ul class="list-unstyled small text-muted">
+                            <li>• Add materials and components</li>
+                            <li>• Define manufacturing processes</li>
+                            <li>• Set up costs and overheads</li>
+                            <li>• Configure sub-BOMs</li>
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
                 </div>
 
                 <!-- Component Tree View (Mini Preview) -->
@@ -748,7 +765,8 @@
                     <small>Intelligent Integration: Process workflows automatically populate Scrap Management and Labor Costs</small>
                 </div>
                 <div class="card-body">
-                    {% if bom.processes %}
+                    {% if bom %}
+                        {% if bom.processes %}
                     <div class="row mb-3">
                         <div class="col-md-3">
                             <div class="card bg-light">
@@ -841,24 +859,38 @@
                             </tbody>
                         </table>
                     </div>
-                    {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">No Manufacturing Processes Defined</h5>
-                        <p class="text-muted">Add manufacturing processes to automatically calculate labor costs and scrap rates.</p>
-                    </div>
-                    {% endif %}
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Manufacturing Processes Defined</h5>
+                            <p class="text-muted">Add manufacturing processes to automatically calculate labor costs and scrap rates.</p>
+                        </div>
+                        {% endif %}
 
-                    <div class="text-center mt-3">
-                        <a href="{{ url_for('production.add_multi_bom_process', bom_id=bom.id) }}" 
-                           class="btn btn-primary">
-                            <i class="fas fa-plus"></i> {{ 'Add Process' if not bom.processes else 'Add Another Process' }}
-                        </a>
-                    </div>
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('production.add_multi_bom_process', bom_id=bom.id) }}" 
+                               class="btn btn-primary">
+                                <i class="fas fa-plus"></i> {{ 'Add Process' if not bom.processes else 'Add Another Process' }}
+                            </a>
+                        </div>
+                    {% else %}
+                        <!-- Empty state for new BOM -->
+                        <div class="text-center py-5">
+                            <i class="fas fa-info-circle fa-3x text-primary mb-3"></i>
+                            <h5 class="text-primary">Save BOM First</h5>
+                            <p class="text-muted">Please save the basic information first, then you can add manufacturing processes.</p>
+                            <p class="small text-muted">After saving, you'll be able to:</p>
+                            <ul class="list-unstyled small text-muted">
+                                <li>• Define manufacturing steps and workflows</li>
+                                <li>• Set labor rates and process times</li>
+                                <li>• Configure outsourcing and vendors</li>
+                                <li>• Calculate process costs automatically</li>
+                            </ul>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
-        {% endif %}
     </div>
 </div>
 {% endblock %}
