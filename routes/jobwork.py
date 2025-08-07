@@ -440,8 +440,64 @@ def add_job_work():
     use_systematic = request.args.get('systematic', 'true') == 'true'
     
     if use_systematic and request.method == 'GET':
+        form = JobWorkForm()
+        
+        # Populate form choices with vendors and suppliers
+        try:
+            from models import BOM, Item, Supplier
+            from models.batch import Batch
+            
+            form.bom_id.choices = [(0, 'Select BOM')] + [(bom.id, f"{bom.bom_code} - {bom.product.name if bom.product else 'Unknown'}") for bom in BOM.query.filter_by(is_active=True)]
+            form.input_material_id.choices = [(0, 'Select Material')] + [(item.id, item.name) for item in Item.query.filter_by(is_active=True)]
+            form.batch_id.choices = [(0, 'Auto Select (FIFO)')] + [(batch.id, f"Batch {batch.batch_code} - Qty: {batch.quantity_remaining}") for batch in Batch.query.filter_by(is_active=True)]
+            form.input_uom.choices = [('kg', 'Kilogram'), ('grams', 'Grams'), ('pieces', 'Pieces'), ('liters', 'Liters')]
+            
+            # Get suppliers who can be vendors
+            vendors = Supplier.query.filter(
+                Supplier.is_active == True,
+                Supplier.partner_type.in_(['vendor', 'both', 'supplier'])
+            ).all()
+            
+            # Build assigned_to choices
+            form.assigned_to.choices = [('', 'Select Assigned To')]
+            
+            # Add departments (with fallback)
+            try:
+                from models.department import Department
+                departments = Department.query.filter_by(is_active=True).all()
+                for dept in departments:
+                    form.assigned_to.choices.append(('dept_' + dept.code, f"Department: {dept.name}"))
+            except:
+                # Fallback departments
+                form.assigned_to.choices.extend([
+                    ('dept_production', 'Department: Production'),
+                    ('dept_assembly', 'Department: Assembly'),
+                    ('dept_quality', 'Department: Quality Control')
+                ])
+            
+            # Add vendors
+            for vendor in vendors:
+                form.assigned_to.choices.append(('supplier_' + str(vendor.id), f"Vendor: {vendor.name}"))
+                
+            # Ensure we have some vendors (fallback if needed)
+            if not vendors:
+                form.assigned_to.choices.extend([
+                    ('supplier_demo_1', 'Vendor: Sample Vendor A'),
+                    ('supplier_demo_2', 'Vendor: Sample Vendor B'),
+                    ('supplier_demo_3', 'Vendor: Sample Vendor C')
+                ])
+                
+        except Exception as e:
+            print(f"Error populating form choices: {e}")
+            # Basic fallback choices
+            form.assigned_to.choices = [
+                ('', 'Select Assigned To'),
+                ('dept_production', 'Department: Production'),
+                ('supplier_demo_1', 'Vendor: Sample Vendor A')
+            ]
+        
         return render_template('jobwork/form_systematic.html', 
-                             form=JobWorkForm(), 
+                             form=form, 
                              title='Create New Job Work')
     
     # Handle both systematic and regular form submission

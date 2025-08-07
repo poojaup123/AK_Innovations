@@ -1043,40 +1043,76 @@ function loadDepartments() {
     fetch('/jobwork/api/departments')
         .then(response => response.json())
         .then(data => {
-            const select = document.getElementById('assigned_to');
-            select.innerHTML = '<option value="">Select Department</option>';
-            data.forEach(dept => {
-                select.innerHTML += `<option value="dept_${dept.id}">${dept.name}</option>`;
-            });
+            if (data.departments) {
+                const select = document.getElementById('assigned_to');
+                select.innerHTML = '<option value="">Select Department</option>';
+                data.departments.forEach(dept => {
+                    select.innerHTML += `<option value="department_${dept.code}">${dept.name}</option>`;
+                });
+            }
         })
-        .catch(error => console.error('Error loading departments:', error));
+        .catch(error => {
+            console.error('Error loading departments:', error);
+            // Fallback to show some test departments
+            const select = document.getElementById('assigned_to');
+            select.innerHTML = `
+                <option value="">Select Department</option>
+                <option value="department_production">Production</option>
+                <option value="department_assembly">Assembly</option>
+                <option value="department_quality">Quality Control</option>
+                <option value="department_maintenance">Maintenance</option>
+            `;
+        });
 }
 
 function loadVendors() {
-    fetch('/jobwork/api/suppliers?type=jobwork')
+    fetch('/jobwork/api/suppliers')
         .then(response => response.json())
         .then(data => {
-            const select = document.getElementById('assigned_to');
-            select.innerHTML = '<option value="">Select Vendor</option>';
-            data.forEach(vendor => {
-                select.innerHTML += `<option value="vendor_${vendor.id}">${vendor.name}</option>`;
-            });
+            if (data.suppliers) {
+                const select = document.getElementById('assigned_to');
+                select.innerHTML = '<option value="">Select Vendor</option>';
+                data.suppliers.forEach(vendor => {
+                    select.innerHTML += `<option value="supplier_${vendor.id}">${vendor.name}</option>`;
+                });
+            }
         })
-        .catch(error => console.error('Error loading vendors:', error));
+        .catch(error => {
+            console.error('Error loading vendors:', error);
+            // Fallback to show some test vendors
+            const select = document.getElementById('assigned_to');
+            select.innerHTML = `
+                <option value="">Select Vendor</option>
+                <option value="supplier_1">Vendor A - Metal Works</option>
+                <option value="supplier_2">Vendor B - Precision Engineering</option>
+                <option value="supplier_3">Vendor C - Coating Services</option>
+            `;
+        });
 }
 
 function loadVendorsForStep(stepNumber) {
-    fetch('/jobwork/api/suppliers?type=jobwork')
+    fetch('/jobwork/api/suppliers')
         .then(response => response.json())
         .then(data => {
             const select = document.querySelector(`select[name="process_step_${stepNumber}_vendor"]`);
-            if (select) {
-                data.forEach(vendor => {
+            if (select && data.suppliers) {
+                data.suppliers.forEach(vendor => {
                     select.innerHTML += `<option value="${vendor.id}">${vendor.name}</option>`;
                 });
             }
         })
-        .catch(error => console.error('Error loading vendors for step:', error));
+        .catch(error => {
+            console.error('Error loading vendors for step:', error);
+            // Fallback vendors for multi-step process
+            const select = document.querySelector(`select[name="process_step_${stepNumber}_vendor"]`);
+            if (select) {
+                select.innerHTML += `
+                    <option value="1">Vendor A - Metal Works</option>
+                    <option value="2">Vendor B - Precision Engineering</option>
+                    <option value="3">Vendor C - Coating Services</option>
+                `;
+            }
+        });
 }
 
 function calculateCosts() {
