@@ -14,6 +14,7 @@
                         <th style="min-width: 80px;">Type</th>
 
                         <th style="min-width: 90px;">Current Stock</th>
+                        <th style="min-width: 90px;">Rejected/Scrap</th>
                         <th style="min-width: 80px;">Min Stock</th>
                         <th style="min-width: 60px;">UOM</th>
                         <th style="min-width: 90px;">Unit Weight</th>
@@ -43,6 +44,13 @@
                                 <span class="text-danger">{{ item.current_stock or 0 }}</span>
                             {% else %}
                                 {{ item.current_stock or 0 }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if (item.qty_scrap or 0) > 0 %}
+                                <span class="text-warning">{{ item.qty_scrap or 0 }}</span>
+                            {% else %}
+                                <span class="text-muted">0</span>
                             {% endif %}
                         </td>
                         <td>{{ item.minimum_stock or 0 }}</td>
