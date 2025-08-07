@@ -2,7 +2,9 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from forms import ProductionForm, BOMForm, BOMItemForm, BOMProcessForm
-from models import Production, Item, BOM, BOMItem, BOMProcess, Supplier, ItemBatch, ProductionBatch
+from models import Item, BOM, BOMItem, BOMProcess, Supplier
+from models.production import ProductionOrder
+from models.batch import InventoryBatch, BatchMovement
 from services.process_integration import ProcessIntegrationService
 from services.authentic_accounting_integration import AuthenticAccountingIntegration
 from services.production_service import ProductionService
@@ -416,20 +418,15 @@ def add_production():
                                  bom_items=bom_items,
                                  selected_item=selected_item)
         
-        production = Production(
-            production_number=form.production_number.data,
-            item_id=form.item_id.data,
-            quantity_planned=form.quantity_planned.data,
-            planned_uom=form.planned_uom.data,
+        production = ProductionOrder(
+            po_number=form.production_number.data,
+            product_id=form.item_id.data,
+            quantity_ordered=form.quantity_planned.data,
             quantity_produced=form.quantity_produced.data or 0.0,
-            quantity_good=form.quantity_good.data or 0.0,
-            quantity_damaged=form.quantity_damaged.data or 0.0,
-            scrap_quantity=form.scrap_quantity.data or 0.0,
-            production_date=form.production_date.data,
+            order_date=form.production_date.data,
             status=form.status.data,
             notes=form.notes.data,
             bom_id=active_bom.id if active_bom else None,
-            batch_tracking_enabled=True,  # Enable batch tracking by default
             created_by=current_user.id
         )
         db.session.add(production)
@@ -464,24 +461,24 @@ def add_production():
 @production_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_production(id):
-    production = Production.query.get_or_404(id)
+    production = ProductionOrder.query.get_or_404(id)
     form = ProductionForm(obj=production)
     form.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.order_by(Item.name).all()]
     
     if form.validate_on_submit():
         # Check if production number already exists (excluding current production)
-        existing_production = Production.query.filter(
-            Production.production_number == form.production_number.data, 
-            Production.id != id
+        existing_production = ProductionOrder.query.filter(
+            ProductionOrder.po_number == form.production_number.data, 
+            ProductionOrder.id != id
         ).first()
         if existing_production:
             flash('Production number already exists', 'danger')
             return render_template('production/form.html', form=form, title='Edit Production', production=production)
         
-        production.production_number = form.production_number.data
-        production.item_id = form.item_id.data
-        production.quantity_planned = form.quantity_planned.data
-        production.production_date = form.production_date.data
+        production.po_number = form.production_number.data
+        production.product_id = form.item_id.data
+        production.quantity_ordered = form.quantity_planned.data
+        production.order_date = form.production_date.data
         production.notes = form.notes.data
         
         db.session.commit()
@@ -489,7 +486,7 @@ def edit_production(id):
         return redirect(url_for('production.list_productions'))
     
     # Get BOM for the product if available
-    bom = BOM.query.filter_by(product_id=production.item_id, is_active=True).first()
+    bom = BOM.query.filter_by(product_id=production.product_id, is_active=True).first()
     bom_items = []
     if bom:
         bom_items = BOMItem.query.filter_by(bom_id=bom.id).all()
