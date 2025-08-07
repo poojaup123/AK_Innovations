@@ -125,29 +125,11 @@ h6, .h6 { font-size: 1rem; }      /* 16px */
     justify-content: center !important;
 }
 
-/* Job Work Dashboard Specific Overrides */
-.jobwork-stats-grid {
-    display: grid !important;
-    grid-template-columns: repeat(6, 1fr) !important;
-    gap: 12px !important;
-    margin-bottom: 24px !important;
-}
-
-@media (max-width: 1200px) {
-    .jobwork-stats-grid {
-        grid-template-columns: repeat(3, 1fr) !important;
-    }
-}
-
-@media (max-width: 768px) {
-    .jobwork-stats-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
-    }
-}
-
-.jobwork-stats-grid .dashboard-card {
-    width: 100% !important;
-    margin: 0 !important;
+/* Job Work Dashboard Cards - Compact Horizontal Layout */
+.dashboard-card {
+    flex: 1 !important; /* Equal width distribution */
+    min-width: 140px !important; /* Minimum width for readability */
+    max-width: 200px !important; /* Maximum width to prevent oversized cards */
 }
 
 /* Use minimal custom styles - rely on Bootstrap theme */
