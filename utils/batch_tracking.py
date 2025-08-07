@@ -3,7 +3,8 @@ Comprehensive Batch Tracking Utilities for Factory Management System
 Provides complete material traceability from raw material to finished goods
 """
 
-from models import ItemBatch, Item, JobWork, JobWorkBatch
+from models import ItemBatch, Item, JobWork
+from models.batch import JobWorkBatch
 from app import db
 from datetime import datetime
 from sqlalchemy import and_, or_

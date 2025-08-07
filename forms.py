@@ -1188,7 +1188,8 @@ class JobWorkBatchReturnForm(FlaskForm):
         
         # Populate job work choices (only those with issued batches)
         try:
-            from models import JobWork, JobWorkBatch
+            from models import JobWork
+            from models.batch import JobWorkBatch
             issued_job_works = JobWork.query.join(JobWorkBatch).filter(
                 JobWorkBatch.status == 'issued'
             ).distinct().all()

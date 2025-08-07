@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from forms import JobWorkForm, JobWorkQuantityUpdateForm, DailyJobWorkForm, JobWorkTeamAssignmentForm, JobWorkBatchReturnForm
-from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings, DailyJobWorkEntry, JobWorkTeamAssignment, Employee, JobWorkBatch, ItemBatch
+from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings, DailyJobWorkEntry, JobWorkTeamAssignment, Employee, ItemBatch
+from models.batch import JobWorkBatch
 from models.batch import BatchMovementLedger, BatchConsumptionReport
 from utils.batch_tracking import BatchTracker, BatchValidator, get_batch_options_for_item_api, validate_batch_selection_api
 from services.batch_management import BatchManager, BatchValidator as BatchValidatorService
@@ -11,6 +12,7 @@ from datetime import datetime, timedelta
 from utils import generate_job_number  
 from services.notification_helpers import send_email_notification, send_whatsapp_notification, send_email_with_attachment
 from utils.documents import get_documents_for_transaction
+from services.jobwork_automation import JobWorkAutomationService, JobWorkProgressTracker
 
 jobwork_bp = Blueprint('jobwork', __name__)
 
@@ -2104,5 +2106,80 @@ def batch_details(batch_id):
     return render_template('jobwork/batch_details.html', 
                          batch=batch,
                          input_batch_history=input_batch_history)
+
+@jobwork_bp.route('/progress-tracker')
+@login_required
+def progress_tracker():
+    """Progress tracker dashboard"""
+    return render_template('jobwork/progress_tracker.html')
+
+# API endpoints for progress tracking
+@jobwork_bp.route('/api/vendor-pipeline')
+@login_required
+def api_vendor_pipeline():
+    """API endpoint for vendor pipeline data"""
+    try:
+        pipeline = JobWorkProgressTracker.get_vendor_pipeline()
+        return jsonify(pipeline)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@jobwork_bp.route('/api/progress-timeline/<int:job_work_id>')
+@login_required
+def api_progress_timeline(job_work_id):
+    """API endpoint for job work progress timeline"""
+    try:
+        timeline = JobWorkProgressTracker.get_progress_timeline(job_work_id)
+        return jsonify(timeline)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@jobwork_bp.route('/api/bottleneck-analysis')
+@login_required
+def api_bottleneck_analysis():
+    """API endpoint for bottleneck analysis"""
+    try:
+        analysis = JobWorkProgressTracker.get_bottleneck_analysis()
+        return jsonify(analysis)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@jobwork_bp.route('/api/active-jobs')
+@login_required
+def api_active_jobs():
+    """API endpoint for active job works list"""
+    try:
+        jobs = JobWork.query.filter(JobWork.status.in_(['sent', 'partial_received'])).all()
+        result = []
+        for job in jobs:
+            result.append({
+                'id': job.id,
+                'job_number': job.job_number,
+                'item_name': job.item.name if job.item else 'Unknown',
+                'customer_name': job.customer_name,
+                'status': job.status
+            })
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@jobwork_bp.route('/api/update-location', methods=['POST'])
+@login_required
+def api_update_location():
+    """API endpoint to update job work batch location"""
+    try:
+        data = request.get_json()
+        batch_id = data.get('batch_id')
+        location = data.get('location')
+        vendor = data.get('vendor')
+        notes = data.get('notes')
+        
+        success, message = JobWorkAutomationService.update_location_tracking(
+            batch_id, location, vendor, notes, current_user.id
+        )
+        
+        return jsonify({'success': success, 'message': message})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 

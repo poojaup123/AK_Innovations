@@ -1,0 +1,606 @@
+{% extends "base.html" %}
+
+{% block title %}Job Work Progress Tracker - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-map-marked-alt"></i> Job Work Progress Tracker</h1>
+            <p class="text-muted">Real-time vendor location tracking and material flow visualization</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group">
+                <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                <button class="btn btn-primary" id="refreshData">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Active Jobs</h6>
+                            <h3 id="activeJobsCount">-</h3>
+                        </div>
+                        <div>
+                            <i class="fas fa-tools fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">At Vendors</h6>
+                            <h3 id="atVendorsCount">-</h3>
+                        </div>
+                        <div>
+                            <i class="fas fa-map-marker-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">In Transit</h6>
+                            <h3 id="inTransitCount">-</h3>
+                        </div>
+                        <div>
+                            <i class="fas fa-truck fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Completed</h6>
+                            <h3 id="completedCount">-</h3>
+                        </div>
+                        <div>
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vendor Pipeline Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-industry"></i> Vendor Pipeline Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div id="vendorPipeline" class="vendor-pipeline">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading vendor pipeline data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Job Works and Progress Timeline -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> Active Job Works</h5>
+                </div>
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                    <div id="activeJobsList">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading active jobs...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-timeline"></i> Progress Timeline</h5>
+                    <small class="text-muted">Click on a job to view detailed timeline</small>
+                </div>
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                    <div id="progressTimeline">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-mouse-pointer fa-2x mb-2"></i>
+                            <p>Select a job work from the left to view its progress timeline</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottleneck Analysis -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Bottleneck Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <div id="bottleneckAnalysis">
+                        <div class="text-center">
+                            <div class="spinner-border text-warning" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Analyzing bottlenecks...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Location Update Modal -->
+<div class="modal fade" id="locationUpdateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Location</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="locationUpdateForm">
+                    <input type="hidden" id="batchId">
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Location Status</label>
+                        <select class="form-select" id="location" required>
+                            <option value="">Select location status</option>
+                            <option value="issued">Material Issued</option>
+                            <option value="at_vendor">At Vendor</option>
+                            <option value="in_transit">In Transit</option>
+                            <option value="returned">Returned</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="vendor" class="form-label">Current Vendor</label>
+                        <input type="text" class="form-control" id="vendor" placeholder="Enter vendor name">
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" rows="3" placeholder="Add any notes about the location update"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveLocationUpdate">Save Update</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.vendor-pipeline {
+    min-height: 200px;
+}
+
+.vendor-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px 0;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.vendor-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+
+.vendor-workload {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.workload-bar {
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.workload-progress {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745, #ffc107, #dc3545);
+    transition: width 0.3s ease;
+}
+
+.timeline-item {
+    border-left: 3px solid #dee2e6;
+    padding-left: 15px;
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.timeline-item::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: #fff;
+    border: 3px solid #dee2e6;
+    border-radius: 50%;
+    position: absolute;
+    left: -8px;
+    top: 5px;
+}
+
+.timeline-item.current {
+    border-left-color: #007bff;
+}
+
+.timeline-item.current::before {
+    border-color: #007bff;
+    background: #007bff;
+}
+
+.timeline-item.completed {
+    border-left-color: #28a745;
+}
+
+.timeline-item.completed::before {
+    border-color: #28a745;
+    background: #28a745;
+}
+
+.job-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid #dee2e6;
+    margin-bottom: 10px;
+}
+
+.job-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+
+.job-card.selected {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+</style>
+
+<script>
+// Global variables
+let currentJobId = null;
+let refreshInterval = null;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadInitialData();
+    setupEventListeners();
+    
+    // Set up auto-refresh every 30 seconds
+    refreshInterval = setInterval(refreshData, 30000);
+});
+
+function setupEventListeners() {
+    // Refresh button
+    document.getElementById('refreshData').addEventListener('click', refreshData);
+    
+    // Save location update
+    document.getElementById('saveLocationUpdate').addEventListener('click', saveLocationUpdate);
+}
+
+function loadInitialData() {
+    loadVendorPipeline();
+    loadActiveJobs();
+    loadBottleneckAnalysis();
+}
+
+function refreshData() {
+    loadVendorPipeline();
+    loadActiveJobs();
+    loadBottleneckAnalysis();
+    
+    if (currentJobId) {
+        loadProgressTimeline(currentJobId);
+    }
+}
+
+function loadVendorPipeline() {
+    fetch('/jobwork/api/vendor-pipeline')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            renderVendorPipeline(data);
+        })
+        .catch(error => {
+            document.getElementById('vendorPipeline').innerHTML = 
+                '<div class="alert alert-danger">Error loading vendor pipeline: ' + error.message + '</div>';
+        });
+}
+
+function loadActiveJobs() {
+    fetch('/jobwork/api/active-jobs')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            renderActiveJobs(data);
+            updateMetrics(data);
+        })
+        .catch(error => {
+            document.getElementById('activeJobsList').innerHTML = 
+                '<div class="alert alert-danger">Error loading active jobs: ' + error.message + '</div>';
+        });
+}
+
+function loadProgressTimeline(jobId) {
+    currentJobId = jobId;
+    
+    fetch(`/jobwork/api/progress-timeline/${jobId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            renderProgressTimeline(data);
+        })
+        .catch(error => {
+            document.getElementById('progressTimeline').innerHTML = 
+                '<div class="alert alert-danger">Error loading timeline: ' + error.message + '</div>';
+        });
+}
+
+function loadBottleneckAnalysis() {
+    fetch('/jobwork/api/bottleneck-analysis')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            renderBottleneckAnalysis(data);
+        })
+        .catch(error => {
+            document.getElementById('bottleneckAnalysis').innerHTML = 
+                '<div class="alert alert-danger">Error loading analysis: ' + error.message + '</div>';
+        });
+}
+
+function renderVendorPipeline(data) {
+    const container = document.getElementById('vendorPipeline');
+    let html = '';
+    
+    if (Object.keys(data).length === 0) {
+        html = '<div class="text-center text-muted"><p>No vendor pipeline data available</p></div>';
+    } else {
+        html = '<div class="row">';
+        for (const [vendor, info] of Object.entries(data)) {
+            const workloadPercent = Math.min((info.current_jobs / 10) * 100, 100); // Assuming max 10 concurrent jobs
+            html += `
+                <div class="col-md-4 mb-3">
+                    <div class="vendor-card">
+                        <div class="vendor-workload">
+                            <strong>${vendor}</strong>
+                            <span class="badge bg-primary">${info.current_jobs} jobs</span>
+                        </div>
+                        <div class="workload-bar">
+                            <div class="workload-progress" style="width: ${workloadPercent}%"></div>
+                        </div>
+                        <small class="text-muted">
+                            Avg. processing time: ${info.avg_processing_time || 'N/A'} days
+                        </small>
+                    </div>
+                </div>
+            `;
+        }
+        html += '</div>';
+    }
+    
+    container.innerHTML = html;
+}
+
+function renderActiveJobs(jobs) {
+    const container = document.getElementById('activeJobsList');
+    let html = '';
+    
+    if (jobs.length === 0) {
+        html = '<div class="text-center text-muted"><p>No active job works found</p></div>';
+    } else {
+        jobs.forEach(job => {
+            const statusColor = job.status === 'completed' ? 'success' : 
+                              job.status === 'partial_received' ? 'warning' : 'primary';
+            
+            html += `
+                <div class="job-card p-3" onclick="selectJob(${job.id})">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>${job.job_number}</strong>
+                        <span class="badge bg-${statusColor}">${job.status.replace('_', ' ')}</span>
+                    </div>
+                    <div class="text-muted small">
+                        <div>${job.item_name}</div>
+                        <div>Customer: ${job.customer_name}</div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    container.innerHTML = html;
+}
+
+function renderProgressTimeline(timeline) {
+    const container = document.getElementById('progressTimeline');
+    let html = '';
+    
+    if (timeline.length === 0) {
+        html = '<div class="text-center text-muted"><p>No timeline data available</p></div>';
+    } else {
+        timeline.forEach(item => {
+            const statusClass = item.status === 'completed' ? 'completed' : 
+                              item.is_current ? 'current' : '';
+            
+            html += `
+                <div class="timeline-item ${statusClass}">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>${item.stage}</strong>
+                        <small class="text-muted">${item.date}</small>
+                    </div>
+                    <div class="text-muted small">
+                        ${item.description}
+                        ${item.vendor ? `<br>Vendor: ${item.vendor}` : ''}
+                    </div>
+                </div>
+            `;
+        });
+    }
+    
+    container.innerHTML = html;
+}
+
+function renderBottleneckAnalysis(analysis) {
+    const container = document.getElementById('bottleneckAnalysis');
+    let html = '';
+    
+    if (analysis.bottlenecks && analysis.bottlenecks.length > 0) {
+        html += '<div class="row">';
+        analysis.bottlenecks.forEach(bottleneck => {
+            html += `
+                <div class="col-md-6 mb-3">
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle"></i> ${bottleneck.vendor}</h6>
+                        <p class="mb-1">${bottleneck.issue}</p>
+                        <small class="text-muted">Jobs affected: ${bottleneck.affected_jobs}</small>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+    } else {
+        html = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> No bottlenecks detected</div>';
+    }
+    
+    container.innerHTML = html;
+}
+
+function updateMetrics(jobs) {
+    // Count different statuses
+    const metrics = {
+        active: jobs.length,
+        atVendors: jobs.filter(j => j.status === 'sent').length,
+        inTransit: jobs.filter(j => j.status === 'partial_received').length,
+        completed: jobs.filter(j => j.status === 'completed').length
+    };
+    
+    document.getElementById('activeJobsCount').textContent = metrics.active;
+    document.getElementById('atVendorsCount').textContent = metrics.atVendors;
+    document.getElementById('inTransitCount').textContent = metrics.inTransit;
+    document.getElementById('completedCount').textContent = metrics.completed;
+}
+
+function selectJob(jobId) {
+    // Remove selection from all job cards
+    document.querySelectorAll('.job-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Add selection to clicked card
+    event.target.closest('.job-card').classList.add('selected');
+    
+    // Load timeline for selected job
+    loadProgressTimeline(jobId);
+}
+
+function showLocationUpdateModal(batchId) {
+    document.getElementById('batchId').value = batchId;
+    const modal = new bootstrap.Modal(document.getElementById('locationUpdateModal'));
+    modal.show();
+}
+
+function saveLocationUpdate() {
+    const batchId = document.getElementById('batchId').value;
+    const location = document.getElementById('location').value;
+    const vendor = document.getElementById('vendor').value;
+    const notes = document.getElementById('notes').value;
+    
+    if (!batchId || !location) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    fetch('/jobwork/api/update-location', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            batch_id: batchId,
+            location: location,
+            vendor: vendor,
+            notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('locationUpdateModal')).hide();
+            
+            // Clear form
+            document.getElementById('locationUpdateForm').reset();
+            
+            // Refresh data
+            refreshData();
+            
+            // Show success message
+            alert('Location updated successfully');
+        } else {
+            alert('Error updating location: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error updating location: ' + error.message);
+    });
+}
+
+// Clean up on page unload
+window.addEventListener('beforeunload', function() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+});
+</script>
+{% endblock %}
