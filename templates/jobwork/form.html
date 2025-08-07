@@ -182,7 +182,7 @@
                                 </td>
                                 <td>Automatic FIFO-based batch selection eliminates manual selection and ensures optimal inventory rotation</td>
                             </tr>
-                            <tr>
+                            <tr id="output_quantity_row">
                                 <td><strong>Output Quantity</strong></td>
                                 <td>
                                     <div class="input-group">
@@ -193,11 +193,33 @@
                                 </td>
                                 <td>Target production quantity</td>
                             </tr>
-                            <tr>
-                                <td><strong>Input Required <small>(Auto-calculated)</small></strong></td>
+                            <tr id="conversion_ratio_row" style="display: none;">
+                                <td><strong>Conversion Ratio</strong></td>
                                 <td>
                                     <div class="input-group">
-                                        {{ form.quantity_to_issue(class="form-control", id="quantity_to_issue", readonly=true) }}
+                                        <input type="number" class="form-control" id="conversion_ratio" placeholder="Input per output unit" step="0.01" min="0" value="1" onchange="calculateInputQuantity()">
+                                        <span class="input-group-text">Input/Output</span>
+                                    </div>
+                                    <small class="text-muted">How much input material needed per output unit (e.g., 1.2 kg input per 1 piece output)</small>
+                                </td>
+                                <td>Material conversion factor for this process</td>
+                            </tr>
+                            <tr id="scrap_allowance_row" style="display: none;">
+                                <td><strong>Scrap Allowance</strong></td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="scrap_allowance" placeholder="Scrap percentage" step="0.1" min="0" max="50" value="0" onchange="calculateInputQuantity()">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                    <small class="text-muted">Expected material loss percentage</small>
+                                </td>
+                                <td>Manufacturing waste allowance</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Input Required <small id="calculation_mode">(Auto-calculated)</small></strong></td>
+                                <td>
+                                    <div class="input-group">
+                                        {{ form.quantity_to_issue(class="form-control", id="quantity_to_issue") }}
                                         <span class="input-group-text" id="input_material_unit">Units</span>
                                     </div>
                                     {% for error in form.quantity_to_issue.errors %}
@@ -209,7 +231,7 @@
                                     <div id="stock_status" class="mt-1"></div>
                                     <div id="calculation_display" class="mt-2"></div>
                                 </td>
-                                <td>Automatically calculated based on output quantity and material conversion ratio</td>
+                                <td>Material requirement based on output quantity and conversion settings</td>
                             </tr>
                             <tr id="output_batch_row" style="display: none;">
                                 <td><strong>Create Output Batch</strong></td>
@@ -951,6 +973,14 @@ document.addEventListener('DOMContentLoaded', function() {
         loadAssignmentOptions();
     }
     
+    // Add event listener for job work type changes
+    const jobWorkTypeSelect = document.getElementById('job_work_type');
+    if (jobWorkTypeSelect) {
+        jobWorkTypeSelect.addEventListener('change', toggleConversionControls);
+        // Initialize controls based on current selection
+        toggleConversionControls();
+    }
+    
     // Add event listener for BOM selection
     const bomSelect = document.getElementById('bom_select');
     if (bomSelect) {
@@ -1096,12 +1126,13 @@ function updateAllocationStatus(allocatedQty, requiredQty) {
     }
 }
 
-// Calculate input quantity based on output quantity
+// Calculate input quantity based on output quantity and conversion settings
 function calculateInputQuantity() {
     const outputQuantity = parseFloat(document.getElementById('output_quantity').value) || 0;
     const inputQuantityField = document.getElementById('quantity_to_issue');
     const calculationDisplay = document.getElementById('calculation_display');
     const bomSelect = document.getElementById('bom_select');
+    const jobWorkType = document.getElementById('job_work_type')?.value;
     
     if (outputQuantity <= 0) {
         inputQuantityField.value = '';
@@ -1109,44 +1140,93 @@ function calculateInputQuantity() {
         return;
     }
     
-    // Check if BOM is selected - use BOM data if available, otherwise 1:1 ratio
+    // Get conversion settings based on mode
+    let conversionRatio, scrapAllowance;
+    const isManualMode = jobWorkType === 'manual';
     const hasBOM = bomSelect && bomSelect.value;
-    const conversionRatio = 1.0; // 1 unit of input material produces 1 unit of output
     
-    // Only apply scrap allowance if BOM is selected (manufacturing process)
-    // For simple job work without BOM, use exact 1:1 conversion
-    const scrapAllowance = hasBOM ? 0.05 : 0.0; // 5% scrap allowance only for BOM-based work
+    if (isManualMode) {
+        // Manual mode: use manual inputs
+        conversionRatio = parseFloat(document.getElementById('conversion_ratio').value) || 1.0;
+        scrapAllowance = (parseFloat(document.getElementById('scrap_allowance').value) || 0) / 100;
+    } else if (hasBOM) {
+        // BOM mode: use BOM data (can be enhanced to fetch from actual BOM)
+        conversionRatio = 1.0; // Should be fetched from BOM data
+        scrapAllowance = 0.05; // Should be fetched from BOM data
+    } else {
+        // Simple mode: direct conversion
+        conversionRatio = 1.0;
+        scrapAllowance = 0.0;
+    }
     
     const baseInputRequired = outputQuantity * conversionRatio;
     const inputWithScrap = baseInputRequired * (1 + scrapAllowance);
-    const finalInputRequired = scrapAllowance > 0 ? Math.ceil(inputWithScrap * 100) / 100 : baseInputRequired;
+    const finalInputRequired = Math.ceil(inputWithScrap * 100) / 100;
     
     inputQuantityField.value = finalInputRequired;
     
-    if (scrapAllowance > 0) {
-        calculationDisplay.innerHTML = `
-            <div class="small text-muted">
-                <strong>BOM-based Calculation:</strong><br>
-                • Base requirement: ${outputQuantity} × ${conversionRatio} = ${baseInputRequired}<br>
-                • Scrap allowance (${(scrapAllowance * 100)}%): +${(inputWithScrap - baseInputRequired).toFixed(2)}<br>
-                • <strong>Total input required: ${finalInputRequired}</strong>
-            </div>
-        `;
+    // Update calculation display
+    let calculationHtml = `<div class="small text-muted"><strong>`;
+    
+    if (isManualMode) {
+        calculationHtml += `Manual Calculation:</strong><br>`;
+    } else if (hasBOM) {
+        calculationHtml += `BOM-based Calculation:</strong><br>`;
     } else {
-        calculationDisplay.innerHTML = `
-            <div class="small text-muted">
-                <strong>Direct Conversion:</strong><br>
-                • ${outputQuantity} output requires ${finalInputRequired} input (1:1 ratio)<br>
-                • <em>No scrap allowance applied (no BOM selected)</em>
-            </div>
-        `;
+        calculationHtml += `Direct Conversion:</strong><br>`;
     }
+    
+    calculationHtml += `• Base requirement: ${outputQuantity} × ${conversionRatio} = ${baseInputRequired.toFixed(2)}<br>`;
+    
+    if (scrapAllowance > 0) {
+        calculationHtml += `• Scrap allowance (${(scrapAllowance * 100).toFixed(1)}%): +${(inputWithScrap - baseInputRequired).toFixed(2)}<br>`;
+    }
+    
+    calculationHtml += `• <strong>Total input required: ${finalInputRequired}</strong></div>`;
+    
+    calculationDisplay.innerHTML = calculationHtml;
     
     // Trigger stock check if material is selected
     const materialSelect = document.getElementById('input_material');
     if (materialSelect && materialSelect.value) {
         checkStock();
     }
+}
+
+// Show/hide conversion controls based on job work type
+function toggleConversionControls() {
+    const jobWorkType = document.getElementById('job_work_type')?.value;
+    const bomSelect = document.getElementById('bom_select');
+    const conversionRow = document.getElementById('conversion_ratio_row');
+    const scrapRow = document.getElementById('scrap_allowance_row');
+    const calculationMode = document.getElementById('calculation_mode');
+    const inputQuantityField = document.getElementById('quantity_to_issue');
+    
+    const isManualMode = jobWorkType === 'manual';
+    const hasBOM = bomSelect && bomSelect.value;
+    
+    if (isManualMode) {
+        // Manual mode: show all controls
+        conversionRow.style.display = 'table-row';
+        scrapRow.style.display = 'table-row';
+        calculationMode.textContent = '(Manual)';
+        inputQuantityField.readOnly = false;
+    } else if (hasBOM) {
+        // BOM mode: hide manual controls
+        conversionRow.style.display = 'none';
+        scrapRow.style.display = 'none';
+        calculationMode.textContent = '(BOM-based)';
+        inputQuantityField.readOnly = true;
+    } else {
+        // Simple mode: hide controls
+        conversionRow.style.display = 'none';
+        scrapRow.style.display = 'none';
+        calculationMode.textContent = '(Auto-calculated)';
+        inputQuantityField.readOnly = true;
+    }
+    
+    // Recalculate when mode changes
+    calculateInputQuantity();
 }
 
 // Store batch selections in hidden inputs for form submission
