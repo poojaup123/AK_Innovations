@@ -5,6 +5,7 @@ from forms import ProductionForm, BOMForm, BOMItemForm, BOMProcessForm
 from models import Production, Item, BOM, BOMItem, BOMProcess, Supplier, ItemBatch, ProductionBatch
 from services.process_integration import ProcessIntegrationService
 from services.authentic_accounting_integration import AuthenticAccountingIntegration
+from services.production_service import ProductionService
 from app import db
 from sqlalchemy import func, or_
 from utils import generate_production_number
@@ -368,24 +369,24 @@ def add_production():
                 # Calculate actual material needed: (planned_qty / bom_output_qty) * material_qty_per_output
                 required_qty = (form.quantity_planned.data / bom_output_qty) * material_qty_per_output
                 
-                # Check available quantity from batch-level multi-state inventory
+                # Smart availability calculation considering manufacturing capability
                 item = bom_item.item
+                available_qty = ProductionService.calculate_manufacturable_quantity(item.id)
                 
-                # Get available quantities from InventoryBatch (the correct way)
-                from models.batch import InventoryBatch
-                available_qty = db.session.query(
-                    func.sum(
-                        (InventoryBatch.qty_raw or 0) + 
-                        (InventoryBatch.qty_finished or 0) +
-                        (InventoryBatch.qty_wip or 0)  # Include WIP that might be usable
-                    )
-                ).filter_by(item_id=item.id).scalar() or 0
-                
-                # Also check item's current_stock as fallback for items without batch tracking
-                item_stock = item.current_stock or 0
-                
-                # Use the maximum available from either batch tracking or item stock
-                available_qty = max(available_qty, item_stock)
+                # Fallback to basic inventory check if manufacturing calculation fails
+                if available_qty is None:
+                    from models.batch import InventoryBatch
+                    available_qty = db.session.query(
+                        func.sum(
+                            (InventoryBatch.qty_raw or 0) + 
+                            (InventoryBatch.qty_finished or 0) +
+                            (InventoryBatch.qty_wip or 0)
+                        )
+                    ).filter_by(item_id=item.id).scalar() or 0
+                    
+                    # Also check item's current_stock as fallback
+                    item_stock = item.current_stock or 0
+                    available_qty = max(available_qty, item_stock)
                 
                 if available_qty < required_qty:
                     shortage_qty = required_qty - available_qty

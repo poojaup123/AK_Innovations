@@ -4,7 +4,7 @@ from app import db
 from models.production import ProductionOrder, ProductionProcess
 from models import BOM, BOMItem, Item, JobWork
 from services.jobwork_automation import JobWorkAutomationService
-from services.grn_service import GRNService
+# from services.grn_service import GRNService  # Temporarily commented out
 from datetime import datetime, timedelta
 import logging
 
@@ -364,3 +364,74 @@ class ProductionService:
                 'overdue_orders': 0,
                 'recent_orders': []
             }
+    
+    @staticmethod
+    def calculate_manufacturable_quantity(item_id):
+        """Calculate how many units of an item can be made from available raw materials"""
+        try:
+            from models.batch import InventoryBatch
+            from sqlalchemy import func
+            
+            # First, get direct inventory availability
+            direct_available = db.session.query(
+                func.sum(
+                    (InventoryBatch.qty_raw or 0) + 
+                    (InventoryBatch.qty_finished or 0) +
+                    (InventoryBatch.qty_wip or 0)
+                )
+            ).filter_by(item_id=item_id).scalar() or 0
+            
+            # Check if this item can be manufactured (has a BOM)
+            manufacturing_bom = BOM.query.filter_by(
+                product_id=item_id, 
+                is_active=True
+            ).first()
+            
+            manufacturable_qty = 0
+            
+            if manufacturing_bom:
+                # Get BOM items (raw materials needed)
+                bom_items = BOMItem.query.filter_by(bom_id=manufacturing_bom.id).all()
+                
+                # Calculate maximum manufacturable quantity based on available raw materials
+                max_manufacturable = float('inf')
+                
+                for bom_item in bom_items:
+                    # Get available raw material
+                    raw_material_available = db.session.query(
+                        func.sum(
+                            (InventoryBatch.qty_raw or 0) + 
+                            (InventoryBatch.qty_finished or 0)
+                        )
+                    ).filter_by(item_id=bom_item.item_id).scalar() or 0
+                    
+                    # Add item's current stock as fallback
+                    item_stock = bom_item.item.current_stock or 0
+                    raw_material_available = max(raw_material_available, item_stock)
+                    
+                    # Calculate how many units can be made with this raw material
+                    material_qty_needed = bom_item.quantity_required or bom_item.qty_required or 1
+                    bom_output_qty = manufacturing_bom.output_quantity or 1.0
+                    
+                    # Units that can be made = (available_raw / material_per_unit) * output_per_bom
+                    if material_qty_needed > 0:
+                        units_possible = (raw_material_available / material_qty_needed) * bom_output_qty
+                        max_manufacturable = min(max_manufacturable, units_possible)
+                    else:
+                        max_manufacturable = 0
+                        break
+                
+                # Handle infinite case (no materials required)
+                if max_manufacturable == float('inf'):
+                    max_manufacturable = 0
+                else:
+                    manufacturable_qty = max(0, int(max_manufacturable))
+            
+            # Total available = direct inventory + what can be manufactured
+            total_available = direct_available + manufacturable_qty
+            
+            return total_available
+            
+        except Exception as e:
+            logger.error(f"Error calculating manufacturable quantity for item {item_id}: {str(e)}")
+            return None  # Fallback to basic inventory check
