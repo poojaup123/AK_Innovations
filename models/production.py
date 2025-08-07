@@ -49,8 +49,8 @@ class ProductionOrder(db.Model):
     # Relationships
     bom = db.relationship('BOM', backref='production_orders')
     product = db.relationship('Item', backref='production_orders')
-    job_works = db.relationship('JobWork', backref='production_order', lazy='dynamic')
-    grn_entries = db.relationship('GRN', backref='production_order', lazy='dynamic')
+    # Note: job_works and grn_entries relationships removed due to missing foreign keys
+    # These can be re-added when proper foreign key columns exist
     
     def __init__(self, **kwargs):
         super(ProductionOrder, self).__init__(**kwargs)
@@ -85,7 +85,10 @@ class ProductionOrder(db.Model):
                 required_qty = bom_item.quantity * parent_qty * self.quantity_ordered
                 
                 # Check if this item has its own BOM (sub-assembly)
-                sub_bom = bom_item.item.bom_items.first()
+                try:
+                    sub_bom = bom_item.item.bom_items.first() if hasattr(bom_item.item, 'bom_items') else None
+                except:
+                    sub_bom = None
                 
                 if sub_bom and sub_bom.bom.is_phantom:
                     # Phantom BOM - explode further without adding to materials list
