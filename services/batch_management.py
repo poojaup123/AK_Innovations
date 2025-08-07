@@ -464,6 +464,73 @@ class BatchManager:
         db.session.flush()
         
         return output_batch
+    
+    @staticmethod
+    def auto_allocate_batches(item_id: int, required_quantity: float) -> Tuple[bool, List[Dict], str]:
+        """
+        Automatically allocate batches for a given item and quantity using FIFO logic
+        Returns: (success, batch_selections, message)
+        """
+        try:
+            item = Item.query.get(item_id)
+            if not item:
+                return False, [], "Item not found"
+            
+            # Get available batches in FIFO order (oldest first)
+            available_batches = InventoryBatch.query.filter(
+                InventoryBatch.item_id == item_id,
+                InventoryBatch.qty_raw > 0,
+                InventoryBatch.inspection_status.in_(['good', 'passed', 'pending'])
+            ).order_by(
+                InventoryBatch.mfg_date.asc(),  # FIFO - oldest first
+                InventoryBatch.created_at.asc()  # Secondary sort by creation date
+            ).all()
+            
+            if not available_batches:
+                return False, [], f"No available batches for {item.name}"
+            
+            # Calculate total available quantity
+            total_available = sum(batch.qty_raw or 0 for batch in available_batches)
+            
+            if total_available < required_quantity:
+                return False, [], f"Insufficient stock. Required: {required_quantity}, Available: {total_available}"
+            
+            # Auto-allocate batches using FIFO
+            batch_selections = []
+            remaining_quantity = required_quantity
+            
+            for batch in available_batches:
+                if remaining_quantity <= 0:
+                    break
+                
+                available_qty = batch.qty_raw or 0
+                if available_qty <= 0:
+                    continue
+                
+                # Determine quantity to allocate from this batch
+                quantity_to_allocate = min(remaining_quantity, available_qty)
+                
+                batch_selections.append({
+                    'batch_id': batch.id,
+                    'batch_code': batch.batch_code,
+                    'quantity': quantity_to_allocate,
+                    'available_quantity': available_qty,
+                    'mfg_date': batch.mfg_date.isoformat() if batch.mfg_date else '',
+                    'expiry_date': batch.expiry_date.isoformat() if batch.expiry_date else '',
+                    'location': batch.location or 'MAIN-STORE',
+                    'unit_of_measure': item.unit_of_measure,
+                    'item_id': item_id
+                })
+                
+                remaining_quantity -= quantity_to_allocate
+            
+            if remaining_quantity > 0:
+                return False, [], f"Could not fully allocate. Shortfall: {remaining_quantity}"
+            
+            return True, batch_selections, f"Auto-allocated {len(batch_selections)} batches totaling {required_quantity} {item.unit_of_measure}"
+            
+        except Exception as e:
+            return False, [], f"Error auto-allocating batches: {str(e)}"
 
 class BatchValidator:
     """

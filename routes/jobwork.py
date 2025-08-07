@@ -322,6 +322,38 @@ def api_get_item_batches(item_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@jobwork_bp.route('/api/batch/auto-allocate', methods=['POST'])
+@login_required
+def api_auto_allocate_batches():
+    """API endpoint to automatically allocate batches for job work"""
+    try:
+        data = request.get_json()
+        item_id = data.get('item_id')
+        required_quantity = data.get('quantity', 0)
+        
+        if not item_id:
+            return jsonify({'success': False, 'message': 'Item ID is required'})
+        
+        if required_quantity <= 0:
+            return jsonify({'success': False, 'message': 'Quantity must be greater than 0'})
+        
+        # Auto-allocate batches using FIFO logic
+        success, batch_selections, message = BatchManager.auto_allocate_batches(item_id, required_quantity)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'batch_selections': batch_selections,
+                'message': message,
+                'total_allocated': sum(b['quantity'] for b in batch_selections),
+                'batches_count': len(batch_selections)
+            })
+        else:
+            return jsonify({'success': False, 'message': message})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error auto-allocating batches: {str(e)}'})
+
 @jobwork_bp.route('/api/batch/validate', methods=['POST'])
 @login_required
 def api_validate_batch_selection():

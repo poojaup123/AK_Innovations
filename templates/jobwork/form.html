@@ -133,42 +133,54 @@
                                 <td>Enable for complete traceability</td>
                             </tr>
                             <tr id="batch_selection_row" style="display: none;">
-                                <td><strong>Select Batch(es)</strong></td>
+                                <td><strong>Batch Allocation</strong></td>
                                 <td>
-                                    <div id="batch_selection_container">
-                                        <div class="batch-selection-row mb-2" id="batch_row_1">
-                                            <div class="row g-2">
-                                                <div class="col-6">
-                                                    <select class="form-select batch-select" name="batch_selections[0][batch_id]" id="batch_select_1" onchange="updateBatchQuantity(1)">
-                                                        <option value="0">Select Batch</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-4">
-                                                    <input type="number" class="form-control quantity-input" name="batch_selections[0][quantity]" id="batch_quantity_1" placeholder="Qty" step="0.01" min="0" onchange="validateBatchQuantity(1)">
-                                                </div>
-                                                <div class="col-2">
-                                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeBatchRow(1)" style="display: none;" id="remove_batch_1">
-                                                        <i class="fas fa-times"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <small class="text-muted">Available: <span id="batch_available_1">0</span> units</small>
+                                    <div class="alert alert-info mb-3">
+                                        <i class="fas fa-magic"></i> <strong>Auto-Allocation Enabled:</strong> Batches will be automatically selected using FIFO (First In, First Out) logic based on manufacturing dates.
+                                    </div>
+                                    
+                                    <button type="button" class="btn btn-primary mb-3" onclick="autoAllocateBatches()" id="auto_allocate_btn">
+                                        <i class="fas fa-magic"></i> Auto-Allocate Batches
+                                    </button>
+                                    
+                                    <div id="allocation_status" class="mb-3" style="display: none;">
+                                        <div class="alert alert-success">
+                                            <strong>Allocation Complete:</strong> <span id="allocation_message"></span>
                                         </div>
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addBatchRow()" id="add_batch_btn" style="display: none;">
-                                        <i class="fas fa-plus"></i> Add Another Batch
-                                    </button>
-                                    <div class="mt-2">
-                                        <strong>Total Selected: <span id="total_batch_quantity">0</span> units</strong>
-                                        <br><small>Required: <span id="required_quantity">0</span> units</small>
-                                        <div id="quantity_status" class="mt-1"></div>
+                                    
+                                    <div id="batch_allocation_display" style="display: none;">
+                                        <h6>Selected Batches (FIFO Order):</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Batch Code</th>
+                                                        <th>Mfg Date</th>
+                                                        <th>Quantity</th>
+                                                        <th>Location</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="allocated_batches_table">
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
+                                    
+                                    <div class="mt-2">
+                                        <strong>Total Allocated: <span id="total_allocated_quantity">0</span> units</strong>
+                                        <br><small>Required: <span id="required_quantity_display">0</span> units</small>
+                                        <div id="allocation_status_indicator" class="mt-1"></div>
+                                    </div>
+                                    
+                                    <!-- Hidden inputs to store batch selections -->
+                                    <div id="hidden_batch_inputs"></div>
                                     {{ form.batch_id(style="display: none;", id="hidden_batch_input") }}
                                     {% for error in form.batch_id.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>Select multiple batches if needed for complete quantity</td>
+                                <td>Automatic FIFO-based batch selection eliminates manual selection and ensures optimal inventory rotation</td>
                             </tr>
                             <tr>
                                 <td><strong>Quantity to Issue</strong></td>
@@ -953,6 +965,127 @@ document.addEventListener('DOMContentLoaded', function() {
         loadBOMs();
     }
 });
+
+// Automatic Batch Allocation Function
+async function autoAllocateBatches() {
+    const itemSelect = document.getElementById('input_material');
+    const quantityInput = document.getElementById('quantity_to_issue');
+    const allocateBtn = document.getElementById('auto_allocate_btn');
+    
+    if (!itemSelect || !itemSelect.value) {
+        alert('Please select an input material first');
+        return;
+    }
+    
+    if (!quantityInput || !quantityInput.value || parseFloat(quantityInput.value) <= 0) {
+        alert('Please enter a valid quantity to issue');
+        return;
+    }
+    
+    const itemId = itemSelect.value;
+    const requiredQuantity = parseFloat(quantityInput.value);
+    
+    // Show loading state
+    allocateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Allocating...';
+    allocateBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/jobwork/api/batch/auto-allocate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+            },
+            body: JSON.stringify({
+                item_id: itemId,
+                quantity: requiredQuantity
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayAllocatedBatches(data.batch_selections, data.message);
+            updateAllocationStatus(data.total_allocated, requiredQuantity);
+            storeBatchSelections(data.batch_selections);
+        } else {
+            alert('Allocation Failed: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Auto-allocation error:', error);
+        alert('Error during auto-allocation: ' + error.message);
+    } finally {
+        // Restore button state
+        allocateBtn.innerHTML = '<i class="fas fa-magic"></i> Auto-Allocate Batches';
+        allocateBtn.disabled = false;
+    }
+}
+
+// Display allocated batches
+function displayAllocatedBatches(batchSelections, message) {
+    const statusDiv = document.getElementById('allocation_status');
+    const messageSpan = document.getElementById('allocation_message');
+    const displayDiv = document.getElementById('batch_allocation_display');
+    const tableBody = document.getElementById('allocated_batches_table');
+    
+    // Show success message
+    messageSpan.textContent = message;
+    statusDiv.style.display = 'block';
+    
+    // Show batch table
+    displayDiv.style.display = 'block';
+    
+    // Clear and populate table
+    tableBody.innerHTML = '';
+    batchSelections.forEach(batch => {
+        const row = tableBody.insertRow();
+        row.innerHTML = `
+            <td><strong>${batch.batch_code}</strong></td>
+            <td>${batch.mfg_date ? new Date(batch.mfg_date).toLocaleDateString() : 'N/A'}</td>
+            <td><span class="badge bg-primary">${batch.quantity} ${batch.unit_of_measure}</span></td>
+            <td>${batch.location}</td>
+        `;
+    });
+}
+
+// Update allocation status indicators
+function updateAllocationStatus(allocatedQty, requiredQty) {
+    const totalSpan = document.getElementById('total_allocated_quantity');
+    const requiredSpan = document.getElementById('required_quantity_display');
+    const statusDiv = document.getElementById('allocation_status_indicator');
+    
+    totalSpan.textContent = allocatedQty;
+    requiredSpan.textContent = requiredQty;
+    
+    if (allocatedQty >= requiredQty) {
+        statusDiv.innerHTML = '<span class="badge bg-success">✓ Fully Allocated</span>';
+    } else {
+        const shortage = requiredQty - allocatedQty;
+        statusDiv.innerHTML = `<span class="badge bg-warning">⚠ Shortage: ${shortage}</span>`;
+    }
+}
+
+// Store batch selections in hidden inputs for form submission
+function storeBatchSelections(batchSelections) {
+    const hiddenContainer = document.getElementById('hidden_batch_inputs');
+    hiddenContainer.innerHTML = ''; // Clear existing inputs
+    
+    batchSelections.forEach((batch, index) => {
+        // Create hidden inputs for each batch selection
+        const batchIdInput = document.createElement('input');
+        batchIdInput.type = 'hidden';
+        batchIdInput.name = `batch_selections[${index}][batch_id]`;
+        batchIdInput.value = batch.batch_id;
+        
+        const quantityInput = document.createElement('input');
+        quantityInput.type = 'hidden';
+        quantityInput.name = `batch_selections[${index}][quantity]`;
+        quantityInput.value = batch.quantity;
+        
+        hiddenContainer.appendChild(batchIdInput);
+        hiddenContainer.appendChild(quantityInput);
+    });
+}
 
 // Show success message
 function showSuccessMessage(message) {
