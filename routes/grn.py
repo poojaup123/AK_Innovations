@@ -1185,8 +1185,8 @@ def list_grns():
     """List all GRNs with filtering"""
     form = GRNSearchForm()
     
-    # Build query
-    query = GRN.query.join(JobWork)
+    # Build query - Use outerjoin to include GRNs without job work (e.g., from Purchase Orders)
+    query = GRN.query.outerjoin(JobWork).outerjoin(PurchaseOrder)
     
     # Apply filters
     if request.args.get('search'):
@@ -1195,7 +1195,8 @@ def list_grns():
             or_(
                 GRN.grn_number.ilike(f'%{search_term}%'),
                 JobWork.job_number.ilike(f'%{search_term}%'),
-                JobWork.customer_name.ilike(f'%{search_term}%')
+                JobWork.customer_name.ilike(f'%{search_term}%'),
+                PurchaseOrder.po_number.ilike(f'%{search_term}%')
             )
         )
     
