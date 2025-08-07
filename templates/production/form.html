@@ -6,10 +6,11 @@
 {% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container-fluid">
     <div class="row mb-4">
         <div class="col">
             <h1><i class="fas fa-cogs"></i> {{ title }}</h1>
+            <p class="text-muted">Create and manage production orders with intelligent BOM analysis and smart suggestions</p>
         </div>
         <div class="col-auto">
             <a href="{{ url_for('production.list_productions') }}" class="btn btn-secondary">
@@ -18,15 +19,19 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5>Production Order Details</h5>
-                </div>
-                <div class="card-body">
-                    <form method="POST">
-                        {{ form.hidden_tag() }}
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        
+        <!-- SECTION 1: PRODUCTION ORDER FORM -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header" style="background-color: #4285f4; color: white;">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>
+                    Section 1: Production Order Form
+                </h5>
+                <small>Enter production order details, quantities, and scheduling information</small>
+            </div>
+            <div class="card-body">
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -230,192 +235,224 @@
                                 </div>
                             {% endif %}
                         </div>
-                        
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('production.list_productions') }}" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> Cancel
-                            </a>
-                            <div>
-                                <button type="button" class="btn btn-outline-info me-2" onclick="previewForm()">
-                                    <i class="fas fa-eye"></i> Preview
-                                </button>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save"></i> {{ 'Update' if production else 'Save' }} Production Order
-                                </button>
-                            </div>
-                        </div>
-                    </form>
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('production.list_productions') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <div>
+                        <button type="button" class="btn btn-outline-info me-2" onclick="previewForm()">
+                            <i class="fas fa-eye"></i> Preview
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> {{ 'Update' if production else 'Save' }} Production Order
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <div class="col-md-4">
-            {% if bom_items %}
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-list-alt"></i> Bill of Materials</h5>
-                    {% if selected_item %}
-                    <small class="text-muted">for {{ selected_item.code }} - {{ selected_item.name }}</small>
-                    {% endif %}
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm" data-bom-output="{{ selected_item.bom_set[0].output_quantity if selected_item and selected_item.bom_set else 1.0 }}">
-                            <thead>
-                                <tr>
-                                    <th>Material</th>
-                                    <th>Per Unit</th>
-                                    <th>Available</th>
-                                    <th>Batches</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for bom_item in bom_items %}
-                                {% set planned_qty = 1 %}
-                                {% if production %}
-                                    {% set planned_qty = production.quantity_planned %}
-                                {% elif form.quantity_planned.data %}
-                                    {% set planned_qty = form.quantity_planned.data %}
-                                {% endif %}
-                                {% set material_qty_per_output = bom_item.quantity_required or bom_item.qty_required %}
-                                {% set bom_output_qty = bom_items[0].bom.output_quantity if bom_items and bom_items[0].bom else 1.0 %}
-                                {% set total_required = (planned_qty / bom_output_qty) * material_qty_per_output %}
-                                {% set available = (bom_item.item.qty_raw or 0) + (bom_item.item.qty_finished or 0) if bom_item.item.qty_raw is not none else (bom_item.item.current_stock or 0) %}
-                                {% set is_sufficient = available >= total_required %}
-                                <tr class="{% if not is_sufficient %}table-danger{% endif %}">
-                                    <td>
-                                        <small class="text-muted">{{ bom_item.item.code }}</small><br>
-                                        {{ bom_item.item.name }}
-                                    </td>
-                                    <td>{{ bom_item.quantity_required }} {{ bom_item.item.unit_of_measure }}</td>
-                                    <td>
-                                        <strong>{{ available }}</strong> {{ bom_item.item.unit_of_measure }}
-                                        <br><small class="text-muted">Need: {{ total_required }}</small>
-                                    </td>
-                                    <td>
-                                        <button type="button" class="btn btn-sm btn-outline-info" 
-                                                onclick="showBatchDetails('{{ bom_item.item.code }}')" 
-                                                title="View available batches">
-                                            <i class="fas fa-eye"></i> View
-                                        </button>
-                                        <div id="batch-info-{{ bom_item.item.code }}" class="mt-1" style="display: none;">
-                                            <small class="text-muted">Loading batches...</small>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        {% if is_sufficient %}
-                                            <span class="badge bg-success">✓ OK</span>
-                                        {% else %}
-                                            <span class="badge bg-danger">⚠ Short</span>
-                                            <br><small class="text-danger">{{ total_required - available }} short</small>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        <!-- SECTION 2: MATERIAL REQUIREMENTS ANALYSIS -->
+        {% if bom_items or material_shortages %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header" style="background-color: #34a853; color: white;">
+                <h5 class="mb-0">
+                    <i class="fas fa-list-alt me-2"></i>
+                    Section 2: Material Requirements Analysis
+                </h5>
+                <small>BOM breakdown, material availability, and shortage analysis</small>
             </div>
-            {% endif %}
-            
-            {% if material_shortages %}
-            <div class="card mt-3">
-                <div class="card-header bg-danger text-white">
-                    <h5><i class="fas fa-exclamation-triangle"></i> Material Shortages</h5>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-warning">
-                        <strong>Material shortages detected!</strong><br>
-                        The following components are insufficient:
+            <div class="card-body">
+                {% if bom_items %}
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="mb-3">
+                            <i class="fas fa-sitemap text-primary"></i> Bill of Materials
+                            {% if selected_item %}
+                            <small class="text-muted">for {{ selected_item.code }} - {{ selected_item.name }}</small>
+                            {% endif %}
+                        </h6>
                     </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover" data-bom-output="{{ selected_item.bom_set[0].output_quantity if selected_item and selected_item.bom_set else 1.0 }}">
+                        <thead class="table-light">
+                            <tr>
+                                <th><i class="fas fa-box"></i> Material</th>
+                                <th><i class="fas fa-calculator"></i> Per Unit</th>
+                                <th><i class="fas fa-warehouse"></i> Available</th>
+                                <th><i class="fas fa-tags"></i> Batches</th>
+                                <th><i class="fas fa-check-circle"></i> Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bom_item in bom_items %}
+                            {% set planned_qty = 1 %}
+                            {% if production %}
+                                {% set planned_qty = production.quantity_planned %}
+                            {% elif form.quantity_planned.data %}
+                                {% set planned_qty = form.quantity_planned.data %}
+                            {% endif %}
+                            {% set material_qty_per_output = bom_item.quantity_required or bom_item.qty_required %}
+                            {% set bom_output_qty = bom_items[0].bom.output_quantity if bom_items and bom_items[0].bom else 1.0 %}
+                            {% set total_required = (planned_qty / bom_output_qty) * material_qty_per_output %}
+                            {% set available = (bom_item.item.qty_raw or 0) + (bom_item.item.qty_finished or 0) if bom_item.item.qty_raw is not none else (bom_item.item.current_stock or 0) %}
+                            {% set is_sufficient = available >= total_required %}
+                            <tr class="{% if not is_sufficient %}table-danger{% endif %}">
+                                <td>
+                                    <small class="text-muted">{{ bom_item.item.code }}</small><br>
+                                    <strong>{{ bom_item.item.name }}</strong>
+                                </td>
+                                <td>{{ bom_item.quantity_required }} {{ bom_item.item.unit_of_measure }}</td>
+                                <td>
+                                    <strong>{{ available }}</strong> {{ bom_item.item.unit_of_measure }}
+                                    <br><small class="text-muted">Need: {{ total_required }}</small>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-info" 
+                                            onclick="showBatchDetails('{{ bom_item.item.code }}')" 
+                                            title="View available batches">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                    <div id="batch-info-{{ bom_item.item.code }}" class="mt-1" style="display: none;">
+                                        <small class="text-muted">Loading batches...</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if is_sufficient %}
+                                        <span class="badge bg-success"><i class="fas fa-check"></i> OK</span>
+                                    {% else %}
+                                        <span class="badge bg-danger"><i class="fas fa-exclamation-triangle"></i> Short</span>
+                                        <br><small class="text-danger">{{ total_required - available }} short</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                
+                {% if material_shortages %}
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h6 class="mb-3">
+                            <i class="fas fa-exclamation-triangle text-danger"></i> Material Shortages Detected
+                        </h6>
+                    </div>
+                </div>
+                <div class="alert alert-warning border-left-danger">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>Material shortages detected!</strong> The following components are insufficient:
+                </div>
+                
+                <div class="row">
                     {% for shortage in material_shortages %}
-                    <div class="border-bottom pb-3 mb-3">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <h6 class="mb-1"><strong>{{ shortage.item_code }} - {{ shortage.item_name }}</strong></h6>
-                                <small class="text-muted">
-                                    Required: <span class="fw-bold">{{ shortage.required_qty|int }} {{ shortage.unit }}</span><br>
-                                    Direct Stock: {{ shortage.direct_available|int }} {{ shortage.unit }}
+                    <div class="col-lg-6 mb-3">
+                        <div class="card border-danger">
+                            <div class="card-body">
+                                <h6 class="card-title text-danger mb-2">
+                                    <i class="fas fa-box"></i> {{ shortage.item_code }} - {{ shortage.item_name }}
+                                </h6>
+                                <div class="mb-2">
+                                    <small class="text-muted">Required:</small> <span class="fw-bold text-dark">{{ shortage.required_qty|int }} {{ shortage.unit }}</span><br>
+                                    <small class="text-muted">Direct Stock:</small> {{ shortage.direct_available|int }} {{ shortage.unit }}
                                     {% if shortage.manufacturable_qty > 0 %}
                                         + <span class="text-success">{{ shortage.manufacturable_qty|int }} manufacturable</span>
                                     {% endif %}
                                     = {{ shortage.total_available|int }} total<br>
-                                    <span class="text-danger fw-bold">Short by: {{ shortage.shortage_qty|int }} {{ shortage.unit }}</span>
-                                </small>
-                            </div>
-                            {% if shortage.can_manufacture and shortage.manufacturable_qty > 0 %}
-                            <div class="text-end">
-                                <span class="badge bg-success mb-1">Can Manufacture</span><br>
-                                <small class="text-success">Raw materials available</small>
-                            </div>
-                            {% endif %}
-                        </div>
-                        
-                        {% if shortage.raw_materials %}
-                        <div class="mt-2">
-                            <small class="text-muted"><strong>Raw Materials Available:</strong></small>
-                            <div class="row mt-1">
-                                {% for raw in shortage.raw_materials %}
-                                {% if raw.available > 0 %}
-                                <div class="col-md-6">
-                                    <small class="text-success">✓ {{ raw.raw_material }}: {{ raw.available|int }} available (can make {{ raw.can_make|int }} units)</small>
+                                    <small class="text-muted">Shortage:</small> <span class="text-danger fw-bold">{{ shortage.shortage_qty|int }} {{ shortage.unit }}</span>
+                                </div>
+                                
+                                {% if shortage.can_manufacture and shortage.manufacturable_qty > 0 %}
+                                <div class="mb-2">
+                                    <span class="badge bg-success"><i class="fas fa-cogs"></i> Can Manufacture</span>
+                                    <small class="text-success d-block">Raw materials available for production</small>
                                 </div>
                                 {% endif %}
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-            
-            {% if job_work_suggestions %}
-            <div class="card mt-3">
-                <div class="card-header bg-success text-white">
-                    <h5><i class="fas fa-lightbulb"></i> Smart Job Work Suggestions</h5>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> <strong>Good news!</strong> You can create job works to manufacture missing components using available raw materials.
-                    </div>
-                    
-                    {% for suggestion in job_work_suggestions %}
-                    <div class="card mb-3 border-success">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h6 class="text-success mb-2">
-                                        <i class="fas fa-cogs"></i> Create Job Work for {{ suggestion.component }}
-                                    </h6>
-                                    <p class="mb-2">{{ suggestion.message }}</p>
-                                    <small class="text-muted">
-                                        <strong>Raw Materials Needed:</strong><br>
-                                        {% for raw in suggestion.raw_materials_needed %}
-                                        {% if raw.available > 0 %}
-                                        ✓ {{ raw.raw_material }}: {{ raw.available|int }} available → can make {{ raw.can_make|int }} {{ suggestion.component }}<br>
-                                        {% endif %}
-                                        {% endfor %}
-                                    </small>
+                                
+                                {% if shortage.raw_materials %}
+                                <div class="mt-2">
+                                    <small class="text-muted fw-bold">Raw Materials Available:</small>
+                                    {% for raw in shortage.raw_materials %}
+                                    {% if raw.available > 0 %}
+                                    <div class="mt-1">
+                                        <small class="text-success">
+                                            <i class="fas fa-check-circle"></i> {{ raw.raw_material }}: {{ raw.available|int }} available (can make {{ raw.can_make|int }} units)
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                    {% endfor %}
                                 </div>
-                                <div class="text-end">
-                                    <a href="{{ url_for('jobwork.add_job_work') }}?component={{ suggestion.component_code }}&quantity={{ suggestion.suggested_qty|int }}" class="btn btn-success btn-sm mb-2">
-                                        <i class="fas fa-plus"></i> Create Job Work
-                                    </a><br>
-                                    <small class="text-muted">Qty: {{ suggestion.suggested_qty|int }}</small>
-                                </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
-    </div>
+        {% endif %}
+        
+        <!-- SECTION 3: SMART JOB WORK SUGGESTIONS -->
+        {% if job_work_suggestions %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header" style="background-color: #fbbc04; color: black;">
+                <h5 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Section 3: Smart Job Work Suggestions
+                </h5>
+                <small>AI-powered suggestions to resolve material shortages through manufacturing</small>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-success border-left-success">
+                    <i class="fas fa-magic"></i> <strong>Great news!</strong> You can create job works to manufacture missing components using available raw materials.
+                </div>
+                
+                <div class="row">
+                    {% for suggestion in job_work_suggestions %}
+                    <div class="col-lg-6 mb-3">
+                        <div class="card border-success h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h6 class="text-success mb-2">
+                                            <i class="fas fa-cogs"></i> {{ suggestion.component }}
+                                        </h6>
+                                        <p class="text-muted mb-2">{{ suggestion.message }}</p>
+                                        <span class="badge bg-info">Suggested Qty: {{ suggestion.suggested_qty|int }}</span>
+                                    </div>
+                                    <a href="{{ url_for('jobwork.add_job_work') }}?component={{ suggestion.component_code }}&quantity={{ suggestion.suggested_qty|int }}" 
+                                       class="btn btn-success btn-sm">
+                                        <i class="fas fa-plus"></i> Create Job Work
+                                    </a>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <h6 class="text-muted mb-2"><i class="fas fa-boxes"></i> Raw Materials Available:</h6>
+                                    {% for raw in suggestion.raw_materials_needed %}
+                                    {% if raw.available > 0 %}
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <small class="text-success">
+                                            <i class="fas fa-check-circle"></i> {{ raw.raw_material }}
+                                        </small>
+                                        <small class="text-muted">
+                                            {{ raw.available|int }} available → {{ raw.can_make|int }} units
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+    </form>
 </div>
 
 <script src="{{ url_for('static', filename='js/preview-system.js') }}"></script>
