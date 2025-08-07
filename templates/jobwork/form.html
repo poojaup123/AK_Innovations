@@ -136,11 +136,11 @@
                                 <td><strong>Batch Allocation</strong></td>
                                 <td>
                                     <div class="alert alert-info mb-3">
-                                        <i class="fas fa-magic"></i> <strong>Auto-Allocation Enabled:</strong> Batches will be automatically selected using FIFO (First In, First Out) logic based on manufacturing dates.
+                                        <i class="fas fa-cogs"></i> <strong>Auto-Allocation Enabled:</strong> Batches will be automatically selected using FIFO (First In, First Out) logic based on manufacturing dates.
                                     </div>
                                     
                                     <button type="button" class="btn btn-primary mb-3" onclick="autoAllocateBatches()" id="auto_allocate_btn">
-                                        <i class="fas fa-magic"></i> Auto-Allocate Batches
+                                        <i class="fas fa-microchip"></i> Allocate Material
                                     </button>
                                     
                                     <div id="allocation_status" class="mb-3" style="display: none;">
@@ -1016,7 +1016,7 @@ async function autoAllocateBatches() {
         alert('Error during auto-allocation: ' + error.message);
     } finally {
         // Restore button state
-        allocateBtn.innerHTML = '<i class="fas fa-magic"></i> Auto-Allocate Batches';
+        allocateBtn.innerHTML = '<i class="fas fa-microchip"></i> Allocate Material';
         allocateBtn.disabled = false;
     }
 }
