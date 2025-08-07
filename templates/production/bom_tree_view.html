@@ -203,6 +203,7 @@
                         {% if material.is_intermediate and material.intermediate_bom %}
                             <!-- This is an intermediate product with its own BOM -->
                             {% set is_phantom = material.intermediate_bom.bom.is_phantom_bom %}
+                            {% set intermediate_cost = material.intermediate_bom.bom.total_cost_per_unit %}
                             <div class="tree-node {% if is_phantom %}phantom-bom{% endif %}">
                                 <span class="tree-connector">{{ connector }}</span>
                                 <span class="tree-material">{{ material.item.name }}</span>
@@ -211,6 +212,9 @@
                                     <span class="phantom-badge">(Phantom BOM)</span>
                                 {% endif %}
                                 <span class="tree-quantity">{{ material.quantity }} {{ material.unit }}</span>
+                                {% if intermediate_cost and intermediate_cost > 0 %}
+                                    <span class="tree-cost">@ ₹{{ "%.2f"|format(intermediate_cost) }}</span>
+                                {% endif %}
                             </div>
                             
                             <!-- Show sub-components of the intermediate product -->
@@ -274,6 +278,9 @@
                             {% endif %}
                             {% if sub_bom.bom.output_quantity and sub_bom.bom.output_quantity != 1.0 %}
                                 <span class="tree-quantity">({{ sub_bom.bom.output_quantity }} units)</span>
+                            {% endif %}
+                            {% if sub_bom.bom.total_cost_per_unit and sub_bom.bom.total_cost_per_unit > 0 %}
+                                <span class="tree-cost">@ ₹{{ "%.2f"|format(sub_bom.bom.total_cost_per_unit) }}</span>
                             {% endif %}
                         </div>
                         
