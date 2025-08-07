@@ -419,6 +419,26 @@ def add_production():
                 # Total availability = direct stock + manufacturable quantity
                 total_available = direct_available + manufacturable_qty
                 
+                # Generate smart job work suggestions for all manufacturable components
+                if component_bom and manufacturable_qty > 0:
+                    # For components with shortage, suggest to cover the shortage
+                    # For components without shortage, suggest manufacturing capacity
+                    if total_available < required_qty:
+                        suggestion_qty = min(required_qty - total_available, manufacturable_qty)
+                        message = f"Create job work for {suggestion_qty:.0f} {component_item.name} to resolve shortage"
+                    else:
+                        suggestion_qty = min(required_qty, manufacturable_qty)
+                        message = f"Create job work for {suggestion_qty:.0f} {component_item.name} using available raw materials"
+                    
+                    job_work_suggestions.append({
+                        'component': component_item.name,
+                        'component_code': component_item.code,
+                        'suggested_qty': suggestion_qty,
+                        'raw_materials_needed': raw_materials_available,
+                        'message': message,
+                        'bom_output_qty': component_bom.output_quantity or 1
+                    })
+                
                 # Check for shortage
                 if total_available < required_qty:
                     shortage_qty = required_qty - total_available
@@ -435,18 +455,6 @@ def add_production():
                         'raw_materials': raw_materials_available
                     }
                     material_shortages.append(shortage_info)
-                    
-                    # Generate smart job work suggestions
-                    if component_bom and manufacturable_qty > 0:
-                        suggestion_qty = min(shortage_qty, manufacturable_qty)
-                        job_work_suggestions.append({
-                            'component': component_item.name,
-                            'component_code': component_item.code,
-                            'suggested_qty': suggestion_qty,
-                            'raw_materials_needed': raw_materials_available,
-                            'message': f"Create job work for {suggestion_qty:.0f} {component_item.name} using available raw materials",
-                            'bom_output_qty': component_bom.output_quantity or 1
-                        })
         
         # Add complete product capacity calculation for items sharing same raw materials
         if selected_item and selected_item.name == 'castor wheel' and job_work_suggestions:
