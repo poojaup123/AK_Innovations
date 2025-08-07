@@ -171,9 +171,9 @@
                             <div class="form-text">Select the raw material or component to be processed</div>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label for="quantity_sent" class="form-label required">Quantity to Send</label>
+                            <label for="quantity_to_issue" class="form-label required">Quantity to Issue</label>
                             <div class="input-group">
-                                {{ form.quantity_sent(class="form-control", id="quantity_sent") }}
+                                {{ form.quantity_to_issue(class="form-control", id="quantity_to_issue") }}
                                 <span class="input-group-text" id="inputUnitDisplay">-</span>
                             </div>
                         </div>
@@ -214,13 +214,16 @@
                     <div class="row">
                         <div class="col-md-8 mb-3">
                             <label for="output_product_id" class="form-label">Expected Output Product</label>
-                            {{ form.output_product_id(class="form-select", id="output_product_id") }}
+                            <select class="form-select" id="output_product_id" name="output_product_id">
+                                <option value="">Select Output Product (Optional)</option>
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
                             <div class="form-text">Select what will be produced (optional for service work)</div>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label for="expected_output_quantity" class="form-label">Expected Output Qty</label>
                             <div class="input-group">
-                                {{ form.expected_output_quantity(class="form-control", id="expected_output_quantity") }}
+                                <input type="number" class="form-control" id="expected_output_quantity" name="expected_output_quantity" step="0.01" min="0">
                                 <span class="input-group-text" id="outputUnitDisplay">-</span>
                             </div>
                         </div>
@@ -283,8 +286,8 @@
                         <div class="col-md-6">
                             <div class="row">
                                 <div class="col-6 mb-3">
-                                    <label for="sent_date" class="form-label">Send Date</label>
-                                    {{ form.sent_date(class="form-control", id="sent_date") }}
+                                    <label for="send_date" class="form-label">Send Date</label>
+                                    {{ form.send_date(class="form-control", id="send_date") }}
                                 </div>
                                 <div class="col-6 mb-3">
                                     <label for="expected_return" class="form-label">Expected Return</label>
@@ -300,13 +303,13 @@
                                 <div class="row">
                                     <div class="col-md-8 mb-3">
                                         <label for="process_names" class="form-label required">Process Description</label>
-                                        {{ form.process_names(class="form-control", id="process_names", placeholder="e.g., Laser cutting, welding, powder coating") }}
+                                        <input type="text" class="form-control" id="process_names" name="process_names" placeholder="e.g., Laser cutting, welding, powder coating">
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label for="rate_per_unit" class="form-label">Rate per Unit</label>
                                         <div class="input-group">
                                             <span class="input-group-text">₹</span>
-                                            {{ form.rate_per_unit(class="form-control", id="rate_per_unit") }}
+                                            <input type="number" class="form-control" id="rate_per_unit" name="rate_per_unit" step="0.01" min="0">
                                         </div>
                                     </div>
                                 </div>
@@ -328,8 +331,8 @@
 
                         <!-- Special Instructions -->
                         <div class="col-12 mb-3">
-                            <label for="notes" class="form-label">Special Instructions</label>
-                            {{ form.notes(class="form-control", id="notes", rows="3", placeholder="Any special requirements, quality standards, or handling instructions") }}
+                            <label for="remarks" class="form-label">Special Instructions</label>
+                            {{ form.remarks(class="form-control", id="remarks", rows="3", placeholder="Any special requirements, quality standards, or handling instructions") }}
                         </div>
                     </div>
 
@@ -736,7 +739,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeForm() {
     // Set current date as default send date
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('sent_date').value = today;
+    document.getElementById('send_date').value = today;
     
     // Set expected return date (7 days from now)
     const expectedDate = new Date();
@@ -956,8 +959,8 @@ function updateTotalSelectedQuantity() {
         total += quantity;
     });
     
-    // Update the main quantity sent field
-    document.getElementById('quantity_sent').value = total;
+    // Update the main quantity to issue field
+    document.getElementById('quantity_to_issue').value = total;
     calculateCosts();
 }
 
@@ -1077,7 +1080,7 @@ function loadVendorsForStep(stepNumber) {
 }
 
 function calculateCosts() {
-    const quantity = parseFloat(document.getElementById('quantity_sent').value) || 0;
+    const quantity = parseFloat(document.getElementById('quantity_to_issue').value) || 0;
     const ratePerUnit = parseFloat(document.getElementById('rate_per_unit').value) || 0;
     const transportCost = parseFloat(document.getElementById('transportationCost').value) || 0;
     
@@ -1173,7 +1176,7 @@ function validateCurrentStep() {
     } else if (currentStep === 2) {
         // Validate material and quantity
         const inputMaterial = document.getElementById('input_material_id').value;
-        const quantity = document.getElementById('quantity_sent').value;
+        const quantity = document.getElementById('quantity_to_issue').value;
         
         if (!inputMaterial || inputMaterial === '0') {
             alert('Please select an input material');
