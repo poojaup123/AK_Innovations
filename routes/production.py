@@ -351,70 +351,128 @@ def add_production():
         active_bom = BOM.query.filter_by(product_id=form.item_id.data, is_active=True).first()
         
         material_shortages = []
+        job_work_suggestions = []
         bom_items = []
         
         if active_bom:
             bom_items = BOMItem.query.filter_by(bom_id=active_bom.id).all()
             
-            # Link the BOM to production order
-            production_bom_id = active_bom.id
+            # Enhanced multi-level BOM explosion with smart job work suggestions
+            from models.batch import InventoryBatch
             
-            # Check material availability for each BOM item using multi-state inventory
             for bom_item in bom_items:
-                # Calculate material requirement based on BOM output quantity
-                # BOM shows: 1 Ms sheet → 400 Mounted Plates
-                # If producing 10,000 plates, need: 10,000 ÷ 400 = 25 Ms sheets
+                # Calculate material requirement
+                required_qty = (form.quantity_planned.data or 1) * (bom_item.quantity_required or 0)
                 
-                material_qty_per_output = bom_item.quantity_required or bom_item.qty_required
-                bom_output_qty = active_bom.output_quantity or 1.0  # Default to 1 if not set
+                # Get direct availability of this component
+                component_item = bom_item.item
+                direct_available = db.session.query(
+                    func.sum(
+                        (InventoryBatch.qty_raw or 0) + 
+                        (InventoryBatch.qty_finished or 0) +
+                        (InventoryBatch.qty_wip or 0)
+                    )
+                ).filter_by(item_id=component_item.id).scalar() or 0
                 
-                # Calculate actual material needed: (planned_qty / bom_output_qty) * material_qty_per_output
-                required_qty = (form.quantity_planned.data / bom_output_qty) * material_qty_per_output
+                # Also check item's current_stock as fallback
+                direct_available = max(direct_available, component_item.current_stock or 0)
                 
-                # Smart availability calculation considering manufacturing capability
-                item = bom_item.item
-                available_qty = ProductionService.calculate_manufacturable_quantity(item.id)
+                # Check if component can be manufactured (has BOM)
+                component_bom = BOM.query.filter_by(product_id=component_item.id, is_active=True).first()
+                manufacturable_qty = 0
+                raw_materials_available = []
                 
-                # Fallback to basic inventory check if manufacturing calculation fails
-                if available_qty is None:
-                    from models.batch import InventoryBatch
-                    available_qty = db.session.query(
-                        func.sum(
-                            (InventoryBatch.qty_raw or 0) + 
-                            (InventoryBatch.qty_finished or 0) +
-                            (InventoryBatch.qty_wip or 0)
-                        )
-                    ).filter_by(item_id=item.id).scalar() or 0
+                if component_bom:
+                    # Calculate how many can be made from available raw materials
+                    max_manufacturable = float('inf')
                     
-                    # Also check item's current_stock as fallback
-                    item_stock = item.current_stock or 0
-                    available_qty = max(available_qty, item_stock)
+                    for sub_bom_item in BOMItem.query.filter_by(bom_id=component_bom.id).all():
+                        raw_material = sub_bom_item.item
+                        raw_required_per_unit = sub_bom_item.quantity_required or 0
+                        
+                        # Get available raw material quantity
+                        raw_available = db.session.query(
+                            func.sum(
+                                (InventoryBatch.qty_raw or 0) + 
+                                (InventoryBatch.qty_finished or 0)
+                            )
+                        ).filter_by(item_id=raw_material.id).scalar() or 0
+                        raw_available = max(raw_available, raw_material.current_stock or 0)
+                        
+                        if raw_required_per_unit > 0:
+                            possible_from_this_material = raw_available / raw_required_per_unit
+                            max_manufacturable = min(max_manufacturable, possible_from_this_material)
+                            
+                            raw_materials_available.append({
+                                'raw_material': raw_material.name,
+                                'raw_code': raw_material.code,
+                                'available': raw_available,
+                                'required_per_unit': raw_required_per_unit,
+                                'can_make': int(possible_from_this_material)
+                            })
+                    
+                    manufacturable_qty = int(max_manufacturable) if max_manufacturable != float('inf') else 0
                 
-                if available_qty < required_qty:
-                    shortage_qty = required_qty - available_qty
-                    material_shortages.append({
-                        'item_code': bom_item.item.code,
-                        'item_name': bom_item.item.name,
+                # Total availability = direct stock + manufacturable quantity
+                total_available = direct_available + manufacturable_qty
+                
+                # Check for shortage
+                if total_available < required_qty:
+                    shortage_qty = required_qty - total_available
+                    shortage_info = {
+                        'item_code': component_item.code,
+                        'item_name': component_item.name,
                         'required_qty': required_qty,
-                        'available_qty': available_qty,
+                        'direct_available': direct_available,
+                        'manufacturable_qty': manufacturable_qty,
+                        'total_available': total_available,
                         'shortage_qty': shortage_qty,
-                        'unit': bom_item.item.unit_of_measure
-                    })
+                        'unit': component_item.unit_of_measure or 'Pcs',
+                        'can_manufacture': component_bom is not None,
+                        'raw_materials': raw_materials_available
+                    }
+                    material_shortages.append(shortage_info)
+                    
+                    # Generate smart job work suggestions
+                    if component_bom and manufacturable_qty > 0:
+                        suggestion_qty = min(shortage_qty, manufacturable_qty)
+                        job_work_suggestions.append({
+                            'component': component_item.name,
+                            'component_code': component_item.code,
+                            'suggested_qty': suggestion_qty,
+                            'raw_materials_needed': raw_materials_available,
+                            'message': f"Create job work for {suggestion_qty:.0f} {component_item.name} using available raw materials"
+                        })
         
-        # If there are material shortages, show them and prevent production creation
+        # If there are material shortages, show them with smart suggestions
         if material_shortages:
-            shortage_message = "Cannot create production order. Material shortages detected:<br>"
+            shortage_message = "Material shortages detected:<br>"
             for shortage in material_shortages:
-                shortage_message += f"• {shortage['item_code']} - {shortage['item_name']}: "
-                shortage_message += f"Need {shortage['required_qty']:.2f} {shortage['unit']}, "
-                shortage_message += f"Available {shortage['available_qty']:.2f} {shortage['unit']}, "
-                shortage_message += f"<strong>Short by {shortage['shortage_qty']:.2f} {shortage['unit']}</strong><br>"
+                shortage_message += f"• <strong>{shortage['item_code']} - {shortage['item_name']}</strong>: "
+                shortage_message += f"Need {shortage['required_qty']:.0f} {shortage['unit']}, "
+                shortage_message += f"Available {shortage['direct_available']:.0f} direct"
+                if shortage['manufacturable_qty'] > 0:
+                    shortage_message += f" + {shortage['manufacturable_qty']:.0f} manufacturable"
+                shortage_message += f" = {shortage['total_available']:.0f} total, "
+                shortage_message += f"<span class='text-danger'>Short by {shortage['shortage_qty']:.0f} {shortage['unit']}</span><br>"
             
-            flash(shortage_message, 'danger')
+            # Add job work suggestions
+            if job_work_suggestions:
+                suggestion_message = "<br><strong>💡 Smart Job Work Suggestions:</strong><br>"
+                for suggestion in job_work_suggestions:
+                    suggestion_message += f"• <a href='{url_for('jobwork.add_job_work')}?component_id={suggestion['component_code']}' class='btn btn-sm btn-success me-2'>Create Job Work</a> "
+                    suggestion_message += f"{suggestion['message']}<br>"
+                    for raw in suggestion['raw_materials_needed']:
+                        if raw['available'] > 0:
+                            suggestion_message += f"  ✓ {raw['raw_material']}: {raw['available']:.0f} available (can make {raw['can_make']:.0f} units)<br>"
+                shortage_message += suggestion_message
+            
+            flash(shortage_message, 'warning')
             return render_template('production/form.html', 
                                  form=form, 
                                  title='Add Production',
                                  material_shortages=material_shortages,
+                                 job_work_suggestions=job_work_suggestions,
                                  bom_items=bom_items,
                                  selected_item=selected_item)
         
