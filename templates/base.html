@@ -66,30 +66,30 @@
         }
         
         .sidebar {
-            height: 100vh;
-            min-height: 100vh;
-            max-height: 100vh;
             position: fixed;
             left: 0;
             top: 0;
             bottom: 0;
             width: 260px;
+            background: linear-gradient(to bottom, #f8f9fa 0%, #f8f9fa 100%);
             background-color: #f8f9fa;
-            padding: 15px 0 60px 0;
+            padding: 15px 0 15px 0;
             border-right: 1px solid #dee2e6;
             overflow-y: auto;
             overflow-x: hidden;
             z-index: 1000;
-            -webkit-transform: translateZ(0);
-            transform: translateZ(0);
-            /* Ensure scrolling works properly */
-            scrollbar-width: thin;
-            scrollbar-color: #ccc #f8f9fa;
-            /* Force visibility */
-            display: block !important;
-            visibility: visible !important;
+            /* Force full height coverage */
+            height: 100vh;
+            min-height: 100vh;
             /* Fix for zoom issues */
             box-sizing: border-box;
+        }
+        
+        /* Ensure body and html take full height */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
         }
 
         /* Mobile responsive */
