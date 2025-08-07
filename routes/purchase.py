@@ -171,40 +171,46 @@ def add_purchase_order():
         form.po_number.data = generate_po_number()
     
     if form.validate_on_submit():
-        # Check if PO number already exists
-        existing_po = PurchaseOrder.query.filter_by(po_number=form.po_number.data).first()
-        if existing_po:
-            flash('PO number already exists', 'danger')
+        try:
+            # Check if PO number already exists
+            existing_po = PurchaseOrder.query.filter_by(po_number=form.po_number.data).first()
+            if existing_po:
+                flash('PO number already exists', 'danger')
+                items = Item.query.all()
+                return render_template('purchase/form_enhanced.html', form=form, title='Add Purchase Order', items=items)
+            
+            po = PurchaseOrder(
+                po_number=form.po_number.data,
+                supplier_id=form.supplier_id.data,
+                order_date=form.po_date.data,
+                expected_date=form.delivery_date.data,
+                payment_terms=form.payment_terms.data,
+                freight_terms=form.freight_terms.data,
+                validity_months=form.validity_months.data,
+                prepared_by=form.prepared_by.data,
+                verified_by=form.verified_by.data,
+                approved_by=form.approved_by.data,
+                delivery_notes=form.delivery_notes.data,
+                status='sent',  # New purchase orders automatically start as sent
+                notes=form.notes.data,
+                created_by=current_user.id
+            )
+            db.session.add(po)
+            db.session.flush()  # Get the PO ID
+            
+            # Process enhanced PO items from form
+            process_po_items(po, request.form)
+            
+            # Create accounting entries for PO commitment
+            from services.accounting_automation import AccountingAutomation
+            accounting_result = AccountingAutomation.create_purchase_order_voucher(po)
+            
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating Purchase Order: {str(e)}', 'danger')
             items = Item.query.all()
             return render_template('purchase/form_enhanced.html', form=form, title='Add Purchase Order', items=items)
-        
-        po = PurchaseOrder(
-            po_number=form.po_number.data,
-            supplier_id=form.supplier_id.data,
-            order_date=form.po_date.data,
-            expected_date=form.delivery_date.data,
-            payment_terms=form.payment_terms.data,
-            freight_terms=form.freight_terms.data,
-            validity_months=form.validity_months.data,
-            prepared_by=form.prepared_by.data,
-            verified_by=form.verified_by.data,
-            approved_by=form.approved_by.data,
-            delivery_notes=form.delivery_notes.data,
-            status='sent',  # New purchase orders automatically start as sent
-            notes=form.notes.data,
-            created_by=current_user.id
-        )
-        db.session.add(po)
-        db.session.flush()  # Get the PO ID
-        
-        # Process enhanced PO items from form
-        process_po_items(po, request.form)
-        
-        # Create accounting entries for PO commitment
-        from services.accounting_automation import AccountingAutomation
-        accounting_result = AccountingAutomation.create_purchase_order_voucher(po)
-        
-        db.session.commit()
         
         # Send notifications
         from services.comprehensive_notifications import comprehensive_notification_service

@@ -288,8 +288,7 @@ function markPaid(expenseId) {
         fetch(`/expenses/mark_paid/${expenseId}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
+                'Content-Type': 'application/json'
             }
         })
         .then(response => response.json())
@@ -311,8 +310,7 @@ function deleteExpense(expenseId) {
         fetch(`/expenses/delete/${expenseId}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
+                'Content-Type': 'application/json'
             }
         })
         .then(response => response.json())
