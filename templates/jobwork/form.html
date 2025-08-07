@@ -961,6 +961,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 clearBOMData();
                 clearJobWorkTitle();
             }
+            // Recalculate input quantity when BOM selection changes
+            calculateInputQuantity();
         });
     }
     
@@ -1099,6 +1101,7 @@ function calculateInputQuantity() {
     const outputQuantity = parseFloat(document.getElementById('output_quantity').value) || 0;
     const inputQuantityField = document.getElementById('quantity_to_issue');
     const calculationDisplay = document.getElementById('calculation_display');
+    const bomSelect = document.getElementById('bom_select');
     
     if (outputQuantity <= 0) {
         inputQuantityField.value = '';
@@ -1106,26 +1109,38 @@ function calculateInputQuantity() {
         return;
     }
     
-    // Default conversion ratio (can be customized based on material/process)
-    // For now, assuming 1:1 ratio (1 unit input = 1 unit output)
-    // This can be enhanced to use BOM data or material-specific ratios
+    // Check if BOM is selected - use BOM data if available, otherwise 1:1 ratio
+    const hasBOM = bomSelect && bomSelect.value;
     const conversionRatio = 1.0; // 1 unit of input material produces 1 unit of output
-    const scrapAllowance = 0.05; // 5% scrap allowance
+    
+    // Only apply scrap allowance if BOM is selected (manufacturing process)
+    // For simple job work without BOM, use exact 1:1 conversion
+    const scrapAllowance = hasBOM ? 0.05 : 0.0; // 5% scrap allowance only for BOM-based work
     
     const baseInputRequired = outputQuantity * conversionRatio;
     const inputWithScrap = baseInputRequired * (1 + scrapAllowance);
-    const finalInputRequired = Math.ceil(inputWithScrap * 100) / 100; // Round up to 2 decimals
+    const finalInputRequired = scrapAllowance > 0 ? Math.ceil(inputWithScrap * 100) / 100 : baseInputRequired;
     
     inputQuantityField.value = finalInputRequired;
     
-    calculationDisplay.innerHTML = `
-        <div class="small text-muted">
-            <strong>Calculation:</strong><br>
-            • Base requirement: ${outputQuantity} × ${conversionRatio} = ${baseInputRequired}<br>
-            • Scrap allowance (${(scrapAllowance * 100)}%): +${(inputWithScrap - baseInputRequired).toFixed(2)}<br>
-            • <strong>Total input required: ${finalInputRequired}</strong>
-        </div>
-    `;
+    if (scrapAllowance > 0) {
+        calculationDisplay.innerHTML = `
+            <div class="small text-muted">
+                <strong>BOM-based Calculation:</strong><br>
+                • Base requirement: ${outputQuantity} × ${conversionRatio} = ${baseInputRequired}<br>
+                • Scrap allowance (${(scrapAllowance * 100)}%): +${(inputWithScrap - baseInputRequired).toFixed(2)}<br>
+                • <strong>Total input required: ${finalInputRequired}</strong>
+            </div>
+        `;
+    } else {
+        calculationDisplay.innerHTML = `
+            <div class="small text-muted">
+                <strong>Direct Conversion:</strong><br>
+                • ${outputQuantity} output requires ${finalInputRequired} input (1:1 ratio)<br>
+                • <em>No scrap allowance applied (no BOM selected)</em>
+            </div>
+        `;
+    }
     
     // Trigger stock check if material is selected
     const materialSelect = document.getElementById('input_material');
