@@ -28,7 +28,7 @@
                     <small>BOM: {{ bom.bom_code }} - {{ bom.product.name if bom.product else 'Unknown Product' }}</small>
                 </div>
                 <div class="card-body">
-                    <form id="multiProcessForm" method="POST">
+                    <form id="multiProcessForm" method="POST" action="{{ url_for('production.add_multi_bom_process', bom_id=bom.id) }}">
                         {{ form.hidden_tag() }}
                         
                         <!-- Multi-Process Configuration -->
