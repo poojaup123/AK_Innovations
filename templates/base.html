@@ -67,9 +67,12 @@
         
         .sidebar {
             height: 100vh;
+            min-height: 100vh;
+            max-height: 100vh;
             position: fixed;
             left: 0;
             top: 0;
+            bottom: 0;
             width: 260px;
             background-color: #f8f9fa;
             padding: 15px 0 60px 0;
@@ -85,6 +88,8 @@
             /* Force visibility */
             display: block !important;
             visibility: visible !important;
+            /* Fix for zoom issues */
+            box-sizing: border-box;
         }
 
         /* Mobile responsive */
@@ -92,12 +97,23 @@
             .sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
+                height: 100vh !important;
+                min-height: 100vh !important;
             }
             .sidebar.show {
                 transform: translateX(0);
             }
             .main-content {
                 margin-left: 0;
+            }
+        }
+        
+        /* Fix for zoom compatibility */
+        @media (min-width: 769px) {
+            .sidebar {
+                height: 100vh !important;
+                min-height: 100vh !important;
+                max-height: 100vh !important;
             }
         }
         
