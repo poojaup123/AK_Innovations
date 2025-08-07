@@ -432,13 +432,14 @@ def api_receive_from_jobwork():
 # API endpoint handled in inventory module
 
 @jobwork_bp.route('/add', methods=['GET', 'POST'])
+@jobwork_bp.route('/single-page', methods=['GET', 'POST'])
 @login_required
 def add_job_work():
-    """Systematic job work form with step-by-step wizard"""
-    # Check if user wants the new systematic form
-    use_systematic = request.args.get('systematic', 'true') == 'true'
+    """Single-page job work form with comprehensive features"""
+    # Check if user wants the systematic form (optional for backwards compatibility)
+    use_systematic = request.args.get('systematic', 'false') == 'true'
     
-    if use_systematic and request.method == 'GET':
+    if request.method == 'GET':
         form = JobWorkForm()
         
         # Populate form choices with vendors and suppliers
@@ -495,9 +496,12 @@ def add_job_work():
                 ('supplier_demo_1', 'Vendor: Sample Vendor A')
             ]
         
-        return render_template('jobwork/form_systematic.html', 
+        # Render single-page form by default, systematic form only if explicitly requested
+        template_name = 'jobwork/form_systematic.html' if use_systematic else 'jobwork/form_single_page.html'
+        title = 'Create New Job Work - Single Page' if not use_systematic else 'Create New Job Work - Systematic'
+        return render_template(template_name, 
                              form=form, 
-                             title='Create New Job Work')
+                             title=title)
     
     # Handle both systematic and regular form submission
     form = JobWorkForm()
@@ -645,6 +649,17 @@ def add_job_work():
     # GET request - show form
     title = "Create New Job Work"
     return render_template('jobwork/form.html', form=form, title=title)
+
+@jobwork_bp.route('/systematic', methods=['GET', 'POST'])
+@login_required
+def systematic_job_work():
+    """Dedicated route for systematic step-by-step job work form"""
+    # Force systematic form for this route
+    request.args = request.args.copy()
+    request.args.update({'systematic': 'true'})
+    
+    # Call the main add_job_work function with systematic=true
+    return add_job_work()
 
 @jobwork_bp.route('/api/generate-job-number')
 @login_required
