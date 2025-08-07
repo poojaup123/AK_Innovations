@@ -8,83 +8,26 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/no-flicker.css') }}" rel="stylesheet">
     <style>
-        /* Permanent 87% zoom for better visibility */
-        html {
-            zoom: 87%;
-            height: 100%;
-            min-height: 100vh;
-        }
-        
-        /* Improved spacing for 87% zoom */
-        body {
-            line-height: 1.6;
-            font-size: 14px;
-            height: 100%;
-            min-height: 100vh;
-        }
-        
-        /* Card spacing adjustments */
-        .card {
-            margin-bottom: 1.5rem !important;
-        }
-        
-        .card-body {
-            padding: 1.25rem !important;
-        }
-        
-        /* Button spacing */
-        .btn {
-            margin-right: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        /* Row and column spacing */
-        .row {
-            margin-bottom: 1rem;
-        }
-        
-        .col, .col-md-3, .col-md-4, .col-md-6, .col-md-8, .col-md-12 {
-            padding-right: 15px;
-            padding-left: 15px;
-        }
-        
-        /* Dashboard specific spacing */
-        .container-fluid {
-            padding: 20px !important;
-        }
-        
-        /* Header spacing */
-        h1, h2, h3, h4, h5, h6 {
-            margin-bottom: 1rem;
-            line-height: 1.4;
-        }
-        
-        /* Table spacing */
-        .table {
-            margin-bottom: 1.5rem;
-        }
-        
-        .table th, .table td {
-            padding: 0.75rem;
-            vertical-align: middle;
-        }
-        
         .sidebar {
+            height: 100vh;
             position: fixed;
             left: 0;
             top: 0;
-            width: 260px;
+            width: 250px;
             background-color: #f8f9fa;
-            padding: 15px 0 0 0;
+            padding: 10px 0 60px 0;
             border-right: 1px solid #dee2e6;
             overflow-y: auto;
             overflow-x: hidden;
             z-index: 1000;
-            /* Force full height coverage accounting for 87% zoom */
-            height: 115vh;
-            min-height: 115vh;
-            /* Fix for zoom issues */
-            box-sizing: border-box;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            /* Ensure scrolling works properly */
+            scrollbar-width: thin;
+            scrollbar-color: #ccc #f8f9fa;
+            /* Force visibility */
+            display: block !important;
+            visibility: visible !important;
         }
 
         /* Mobile responsive */
@@ -92,23 +35,12 @@
             .sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
-                height: 100vh !important;
-                min-height: 100vh !important;
             }
             .sidebar.show {
                 transform: translateX(0);
             }
             .main-content {
                 margin-left: 0;
-            }
-        }
-        
-        /* Fix for zoom compatibility */
-        @media (min-width: 769px) {
-            .sidebar {
-                height: 100vh !important;
-                min-height: 100vh !important;
-                max-height: 100vh !important;
             }
         }
         
@@ -129,17 +61,17 @@
             background: #999;
         }
         .main-content {
-            margin-left: 260px;
-            padding: 25px;
+            margin-left: 250px;
+            padding: 20px;
             min-height: calc(100vh - 80px);
             background-color: #ffffff;
         }
         .nav-item {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .nav-link {
             color: #495057;
-            padding: 10px 22px;
+            padding: 8px 20px;
             display: flex;
             align-items: center;
             text-decoration: none;
@@ -375,13 +307,6 @@
                     <span class="badge bg-info ms-2 small">NEW</span>
                 </a>
                 
-                <!-- Magic Wand: Sidebar Height Fixer -->
-                <div class="nav-link" style="cursor: pointer; position: relative;" onclick="showMagicWand()">
-                    <i class="fas fa-magic text-purple" style="color: #6f42c1;"></i>
-                    Sidebar Magic Wand
-                    <span class="badge bg-warning text-dark ms-2 small">FIX</span>
-                </div>
-                
                 <a class="nav-link {{ 'active' if 'documents' in request.endpoint }}" href="{{ url_for('documents.document_list') }}">
                     <i class="fas fa-file-alt"></i>
                     Documents
@@ -558,209 +483,6 @@
                 document.body.classList.remove('preload');
             }, 50);
         });
-        
-        // Magic Wand: Sidebar Height Fixer
-        function showMagicWand() {
-            // Create modal HTML
-            const modalHTML = `
-                <div class="modal fade" id="magicWandModal" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header bg-primary text-white">
-                                <h5 class="modal-title">
-                                    <i class="fas fa-magic me-2"></i>
-                                    Sidebar Height Magic Wand
-                                </h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="text-center mb-4">
-                                    <div class="badge bg-info mb-3" style="font-size: 1rem; padding: 0.5rem 1rem;">
-                                        One-Click Full Screen Fixer
-                                    </div>
-                                    <p class="text-muted">
-                                        Choose your screen configuration for optimal sidebar height:
-                                    </p>
-                                </div>
-                                
-                                <div class="row g-3">
-                                    <div class="col-12">
-                                        <button class="btn btn-outline-primary w-100 p-3" onclick="applySidebarFix('auto')">
-                                            <i class="fas fa-magic me-2"></i>
-                                            <strong>Auto Fix</strong><br>
-                                            <small class="text-muted">Detect and fix automatically</small>
-                                        </button>
-                                    </div>
-                                    
-                                    <div class="col-6">
-                                        <button class="btn btn-outline-secondary w-100 p-3" onclick="applySidebarFix('desktop')">
-                                            <i class="fas fa-desktop me-2"></i>
-                                            <strong>Desktop</strong><br>
-                                            <small class="text-muted">Standard monitor</small>
-                                        </button>
-                                    </div>
-                                    
-                                    <div class="col-6">
-                                        <button class="btn btn-outline-secondary w-100 p-3" onclick="applySidebarFix('laptop')">
-                                            <i class="fas fa-laptop me-2"></i>
-                                            <strong>Laptop</strong><br>
-                                            <small class="text-muted">Smaller screen</small>
-                                        </button>
-                                    </div>
-                                    
-                                    <div class="col-6">
-                                        <button class="btn btn-outline-secondary w-100 p-3" onclick="applySidebarFix('widescreen')">
-                                            <i class="fas fa-tv me-2"></i>
-                                            <strong>Widescreen</strong><br>
-                                            <small class="text-muted">Ultra-wide display</small>
-                                        </button>
-                                    </div>
-                                    
-                                    <div class="col-6">
-                                        <button class="btn btn-outline-secondary w-100 p-3" onclick="applySidebarFix('tablet')">
-                                            <i class="fas fa-tablet-alt me-2"></i>
-                                            <strong>Tablet</strong><br>
-                                            <small class="text-muted">Touch screen</small>
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <hr class="my-4">
-                                
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <button class="btn btn-warning w-100" onclick="resetSidebarHeight()">
-                                            <i class="fas fa-undo me-2"></i>
-                                            Reset to Default
-                                        </button>
-                                    </div>
-                                    <div class="col-6">
-                                        <button class="btn btn-success w-100" onclick="applySidebarFix('current')">
-                                            <i class="fas fa-check me-2"></i>
-                                            Keep Current
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Remove existing modal if present
-            const existingModal = document.getElementById('magicWandModal');
-            if (existingModal) {
-                existingModal.remove();
-            }
-            
-            // Add modal to DOM
-            document.body.insertAdjacentHTML('beforeend', modalHTML);
-            
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('magicWandModal'));
-            modal.show();
-        }
-        
-        function applySidebarFix(type) {
-            const sidebar = document.getElementById('sidebar');
-            if (!sidebar) return;
-            
-            let heightValue = '115vh'; // Default current working value
-            
-            switch(type) {
-                case 'auto':
-                    // Auto-detect based on screen size and zoom
-                    const zoom = window.devicePixelRatio || 1;
-                    const screenHeight = window.innerHeight;
-                    
-                    if (zoom < 0.9) {
-                        heightValue = '120vh'; // For zoomed out displays
-                    } else if (zoom > 1.1) {
-                        heightValue = '110vh'; // For zoomed in displays
-                    } else if (screenHeight < 700) {
-                        heightValue = '118vh'; // For smaller screens
-                    } else if (screenHeight > 1200) {
-                        heightValue = '112vh'; // For large screens
-                    } else {
-                        heightValue = '115vh'; // Standard
-                    }
-                    break;
-                    
-                case 'desktop':
-                    heightValue = '115vh';
-                    break;
-                    
-                case 'laptop':
-                    heightValue = '118vh';
-                    break;
-                    
-                case 'widescreen':
-                    heightValue = '112vh';
-                    break;
-                    
-                case 'tablet':
-                    heightValue = '120vh';
-                    break;
-                    
-                case 'current':
-                    // Keep current value
-                    return closeMagicWand();
-            }
-            
-            // Apply the fix
-            sidebar.style.height = heightValue;
-            sidebar.style.minHeight = heightValue;
-            
-            // Show success message
-            showToast('Magic Wand Applied!', `Sidebar height set to ${heightValue}`, 'success');
-            
-            // Close modal
-            closeMagicWand();
-        }
-        
-        function resetSidebarHeight() {
-            const sidebar = document.getElementById('sidebar');
-            if (sidebar) {
-                sidebar.style.height = '100vh';
-                sidebar.style.minHeight = '100vh';
-                showToast('Reset Complete', 'Sidebar height reset to default 100vh', 'info');
-            }
-            closeMagicWand();
-        }
-        
-        function closeMagicWand() {
-            const modal = bootstrap.Modal.getInstance(document.getElementById('magicWandModal'));
-            if (modal) {
-                modal.hide();
-            }
-        }
-        
-        function showToast(title, message, type = 'info') {
-            // Create toast HTML
-            const toastHTML = `
-                <div class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
-                    <div class="d-flex">
-                        <div class="toast-body">
-                            <strong>${title}</strong><br>
-                            ${message}
-                        </div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                    </div>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', toastHTML);
-            
-            // Show toast
-            const toastElement = document.querySelector('.toast:last-child');
-            const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
-            toast.show();
-            
-            // Remove toast after it's hidden
-            toastElement.addEventListener('hidden.bs.toast', () => {
-                toastElement.remove();
-            });
-        }
     </script>
     {% block scripts %}{% endblock %}
 </body>
