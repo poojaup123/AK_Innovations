@@ -419,38 +419,52 @@
                 <div class="row">
                     {% for suggestion in job_work_suggestions %}
                     <div class="col-lg-6 mb-3">
-                        <div class="card border-success h-100 {% if suggestion.get('is_complete_set') %}border-primary border-3{% endif %}">
-                            <div class="card-body {% if suggestion.get('is_complete_set') %}bg-light{% endif %}">
+                        {% set is_po_suggestion = suggestion.get('suggestion_type') == 'purchase_order' %}
+                        {% set is_complete_set = suggestion.get('is_complete_set') %}
+                        <div class="card h-100 {% if is_complete_set %}border-primary border-3{% elif is_po_suggestion %}border-warning{% else %}border-success{% endif %}">
+                            <div class="card-body {% if is_complete_set %}bg-light{% endif %}">
                                 <div class="d-flex justify-content-between align-items-start mb-3">
                                     <div>
-                                        <h6 class="{% if suggestion.get('is_complete_set') %}text-primary{% else %}text-success{% endif %} mb-2">
-                                            {% if suggestion.get('is_complete_set') %}
+                                        <h6 class="{% if is_complete_set %}text-primary{% elif is_po_suggestion %}text-warning{% else %}text-success{% endif %} mb-2">
+                                            {% if is_complete_set %}
                                                 <i class="fas fa-star"></i>
+                                            {% elif is_po_suggestion %}
+                                                <i class="fas fa-shopping-cart"></i>
                                             {% else %}
                                                 <i class="fas fa-cogs"></i>
                                             {% endif %}
                                             {{ suggestion.component }}
                                         </h6>
                                         <p class="text-muted mb-2">{{ suggestion.message }}</p>
-                                        <span class="badge {% if suggestion.get('is_complete_set') %}bg-primary{% else %}bg-info{% endif %}">
-                                            {% if suggestion.get('is_complete_set') %}
+                                        <span class="badge {% if is_complete_set %}bg-primary{% elif is_po_suggestion %}bg-warning{% else %}bg-info{% endif %}">
+                                            {% if is_complete_set %}
                                                 🎯 Optimal: {{ suggestion.suggested_qty|int }}
+                                            {% elif is_po_suggestion %}
+                                                📦 Purchase: {{ suggestion.suggested_qty|int }}
                                             {% else %}
                                                 Suggested Qty: {{ suggestion.suggested_qty|int }}
                                             {% endif %}
                                         </span>
                                     </div>
-                                    <a href="{{ url_for('jobwork.add_job_work') }}?component={{ suggestion.component_code }}&quantity={{ suggestion.suggested_qty|int }}" 
-                                       class="btn {% if suggestion.get('is_complete_set') %}btn-primary{% else %}btn-success{% endif %} btn-sm">
-                                        <i class="fas fa-plus"></i> 
-                                        {% if suggestion.get('is_complete_set') %}
-                                            Start Production
-                                        {% else %}
-                                            Create Job Work
-                                        {% endif %}
-                                    </a>
+                                    {% if is_po_suggestion %}
+                                        <a href="{{ url_for('purchase_orders.add_purchase_order') }}?item={{ suggestion.component_code }}&quantity={{ suggestion.suggested_qty|int }}" 
+                                           class="btn btn-warning btn-sm">
+                                            <i class="fas fa-shopping-cart"></i> Create Purchase Order
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ url_for('jobwork.add_job_work') }}?component={{ suggestion.component_code }}&quantity={{ suggestion.suggested_qty|int }}" 
+                                           class="btn {% if is_complete_set %}btn-primary{% else %}btn-success{% endif %} btn-sm">
+                                            <i class="fas fa-plus"></i> 
+                                            {% if is_complete_set %}
+                                                Start Production
+                                            {% else %}
+                                                Create Job Work
+                                            {% endif %}
+                                        </a>
+                                    {% endif %}
                                 </div>
                                 
+                                {% if not is_po_suggestion %}
                                 <div class="mt-3">
                                     <h6 class="text-muted mb-2"><i class="fas fa-boxes"></i> Raw Materials Available:</h6>
                                     {% for raw in suggestion.raw_materials_needed %}
@@ -466,6 +480,15 @@
                                     {% endif %}
                                     {% endfor %}
                                 </div>
+                                {% else %}
+                                <div class="mt-3">
+                                    <h6 class="text-muted mb-2"><i class="fas fa-truck"></i> Procurement Details:</h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle"></i> Direct purchase item - cannot be manufactured in-house<br>
+                                        <i class="fas fa-supplier"></i> {{ suggestion.supplier_info }}
+                                    </small>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

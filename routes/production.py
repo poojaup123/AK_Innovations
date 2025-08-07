@@ -352,6 +352,7 @@ def add_production():
         
         material_shortages = []
         job_work_suggestions = []
+        purchase_order_suggestions = []
         bom_items = []
         
         if active_bom:
@@ -436,7 +437,20 @@ def add_production():
                         'suggested_qty': suggestion_qty,
                         'raw_materials_needed': raw_materials_available,
                         'message': message,
-                        'bom_output_qty': component_bom.output_quantity or 1
+                        'bom_output_qty': component_bom.output_quantity or 1,
+                        'suggestion_type': 'job_work'
+                    })
+                
+                # Generate Purchase Order suggestions for items that can't be manufactured
+                if not component_bom and total_available < required_qty:
+                    shortage_qty = required_qty - total_available
+                    purchase_order_suggestions.append({
+                        'component': component_item.name,
+                        'component_code': component_item.code,
+                        'suggested_qty': shortage_qty,
+                        'message': f"Create Purchase Order for {shortage_qty:.0f} {component_item.name} - Direct purchase item",
+                        'suggestion_type': 'purchase_order',
+                        'supplier_info': 'Select appropriate supplier for this item'
                     })
                 
                 # Check for shortage OR show manufacturing info for components with zero direct stock
@@ -533,7 +547,7 @@ def add_production():
                                  form=form, 
                                  title='Add Production',
                                  material_shortages=material_shortages,
-                                 job_work_suggestions=job_work_suggestions,
+                                 job_work_suggestions=job_work_suggestions + purchase_order_suggestions,
                                  bom_items=bom_items,
                                  selected_item=selected_item)
         
