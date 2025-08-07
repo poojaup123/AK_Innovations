@@ -341,6 +341,22 @@
 
         <!-- Main Content Area -->
         <div class="{% if current_user.is_authenticated %}main-content{% else %}login-container container-fluid{% endif %} flex-grow-1">
+            {% if current_user.is_authenticated %}
+                <!-- Global Flash Messages for authenticated users -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="mb-3">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'warning' if category == 'warning' else 'info' }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+            {% endif %}
+            
             {% if not current_user.is_authenticated %}
             <div class="row justify-content-center">
                 <div class="col-md-6">
