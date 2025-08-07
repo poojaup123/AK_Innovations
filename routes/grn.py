@@ -157,6 +157,9 @@ def update_inventory_with_batch_tracking(grn):
                     # Add rejected quantity to scrap
                     if quantity_rejected > 0:
                         item.qty_scrap = (item.qty_scrap or 0) + quantity_rejected
+                    
+                    # Update current_stock to reflect only good stock (excluding scrap)
+                    item.sync_stock()
                         
                     # Sync current_stock with multi-state inventory
                     if hasattr(item, 'sync_stock'):
@@ -747,17 +750,23 @@ def quick_receive(job_work_id):
                         # Add rejected quantity to final output product's scrap
                         if form.quantity_rejected.data and form.quantity_rejected.data > 0:
                             final_output_item.qty_scrap = (final_output_item.qty_scrap or 0) + form.quantity_rejected.data
+                        # Update current_stock to reflect only good stock (excluding scrap)
+                        final_output_item.sync_stock()
                     else:
                         # Fallback to input material if no output item found
                         job_work.item.qty_finished = (job_work.item.qty_finished or 0) + quantity_passed
                         if form.quantity_rejected.data and form.quantity_rejected.data > 0:
                             job_work.item.qty_scrap = (job_work.item.qty_scrap or 0) + form.quantity_rejected.data
+                        # Update current_stock to reflect only good stock (excluding scrap)
+                        job_work.item.sync_stock()
                 else:
                     # Regular job work - add to input material
                     job_work.item.qty_finished = (job_work.item.qty_finished or 0) + quantity_passed
                     # Add rejected quantity to scrap if any
                     if form.quantity_rejected.data and form.quantity_rejected.data > 0:
                         job_work.item.qty_scrap = (job_work.item.qty_scrap or 0) + form.quantity_rejected.data
+                    # Update current_stock to reflect only good stock (excluding scrap)
+                    job_work.item.sync_stock()
                 
                 grn.add_to_inventory = True  # Set the flag to True when inventory is updated
             else:
@@ -911,6 +920,8 @@ def quick_receive_multi_process(job_work_id):
                 # Add rejected quantity to scrap if any
                 if form.quantity_rejected.data and form.quantity_rejected.data > 0:
                     receiving_item.qty_scrap = (receiving_item.qty_scrap or 0) + form.quantity_rejected.data
+                # Update current_stock to reflect only good stock (excluding scrap)
+                receiving_item.sync_stock()
                 grn.add_to_inventory = True
             else:
                 grn.add_to_inventory = False
@@ -1312,3 +1323,63 @@ def api_grn_summary(grn_id):
         'status': grn.status,
         'inspection_status': grn.inspection_status
     })
+
+
+@grn_bp.route('/grn/<int:grn_id>/return-defective', methods=['GET', 'POST'])
+@login_required
+def return_defective_materials(grn_id):
+    """Handle return of defective materials to supplier"""
+    grn = GRN.query.get_or_404(grn_id)
+    
+    if request.method == 'GET':
+        # Show return form with defective materials
+        defective_items = []
+        for line_item in grn.line_items:
+            if line_item.quantity_rejected and line_item.quantity_rejected > 0:
+                defective_items.append({
+                    'item': line_item.item,
+                    'rejected_quantity': line_item.quantity_rejected,
+                    'rejection_reason': line_item.rejection_reason or 'Quality issues',
+                    'line_item_id': line_item.id
+                })
+        
+        return render_template('grn/return_defective.html', 
+                             grn=grn, 
+                             defective_items=defective_items)
+    
+    else:  # POST request - Process return
+        try:
+            return_note = request.form.get('return_note', '')
+            return_method = request.form.get('return_method', 'pickup')  # pickup, replace, credit
+            
+            # Process each defective item return
+            for line_item in grn.line_items:
+                if line_item.quantity_rejected and line_item.quantity_rejected > 0:
+                    item = line_item.item
+                    
+                    # Reduce scrap quantity from inventory
+                    if return_method in ['pickup', 'replace']:
+                        # Remove from scrap inventory
+                        item.qty_scrap = max(0, (item.qty_scrap or 0) - line_item.quantity_rejected)
+                        
+                        # Add to appropriate inventory state if replacement
+                        if return_method == 'replace':
+                            # Replacement - add good quantity to raw materials
+                            item.qty_raw = (item.qty_raw or 0) + line_item.quantity_rejected
+                    
+                    # Update current stock to reflect changes
+                    item.sync_stock()
+            
+            # Create return record - add note to GRN
+            if return_note:
+                current_remarks = grn.remarks or ''
+                grn.remarks = f"{current_remarks}\n\nDEFECTIVE RETURN ({datetime.now().strftime('%d/%m/%Y')}): {return_note}" if current_remarks else f"DEFECTIVE RETURN ({datetime.now().strftime('%d/%m/%Y')}): {return_note}"
+            
+            db.session.commit()
+            flash(f'Defective materials return processed successfully using {return_method} method.', 'success')
+            return redirect(url_for('grn.detail', grn_id=grn.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error processing defective return: {str(e)}', 'error')
+            return redirect(url_for('grn.detail', grn_id=grn.id))

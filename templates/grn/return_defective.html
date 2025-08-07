@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Return Defective Materials - GRN {{ grn.grn_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="fas fa-undo me-2"></i>Return Defective Materials</h2>
+            <p class="text-muted">GRN: {{ grn.grn_number }} | Total Rejected: {{ grn.total_quantity_rejected }}</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('grn.detail', grn_id=grn.id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to GRN
+            </a>
+        </div>
+    </div>
+
+    <form method="POST" id="returnForm">
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Defective Materials List -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-exclamation-triangle text-danger me-2"></i>Defective Materials to Return</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if defective_items %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Rejected Quantity</th>
+                                        <th>Rejection Reason</th>
+                                        <th>Current Scrap Stock</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for defective in defective_items %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ defective.item.name }}</strong><br>
+                                            <small class="text-muted">{{ defective.item.code }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-danger">{{ defective.rejected_quantity }} {{ defective.item.unit_of_measure }}</span>
+                                        </td>
+                                        <td>{{ defective.rejection_reason }}</td>
+                                        <td>
+                                            <span class="text-warning">{{ defective.item.qty_scrap or 0 }} {{ defective.item.unit_of_measure }}</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>No defective materials found in this GRN.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Return Options -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-cogs me-2"></i>Return Options</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Return Method</label>
+                            <select name="return_method" class="form-select" required>
+                                <option value="pickup">Supplier Pickup - Remove from inventory</option>
+                                <option value="replace">Replacement Provided - Convert to good stock</option>
+                                <option value="credit">Credit Note - Keep in scrap</option>
+                            </select>
+                            <small class="text-muted">How will the defective materials be handled?</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Return Notes</label>
+                            <textarea name="return_note" class="form-control" rows="4" placeholder="Document the return process, supplier communication, replacement details, etc."></textarea>
+                        </div>
+
+                        <div class="alert alert-warning py-2">
+                            <small><i class="fas fa-info-circle me-1"></i>
+                                This action will update inventory levels and add tracking notes to the GRN.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            {% if defective_items %}
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to process this defective material return? This will update inventory levels.')">
+                                <i class="fas fa-undo me-1"></i>Process Return
+                            </button>
+                            {% endif %}
+                            <a href="{{ url_for('grn.detail', grn_id=grn.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

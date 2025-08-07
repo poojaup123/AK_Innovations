@@ -739,8 +739,13 @@ class Item(db.Model):
     
     @property
     def available_stock(self):
-        """Stock available for use (raw + finished, excluding WIP)"""
+        """Stock available for use (raw + finished, excluding WIP and scrap)"""
         return (self.qty_raw or 0) + (self.qty_finished or 0)
+    
+    @property
+    def good_stock(self):
+        """Stock that passed quality checks (available stock, excluding scrap)"""
+        return self.available_stock
     
     @property
     def active_bom(self):
@@ -896,8 +901,8 @@ class Item(db.Model):
         return False
     
     def sync_stock(self):
-        """Sync current_stock with multi-state total for display compatibility"""
-        self.current_stock = self.total_stock
+        """Sync current_stock with available stock for display compatibility (excluding scrap)"""
+        self.current_stock = self.available_stock
     
     @property
     def stock_breakdown(self):
