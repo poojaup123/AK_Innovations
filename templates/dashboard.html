@@ -1,61 +1,9 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AK Innovations Factory Management</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .sidebar {
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 250px;
-            background-color: #f8f9fa;
-            padding: 20px 0;
-            border-right: 1px solid #dee2e6;
-            overflow-y: auto;
-            overflow-x: hidden;
-            z-index: 1000;
-            -webkit-transform: translateZ(0);
-            transform: translateZ(0);
-        }
-        .main-content {
-            margin-left: 250px;
-            padding: 20px;
-            min-height: 100vh;
-            background-color: #ffffff;
-        }
-        .nav-item {
-            margin-bottom: 8px;
-        }
-        .nav-link {
-            color: #495057;
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            border-radius: 8px;
-            margin: 0 15px;
-            transition: background-color 0.15s ease, color 0.15s ease;
-            will-change: background-color, color;
-            backface-visibility: hidden;
-        }
-        .nav-link:hover, .nav-link.active {
-            background-color: #e9ecef;
-            color: #0d6efd;
-            text-decoration: none;
-        }
-        .nav-link:focus {
-            outline: none;
-            box-shadow: none;
-        }
-        .nav-link i {
-            width: 20px;
-            margin-right: 12px;
-        }
+{% extends "base.html" %}
+
+{% block title %}Dashboard - AK Innovations Factory Management{% endblock %}
+
+{% block content %}
+<style>
         .module-card {
             background: white;
             border: 1px solid #e9ecef;
@@ -125,415 +73,222 @@
             color: #6c757d;
             margin-bottom: 40px;
         }
-        .company-logo {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #0d6efd;
-            margin-bottom: 30px;
-            padding: 0 20px;
-        }
-        
-        /* Navigation Section Headers */
-        .nav-section-header {
-            color: #6c757d !important;
-            font-size: 0.75rem !important;
-            font-weight: 700 !important;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            margin: 0.5rem 0 0.3rem 0;
-            padding-left: 0 !important;
-        }
-        .footer-text {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            color: #6c757d;
-            font-size: 0.9rem;
-        }
-        .nav-user-section {
-            margin-top: auto;
-            padding-top: 20px;
-        }
-        
-        /* Prevent transitions during page load */
-        .preload *,
-        .preload *:before,
-        .preload *:after {
-            transition: none !important;
-            animation: none !important;
-            -webkit-transition: none !important;
-            -moz-transition: none !important;
-            -ms-transition: none !important;
-            -o-transition: none !important;
-        }
-        
-        .nav-link.clicked {
-            pointer-events: none;
-        }
-        
-        /* Ensure sidebar is stable during load */
-        .sidebar {
-            opacity: 1 !important;
-            visibility: visible !important;
-        }
-        
-        /* Prevent content jumps during load */
-        .main-content {
-            opacity: 1 !important;
-            visibility: visible !important;
-        }
-    </style>
-</head>
-<body class="preload">
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="company-logo">
-            <i class="fas fa-industry"></i> AK Innovations
-        </div>
-        
-        <nav class="nav flex-column">
-            <!-- MAIN DASHBOARD -->
-            <a class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' }}" href="{{ url_for('main.dashboard') }}">
-                <i class="fas fa-tachometer-alt"></i>
-                Dashboard
-            </a>
-            
-            <hr class="my-2 opacity-25">
-            
-            <!-- CORE OPERATIONS -->
-            <div class="nav-section-header px-3 py-1 small text-muted fw-bold">OPERATIONS</div>
-            <a class="nav-link {{ 'active' if 'inventory' in request.endpoint and 'batch' not in request.endpoint }}" href="{{ url_for('inventory.dashboard') }}">
-                <i class="fas fa-boxes"></i>
-                Inventory
-            </a>
-            
-            <a class="nav-link {{ 'active' if 'production' in request.endpoint }}" href="{{ url_for('production.dashboard') }}">
-                <i class="fas fa-cogs"></i>
-                Production
-            </a>
-            
-            <a class="nav-link {{ 'active' if 'jobwork' in request.endpoint }}" href="{{ url_for('jobwork.dashboard') }}">
-                <i class="fas fa-tools"></i>
-                Job Work
-            </a>
-            
-            <a class="nav-link {{ 'active' if 'packing' in request.endpoint }}" href="{{ url_for('packing.dashboard') }}">
-                <i class="fas fa-puzzle-piece text-primary"></i>
-                Packing Optimization
-                <span class="badge bg-primary ms-2 small">NEW</span>
-            </a>
-            
-            <a class="nav-link {{ 'active' if 'batch' in request.endpoint }}" href="{{ url_for('batch_tracking.dashboard') }}">
-                <i class="fas fa-barcode text-info"></i>
-                Batch Tracking
-                <span class="badge bg-info ms-2 small">NEW</span>
-            </a>
-            
-            <a class="nav-link {{ 'active' if 'live_status' in request.endpoint }}" href="{{ url_for('live_status.process_dashboard') }}">
-                <i class="fas fa-chart-line text-primary"></i>
-                Manufacturing Dashboard
-            </a>
-            
-            <hr class="my-2 opacity-25">
-            
-            <!-- BUSINESS PROCESSES -->
-            <div class="nav-section-header px-3 py-1 small text-muted fw-bold">BUSINESS</div>
-            <a class="nav-link {{ 'active' if 'purchase' in request.endpoint }}" href="{{ url_for('purchase.dashboard') }}">
-                <i class="fas fa-shopping-cart"></i>
-                Purchase Orders
-            </a>
-            
-            <a class="nav-link {{ 'active' if 'sales' in request.endpoint }}" href="{{ url_for('sales.dashboard') }}">
-                <i class="fas fa-handshake"></i>
-                Sales Orders
-            </a>
-            
-            <a class="nav-link {{ 'active' if 'grn' in request.endpoint }}" href="{{ url_for('grn.dashboard') }}">
-                <i class="fas fa-truck"></i>
-                GRN (Goods Receipt)
-            </a>
-            
-            <a class="nav-link {{ 'active' if 'accounting' in request.endpoint }}" href="{{ url_for('accounting.dashboard') }}">
-                <i class="fas fa-calculator text-success"></i>
-                Accounting & Finance
-                <span class="badge bg-success ms-2 small">NEW</span>
-            </a>
-            
-            <hr class="my-2 opacity-25">
-            
-            <!-- MANAGEMENT -->
-            <div class="nav-section-header px-3 py-1 small text-muted fw-bold">MANAGEMENT</div>
-            <a class="nav-link {{ 'active' if 'hr' in request.endpoint }}" href="{{ url_for('hr.dashboard') }}">
-                <i class="fas fa-users"></i>
-                Employees
-            </a>
-            
-            <a class="nav-link {{ 'active' if 'expenses' in request.endpoint }}" href="{{ url_for('expenses.dashboard') }}">
-                <i class="fas fa-receipt"></i>
-                Factory Expenses
-            </a>
-            
-            <hr class="my-3">
-            
-            <div class="nav-user-section">
-                <div class="nav-link d-flex align-items-center">
-                    <i class="fas fa-user"></i>
-                    <span class="flex-grow-1">{{ current_user.username }}</span>
-                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-secondary btn-sm ms-2" title="Logout">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </a>
-                </div>
-            </div>
-        </nav>
-        
+</style>
 
+<!-- Dashboard Content -->
+<div class="header-title">AK Innovations Factory Management</div>
+<div class="header-subtitle">
+    <i class="fas fa-info-circle"></i>
+    Import or export your data, or set up real-time alerts for your system.
+    <div class="btn-group ms-3">
+        <a href="{{ url_for('main.customize_dashboard') }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-cog"></i> Customize Dashboard
+        </a>
+        <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+            <span class="visually-hidden">Toggle Dropdown</span>
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ url_for('dashboard_settings.layout_settings') }}">
+                <i class="fas fa-th"></i> Layout Settings
+            </a></li>
+            <li><a class="dropdown-item" href="{{ url_for('dashboard_settings.notifications_settings') }}">
+                <i class="fas fa-bell"></i> Notification Settings
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{{ url_for('settings.dashboard') }}">
+                <i class="fas fa-cogs"></i> System Settings
+            </a></li>
+        </ul>
     </div>
+</div>
 
-    <!-- Main Content -->
-    <div class="main-content">
-        <div class="header-title">AK Innovations Factory Management</div>
-        <div class="header-subtitle">
-            <i class="fas fa-info-circle"></i>
-            Import or export your data, or set up real-time alerts for your system.
-            <div class="btn-group ms-3">
-                <a href="{{ url_for('main.customize_dashboard') }}" class="btn btn-outline-primary btn-sm">
-                    <i class="fas fa-cog"></i> Customize Dashboard
-                </a>
-                <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
-                    <span class="visually-hidden">Toggle Dropdown</span>
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="{{ url_for('dashboard_settings.layout_settings') }}">
-                        <i class="fas fa-th"></i> Layout Settings
-                    </a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('dashboard_settings.notifications_settings') }}">
-                        <i class="fas fa-bell"></i> Notification Settings
-                    </a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="{{ url_for('settings.dashboard') }}">
-                        <i class="fas fa-cogs"></i> System Settings
-                    </a></li>
-                </ul>
+<!-- Notifications & Alerts Section -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <!-- Pending Approvals -->
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Pending Approvals & Actions Required
+                </h6>
             </div>
-        </div>
-
-        <!-- Notifications & Alerts Section -->
-        <div class="row mb-4">
-            <div class="col-md-8">
-                <!-- Pending Approvals -->
-                <div class="card border-warning">
-                    <div class="card-header bg-warning text-dark">
-                        <h6 class="mb-0">
-                            <i class="fas fa-exclamation-triangle"></i> 
-                            Pending Approvals & Actions Required
-                        </h6>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                <span class="fw-bold">{{ stats.open_purchase_orders or 0 }}</span>
+                            </div>
+                            <div>
+                                <div class="fw-bold">Purchase Orders</div>
+                                <div class="text-muted small">Awaiting approval</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                                        <span class="fw-bold">{{ stats.open_purchase_orders or 0 }}</span>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold">Purchase Orders</div>
-                                        <div class="text-muted small">Awaiting approval</div>
-                                    </div>
-                                </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                <span class="fw-bold">{{ stats.low_stock_items or 0 }}</span>
                             </div>
-                            <div class="col-md-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                                        <span class="fw-bold">{{ stats.low_stock_items or 0 }}</span>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold">Low Stock Items</div>
-                                        <div class="text-muted small">Require attention</div>
-                                    </div>
-                                </div>
+                            <div>
+                                <div class="fw-bold">Low Stock Items</div>
+                                <div class="text-muted small">Need attention</div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                                        <span class="fw-bold">{{ stats.open_job_works or 0 }}</span>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold">Job Works</div>
-                                        <div class="text-muted small">In progress</div>
-                                    </div>
-                                </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                <span class="fw-bold">{{ stats.open_job_works or 0 }}</span>
+                            </div>
+                            <div>
+                                <div class="fw-bold">Job Works</div>
+                                <div class="text-muted small">In progress</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <!-- Quick Stats -->
-                <div class="card">
-                    <div class="card-header">
-                        <h6 class="mb-0">
-                            <i class="fas fa-chart-pie"></i> 
-                            Quick Stats
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Total Items:</span>
-                            <span class="fw-bold">{{ stats.total_items or 0 }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Active Employees:</span>
-                            <span class="fw-bold">{{ stats.active_employees or 0 }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Planned Productions:</span>
-                            <span class="fw-bold">{{ stats.planned_productions or 0 }}</span>
-                        </div>
-                    </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-pie"></i> 
+                    Quick Stats
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total Items:</span>
+                    <span class="fw-bold">{{ stats.total_items or 0 }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Active Employees:</span>
+                    <span class="fw-bold">{{ stats.active_employees or 0 }}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Planned Productions:</span>
+                    <span class="fw-bold">{{ stats.planned_productions or 0 }}</span>
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- Recent Activities & Notifications -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">
-                            <i class="fas fa-clock"></i> 
-                            Recent Activities
-                        </h6>
-                        <a href="{{ url_for('reports.dashboard') }}" class="btn btn-sm btn-outline-primary">View All</a>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="list-group list-group-flush">
-                            {% if recent_pos %}
-                                {% for po in recent_pos %}
-                                <div class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <div class="fw-bold">PO: {{ po.po_number }}</div>
-                                        <small class="text-muted">{{ po.supplier.name if po.supplier else 'Unknown Supplier' }}</small>
-                                    </div>
-                                    <div class="text-end">
-                                        <span class="badge bg-{{ 'success' if po.status == 'approved' else ('warning' if po.status == 'pending' else 'secondary') }}">{{ po.status.title() }}</span>
-                                        <div class="small text-muted">{{ po.created_at.strftime('%d %b') if po.created_at else '' }}</div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="list-group-item text-center text-muted py-3">
-                                    <i class="fas fa-inbox"></i> No recent activities
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
+<!-- Recent Activities & Notifications -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="fas fa-clock"></i> 
+                    Recent Activities
+                </h6>
+                <a href="{{ url_for('reports.dashboard') }}" class="btn btn-sm btn-outline-primary">View All</a>
             </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">
-                            <i class="fas fa-exclamation-circle text-warning"></i> 
-                            Items Requiring Attention
-                        </h6>
-                        <a href="{{ url_for('inventory.dashboard') }}" class="btn btn-sm btn-outline-warning">Manage</a>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="list-group list-group-flush">
-                            {% if low_stock_items %}
-                                {% for item in low_stock_items %}
-                                <div class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <div class="fw-bold">{{ item.name }}</div>
-                                        <small class="text-muted">{{ item.item_code }}</small>
-                                    </div>
-                                    <div class="text-end">
-                                        <span class="badge bg-danger">{{ item.current_stock or 0 }} / {{ item.minimum_stock or 0 }}</span>
-                                        <div class="small text-muted">Low Stock</div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="list-group-item text-center text-muted py-3">
-                                    <i class="fas fa-check-circle text-success"></i> All items have adequate stock
-                                </div>
-                            {% endif %}
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% if recent_pos %}
+                        {% for po in recent_pos %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold">PO: {{ po.po_number }}</div>
+                                <small class="text-muted">{{ po.supplier.name if po.supplier else 'Unknown Supplier' }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-{{ 'success' if po.status == 'approved' else ('warning' if po.status == 'pending' else 'secondary') }}">{{ po.status.title() }}</span>
+                                <div class="small text-muted">{{ po.created_at.strftime('%d %b') if po.created_at else '' }}</div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Dynamic Module Grid -->
-        <div class="row g-4">
-            {% for user_module in user_modules %}
-            {% set module = user_module['module'] %}
-            {% set preference = user_module['preference'] %}
-            {% set size_class = 'col-md-6' if preference and preference.size == 'large' else ('col-md-3' if preference and preference.size == 'small' else 'col-md-4') %}
-            
-            <div class="{{ size_class }}">
-                <div class="module-card {{ 'module-large' if preference and preference.size == 'large' else ('module-small' if preference and preference.size == 'small' else '') }}">
-                    <div class="module-icon">
-                        <i class="{{ module.icon }}"></i>
-                    </div>
-                    <div class="module-title">{{ module.title }}</div>
-                    {% if module.description %}
-                    <div class="module-description">{{ module.description }}</div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="list-group-item text-center text-muted py-3">
+                            <i class="fas fa-inbox"></i> No recent activities
+                        </div>
                     {% endif %}
-                    <a href="{{ module.valid_url or '#' }}" class="view-btn {% if not module.valid_url %}disabled text-muted{% endif %}" {% if not module.valid_url %}title="Coming soon"{% endif %}>View</a>
                 </div>
             </div>
-            {% endfor %}
         </div>
-        
-        {% if not user_modules %}
-        <div class="text-center py-5">
-            <i class="fas fa-th-large fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted">No Modules Selected</h5>
-            <p class="text-muted">Customize your dashboard and manage data backups.</p>
-            <a href="{{ url_for('settings.dashboard') }}" class="btn btn-primary">
-                <i class="fas fa-cog"></i> Dashboard Settings
-            </a>
-        </div>
-        {% endif %}
     </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="fas fa-exclamation-circle text-warning"></i> 
+                    Items Requiring Attention
+                </h6>
+                <a href="{{ url_for('inventory.dashboard') }}" class="btn btn-sm btn-outline-warning">Manage</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% if low_stock_items %}
+                        {% for item in low_stock_items %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold">{{ item.name }}</div>
+                                <small class="text-muted">{{ item.code }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-danger">{{ item.current_stock or 0 }} / {{ item.minimum_stock or 0 }}</span>
+                                <div class="small text-muted">Low Stock</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="list-group-item text-center text-muted py-3">
+                            <i class="fas fa-check-circle text-success"></i> All items have adequate stock
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Prevent sidebar flickering on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Small delay to ensure everything is rendered
-            setTimeout(function() {
-                // Remove preload class after DOM is loaded to enable transitions
-                document.body.classList.remove('preload');
-            }, 100);
-            
-            // Add click handler to nav links to prevent multiple clicks
-            const navLinks = document.querySelectorAll('.nav-link');
-            navLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    // Prevent double-clicks
-                    if (this.classList.contains('clicked')) {
-                        e.preventDefault();
-                        return false;
-                    }
-                    this.classList.add('clicked');
-                    
-                    // Remove clicked class after navigation
-                    setTimeout(() => {
-                        this.classList.remove('clicked');
-                    }, 1000);
-                });
-            });
-        });
-        
-        // Additional load event handler for complete stability
-        window.addEventListener('load', function() {
-            // Ensure preload is removed after all resources load
-            setTimeout(function() {
-                document.body.classList.remove('preload');
-            }, 50);
-        });
-    </script>
-</body>
-</html>
+<!-- Dynamic Module Grid -->
+<div class="row g-4">
+    {% for user_module in user_modules %}
+    {% set module = user_module['module'] %}
+    {% set preference = user_module['preference'] %}
+    {% set size_class = 'col-md-6' if preference and preference.size == 'large' else ('col-md-3' if preference and preference.size == 'small' else 'col-md-4') %}
+    
+    <div class="{{ size_class }}">
+        <div class="module-card {{ 'module-large' if preference and preference.size == 'large' else ('module-small' if preference and preference.size == 'small' else '') }}">
+            <div class="module-icon">
+                <i class="{{ module.icon }}"></i>
+            </div>
+            <div class="module-title">{{ module.title }}</div>
+            {% if module.description %}
+            <div class="module-description">{{ module.description }}</div>
+            {% endif %}
+            <a href="{{ module.valid_url or '#' }}" class="view-btn {% if not module.valid_url %}disabled text-muted{% endif %}" {% if not module.valid_url %}title="Coming soon"{% endif %}>View</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not user_modules %}
+<div class="text-center py-5">
+    <i class="fas fa-th-large fa-3x text-muted mb-3"></i>
+    <h5 class="text-muted">No Modules Selected</h5>
+    <p class="text-muted">Customize your dashboard and manage data backups.</p>
+    <a href="{{ url_for('settings.dashboard') }}" class="btn btn-primary">
+        <i class="fas fa-cog"></i> Dashboard Settings
+    </a>
+</div>
+{% endif %}
+
+<script>
+// Prevent sidebar flickering on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Small delay to ensure everything is rendered
+    setTimeout(function() {
+        // Remove preload class after DOM is loaded to enable transitions
+        document.body.classList.remove('preload');
+    }, 100);
+});
+</script>
+{% endblock %}
