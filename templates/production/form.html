@@ -326,18 +326,89 @@
                     <h5><i class="fas fa-exclamation-triangle"></i> Material Shortages</h5>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-danger">
-                        <strong>Cannot create production order!</strong><br>
-                        The following materials are insufficient:
+                    <div class="alert alert-warning">
+                        <strong>Material shortages detected!</strong><br>
+                        The following components are insufficient:
                     </div>
                     {% for shortage in material_shortages %}
-                    <div class="border-bottom pb-2 mb-2">
-                        <strong>{{ shortage.item_code }} - {{ shortage.item_name }}</strong><br>
-                        <small class="text-muted">
-                            Required: {{ shortage.required_qty }} {{ shortage.unit }}<br>
-                            Available: {{ shortage.available_qty }} {{ shortage.unit }}<br>
-                            <span class="text-danger">Short by: {{ shortage.shortage_qty }} {{ shortage.unit }}</span>
-                        </small>
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1"><strong>{{ shortage.item_code }} - {{ shortage.item_name }}</strong></h6>
+                                <small class="text-muted">
+                                    Required: <span class="fw-bold">{{ shortage.required_qty|int }} {{ shortage.unit }}</span><br>
+                                    Direct Stock: {{ shortage.direct_available|int }} {{ shortage.unit }}
+                                    {% if shortage.manufacturable_qty > 0 %}
+                                        + <span class="text-success">{{ shortage.manufacturable_qty|int }} manufacturable</span>
+                                    {% endif %}
+                                    = {{ shortage.total_available|int }} total<br>
+                                    <span class="text-danger fw-bold">Short by: {{ shortage.shortage_qty|int }} {{ shortage.unit }}</span>
+                                </small>
+                            </div>
+                            {% if shortage.can_manufacture and shortage.manufacturable_qty > 0 %}
+                            <div class="text-end">
+                                <span class="badge bg-success mb-1">Can Manufacture</span><br>
+                                <small class="text-success">Raw materials available</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if shortage.raw_materials %}
+                        <div class="mt-2">
+                            <small class="text-muted"><strong>Raw Materials Available:</strong></small>
+                            <div class="row mt-1">
+                                {% for raw in shortage.raw_materials %}
+                                {% if raw.available > 0 %}
+                                <div class="col-md-6">
+                                    <small class="text-success">✓ {{ raw.raw_material }}: {{ raw.available|int }} available (can make {{ raw.can_make|int }} units)</small>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if job_work_suggestions %}
+            <div class="card mt-3">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-lightbulb"></i> Smart Job Work Suggestions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> <strong>Good news!</strong> You can create job works to manufacture missing components using available raw materials.
+                    </div>
+                    
+                    {% for suggestion in job_work_suggestions %}
+                    <div class="card mb-3 border-success">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="text-success mb-2">
+                                        <i class="fas fa-cogs"></i> Create Job Work for {{ suggestion.component }}
+                                    </h6>
+                                    <p class="mb-2">{{ suggestion.message }}</p>
+                                    <small class="text-muted">
+                                        <strong>Raw Materials Needed:</strong><br>
+                                        {% for raw in suggestion.raw_materials_needed %}
+                                        {% if raw.available > 0 %}
+                                        ✓ {{ raw.raw_material }}: {{ raw.available|int }} available → can make {{ raw.can_make|int }} {{ suggestion.component }}<br>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <a href="{{ url_for('jobwork.add_job_work') }}?component={{ suggestion.component_code }}&quantity={{ suggestion.suggested_qty|int }}" class="btn btn-success btn-sm mb-2">
+                                        <i class="fas fa-plus"></i> Create Job Work
+                                    </a><br>
+                                    <small class="text-muted">Qty: {{ suggestion.suggested_qty|int }}</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
