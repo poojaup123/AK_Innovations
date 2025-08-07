@@ -2,9 +2,10 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from forms import ProductionForm, BOMForm, BOMItemForm, BOMProcessForm
-from models import Item, BOM, BOMItem, BOMProcess, Supplier
+from models import Item, BOM, BOMItem, BOMProcess, Supplier, ItemBatch, ProductionBatch
 from models.production import ProductionOrder
-from models.batch import InventoryBatch, BatchMovement
+from models.batch import InventoryBatch, BatchMovement, JobWorkBatch, BatchTraceability
+from models.accounting import JournalEntry, Account
 from services.process_integration import ProcessIntegrationService
 from services.authentic_accounting_integration import AuthenticAccountingIntegration
 from services.production_service import ProductionService

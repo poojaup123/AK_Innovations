@@ -275,7 +275,7 @@ class CostingService:
     def track_scrap_and_wastage(reference_type, reference_id, scrap_data):
         """Track scrap and wastage with proper costing"""
         try:
-            from models import ScrapRecord
+            from models import ScrapRecord  # TODO: Need to create ScrapRecord model
             
             scrap_record = ScrapRecord(
                 reference_type=reference_type,

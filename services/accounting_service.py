@@ -1,7 +1,8 @@
 """Accounting Service for Job Work, GRN, and Production integration"""
 
 from app import db
-from models import JournalEntry, Account, CompanySettings
+from models import CompanySettings
+from models.accounting import JournalEntry, Account
 from datetime import datetime
 import logging
 
