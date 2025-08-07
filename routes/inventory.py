@@ -965,3 +965,69 @@ def get_wip_product(input_material_id):
         
     except Exception as e:
         return jsonify({'error': f'Error finding WIP product: {str(e)}'}), 500
+
+
+@inventory_bp.route('/unified-batch-management')
+@login_required
+def unified_batch_management():
+    """Unified batch management combining tracking and analysis"""
+    
+    # Get all batch data
+    batches = InventoryBatch.query.order_by(desc(InventoryBatch.created_at)).all()
+    
+    # Get batch statistics
+    batch_stats = {
+        'total_batches': InventoryBatch.query.count(),
+        'active_batches': InventoryBatch.query.filter(
+            db.or_(
+                InventoryBatch.qty_raw > 0,
+                InventoryBatch.qty_wip > 0,
+                InventoryBatch.qty_finished > 0,
+                InventoryBatch.qty_inspection > 0
+            )
+        ).count(),
+        'expired_batches': InventoryBatch.query.filter(
+            InventoryBatch.expiry_date < datetime.now().date()
+        ).count() if InventoryBatch.query.filter(InventoryBatch.expiry_date != None).count() > 0 else 0,
+        'batches_expiring_soon': InventoryBatch.query.filter(
+            InventoryBatch.expiry_date.between(
+                datetime.now().date(),
+                (datetime.now() + timedelta(days=30)).date()
+            )
+        ).count() if InventoryBatch.query.filter(InventoryBatch.expiry_date != None).count() > 0 else 0,
+        'quality_issues': InventoryBatch.query.filter(InventoryBatch.inspection_status == 'failed').count(),
+        'total_scrap_quantity': sum((batch.qty_scrap or 0) for batch in batches),
+        'total_good_quantity': sum((batch.qty_raw or 0) + (batch.qty_finished or 0) for batch in batches)
+    }
+    
+    # Get recent batch movements for tracking
+    from models.batch import BatchMovementLedger
+    recent_movements = BatchMovementLedger.query.order_by(desc(BatchMovementLedger.created_at)).limit(15).all()
+    
+    # Get filter options
+    items = Item.query.order_by(Item.name).all()
+    storage_locations = db.session.query(InventoryBatch.location).distinct().all()
+    locations = [loc[0] for loc in storage_locations if loc[0]]
+    
+    # Process summary by state
+    process_summary = {}
+    for batch in batches:
+        if batch.qty_raw and batch.qty_raw > 0:
+            process_summary['Raw Material'] = process_summary.get('Raw Material', 0) + batch.qty_raw
+        if batch.qty_wip and batch.qty_wip > 0:
+            process_summary['Work in Progress'] = process_summary.get('Work in Progress', 0) + batch.qty_wip
+        if batch.qty_finished and batch.qty_finished > 0:
+            process_summary['Finished Goods'] = process_summary.get('Finished Goods', 0) + batch.qty_finished
+        if batch.qty_scrap and batch.qty_scrap > 0:
+            process_summary['Scrap/Rejected'] = process_summary.get('Scrap/Rejected', 0) + batch.qty_scrap
+        if batch.qty_inspection and batch.qty_inspection > 0:
+            process_summary['Under Inspection'] = process_summary.get('Under Inspection', 0) + batch.qty_inspection
+    
+    return render_template('inventory/unified_batch_management.html',
+                         title='Unified Batch Management',
+                         batches=batches,
+                         process_summary=process_summary,
+                         stats=batch_stats,
+                         recent_movements=recent_movements,
+                         items=items,
+                         locations=locations)

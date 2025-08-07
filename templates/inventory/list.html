@@ -156,11 +156,8 @@
             <a href="{{ url_for('inventory.multi_state_view') }}" class="btn btn-info me-2">
                 <i class="fas fa-layer-group"></i> Multi-State View
             </a>
-            <a href="{{ url_for('inventory.batch_tracking_dashboard') }}" class="btn btn-outline-info me-2">
-                <i class="fas fa-barcode"></i> Batch Tracking
-            </a>
-            <a href="{{ url_for('inventory.batch_wise_view') }}" class="btn btn-outline-primary me-2">
-                <i class="fas fa-list-ol"></i> Batch-wise View
+            <a href="{{ url_for('inventory.unified_batch_management') }}" class="btn btn-primary me-2">
+                <i class="fas fa-boxes"></i> Batch Management
             </a>
             <a href="{{ url_for('inventory.export_items') }}{% if search or item_type_filter or stock_status_filter or min_price or max_price %}?{% endif %}{% if search %}search={{ search }}&{% endif %}{% if item_type_filter %}item_type={{ item_type_filter }}&{% endif %}{% if stock_status_filter %}stock_status={{ stock_status_filter }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}{% endif %}" class="btn btn-outline-success me-2">
                 <i class="fas fa-file-excel"></i> Export Excel
