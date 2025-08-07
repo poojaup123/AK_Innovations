@@ -439,9 +439,12 @@ def add_production():
                         'bom_output_qty': component_bom.output_quantity or 1
                     })
                 
-                # Check for shortage
-                if total_available < required_qty:
-                    shortage_qty = required_qty - total_available
+                # Check for shortage OR show manufacturing info for components with zero direct stock
+                is_short = total_available < required_qty
+                show_manufacturing_info = (direct_available == 0 and component_bom and manufacturable_qty > 0)
+                
+                if is_short or show_manufacturing_info:
+                    shortage_qty = max(0, required_qty - total_available) if is_short else 0
                     shortage_info = {
                         'item_code': component_item.code,
                         'item_name': component_item.name,
@@ -452,7 +455,8 @@ def add_production():
                         'shortage_qty': shortage_qty,
                         'unit': component_item.unit_of_measure or 'Pcs',
                         'can_manufacture': component_bom is not None,
-                        'raw_materials': raw_materials_available
+                        'raw_materials': raw_materials_available,
+                        'is_manufacturing_opportunity': not is_short and show_manufacturing_info
                     }
                     material_shortages.append(shortage_info)
         

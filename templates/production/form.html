@@ -348,10 +348,13 @@
                 <div class="row">
                     {% for shortage in material_shortages %}
                     <div class="col-lg-6 mb-3">
-                        <div class="card border-danger">
+                        <div class="card {% if shortage.get('is_manufacturing_opportunity') %}border-success{% else %}border-danger{% endif %}">
                             <div class="card-body">
-                                <h6 class="card-title text-danger mb-2">
+                                <h6 class="card-title {% if shortage.get('is_manufacturing_opportunity') %}text-success{% else %}text-danger{% endif %} mb-2">
                                     <i class="fas fa-box"></i> {{ shortage.item_code }} - {{ shortage.item_name }}
+                                    {% if shortage.get('is_manufacturing_opportunity') %}
+                                        <span class="badge bg-success ms-2">Can Manufacture</span>
+                                    {% endif %}
                                 </h6>
                                 <div class="mb-2">
                                     <small class="text-muted">Required:</small> <span class="fw-bold text-dark">{{ shortage.required_qty|int }} {{ shortage.unit }}</span><br>
@@ -360,7 +363,11 @@
                                         + <span class="text-success">{{ shortage.manufacturable_qty|int }} manufacturable</span>
                                     {% endif %}
                                     = {{ shortage.total_available|int }} total<br>
-                                    <small class="text-muted">Shortage:</small> <span class="text-danger fw-bold">{{ shortage.shortage_qty|int }} {{ shortage.unit }}</span>
+                                    {% if shortage.shortage_qty > 0 %}
+                                        <small class="text-muted">Shortage:</small> <span class="text-danger fw-bold">{{ shortage.shortage_qty|int }} {{ shortage.unit }}</span>
+                                    {% else %}
+                                        <small class="text-muted">Status:</small> <span class="text-success fw-bold">✓ Can be manufactured from available raw materials</span>
+                                    {% endif %}
                                 </div>
                                 
                                 {% if shortage.can_manufacture and shortage.manufacturable_qty > 0 %}
