@@ -2,8 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from forms import JobWorkForm, JobWorkQuantityUpdateForm, DailyJobWorkForm, JobWorkTeamAssignmentForm, JobWorkBatchReturnForm
 from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings, DailyJobWorkEntry, JobWorkTeamAssignment, Employee, ItemBatch
-from models.batch import JobWorkBatch
-from models.batch import BatchMovementLedger, BatchConsumptionReport
+from models.batch import InventoryBatch as Batch, JobWorkBatch, BatchMovementLedger, BatchConsumptionReport
 from utils.batch_tracking import BatchTracker, BatchValidator, get_batch_options_for_item_api, validate_batch_selection_api
 from services.batch_management import BatchManager, BatchValidator as BatchValidatorService
 from app import db
@@ -445,11 +444,11 @@ def add_job_work():
         # Populate form choices with vendors and suppliers
         try:
             from models import BOM, Item, Supplier
-            from models.batch import Batch
+            from models.batch import InventoryBatch as Batch
             
-            form.bom_id.choices = [(0, 'Select BOM')] + [(bom.id, f"{bom.bom_code} - {bom.product.name if bom.product else 'Unknown'}") for bom in BOM.query.filter_by(is_active=True)]
-            form.input_material_id.choices = [(0, 'Select Material')] + [(item.id, item.name) for item in Item.query.filter_by(is_active=True)]
-            form.batch_id.choices = [(0, 'Auto Select (FIFO)')] + [(batch.id, f"Batch {batch.batch_code} - Qty: {batch.quantity_remaining}") for batch in Batch.query.filter_by(is_active=True)]
+            form.bom_id.choices = [(0, 'Select BOM')] + [(bom.id, f"{bom.bom_code} - {bom.product.name if bom.product else 'Unknown'}") for bom in BOM.query.all()]
+            form.input_material_id.choices = [(0, 'Select Material')] + [(item.id, item.name) for item in Item.query.all()]
+            form.batch_id.choices = [(0, 'Auto Select (FIFO)')] + [(batch.id, f"Batch {batch.batch_code} - Qty: {batch.qty_raw + batch.qty_finished}") for batch in Batch.query.all()[:10]]
             form.input_uom.choices = [('kg', 'Kilogram'), ('grams', 'Grams'), ('pieces', 'Pieces'), ('liters', 'Liters')]
             
             # Get suppliers who can be vendors

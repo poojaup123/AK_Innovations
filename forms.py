@@ -315,8 +315,23 @@ class JobWorkForm(FlaskForm):
     remarks = TextAreaField('Remarks / Instructions', 
                           render_kw={'placeholder': 'Priority job. Ensure QC report.', 'rows': 3})
     
-    # Legacy fields for compatibility
+    # Legacy fields for compatibility - adding missing fields for system integration
     job_number = StringField('Job Number', render_kw={'readonly': True})
+    customer_name = StringField('Customer/Client Name', validators=[Optional(), Length(max=200)],
+                               render_kw={'placeholder': 'A.K. Industries'})
+    item_id = SelectField('Output Item/Product', validators=[Optional()], coerce=int)
+    process_type = SelectField('Process Type', 
+                              choices=[('single', 'Single Process'), ('multi', 'Multi-Process')],
+                              default='single')
+    department = SelectField('Department', validators=[Optional()], coerce=str)
+    quantity_sent = FloatField('Quantity Sent', validators=[Optional(), NumberRange(min=0)])
+    expected_finished_material = FloatField('Expected Output Quantity', validators=[Optional(), NumberRange(min=0)])
+    expected_scrap = FloatField('Expected Scrap %', validators=[Optional(), NumberRange(min=0, max=100)], default=0.0)
+    rate_per_unit = FloatField('Rate per Unit (₹)', validators=[Optional(), NumberRange(min=0)])
+    sent_date = DateField('Sent Date', validators=[Optional()])
+    notes = TextAreaField('Additional Notes', render_kw={'placeholder': 'Special instructions or requirements', 'rows': 3})
+    is_team_work = BooleanField('Team Work', default=False)
+    max_team_members = IntegerField('Max Team Members', validators=[Optional(), NumberRange(min=1, max=50)], default=1)
     
     def __init__(self, *args, **kwargs):
         super(JobWorkForm, self).__init__(*args, **kwargs)
@@ -351,6 +366,8 @@ class JobWorkForm(FlaskForm):
         # Populate input material choices
         items = Item.query.order_by(Item.name).all()
         self.input_material_id.choices = [(0, 'Select Material')] + [(i.id, f"{i.code} - {i.name}") for i in items]
+        # Also populate item_id choices for output products
+        self.item_id.choices = [(0, 'Select Output Product')] + [(i.id, f"{i.code} - {i.name}") for i in items]
         
         # Load UOM choices
         try:
