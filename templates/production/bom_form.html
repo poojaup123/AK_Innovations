@@ -232,7 +232,27 @@
                                     <div class="col-md-4">
                                         <div class="mb-3">
                                             {{ form.labor_cost_per_unit.label(class="form-label") }}
+                                            {% if bom and bom.processes %}
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" 
+                                                       value="{{ '%.2f'|format(bom.calculated_labor_cost_per_unit) }}" 
+                                                       step="0.01" readonly>
+                                                <span class="input-group-text bg-info text-white" 
+                                                      title="Automatically calculated from manufacturing processes">
+                                                    <i class="fas fa-magic"></i>
+                                                </span>
+                                            </div>
+                                            <small class="text-info">
+                                                <i class="fas fa-info-circle"></i> Calculated from {{ bom.processes|length }} manufacturing process(es)
+                                            </small>
+                                            <!-- Hidden field to store the calculated value for form submission -->
+                                            <input type="hidden" name="labor_cost_per_unit" value="{{ bom.calculated_labor_cost_per_unit }}">
+                                            {% else %}
                                             {{ form.labor_cost_per_unit(class="form-control", step="0.01") }}
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle"></i> Add manufacturing processes to auto-calculate this value
+                                            </small>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
