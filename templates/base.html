@@ -9,26 +9,60 @@
     <link href="{{ url_for('static', filename='css/no-flicker.css') }}" rel="stylesheet">
     <style>
         /* Permanent 84% zoom for better visibility */
-        body {
+        html {
             zoom: 84%;
-            -moz-transform: scale(0.84);
-            -moz-transform-origin: 0 0;
-            -webkit-transform: scale(0.84);
-            -webkit-transform-origin: 0 0;
-            -o-transform: scale(0.84);
-            -o-transform-origin: 0 0;
-            -ms-transform: scale(0.84);
-            -ms-transform-origin: 0 0;
-            transform: scale(0.84);
-            transform-origin: 0 0;
         }
         
-        /* For Firefox compatibility */
-        @-moz-document url-prefix() {
-            body {
-                zoom: 1;
-                -moz-transform: scale(0.84);
-            }
+        /* Improved spacing for 84% zoom */
+        body {
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        
+        /* Card spacing adjustments */
+        .card {
+            margin-bottom: 1.5rem !important;
+        }
+        
+        .card-body {
+            padding: 1.25rem !important;
+        }
+        
+        /* Button spacing */
+        .btn {
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Row and column spacing */
+        .row {
+            margin-bottom: 1rem;
+        }
+        
+        .col, .col-md-3, .col-md-4, .col-md-6, .col-md-8, .col-md-12 {
+            padding-right: 15px;
+            padding-left: 15px;
+        }
+        
+        /* Dashboard specific spacing */
+        .container-fluid {
+            padding: 20px !important;
+        }
+        
+        /* Header spacing */
+        h1, h2, h3, h4, h5, h6 {
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+        
+        /* Table spacing */
+        .table {
+            margin-bottom: 1.5rem;
+        }
+        
+        .table th, .table td {
+            padding: 0.75rem;
+            vertical-align: middle;
         }
         
         .sidebar {
@@ -36,9 +70,9 @@
             position: fixed;
             left: 0;
             top: 0;
-            width: 250px;
+            width: 260px;
             background-color: #f8f9fa;
-            padding: 10px 0 60px 0;
+            padding: 15px 0 60px 0;
             border-right: 1px solid #dee2e6;
             overflow-y: auto;
             overflow-x: hidden;
@@ -84,17 +118,17 @@
             background: #999;
         }
         .main-content {
-            margin-left: 250px;
-            padding: 20px;
+            margin-left: 260px;
+            padding: 25px;
             min-height: calc(100vh - 80px);
             background-color: #ffffff;
         }
         .nav-item {
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         .nav-link {
             color: #495057;
-            padding: 8px 20px;
+            padding: 10px 22px;
             display: flex;
             align-items: center;
             text-decoration: none;
