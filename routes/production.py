@@ -368,25 +368,24 @@ def add_production():
                 # Calculate actual material needed: (planned_qty / bom_output_qty) * material_qty_per_output
                 required_qty = (form.quantity_planned.data / bom_output_qty) * material_qty_per_output
                 
-                # Check available quantity from multi-state inventory (Raw + Finished for materials)
+                # Check available quantity from batch-level multi-state inventory
                 item = bom_item.item
-                available_qty = 0
                 
-                # For materials, use raw + finished quantities
-                if hasattr(item, 'qty_raw') and hasattr(item, 'qty_finished'):
-                    available_qty = (item.qty_raw or 0) + (item.qty_finished or 0)
-                else:
-                    # Fallback to current_stock if multi-state not available
-                    available_qty = item.current_stock or 0
-                
-                # Also check batch-level availability
+                # Get available quantities from InventoryBatch (the correct way)
                 from models.batch import InventoryBatch
-                batch_qty = db.session.query(
-                    func.sum(InventoryBatch.qty_raw + InventoryBatch.qty_finished)
+                available_qty = db.session.query(
+                    func.sum(
+                        (InventoryBatch.qty_raw or 0) + 
+                        (InventoryBatch.qty_finished or 0) +
+                        (InventoryBatch.qty_wip or 0)  # Include WIP that might be usable
+                    )
                 ).filter_by(item_id=item.id).scalar() or 0
                 
-                # Use the higher of the two (item-level or batch-level)
-                available_qty = max(available_qty, batch_qty)
+                # Also check item's current_stock as fallback for items without batch tracking
+                item_stock = item.current_stock or 0
+                
+                # Use the maximum available from either batch tracking or item stock
+                available_qty = max(available_qty, item_stock)
                 
                 if available_qty < required_qty:
                     shortage_qty = required_qty - available_qty
