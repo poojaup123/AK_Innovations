@@ -122,9 +122,9 @@
                 <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Input Material & Issuance</h5>
             </div>
             <div class="card-body">
-                <div class="alert alert-info">
+                <div class="alert alert-info" id="materialAlert">
                     <i class="fas fa-info-circle me-2"></i>
-                    Auto-filled from BOM or manual selection. Quantity is deducted from Raw Store on submission.
+                    <span id="materialAlertText">Auto-filled from BOM or manual selection. Quantity is deducted from Raw Store on submission.</span>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped">
@@ -354,6 +354,15 @@ function toggleBOMSelection() {
     if (jobWorkType === 'bom_based') {
         bomRow.style.display = 'table-row';
         loadFromBOMBtn.style.display = 'inline-block';
+        
+        // Add BOM change listener for auto-population
+        const bomSelect = document.getElementById('bom_select');
+        if (bomSelect && !bomSelect.hasAttribute('data-listener-added')) {
+            bomSelect.addEventListener('change', function() {
+                loadBOMData(this.value);
+            });
+            bomSelect.setAttribute('data-listener-added', 'true');
+        }
     } else {
         bomRow.style.display = 'none';
         loadFromBOMBtn.style.display = 'none';
@@ -675,6 +684,191 @@ function updateAvailableStock() {
 
 function checkStock() {
     updateAvailableStock();
+}
+
+function loadBOMData(bomId) {
+    if (!bomId || bomId === '0') {
+        return;
+    }
+    
+    console.log('Loading BOM data for ID:', bomId);
+    
+    // Show loading state
+    const materialAlert = document.getElementById('materialAlert');
+    materialAlert.className = 'alert alert-warning';
+    document.getElementById('materialAlertText').innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading BOM data automatically...';
+    
+    // Get CSRF token
+    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+    
+    // Fetch BOM data
+    fetch(`/api/bom/${bomId}/job-work-data`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken || ''
+        },
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('BOM data received:', data);
+            
+            if (data.success) {
+                // Auto-fill Job Title
+                if (data.job_title) {
+                    const titleField = document.querySelector('input[name="job_title"]');
+                    if (titleField) {
+                        titleField.value = data.job_title;
+                        titleField.style.backgroundColor = '#e8f5e8';
+                        setTimeout(() => titleField.style.backgroundColor = '', 2000);
+                    }
+                }
+                
+                // Auto-fill Input Material
+                if (data.input_material_id) {
+                    const inputMaterialSelect = document.getElementById('input_material');
+                    if (inputMaterialSelect) {
+                        inputMaterialSelect.value = data.input_material_id;
+                        inputMaterialSelect.style.backgroundColor = '#e8f5e8';
+                        setTimeout(() => inputMaterialSelect.style.backgroundColor = '', 2000);
+                        
+                        // Trigger stock update
+                        updateAvailableStock();
+                    }
+                }
+                
+                // Auto-fill UOM
+                if (data.input_uom) {
+                    const uomSelect = document.querySelector('select[name="input_uom"]');
+                    if (uomSelect) {
+                        uomSelect.value = data.input_uom;
+                        uomSelect.style.backgroundColor = '#e8f5e8';
+                        setTimeout(() => uomSelect.style.backgroundColor = '', 2000);
+                    }
+                }
+                
+                // Auto-fill Quantity to Issue
+                if (data.quantity_needed) {
+                    const quantityField = document.querySelector('input[name="quantity_to_issue"]');
+                    if (quantityField) {
+                        quantityField.value = data.quantity_needed;
+                        quantityField.style.backgroundColor = '#e8f5e8';
+                        setTimeout(() => quantityField.style.backgroundColor = '', 2000);
+                    }
+                }
+                
+                // Clear existing process rows and load BOM processes
+                const processTableBody = document.getElementById('processTableBody');
+                if (processTableBody && data.processes) {
+                    processTableBody.innerHTML = '';
+                    processCounter = 0;
+                    
+                    // Add processes from BOM
+                    data.processes.forEach((process, index) => {
+                        addBOMProcessRow(process, index + 1);
+                    });
+                }
+                
+                // Update alert to success
+                materialAlert.className = 'alert alert-success';
+                document.getElementById('materialAlertText').innerHTML = `<i class="fas fa-check me-2"></i>BOM data loaded successfully! Input material, processes, and output automatically set from "${data.bom_name}".`;
+                
+            } else {
+                throw new Error(data.error || 'Failed to load BOM data');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading BOM data:', error);
+            
+            // Show error state
+            materialAlert.className = 'alert alert-danger';
+            document.getElementById('materialAlertText').innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>Error loading BOM data: ${error.message}. Please select manually.`;
+            
+            // Revert to manual mode after 3 seconds
+            setTimeout(() => {
+                materialAlert.className = 'alert alert-info';
+                document.getElementById('materialAlertText').innerHTML = '<i class="fas fa-info-circle me-2"></i>Auto-filled from BOM or manual selection. Quantity is deducted from Raw Store on submission.';
+            }, 3000);
+        });
+}
+
+function addBOMProcessRow(processData, sequence) {
+    processCounter++;
+    const tableBody = document.getElementById('processTableBody');
+    
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>
+            <input type="checkbox" class="form-check-input process-checkbox" checked data-index="${processCounter}">
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" value="${sequence}" min="1" data-field="sequence" data-index="${processCounter}">
+        </td>
+        <td>
+            <select class="form-select form-select-sm" data-field="process_name" data-index="${processCounter}">
+                <option value="">Select Process</option>
+                <option value="cutting" ${processData.process_name === 'cutting' ? 'selected' : ''}>Cutting</option>
+                <option value="welding" ${processData.process_name === 'welding' ? 'selected' : ''}>Welding</option>
+                <option value="powder_coating" ${processData.process_name === 'powder_coating' ? 'selected' : ''}>Powder Coating</option>
+                <option value="bending" ${processData.process_name === 'bending' ? 'selected' : ''}>Bending</option>
+                <option value="assembly" ${processData.process_name === 'assembly' ? 'selected' : ''}>Assembly</option>
+                <option value="machining" ${processData.process_name === 'machining' ? 'selected' : ''}>Machining</option>
+                <option value="zinc_plating" ${processData.process_name === 'zinc_plating' ? 'selected' : ''}>Zinc Plating</option>
+                <option value="painting" ${processData.process_name === 'painting' ? 'selected' : ''}>Painting</option>
+            </select>
+        </td>
+        <td>
+            <select class="form-select form-select-sm" data-field="output_product_id" data-index="${processCounter}">
+                <option value="${processData.output_product_id || ''}" selected>${processData.output_product_name || 'Auto-selected from BOM'}</option>
+            </select>
+            <small class="text-success">From BOM</small>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" min="1" value="${processData.quantity || ''}" data-field="quantity" data-index="${processCounter}">
+        </td>
+        <td>
+            <select class="form-select form-select-sm" data-field="uom" data-index="${processCounter}">
+                <option value="piece" ${processData.uom === 'piece' ? 'selected' : ''}>Piece</option>
+                <option value="kg" ${processData.uom === 'kg' ? 'selected' : ''}>Kilogram</option>
+                <option value="sheet" ${processData.uom === 'sheet' ? 'selected' : ''}>Sheet</option>
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" step="0.01" min="0" value="${processData.rate_per_unit || ''}" data-field="rate_per_unit" data-index="${processCounter}">
+        </td>
+        <td>
+            <input type="checkbox" class="form-check-input" ${processData.quality_check ? 'checked' : ''} data-field="quality_check" data-index="${processCounter}">
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" step="0.1" min="0" max="100" value="${processData.scrap_percent || ''}" data-field="scrap_percent" data-index="${processCounter}">
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm" value="${processData.notes || ''}" placeholder="e.g., Use laser cutter" data-field="notes" data-index="${processCounter}">
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeProcessRow(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tableBody.appendChild(row);
+    
+    // Add event listeners for this row
+    row.addEventListener('change', updateOutputSummary);
+    
+    // Load additional products for output product dropdown
+    loadProducts(row.querySelector('[data-field="output_product_id"]'), false);
+    
+    // Apply visual feedback for BOM-loaded row
+    row.style.backgroundColor = '#f8fff8';
+    setTimeout(() => row.style.backgroundColor = '', 3000);
 }
 
 // Form submission handler

@@ -1673,3 +1673,73 @@ def api_cost_breakdown(bom_id):
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+
+@production_bp.route('/api/bom/<int:bom_id>/job-work-data')
+@login_required
+def get_bom_job_work_data(bom_id):
+    """Get BOM data formatted for job work auto-population"""
+    try:
+        bom = BOM.query.get_or_404(bom_id)
+        
+        # Get the primary input material (first material in BOM items)
+        input_material = None
+        if bom.items:
+            # Find the raw material item (largest quantity requirement typically)
+            primary_item = max(bom.items, key=lambda x: x.quantity_required)
+            input_material = primary_item.item
+        
+        # Get manufacturing processes from BOM
+        processes = []
+        if bom.processes:
+            for i, process in enumerate(bom.processes):
+                # Determine output product for each process
+                if i == len(bom.processes) - 1:  # Last process
+                    # Final output should be the BOM's final product
+                    output_product = bom.final_product if bom.final_product else None
+                    output_name = output_product.name if output_product else f"{bom.name} - Final Product"
+                else:
+                    # Intermediate output - create WIP name
+                    output_name = f"{bom.name} - {process.process_name.title()} WIP"
+                    output_product = None  # Will be created by the intelligent system
+                
+                process_data = {
+                    'process_name': process.process_name,
+                    'output_product_id': output_product.id if output_product else None,
+                    'output_product_name': output_name,
+                    'quantity': 1,  # Default quantity
+                    'uom': input_material.unit_of_measure if input_material else 'piece',
+                    'rate_per_unit': process.cost_per_unit if hasattr(process, 'cost_per_unit') else 0,
+                    'quality_check': True,  # Default to requiring QC
+                    'scrap_percent': process.scrap_percent if hasattr(process, 'scrap_percent') else 0,
+                    'notes': f"Process from {bom.name} BOM"
+                }
+                processes.append(process_data)
+        
+        # Calculate quantity needed based on BOM
+        quantity_needed = 1  # Default to 1 unit
+        if input_material and bom.items:
+            for item in bom.items:
+                if item.item == input_material:
+                    quantity_needed = item.quantity_required
+                    break
+        
+        response_data = {
+            'success': True,
+            'bom_name': bom.name,
+            'job_title': f"Job Work - {bom.name}",
+            'input_material_id': input_material.id if input_material else None,
+            'input_uom': input_material.unit_of_measure if input_material else 'piece',
+            'quantity_needed': quantity_needed,
+            'processes': processes,
+            'final_output_product_id': bom.final_product.id if bom.final_product else None,
+            'final_output_product_name': bom.final_product.name if bom.final_product else f"{bom.name} - Final Product"
+        }
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Error loading BOM data: {str(e)}'
+        })
