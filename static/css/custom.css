@@ -35,6 +35,32 @@ h6, .h6 { font-size: 1rem; }      /* 16px */
     font-size: 0.8125rem; /* 13px - Within 12-13px professional range */
 }
 
+/* PROFESSIONAL SPACING SYSTEM
+   Using consistent 8px base unit (0.5rem) for scalable spacing:
+   - Micro: 4px (0.25rem) - Fine details
+   - Small: 8px (0.5rem) - Tight spacing
+   - Base: 16px (1rem) - Standard spacing
+   - Medium: 24px (1.5rem) - Section spacing
+   - Large: 32px (2rem) - Major sections
+   - XL: 48px (3rem) - Page sections
+*/
+
+/* Consistent spacing classes */
+.spacing-micro { margin: 0.25rem !important; }
+.spacing-small { margin: 0.5rem !important; }  
+.spacing-base { margin: 1rem !important; }
+.spacing-medium { margin: 1.5rem !important; }
+.spacing-large { margin: 2rem !important; }
+.spacing-xl { margin: 3rem !important; }
+
+/* Padding variants */
+.p-micro { padding: 0.25rem !important; }
+.p-small { padding: 0.5rem !important; }
+.p-base { padding: 1rem !important; }
+.p-medium { padding: 1.5rem !important; }
+.p-large { padding: 2rem !important; }
+.p-xl { padding: 3rem !important; }
+
 /* Use minimal custom styles - rely on Bootstrap theme */
 
 /* Modal Z-Index Fix - Ensure modals appear above all other content */
@@ -79,8 +105,8 @@ h6, .h6 { font-size: 1rem; }      /* 16px */
 /* Enhanced Table Styling for Better Scrolling */
 .table-responsive .table th,
 .table-responsive .table td {
-    min-width: 120px; /* Minimum column width */
-    padding: 0.75rem 0.5rem;
+    min-width: 7.5rem; /* 120px - Professional minimum column width */
+    padding: 0.75rem 1rem; /* 12px 16px - Professional table padding */
     vertical-align: middle;
     border-bottom: 1px solid var(--bs-border-color);
 }
@@ -235,9 +261,19 @@ h6, .h6 { font-size: 1rem; }      /* 16px */
     
     .table-responsive .table th,
     .table-responsive .table td {
-        min-width: 100px;
-        padding: 0.5rem 0.25rem;
+        min-width: 6.25rem; /* 100px */
+        padding: 0.5rem 0.75rem; /* 8px 12px - Professional mobile padding */
         font-size: 0.875rem;
+    }
+    
+    /* Mobile navigation spacing adjustments */
+    .main-content {
+        padding: 1rem; /* 16px - Reduced for mobile */
+    }
+    
+    .nav-link {
+        padding: 0.75rem 1rem; /* Reduced horizontal padding for mobile */
+        margin: 0 0.5rem;
     }
 }
 
