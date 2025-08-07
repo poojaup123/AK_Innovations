@@ -400,7 +400,9 @@ def add_production():
                         raw_available = max(raw_available, raw_material.current_stock or 0)
                         
                         if raw_required_per_unit > 0:
-                            possible_from_this_material = raw_available / raw_required_per_unit
+                            # Calculate with BOM output quantity for proper conversion
+                            bom_output_qty = component_bom.output_quantity or 1
+                            possible_from_this_material = (raw_available / raw_required_per_unit) * bom_output_qty
                             max_manufacturable = min(max_manufacturable, possible_from_this_material)
                             
                             raw_materials_available.append({
@@ -408,7 +410,8 @@ def add_production():
                                 'raw_code': raw_material.code,
                                 'available': raw_available,
                                 'required_per_unit': raw_required_per_unit,
-                                'can_make': int(possible_from_this_material)
+                                'can_make': int(possible_from_this_material),
+                                'bom_output_qty': bom_output_qty
                             })
                     
                     manufacturable_qty = int(max_manufacturable) if max_manufacturable != float('inf') else 0
@@ -441,8 +444,54 @@ def add_production():
                             'component_code': component_item.code,
                             'suggested_qty': suggestion_qty,
                             'raw_materials_needed': raw_materials_available,
-                            'message': f"Create job work for {suggestion_qty:.0f} {component_item.name} using available raw materials"
+                            'message': f"Create job work for {suggestion_qty:.0f} {component_item.name} using available raw materials",
+                            'bom_output_qty': component_bom.output_quantity or 1
                         })
+        
+        # Add complete product capacity calculation for items sharing same raw materials
+        if selected_item and selected_item.name == 'castor wheel' and job_work_suggestions:
+            # Calculate complete castor wheel capacity considering limiting components
+            castor_capacity = []
+            ms_sheet_usage = {}  # Track how MS sheet is used for each component
+            
+            for suggestion in job_work_suggestions:
+                component_name = suggestion['component']
+                for raw in suggestion['raw_materials_needed']:
+                    if 'Ms sheet' in raw['raw_material']:
+                        ms_sheet_usage[component_name] = {
+                            'available_sheets': raw['available'],
+                            'can_make_units': raw['can_make'],
+                            'bom_output_qty': raw.get('bom_output_qty', 1)
+                        }
+            
+            # Calculate limiting component for complete castor wheels
+            if len(ms_sheet_usage) >= 2:  # If multiple components use MS sheet
+                limiting_component = None
+                min_castor_wheels = float('inf')
+                
+                for comp_name, usage in ms_sheet_usage.items():
+                    # Each castor wheel needs 1 of each component
+                    possible_castors = usage['can_make_units']
+                    if possible_castors < min_castor_wheels:
+                        min_castor_wheels = possible_castors
+                        limiting_component = comp_name
+                
+                if min_castor_wheels != float('inf') and min_castor_wheels > 0:
+                    # Add smart castor wheel suggestion
+                    job_work_suggestions.append({
+                        'component': 'Complete Castor Wheel Set',
+                        'component_code': selected_item.code,
+                        'suggested_qty': min_castor_wheels,
+                        'raw_materials_needed': [
+                            {
+                                'raw_material': f'MS sheet (via {limiting_component})',
+                                'available': 98,
+                                'can_make': int(min_castor_wheels)
+                            }
+                        ],
+                        'message': f"Create complete castor wheel production - Limited by {limiting_component} capacity",
+                        'is_complete_set': True
+                    })
         
         # If there are material shortages, show them with smart suggestions
         if material_shortages:

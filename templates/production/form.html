@@ -412,19 +412,35 @@
                 <div class="row">
                     {% for suggestion in job_work_suggestions %}
                     <div class="col-lg-6 mb-3">
-                        <div class="card border-success h-100">
-                            <div class="card-body">
+                        <div class="card border-success h-100 {% if suggestion.get('is_complete_set') %}border-primary border-3{% endif %}">
+                            <div class="card-body {% if suggestion.get('is_complete_set') %}bg-light{% endif %}">
                                 <div class="d-flex justify-content-between align-items-start mb-3">
                                     <div>
-                                        <h6 class="text-success mb-2">
-                                            <i class="fas fa-cogs"></i> {{ suggestion.component }}
+                                        <h6 class="{% if suggestion.get('is_complete_set') %}text-primary{% else %}text-success{% endif %} mb-2">
+                                            {% if suggestion.get('is_complete_set') %}
+                                                <i class="fas fa-star"></i>
+                                            {% else %}
+                                                <i class="fas fa-cogs"></i>
+                                            {% endif %}
+                                            {{ suggestion.component }}
                                         </h6>
                                         <p class="text-muted mb-2">{{ suggestion.message }}</p>
-                                        <span class="badge bg-info">Suggested Qty: {{ suggestion.suggested_qty|int }}</span>
+                                        <span class="badge {% if suggestion.get('is_complete_set') %}bg-primary{% else %}bg-info{% endif %}">
+                                            {% if suggestion.get('is_complete_set') %}
+                                                🎯 Optimal: {{ suggestion.suggested_qty|int }}
+                                            {% else %}
+                                                Suggested Qty: {{ suggestion.suggested_qty|int }}
+                                            {% endif %}
+                                        </span>
                                     </div>
                                     <a href="{{ url_for('jobwork.add_job_work') }}?component={{ suggestion.component_code }}&quantity={{ suggestion.suggested_qty|int }}" 
-                                       class="btn btn-success btn-sm">
-                                        <i class="fas fa-plus"></i> Create Job Work
+                                       class="btn {% if suggestion.get('is_complete_set') %}btn-primary{% else %}btn-success{% endif %} btn-sm">
+                                        <i class="fas fa-plus"></i> 
+                                        {% if suggestion.get('is_complete_set') %}
+                                            Start Production
+                                        {% else %}
+                                            Create Job Work
+                                        {% endif %}
                                     </a>
                                 </div>
                                 
