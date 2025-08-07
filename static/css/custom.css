@@ -125,221 +125,127 @@ h6, .h6 { font-size: 1rem; }      /* 16px */
     justify-content: center !important;
 }
 
-/* Job Work Dashboard Cards - Bootstrap Grid Layout */
+/* iOS-Style Dashboard Cards */
 .dashboard-card {
     height: 85px !important;
-    border-radius: 8px !important;
-    transition: transform 0.2s !important;
+    border-radius: 12px !important;
+    transition: all 0.2s ease !important;
     margin-bottom: 1rem !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
 }
 
 .dashboard-card:hover {
-    transform: translateY(-2px) !important;
+    transform: translateY(-1px) scale(1.02) !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
 }
 
-/* Silver Lining Color Palette */
+/* iOS-Style Card Text */
+.dashboard-card .card-title {
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
+    opacity: 0.9 !important;
+}
+
+.dashboard-card .card-number {
+    font-weight: 700 !important;
+    font-size: 1.75rem !important;
+    line-height: 1 !important;
+}
+
+.dashboard-card .card-icon {
+    font-size: 1.5rem !important;
+    opacity: 0.7 !important;
+}
+
+/* iOS System Color Palette */
 :root {
-    --silver-darkest: #595959;
-    --silver-dark: #7F7F7F;
-    --silver-medium: #A5A5A5;
-    --silver-light: #CCCCCC;
-    --silver-lightest: #F2F2F2;
+    --ios-blue: #007AFF;
+    --ios-red: #FF3B30;
+    --ios-green: #34C759;
+    --ios-orange: #FF9500;
+    --ios-yellow: #FFCC00;
+    --ios-gray: #8E8E93;
+    --ios-gray6: #F2F2F7;
+    --ios-gray5: #E5E5EA;
+    --ios-gray4: #D1D1D6;
+    --ios-gray3: #C7C7CC;
+    --ios-gray2: #AEAEB2;
 }
 
-/* Primary Button Silver Theme */
+/* iOS-Style Primary Buttons */
 .btn-primary {
-    background-color: var(--silver-darkest) !important;
-    border-color: var(--silver-darkest) !important;
-    color: white !important;
+    background-color: var(--ios-blue) !important;
+    border-color: var(--ios-blue) !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
 }
 
 .btn-primary:hover {
-    background-color: var(--silver-dark) !important;
-    border-color: var(--silver-dark) !important;
-    color: white !important;
+    background-color: #0056D6 !important;
+    border-color: #0056D6 !important;
 }
 
 .btn-primary:focus, .btn-primary:active {
-    background-color: #404040 !important;
-    border-color: #404040 !important;
-    color: white !important;
+    background-color: #004BB8 !important;
+    border-color: #004BB8 !important;
 }
 
-/* Navigation Silver Theme */
+/* iOS-Style Secondary Buttons */
+.btn-secondary {
+    background-color: var(--ios-gray5) !important;
+    border-color: var(--ios-gray5) !important;
+    color: #000 !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+}
+
+/* iOS-Style Success Buttons */
+.btn-success {
+    background-color: var(--ios-green) !important;
+    border-color: var(--ios-green) !important;
+    border-radius: 8px !important;
+}
+
+/* iOS-Style Warning Buttons */
+.btn-warning {
+    background-color: var(--ios-orange) !important;
+    border-color: var(--ios-orange) !important;
+    border-radius: 8px !important;
+}
+
+/* Navigation iOS Style */
 .navbar-dark {
-    background-color: var(--silver-darkest) !important;
+    background-color: var(--ios-gray) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
 }
 
-/* Card Headers */
+/* iOS-Style Card Headers */
 .card-header {
-    background-color: var(--silver-dark) !important;
-    color: white !important;
+    background-color: var(--ios-gray6) !important;
+    color: #000 !important;
+    border-bottom: 1px solid var(--ios-gray4) !important;
+    font-weight: 600 !important;
 }
 
-/* Links and Accents */
+/* iOS-Style Links */
 a {
-    color: var(--silver-darkest) !important;
+    color: var(--ios-blue) !important;
+    text-decoration: none !important;
 }
 
 a:hover {
-    color: var(--silver-dark) !important;
+    color: #0056D6 !important;
 }
 
-/* Secondary Buttons Silver Theme - Higher Specificity */
-.btn.btn-success {
-    background-color: var(--silver-dark) !important;
-    border-color: var(--silver-dark) !important;
-    color: white !important;
-}
-
-.btn.btn-success:hover, .btn.btn-success:focus, .btn.btn-success:active {
-    background-color: var(--silver-darkest) !important;
-    border-color: var(--silver-darkest) !important;
-    color: white !important;
-}
-
-.btn.btn-info {
-    background-color: var(--silver-medium) !important;
-    border-color: var(--silver-medium) !important;
-    color: white !important;
-}
-
-.btn.btn-info:hover, .btn.btn-info:focus, .btn.btn-info:active {
-    background-color: var(--silver-dark) !important;
-    border-color: var(--silver-dark) !important;
-    color: white !important;
-}
-
-.btn.btn-warning {
-    background-color: var(--silver-light) !important;
-    border-color: var(--silver-light) !important;
-    color: var(--silver-darkest) !important;
-}
-
-.btn.btn-warning:hover, .btn.btn-warning:focus, .btn.btn-warning:active {
-    background-color: var(--silver-medium) !important;
-    border-color: var(--silver-medium) !important;
-    color: white !important;
-}
-
-/* Alert Silver Theme */
-.alert-info {
-    background-color: var(--silver-lightest) !important;
-    border-color: var(--silver-light) !important;
-    color: var(--silver-darkest) !important;
-}
-
-.alert-success {
-    background-color: #e8f5e8 !important;
-    border-color: var(--silver-light) !important;
-    color: var(--silver-darkest) !important;
-}
-
-/* Badge Silver Theme */
-.badge.bg-info {
-    background-color: var(--silver-medium) !important;
-    color: white !important;
-}
-
-.badge.bg-success {
-    background-color: var(--silver-dark) !important;
-    color: white !important;
-}
-
-.badge.bg-primary {
-    background-color: var(--silver-darkest) !important;
-    color: white !important;
-}
-
-.badge.bg-warning {
-    background-color: var(--silver-light) !important;
-    color: var(--silver-darkest) !important;
-}
-
-.badge.bg-secondary {
-    background-color: var(--silver-medium) !important;
-    color: white !important;
-}
-
-/* Button Group and Additional Buttons */
-.btn.btn-outline-primary {
-    color: var(--silver-darkest) !important;
-    border-color: var(--silver-darkest) !important;
-    background-color: transparent !important;
-}
-
-.btn.btn-outline-primary:hover, .btn.btn-outline-primary:focus, .btn.btn-outline-primary:active {
-    background-color: var(--silver-darkest) !important;
-    border-color: var(--silver-darkest) !important;
-    color: white !important;
-}
-
-.btn.btn-outline-secondary {
-    color: var(--silver-dark) !important;
-    border-color: var(--silver-dark) !important;
-    background-color: transparent !important;
-}
-
-.btn.btn-outline-secondary:hover, .btn.btn-outline-secondary:focus, .btn.btn-outline-secondary:active {
-    background-color: var(--silver-dark) !important;
-    border-color: var(--silver-dark) !important;
-    color: white !important;
-}
-
-.btn.btn-outline-warning {
-    color: var(--silver-dark) !important;
-    border-color: var(--silver-dark) !important;
-    background-color: transparent !important;
-}
-
-.btn.btn-outline-warning:hover, .btn.btn-outline-warning:focus, .btn.btn-outline-warning:active {
-    background-color: var(--silver-dark) !important;
-    border-color: var(--silver-dark) !important;
-    color: white !important;
-}
-
-.btn.btn-outline-info {
-    color: var(--silver-medium) !important;
-    border-color: var(--silver-medium) !important;
-    background-color: transparent !important;
-}
-
-.btn.btn-outline-info:hover, .btn.btn-outline-info:focus, .btn.btn-outline-info:active {
-    background-color: var(--silver-medium) !important;
-    border-color: var(--silver-medium) !important;
-    color: white !important;
-}
-
-.btn.btn-outline-success {
-    color: var(--silver-dark) !important;
-    border-color: var(--silver-dark) !important;
-    background-color: transparent !important;
-}
-
-.btn.btn-outline-success:hover, .btn.btn-outline-success:focus, .btn.btn-outline-success:active {
-    background-color: var(--silver-dark) !important;
-    border-color: var(--silver-dark) !important;
-    color: white !important;
-}
-
-/* Sidebar and Navigation */
-.sidebar {
-    background-color: var(--silver-lightest) !important;
-    border-right: 1px solid var(--silver-light) !important;
-}
-
-.sidebar .nav-link {
-    color: var(--silver-darkest) !important;
-}
-
-.sidebar .nav-link:hover {
-    background-color: var(--silver-light) !important;
-    color: var(--silver-darkest) !important;
-}
-
-.sidebar .nav-link.active {
-    background-color: var(--silver-dark) !important;
-    color: white !important;
+/* iOS-Style Cards with Vibrancy */
+.card {
+    border-radius: 12px !important;
+    border: 1px solid var(--ios-gray5) !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
 }
 
 /* Use minimal custom styles - rely on Bootstrap theme */
