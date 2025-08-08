@@ -2431,11 +2431,21 @@ class BOM(db.Model):
     def can_produce_quantity(self, production_qty):
         """Check if BOM can produce specified quantity with current inventory"""
         shortages = []
+        
+        # Calculate material sets needed based on BOM output quantity
+        if self.output_quantity and self.output_quantity > 0:
+            material_sets_needed = production_qty / self.output_quantity
+        else:
+            material_sets_needed = production_qty  # Fallback to 1:1 ratio
+        
         for bom_item in self.items:
             material = bom_item.material or bom_item.item  # Handle both old and new structure
             if material:
                 available_qty = material.total_stock if hasattr(material, 'total_stock') else (material.current_stock or 0)
-                required_qty = bom_item.effective_quantity * production_qty
+                
+                # Calculate required quantity considering BOM output ratio
+                base_qty_required = bom_item.qty_required or bom_item.quantity_required or 0
+                required_qty = base_qty_required * material_sets_needed
                 
                 if available_qty < required_qty:
                     shortages.append({
