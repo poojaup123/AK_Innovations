@@ -25,7 +25,7 @@ class ProductionOrder(db.Model):
     expected_completion = db.Column(db.Date)
     actual_completion = db.Column(db.Date)
     
-    # Status tracking
+    # Status tracking (compatible with existing database)
     status = db.Column(db.String(20), default='draft')  # draft, open, in_progress, partial, completed, cancelled
     priority = db.Column(db.String(10), default='normal')  # low, normal, high, urgent
     
@@ -148,29 +148,115 @@ class ProductionOrder(db.Model):
         
         return job_works_created
     
+    def can_transition_to_status(self, new_status):
+        """Check if production order can transition to the specified status using validation service"""
+        from models.status_tracking import StatusValidationService
+        return StatusValidationService.validate_production_status_transition(self.status, new_status)
+    
+    def update_status(self, new_status, user_id=None, notes=None, auto_update=False):
+        """Update production status with validation and logging"""
+        from models.status_tracking import StatusValidationService, ProductionStatusHistory
+        
+        # Validate transition
+        if not self.can_transition_to_status(new_status):
+            raise ValueError(f"Invalid status transition from {self.status} to {new_status}")
+        
+        # Check prerequisites
+        if not auto_update:
+            errors = StatusValidationService.check_production_prerequisites(self, new_status)
+            if errors:
+                raise ValueError(f"Cannot change status: {'; '.join(errors)}")
+        
+        # Store previous status and update
+        old_status = self.status
+        self.status = new_status
+        
+        # Auto-update related fields based on status
+        if new_status == 'in_progress' and not self.start_date:
+            self.start_date = datetime.utcnow().date()
+        elif new_status in ['completed'] and not self.actual_completion:
+            self.actual_completion = datetime.utcnow().date()
+        
+        # Create status history record
+        history = ProductionStatusHistory(
+            production_order_id=self.id,
+            old_status=old_status,
+            new_status=new_status,
+            changed_by=user_id,
+            change_reason=notes or f"Status changed from {old_status} to {new_status}",
+            completion_percentage_at_change=self.get_completion_percentage(),
+            quantity_produced_at_change=self.quantity_produced,
+            timestamp=datetime.utcnow()
+        )
+        db.session.add(history)
+        
+        return True
+    
+    def check_material_readiness(self):
+        """Check if all required materials are available for production"""
+        if not self.bom:
+            return False, "No BOM associated with production order"
+        
+        shortages = []
+        for bom_item in self.bom.items:
+            material = bom_item.material or bom_item.item
+            if material:
+                required_qty = bom_item.quantity_required * self.quantity_ordered
+                available_qty = getattr(material, 'current_stock', 0) or 0
+                
+                if available_qty < required_qty:
+                    shortages.append({
+                        'material': material.name,
+                        'required': required_qty,
+                        'available': available_qty,
+                        'shortage': required_qty - available_qty
+                    })
+        
+        if shortages:
+            return False, f"Material shortages: {len(shortages)} items short"
+        
+        return True, "All materials available"
+    
     def update_progress(self):
-        """Update production progress based on job works and GRNs"""
+        """Enhanced production progress tracking with automatic status updates"""
         completed_qty = 0
         total_cost = 0
         
         # Calculate from completed job works
+        total_job_works = 0
+        completed_job_works = 0
+        
         for job_work in self.job_works:
+            total_job_works += 1
             if job_work.status == 'completed':
+                completed_job_works += 1
                 completed_qty += job_work.quantity_received or 0
                 total_cost += job_work.total_cost or 0
         
+        # Update quantities
         self.quantity_produced = completed_qty
         self.quantity_remaining = max(0, self.quantity_ordered - completed_qty)
         self.job_work_cost = total_cost
         
-        # Update status based on progress
-        if self.quantity_remaining == 0:
-            self.status = 'completed'
-            self.actual_completion = datetime.utcnow().date()
-        elif self.quantity_produced > 0:
-            self.status = 'partial'
-        else:
-            self.status = 'in_progress' if self.job_works.count() > 0 else 'open'
+        # Auto-update status based on progress with validation
+        try:
+            completion_percentage = (completed_qty / self.quantity_ordered * 100) if self.quantity_ordered > 0 else 0
+            
+            if completion_percentage >= 100:
+                if self.can_transition_to_status('completed'):
+                    self.update_status('completed', auto_update=True, 
+                                     notes=f"Auto-completed: {completion_percentage:.1f}% progress achieved")
+            elif completion_percentage > 0 and completion_percentage < 100:
+                if self.can_transition_to_status('partial'):
+                    self.update_status('partial', auto_update=True,
+                                     notes=f"Auto-updated: {completion_percentage:.1f}% progress")
+            elif total_job_works > 0 and self.status == 'draft':
+                if self.can_transition_to_status('in_progress'):
+                    self.update_status('in_progress', auto_update=True,
+                                     notes="Auto-started: Job works initiated")
+        except ValueError:
+            # Status transition not allowed, continue without status update
+            pass
         
         # Calculate total cost
         self.total_cost = self.material_cost + self.labor_cost + self.overhead_cost + self.job_work_cost
@@ -178,6 +264,46 @@ class ProductionOrder(db.Model):
             self.cost_per_unit = self.total_cost / self.quantity_produced
         
         db.session.commit()
+    
+    def get_status_history(self):
+        """Get status change history for this production order"""
+        from models.status_tracking import ProductionStatusHistory
+        return ProductionStatusHistory.query.filter_by(
+            production_order_id=self.id
+        ).order_by(ProductionStatusHistory.timestamp.desc()).all()
+    
+    def get_completion_percentage(self):
+        """Calculate completion percentage"""
+        if self.quantity_ordered == 0:
+            return 0
+        return min(100, (self.quantity_produced / self.quantity_ordered) * 100)
+    
+    def get_process_completion_percentage(self):
+        """Calculate process completion percentage based on job works"""
+        if not hasattr(self, 'job_works') or self.job_works.count() == 0:
+            return 0
+        
+        total_job_works = self.job_works.count()
+        completed_job_works = self.job_works.filter_by(status='completed').count()
+        
+        return min(100, (completed_job_works / total_job_works) * 100)
+    
+    def get_valid_status_transitions(self):
+        """Get list of valid status transitions from current status"""
+        from models.status_tracking import StatusValidationService
+        return StatusValidationService.get_valid_production_transitions(self.status)
+    
+    def get_status_display_info(self):
+        """Get comprehensive status information for UI display"""
+        return {
+            'current_status': self.status,
+            'valid_transitions': self.get_valid_status_transitions(),
+            'completion_percentage': self.get_completion_percentage(),
+            'process_completion_percentage': self.get_process_completion_percentage(),
+            'can_start': self.can_transition_to_status('in_progress'),
+            'can_complete': self.can_transition_to_status('completed'),
+            'materials_check': self.check_material_readiness()
+        }
     
     def to_dict(self):
         """Convert to dictionary for API responses"""
@@ -192,9 +318,14 @@ class ProductionOrder(db.Model):
             'priority': self.priority,
             'order_date': self.order_date.isoformat() if self.order_date else None,
             'expected_completion': self.expected_completion.isoformat() if self.expected_completion else None,
+            'actual_completion': self.actual_completion.isoformat() if self.actual_completion else None,
             'total_cost': self.total_cost,
             'cost_per_unit': self.cost_per_unit,
             'job_works_count': self.job_works.count(),
+            'completion_percentage': self.get_completion_percentage(),
+            'process_completion_percentage': self.get_process_completion_percentage(),
+            'valid_transitions': self.get_valid_status_transitions(),
+            'status_info': self.get_status_display_info(),
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 

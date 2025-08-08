@@ -20,6 +20,9 @@ from .visual_scanning import ComponentDetection, DetectedComponent, ComponentDet
 # Import notification models
 from .notifications import NotificationRecipient, NotificationLog
 
+# Import status tracking models
+from .status_tracking import ProductionStatusHistory, JobWorkStatusHistory, StatusValidationService
+
 class CompanySettings(db.Model):
     __tablename__ = 'company_settings'
     
@@ -1411,8 +1414,67 @@ class JobWork(db.Model):
         """Get count of assigned team members"""
         return len(self.team_assignments)
     
+    def can_transition_to_status(self, new_status):
+        """Check if job work can transition to the specified status"""
+        from .status_tracking import StatusValidationService
+        return StatusValidationService.validate_jobwork_status_transition(self.status, new_status)
+    
+    def update_status(self, new_status, user_id=None, notes=None, auto_update=False):
+        """Update job work status with validation and logging"""
+        from .status_tracking import StatusValidationService, JobWorkStatusHistory
+        
+        # Validate transition
+        if not self.can_transition_to_status(new_status):
+            raise ValueError(f"Invalid status transition from {self.status} to {new_status}")
+        
+        # Check prerequisites
+        if not auto_update:
+            errors = StatusValidationService.check_jobwork_prerequisites(self, new_status)
+            if errors:
+                raise ValueError(f"Cannot change status: {'; '.join(errors)}")
+        
+        # Store previous status and update
+        old_status = self.status
+        self.status = new_status
+        
+        # Auto-update related fields based on status
+        if new_status == 'completed' and not self.received_date:
+            self.received_date = datetime.utcnow().date()
+        
+        # Create status history record
+        history = JobWorkStatusHistory(
+            job_work_id=self.id,
+            old_status=old_status,
+            new_status=new_status,
+            changed_by=user_id,
+            change_reason=notes or f"Status changed from {old_status} to {new_status}",
+            completion_percentage_at_change=self.completion_percentage,
+            quantity_received_at_change=self.quantity_received,
+            quality_status_at_change=self.inspection_status,
+            timestamp=datetime.utcnow()
+        )
+        db.session.add(history)
+        
+        return True
+    
+    def get_valid_status_transitions(self):
+        """Get list of valid status transitions from current status"""
+        from .status_tracking import StatusValidationService
+        return StatusValidationService.get_valid_jobwork_transitions(self.status)
+    
+    def get_status_display_info(self):
+        """Get comprehensive status information for UI display"""
+        return {
+            'current_status': self.status,
+            'valid_transitions': self.get_valid_status_transitions(),
+            'completion_percentage': self.completion_percentage,
+            'can_complete': self.can_transition_to_status('completed'),
+            'inspection_status': self.inspection_status,
+            'pending_quantity': self.pending_quantity
+        }
+    
     def check_and_update_completion_status(self):
-        """Check if all team members are completed and update job work status"""
+        """Enhanced team completion checking with status management"""
         if not self.is_team_work:
             return
             
@@ -1426,12 +1488,17 @@ class JobWork(db.Model):
         all_completed = all(assignment.completion_percentage >= 100.0 for assignment in assignments)
         
         if all_completed and self.status != 'completed':
-            self.status = 'completed'
-            self.received_date = datetime.utcnow().date()
-            
-            # Calculate total received quantity as sum of completed quantities
-            total_completed = sum(assignment.completed_quantity for assignment in assignments)
-            self.quantity_received = total_completed
+            try:
+                # Calculate total received quantity as sum of completed quantities
+                total_completed = sum(assignment.completed_quantity for assignment in assignments)
+                self.quantity_received = total_completed
+                
+                # Use enhanced status update method
+                self.update_status('completed', auto_update=True, 
+                                 notes=f"Auto-completed: All {len(assignments)} team members finished")
+            except ValueError:
+                # Status transition not allowed, just update quantities
+                self.quantity_received = sum(assignment.completed_quantity for assignment in assignments)
     
     @property
     def remaining_team_slots(self):
@@ -1442,6 +1509,41 @@ class JobWork(db.Model):
     def is_team_full(self):
         """Check if team is at maximum capacity"""
         return self.team_member_count >= self.max_team_members
+    
+    def update_progress_from_grn(self):
+        """Update job work progress based on GRN receipts with automatic status updates"""
+        if not self.grn_receipts:
+            return
+        
+        # Calculate total received from GRNs
+        total_grn_received = self.total_grn_received
+        total_grn_passed = self.total_grn_passed
+        
+        # Update quantities if GRN data is more recent
+        old_received = self.quantity_received or 0
+        if total_grn_passed != old_received:
+            self.quantity_received = total_grn_passed
+            
+            # Auto-update status based on progress
+            try:
+                if total_grn_passed >= self.quantity_sent:
+                    if self.can_transition_to_status('completed'):
+                        self.update_status('completed', auto_update=True,
+                                         notes=f"Auto-completed: All material received and passed inspection")
+                elif total_grn_received > 0 and self.status == 'sent':
+                    if self.can_transition_to_status('in_progress'):
+                        self.update_status('in_progress', auto_update=True,
+                                         notes=f"Auto-updated: Material receipt started via GRN")
+            except ValueError:
+                # Status transition not allowed, continue without status update
+                pass
+    
+    def get_status_history(self):
+        """Get status change history for this job work"""
+        from .status_tracking import JobWorkStatusHistory
+        return JobWorkStatusHistory.query.filter_by(
+            job_work_id=self.id
+        ).order_by(JobWorkStatusHistory.timestamp.desc()).all()
     
     @property
     def total_assigned_quantity(self):

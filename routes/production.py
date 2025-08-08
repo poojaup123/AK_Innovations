@@ -1969,3 +1969,233 @@ def api_auto_forward_material():
         return jsonify(result)
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# Enhanced Status Management API Endpoints
+
+@production_bp.route('/api/production/<int:production_id>/update-status', methods=['POST'])
+@login_required
+def api_update_production_status(production_id):
+    """Update production order status with validation"""
+    try:
+        production = ProductionOrder.query.get_or_404(production_id)
+        data = request.get_json() or {}
+        
+        new_status = data.get('status')
+        notes = data.get('notes', '')
+        
+        if not new_status:
+            return jsonify({'success': False, 'message': 'Status is required'}), 400
+        
+        # Update status using enhanced method
+        production.update_status(
+            new_status=new_status,
+            user_id=current_user.id,
+            notes=notes
+        )
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Status updated to {new_status}',
+            'production': production.to_dict(),
+            'status_info': production.get_status_display_info()
+        })
+        
+    except ValueError as e:
+        return jsonify({'success': False, 'message': str(e)}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@production_bp.route('/api/production/<int:production_id>/status-info')
+@login_required
+def api_get_production_status_info(production_id):
+    """Get comprehensive status information for production order"""
+    try:
+        production = ProductionOrder.query.get_or_404(production_id)
+        
+        return jsonify({
+            'success': True,
+            'status_info': production.get_status_display_info(),
+            'valid_transitions': production.get_valid_status_transitions(),
+            'material_check': production.check_material_readiness(),
+            'completion_percentage': production.get_completion_percentage(),
+            'process_completion': production.get_process_completion_percentage()
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@production_bp.route('/api/production/<int:production_id>/status-history')
+@login_required
+def api_get_production_status_history(production_id):
+    """Get status change history for production order"""
+    try:
+        production = ProductionOrder.query.get_or_404(production_id)
+        history = production.get_status_history()
+        
+        return jsonify({
+            'success': True,
+            'history': [h.to_dict() for h in history],
+            'current_status': production.status
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@production_bp.route('/api/production/<int:production_id>/check-materials')
+@login_required
+def api_check_production_materials(production_id):
+    """Check material availability for production order"""
+    try:
+        production = ProductionOrder.query.get_or_404(production_id)
+        is_ready, message = production.check_material_readiness()
+        
+        # Get detailed shortage information if materials not ready
+        shortage_details = []
+        if not is_ready and production.bom:
+            for bom_item in production.bom.items:
+                material = bom_item.material or bom_item.item
+                if material:
+                    required_qty = bom_item.quantity_required * production.quantity_ordered
+                    available_qty = getattr(material, 'current_stock', 0) or 0
+                    
+                    if available_qty < required_qty:
+                        shortage_details.append({
+                            'material_id': material.id,
+                            'material_name': material.name,
+                            'material_code': getattr(material, 'code', ''),
+                            'required_quantity': required_qty,
+                            'available_quantity': available_qty,
+                            'shortage_quantity': required_qty - available_qty,
+                            'unit_of_measure': getattr(material, 'unit_of_measure', 'pcs')
+                        })
+        
+        return jsonify({
+            'success': True,
+            'materials_ready': is_ready,
+            'message': message,
+            'shortage_details': shortage_details,
+            'can_start_production': is_ready and production.can_transition_to_status('in_progress')
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@production_bp.route('/api/production/bulk-status-update', methods=['POST'])
+@login_required
+def api_bulk_update_production_status():
+    """Bulk update status for multiple production orders"""
+    try:
+        data = request.get_json() or {}
+        production_ids = data.get('production_ids', [])
+        new_status = data.get('status')
+        notes = data.get('notes', 'Bulk status update')
+        
+        if not production_ids or not new_status:
+            return jsonify({'success': False, 'message': 'Production IDs and status are required'}), 400
+        
+        updated_productions = []
+        failed_updates = []
+        
+        for production_id in production_ids:
+            try:
+                production = ProductionOrder.query.get(production_id)
+                if not production:
+                    failed_updates.append({'id': production_id, 'error': 'Production order not found'})
+                    continue
+                
+                production.update_status(
+                    new_status=new_status,
+                    user_id=current_user.id,
+                    notes=notes
+                )
+                updated_productions.append(production.to_dict())
+                
+            except ValueError as e:
+                failed_updates.append({'id': production_id, 'error': str(e)})
+            except Exception as e:
+                failed_updates.append({'id': production_id, 'error': f'Unexpected error: {str(e)}'})
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Updated {len(updated_productions)} production orders',
+            'updated_count': len(updated_productions),
+            'failed_count': len(failed_updates),
+            'updated_productions': updated_productions,
+            'failed_updates': failed_updates
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@production_bp.route('/api/production/status-dashboard')
+@login_required
+def api_production_status_dashboard():
+    """Get production status dashboard data"""
+    try:
+        from models.status_tracking import StatusValidationService
+        
+        # Get production order counts by status
+        status_counts = {}
+        for status in StatusValidationService.PRODUCTION_STATUSES:
+            count = ProductionOrder.query.filter_by(status=status).count()
+            status_counts[status] = {
+                'count': count,
+                'description': StatusValidationService.PRODUCTION_STATUSES[status]
+            }
+        
+        # Get recent status changes
+        from models.status_tracking import ProductionStatusHistory
+        recent_changes = ProductionStatusHistory.query.order_by(
+            ProductionStatusHistory.timestamp.desc()
+        ).limit(10).all()
+        
+        # Get productions needing attention
+        needs_attention = []
+        
+        # Find productions with material shortages
+        for production in ProductionOrder.query.filter_by(status='draft').all():
+            is_ready, message = production.check_material_readiness()
+            if not is_ready:
+                needs_attention.append({
+                    'production_id': production.id,
+                    'production_number': production.po_number,
+                    'issue': 'Material shortage',
+                    'message': message,
+                    'priority': 'high' if 'shortage' in message.lower() else 'medium'
+                })
+        
+        # Find overdue productions
+        from datetime import date
+        overdue_productions = ProductionOrder.query.filter(
+            ProductionOrder.expected_completion < date.today(),
+            ProductionOrder.status.in_(['draft', 'in_progress', 'partial'])
+        ).all()
+        
+        for production in overdue_productions:
+            needs_attention.append({
+                'production_id': production.id,
+                'production_number': production.po_number,
+                'issue': 'Overdue',
+                'message': f'Expected completion: {production.expected_completion}',
+                'priority': 'high'
+            })
+        
+        return jsonify({
+            'success': True,
+            'status_counts': status_counts,
+            'recent_changes': [change.to_dict() for change in recent_changes],
+            'needs_attention': needs_attention,
+            'total_productions': ProductionOrder.query.count(),
+            'active_productions': ProductionOrder.query.filter(
+                ProductionOrder.status.in_(['draft', 'in_progress', 'partial'])
+            ).count()
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
