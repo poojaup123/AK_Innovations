@@ -793,22 +793,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Trigger change event to load BOM if needed
         itemSelect.dispatchEvent(new Event('change'));
     }
-                    // Set a flag to indicate we want to see BOM
-                    const hiddenInput = document.createElement('input');
-                    hiddenInput.type = 'hidden';
-                    hiddenInput.name = 'preview_bom';
-                    hiddenInput.value = '1';
-                    form.appendChild(hiddenInput);
-                    
-                    // Submit form to reload with BOM data
-                    const submitBtn = form.querySelector('button[type="submit"]');
-                    if (submitBtn) {
-                        submitBtn.click();
-                    }
-                }
-            }
-        });
-    }
 });
 </script>
 {% endblock %}
