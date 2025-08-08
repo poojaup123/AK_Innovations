@@ -153,7 +153,7 @@ class GRNLineItem(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    grn = db.relationship('GRN', overlaps="grn_parent,line_items")
+    grn = db.relationship('GRN')
     item = db.relationship('Item', backref='grn_line_items')
     
     @property

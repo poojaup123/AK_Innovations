@@ -2,18 +2,9 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from forms import ProductionForm, BOMForm, BOMItemForm, BOMProcessForm
-from models import Item, BOM, BOMItem, BOMProcess, Supplier, ItemBatch
-from models.production import ProductionOrder
-from models import ProductionBatch
-from models.batch import InventoryBatch, BatchMovement, JobWorkBatch, BatchTraceability
-from models.accounting import JournalEntry, Account
+from models import Production, Item, BOM, BOMItem, BOMProcess, Supplier, ItemBatch, ProductionBatch
 from services.process_integration import ProcessIntegrationService
 from services.authentic_accounting_integration import AuthenticAccountingIntegration
-from services.production_service import ProductionService
-from services.workflow_automation import WorkflowAutomationService
-from services.quality_management import QualityManagementService
-from services.vendor_analytics import VendorAnalyticsService
-from services.advanced_reporting import AdvancedReportingService
 from app import db
 from sqlalchemy import func, or_
 from utils import generate_production_number
@@ -27,13 +18,13 @@ production_bp = Blueprint('production', __name__)
 @login_required
 def dashboard():
     # Enhanced production statistics
-    total_productions = ProductionOrder.query.count()
-    planned_productions = ProductionOrder.query.filter_by(status='planned').count()
-    in_progress_productions = ProductionOrder.query.filter_by(status='in_progress').count()
-    completed_productions = ProductionOrder.query.filter_by(status='completed').count()
+    total_productions = Production.query.count()
+    planned_productions = Production.query.filter_by(status='planned').count()
+    in_progress_productions = Production.query.filter_by(status='in_progress').count()
+    completed_productions = Production.query.filter_by(status='completed').count()
     
     # Calculate cost metrics from completed productions
-    completed_prods = ProductionOrder.query.filter_by(status='completed').all()
+    completed_prods = Production.query.filter_by(status='completed').all()
     avg_cost_per_unit = 0
     avg_material_cost = 0
     avg_labor_cost = 0
@@ -84,42 +75,26 @@ def dashboard():
     }
     
     # Recent productions
-    recent_productions = ProductionOrder.query.order_by(ProductionOrder.created_at.desc()).limit(10).all()
+    recent_productions = Production.query.order_by(Production.created_at.desc()).limit(10).all()
     
     # Active productions with BOM processes for pipeline view
-    active_productions = ProductionOrder.query.filter(
-        ProductionOrder.status.in_(['planned', 'in_progress'])
-    ).order_by(ProductionOrder.created_at.desc()).limit(5).all()
+    active_productions = Production.query.filter(
+        Production.status.in_(['planned', 'in_progress'])
+    ).order_by(Production.created_at.desc()).limit(5).all()
     
     # Today's production summary
     from datetime import date
-    today_productions = ProductionOrder.query.filter_by(order_date=date.today()).all()
+    today_productions = Production.query.filter_by(production_date=date.today()).all()
     
     # Products with BOM
     products_with_bom = db.session.query(Item).join(BOM).filter(BOM.is_active == True).all()
-    
-    # Get vendor analytics for dashboard
-    vendor_analytics = None
-    quality_data = None
-    try:
-        vendor_result = VendorAnalyticsService.calculate_vendor_performance_kpis()
-        if vendor_result['success']:
-            vendor_analytics = vendor_result['vendor_performance']
-        
-        quality_result = QualityManagementService.get_quality_dashboard_data()
-        if quality_result['success']:
-            quality_data = quality_result['dashboard_data']
-    except Exception as e:
-        print(f"Error getting analytics: {e}")
     
     return render_template('production/dashboard.html', 
                          stats=stats, 
                          recent_productions=recent_productions,
                          active_productions=active_productions,
                          today_productions=today_productions,
-                         products_with_bom=products_with_bom,
-                         vendor_analytics=vendor_analytics,
-                         quality_data=quality_data)
+                         products_with_bom=products_with_bom)
 
 @production_bp.route('/list')
 @login_required
@@ -127,11 +102,11 @@ def list_productions():
     page = request.args.get('page', 1, type=int)
     status_filter = request.args.get('status', '', type=str)
     
-    query = ProductionOrder.query
+    query = Production.query
     if status_filter:
         query = query.filter_by(status=status_filter)
     
-    productions = query.order_by(ProductionOrder.created_at.desc()).paginate(
+    productions = query.order_by(Production.created_at.desc()).paginate(
         page=page, per_page=20, error_out=False)
     
     return render_template('production/list.html', productions=productions, status_filter=status_filter)
@@ -143,7 +118,7 @@ def list_productions():
 def api_get_available_batches_for_production(production_id):
     """Get available material batches for a production order"""
     try:
-        production = ProductionOrder.query.get_or_404(production_id)
+        production = Production.query.get_or_404(production_id)
         bom = production.bom
         
         if not bom:
@@ -195,8 +170,8 @@ def api_get_available_batches_for_production(production_id):
 def api_issue_materials_for_production(production_id):
     """Issue materials from specific batches for production"""
     try:
-        production = ProductionOrder.query.get_or_404(production_id)
-        data = request.get_json() or {}
+        production = Production.query.get_or_404(production_id)
+        data = request.json
         batch_selections = data.get('batch_selections', [])
         
         # Validate and process each batch selection
@@ -213,21 +188,14 @@ def api_issue_materials_for_production(production_id):
                 return jsonify({'success': False, 'message': f'Insufficient quantity in batch {batch.batch_number}'})
             
             # Create production batch record
-            try:
-                production_batch = ProductionBatch(
-                    production_id=production_id,
-                    material_batch_id=batch_id,
-                    quantity_consumed=quantity_to_issue,
-                    quantity_remaining=batch.qty_raw - quantity_to_issue,
-                    bom_item_id=bom_item_id,
-                    notes=f"Issued for production {production.production_number}"
-                )
-            except Exception:
-                # Fallback if constructor args don't match
-                production_batch = ProductionBatch()
-                production_batch.production_id = production_id
-                production_batch.material_batch_id = batch_id
-                production_batch.quantity_consumed = quantity_to_issue
+            production_batch = ProductionBatch(
+                production_id=production_id,
+                material_batch_id=batch_id,
+                quantity_consumed=quantity_to_issue,
+                quantity_remaining=batch.qty_raw - quantity_to_issue,
+                bom_item_id=bom_item_id,
+                notes=f"Issued for production {production.production_number}"
+            )
             
             # Update batch inventory - move from raw to WIP
             success = batch.issue_to_production(quantity_to_issue, production.production_number)
@@ -257,8 +225,8 @@ def api_issue_materials_for_production(production_id):
 def api_complete_production(production_id):
     """Complete production and create output batches"""
     try:
-        production = ProductionOrder.query.get_or_404(production_id)
-        data = request.get_json() or {}
+        production = Production.query.get_or_404(production_id)
+        data = request.json
         
         quantity_good = data.get('quantity_good', 0)
         quantity_damaged = data.get('quantity_damaged', 0)
@@ -279,21 +247,16 @@ def api_complete_production(production_id):
             output_batch = production.create_output_batch()
             if output_batch:
                 # Create batch movement record
-                # Record batch movement if method exists
-                try:
-                    BatchTracker.record_batch_movement(
-                        batch_id=output_batch.id,
-                        from_state=None,
-                        to_state='Finished',
-                        quantity=quantity_good,
-                        ref_type='PRODUCTION',
-                        ref_id=production_id,
-                        ref_number=production.production_number,
-                        notes=f"Production completed - {production.production_number}"
-                    )
-                except AttributeError:
-                    # Method doesn't exist, skip batch movement recording
-                    pass
+                BatchTracker.record_batch_movement(
+                    batch_id=output_batch.id,
+                    from_state=None,
+                    to_state='Finished',
+                    quantity=quantity_good,
+                    ref_type='PRODUCTION',
+                    ref_id=production_id,
+                    ref_number=production.production_number,
+                    notes=f"Production completed - {production.production_number}"
+                )
         
         db.session.commit()
         
@@ -312,7 +275,7 @@ def api_complete_production(production_id):
 def api_get_production_batch_consumption(production_id):
     """Get batch consumption details for a production"""
     try:
-        production = ProductionOrder.query.get_or_404(production_id)
+        production = Production.query.get_or_404(production_id)
         production_batches = ProductionBatch.query.filter_by(production_id=production_id).all()
         
         consumption_data = []
@@ -340,7 +303,7 @@ def api_get_production_batch_consumption(production_id):
 @login_required
 def view(production_id):
     """View production details"""
-    production = ProductionOrder.query.get_or_404(production_id)
+    production = Production.query.get_or_404(production_id)
     
     # Get the item being produced
     item = Item.query.get(production.item_id) if production.item_id else None
@@ -375,7 +338,7 @@ def add_production():
     
     if form.validate_on_submit():
         # Check if production number already exists
-        existing_production = ProductionOrder.query.filter_by(po_number=form.production_number.data).first()
+        existing_production = Production.query.filter_by(production_number=form.production_number.data).first()
         if existing_production:
             flash('Production number already exists', 'danger')
             return render_template('production/form.html', form=form, title='Add Production')
@@ -385,215 +348,88 @@ def add_production():
         active_bom = BOM.query.filter_by(product_id=form.item_id.data, is_active=True).first()
         
         material_shortages = []
-        job_work_suggestions = []
-        purchase_order_suggestions = []
         bom_items = []
         
         if active_bom:
             bom_items = BOMItem.query.filter_by(bom_id=active_bom.id).all()
             
-            # Enhanced multi-level BOM explosion with smart job work suggestions
-            from models.batch import InventoryBatch
+            # Link the BOM to production order
+            production_bom_id = active_bom.id
             
+            # Check material availability for each BOM item using multi-state inventory
             for bom_item in bom_items:
-                # Calculate material requirement
-                required_qty = (form.quantity_planned.data or 1) * (bom_item.quantity_required or 0)
+                # Calculate material requirement based on BOM output quantity
+                # BOM shows: 1 Ms sheet → 400 Mounted Plates
+                # If producing 10,000 plates, need: 10,000 ÷ 400 = 25 Ms sheets
                 
-                # Get direct availability of this component
-                component_item = bom_item.item
-                direct_available = db.session.query(
-                    func.sum(
-                        (InventoryBatch.qty_raw or 0) + 
-                        (InventoryBatch.qty_finished or 0) +
-                        (InventoryBatch.qty_wip or 0)
-                    )
-                ).filter_by(item_id=component_item.id).scalar() or 0
+                material_qty_per_output = bom_item.quantity_required or bom_item.qty_required
+                bom_output_qty = active_bom.output_quantity or 1.0  # Default to 1 if not set
                 
-                # Also check item's current_stock as fallback
-                direct_available = max(direct_available, component_item.current_stock or 0)
+                # Calculate actual material needed: (planned_qty / bom_output_qty) * material_qty_per_output
+                required_qty = (form.quantity_planned.data / bom_output_qty) * material_qty_per_output
                 
-                # Check if component can be manufactured (has BOM)
-                component_bom = BOM.query.filter_by(product_id=component_item.id, is_active=True).first()
-                manufacturable_qty = 0
-                raw_materials_available = []
+                # Check available quantity from multi-state inventory (Raw + Finished for materials)
+                item = bom_item.item
+                available_qty = 0
                 
-                if component_bom:
-                    # Calculate how many can be made from available raw materials
-                    max_manufacturable = float('inf')
-                    
-                    for sub_bom_item in BOMItem.query.filter_by(bom_id=component_bom.id).all():
-                        raw_material = sub_bom_item.item
-                        raw_required_per_unit = sub_bom_item.quantity_required or 0
-                        
-                        # Get available raw material quantity
-                        raw_available = db.session.query(
-                            func.sum(
-                                (InventoryBatch.qty_raw or 0) + 
-                                (InventoryBatch.qty_finished or 0)
-                            )
-                        ).filter_by(item_id=raw_material.id).scalar() or 0
-                        raw_available = max(raw_available, raw_material.current_stock or 0)
-                        
-                        if raw_required_per_unit > 0:
-                            # Calculate with BOM output quantity for proper conversion
-                            bom_output_qty = component_bom.output_quantity or 1
-                            possible_from_this_material = (raw_available / raw_required_per_unit) * bom_output_qty
-                            max_manufacturable = min(max_manufacturable, possible_from_this_material)
-                            
-                            raw_materials_available.append({
-                                'raw_material': raw_material.name,
-                                'raw_code': raw_material.code,
-                                'available': raw_available,
-                                'required_per_unit': raw_required_per_unit,
-                                'can_make': int(possible_from_this_material),
-                                'bom_output_qty': bom_output_qty
-                            })
-                    
-                    manufacturable_qty = int(max_manufacturable) if max_manufacturable != float('inf') else 0
+                # For materials, use raw + finished quantities
+                if hasattr(item, 'qty_raw') and hasattr(item, 'qty_finished'):
+                    available_qty = (item.qty_raw or 0) + (item.qty_finished or 0)
+                else:
+                    # Fallback to current_stock if multi-state not available
+                    available_qty = item.current_stock or 0
                 
-                # Total availability = direct stock + manufacturable quantity
-                total_available = direct_available + manufacturable_qty
+                # Also check batch-level availability
+                from models.batch import InventoryBatch
+                batch_qty = db.session.query(
+                    func.sum(InventoryBatch.qty_raw + InventoryBatch.qty_finished)
+                ).filter_by(item_id=item.id).scalar() or 0
                 
-                # Generate smart job work suggestions for all manufacturable components
-                if component_bom and manufacturable_qty > 0:
-                    # For components with shortage, suggest to cover the shortage
-                    # For components without shortage, suggest manufacturing capacity
-                    if total_available < required_qty:
-                        suggestion_qty = min(required_qty - total_available, manufacturable_qty)
-                        message = f"Create job work for {suggestion_qty:.0f} {component_item.name} to resolve shortage"
-                    else:
-                        suggestion_qty = min(required_qty, manufacturable_qty)
-                        message = f"Create job work for {suggestion_qty:.0f} {component_item.name} using available raw materials"
-                    
-                    job_work_suggestions.append({
-                        'component': component_item.name,
-                        'component_code': component_item.code,
-                        'suggested_qty': suggestion_qty,
-                        'raw_materials_needed': raw_materials_available,
-                        'message': message,
-                        'bom_output_qty': component_bom.output_quantity or 1,
-                        'suggestion_type': 'job_work'
-                    })
+                # Use the higher of the two (item-level or batch-level)
+                available_qty = max(available_qty, batch_qty)
                 
-                # Generate Purchase Order suggestions for items that can't be manufactured
-                if not component_bom and total_available < required_qty:
-                    shortage_qty = required_qty - total_available
-                    purchase_order_suggestions.append({
-                        'component': component_item.name,
-                        'component_code': component_item.code,
-                        'suggested_qty': shortage_qty,
-                        'message': f"Create Purchase Order for {shortage_qty:.0f} {component_item.name} - Direct purchase item",
-                        'suggestion_type': 'purchase_order',
-                        'supplier_info': 'Select appropriate supplier for this item'
-                    })
-                
-                # Check for shortage OR show manufacturing info for components with zero direct stock
-                is_short = total_available < required_qty
-                show_manufacturing_info = (direct_available == 0 and component_bom and manufacturable_qty > 0)
-                
-                if is_short or show_manufacturing_info:
-                    shortage_qty = max(0, required_qty - total_available) if is_short else 0
-                    shortage_info = {
-                        'item_code': component_item.code,
-                        'item_name': component_item.name,
+                if available_qty < required_qty:
+                    shortage_qty = required_qty - available_qty
+                    material_shortages.append({
+                        'item_code': bom_item.item.code,
+                        'item_name': bom_item.item.name,
                         'required_qty': required_qty,
-                        'direct_available': direct_available,
-                        'manufacturable_qty': manufacturable_qty,
-                        'total_available': total_available,
+                        'available_qty': available_qty,
                         'shortage_qty': shortage_qty,
-                        'unit': component_item.unit_of_measure or 'Pcs',
-                        'can_manufacture': component_bom is not None,
-                        'raw_materials': raw_materials_available,
-                        'is_manufacturing_opportunity': not is_short and show_manufacturing_info
-                    }
-                    material_shortages.append(shortage_info)
-        
-        # Add complete product capacity calculation for items sharing same raw materials
-        if selected_item and selected_item.name == 'castor wheel' and job_work_suggestions:
-            # Calculate complete castor wheel capacity considering limiting components
-            castor_capacity = []
-            ms_sheet_usage = {}  # Track how MS sheet is used for each component
-            
-            for suggestion in job_work_suggestions:
-                component_name = suggestion['component']
-                for raw in suggestion['raw_materials_needed']:
-                    if 'Ms sheet' in raw['raw_material']:
-                        ms_sheet_usage[component_name] = {
-                            'available_sheets': raw['available'],
-                            'can_make_units': raw['can_make'],
-                            'bom_output_qty': raw.get('bom_output_qty', 1)
-                        }
-            
-            # Calculate limiting component for complete castor wheels
-            if len(ms_sheet_usage) >= 2:  # If multiple components use MS sheet
-                limiting_component = None
-                min_castor_wheels = float('inf')
-                
-                for comp_name, usage in ms_sheet_usage.items():
-                    # Each castor wheel needs 1 of each component
-                    possible_castors = usage['can_make_units']
-                    if possible_castors < min_castor_wheels:
-                        min_castor_wheels = possible_castors
-                        limiting_component = comp_name
-                
-                if min_castor_wheels != float('inf') and min_castor_wheels > 0:
-                    # Add smart castor wheel suggestion
-                    job_work_suggestions.append({
-                        'component': 'Complete Castor Wheel Set',
-                        'component_code': selected_item.code,
-                        'suggested_qty': min_castor_wheels,
-                        'raw_materials_needed': [
-                            {
-                                'raw_material': f'MS sheet (via {limiting_component})',
-                                'available': 98,
-                                'can_make': int(min_castor_wheels)
-                            }
-                        ],
-                        'message': f"Create complete castor wheel production - Limited by {limiting_component} capacity",
-                        'is_complete_set': True
+                        'unit': bom_item.item.unit_of_measure
                     })
         
-        # If there are material shortages, show them with smart suggestions
+        # If there are material shortages, show them and prevent production creation
         if material_shortages:
-            shortage_message = "Material shortages detected:<br>"
+            shortage_message = "Cannot create production order. Material shortages detected:<br>"
             for shortage in material_shortages:
-                shortage_message += f"• <strong>{shortage['item_code']} - {shortage['item_name']}</strong>: "
-                shortage_message += f"Need {shortage['required_qty']:.0f} {shortage['unit']}, "
-                shortage_message += f"Available {shortage['direct_available']:.0f} direct"
-                if shortage['manufacturable_qty'] > 0:
-                    shortage_message += f" + {shortage['manufacturable_qty']:.0f} manufacturable"
-                shortage_message += f" = {shortage['total_available']:.0f} total, "
-                shortage_message += f"<span class='text-danger'>Short by {shortage['shortage_qty']:.0f} {shortage['unit']}</span><br>"
+                shortage_message += f"• {shortage['item_code']} - {shortage['item_name']}: "
+                shortage_message += f"Need {shortage['required_qty']:.2f} {shortage['unit']}, "
+                shortage_message += f"Available {shortage['available_qty']:.2f} {shortage['unit']}, "
+                shortage_message += f"<strong>Short by {shortage['shortage_qty']:.2f} {shortage['unit']}</strong><br>"
             
-            # Add job work suggestions
-            if job_work_suggestions:
-                suggestion_message = "<br><strong>💡 Smart Job Work Suggestions:</strong><br>"
-                for suggestion in job_work_suggestions:
-                    suggestion_message += f"• <a href='{url_for('jobwork.add_job_work')}?component_id={suggestion['component_code']}' class='btn btn-sm btn-success me-2'>Create Job Work</a> "
-                    suggestion_message += f"{suggestion['message']}<br>"
-                    for raw in suggestion['raw_materials_needed']:
-                        if raw['available'] > 0:
-                            suggestion_message += f"  ✓ {raw['raw_material']}: {raw['available']:.0f} available (can make {raw['can_make']:.0f} units)<br>"
-                shortage_message += suggestion_message
-            
-            flash(shortage_message, 'warning')
+            flash(shortage_message, 'danger')
             return render_template('production/form.html', 
                                  form=form, 
                                  title='Add Production',
                                  material_shortages=material_shortages,
-                                 job_work_suggestions=job_work_suggestions + purchase_order_suggestions,
                                  bom_items=bom_items,
                                  selected_item=selected_item)
         
-        production = ProductionOrder(
-            po_number=form.production_number.data,
-            product_id=form.item_id.data,
-            quantity_ordered=form.quantity_planned.data,
+        production = Production(
+            production_number=form.production_number.data,
+            item_id=form.item_id.data,
+            quantity_planned=form.quantity_planned.data,
+            planned_uom=form.planned_uom.data,
             quantity_produced=form.quantity_produced.data or 0.0,
-            order_date=form.production_date.data,
+            quantity_good=form.quantity_good.data or 0.0,
+            quantity_damaged=form.quantity_damaged.data or 0.0,
+            scrap_quantity=form.scrap_quantity.data or 0.0,
+            production_date=form.production_date.data,
             status=form.status.data,
             notes=form.notes.data,
             bom_id=active_bom.id if active_bom else None,
+            batch_tracking_enabled=True,  # Enable batch tracking by default
             created_by=current_user.id
         )
         db.session.add(production)
@@ -628,24 +464,24 @@ def add_production():
 @production_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_production(id):
-    production = ProductionOrder.query.get_or_404(id)
+    production = Production.query.get_or_404(id)
     form = ProductionForm(obj=production)
     form.item_id.choices = [(0, 'Select Item')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.order_by(Item.name).all()]
     
     if form.validate_on_submit():
         # Check if production number already exists (excluding current production)
-        existing_production = ProductionOrder.query.filter(
-            ProductionOrder.po_number == form.production_number.data, 
-            ProductionOrder.id != id
+        existing_production = Production.query.filter(
+            Production.production_number == form.production_number.data, 
+            Production.id != id
         ).first()
         if existing_production:
             flash('Production number already exists', 'danger')
             return render_template('production/form.html', form=form, title='Edit Production', production=production)
         
-        production.po_number = form.production_number.data
-        production.product_id = form.item_id.data
-        production.quantity_ordered = form.quantity_planned.data
-        production.order_date = form.production_date.data
+        production.production_number = form.production_number.data
+        production.item_id = form.item_id.data
+        production.quantity_planned = form.quantity_planned.data
+        production.production_date = form.production_date.data
         production.notes = form.notes.data
         
         db.session.commit()
@@ -653,7 +489,7 @@ def edit_production(id):
         return redirect(url_for('production.list_productions'))
     
     # Get BOM for the product if available
-    bom = BOM.query.filter_by(product_id=production.product_id, is_active=True).first()
+    bom = BOM.query.filter_by(product_id=production.item_id, is_active=True).first()
     bom_items = []
     if bom:
         bom_items = BOMItem.query.filter_by(bom_id=bom.id).all()
@@ -667,7 +503,7 @@ def edit_production(id):
 @production_bp.route('/update_status/<int:id>/<status>')
 @login_required
 def update_status(id, status):
-    production = ProductionOrder.query.get_or_404(id)
+    production = Production.query.get_or_404(id)
     if status in ['planned', 'in_progress', 'completed']:
         production.status = status
         db.session.commit()
@@ -1907,295 +1743,3 @@ def get_bom_job_work_data(bom_id):
             'success': False,
             'error': f'Error loading BOM data: {str(e)}'
         })
-
-
-# Enhanced Production API Endpoints with Advanced Analytics
-
-@production_bp.route('/api/analytics/material-flow')
-@login_required
-def api_material_flow_analytics():
-    """API to get material flow analytics"""
-    try:
-        filters = {
-            'start_date': request.args.get('start_date'),
-            'end_date': request.args.get('end_date'),
-            'item_ids': request.args.getlist('item_ids'),
-            'vendor_names': request.args.getlist('vendor_names')
-        }
-        result = AdvancedReportingService.generate_material_flow_report(filters)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@production_bp.route('/api/analytics/vendor-performance')
-@login_required
-def api_vendor_performance_analytics():
-    """API to get vendor performance analytics"""
-    try:
-        vendor_id = request.args.get('vendor_id', type=int)
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
-        
-        from datetime import datetime
-        if start_date:
-            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-        if end_date:
-            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-            
-        result = VendorAnalyticsService.calculate_vendor_performance_kpis(vendor_id, start_date, end_date)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@production_bp.route('/api/quality/dashboard')
-@login_required
-def api_quality_dashboard():
-    """API to get quality management dashboard data"""
-    try:
-        result = QualityManagementService.get_quality_dashboard_data()
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@production_bp.route('/api/workflow/auto-forward', methods=['POST'])
-@login_required
-def api_auto_forward_material():
-    """API to auto-forward materials to next vendor"""
-    try:
-        data = request.get_json()
-        job_batch_id = data.get('job_batch_id')
-        quality_status = data.get('quality_status', 'passed')
-        result = WorkflowAutomationService.auto_forward_to_next_vendor(job_batch_id, quality_status)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-# Enhanced Status Management API Endpoints
-
-@production_bp.route('/api/production/<int:production_id>/update-status', methods=['POST'])
-@login_required
-def api_update_production_status(production_id):
-    """Update production order status with validation"""
-    try:
-        production = ProductionOrder.query.get_or_404(production_id)
-        data = request.get_json() or {}
-        
-        new_status = data.get('status')
-        notes = data.get('notes', '')
-        
-        if not new_status:
-            return jsonify({'success': False, 'message': 'Status is required'}), 400
-        
-        # Update status using enhanced method
-        production.update_status(
-            new_status=new_status,
-            user_id=current_user.id,
-            notes=notes
-        )
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': f'Status updated to {new_status}',
-            'production': production.to_dict(),
-            'status_info': production.get_status_display_info()
-        })
-        
-    except ValueError as e:
-        return jsonify({'success': False, 'message': str(e)}), 400
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@production_bp.route('/api/production/<int:production_id>/status-info')
-@login_required
-def api_get_production_status_info(production_id):
-    """Get comprehensive status information for production order"""
-    try:
-        production = ProductionOrder.query.get_or_404(production_id)
-        
-        return jsonify({
-            'success': True,
-            'status_info': production.get_status_display_info(),
-            'valid_transitions': production.get_valid_status_transitions(),
-            'material_check': production.check_material_readiness(),
-            'completion_percentage': production.get_completion_percentage(),
-            'process_completion': production.get_process_completion_percentage()
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@production_bp.route('/api/production/<int:production_id>/status-history')
-@login_required
-def api_get_production_status_history(production_id):
-    """Get status change history for production order"""
-    try:
-        production = ProductionOrder.query.get_or_404(production_id)
-        history = production.get_status_history()
-        
-        return jsonify({
-            'success': True,
-            'history': [h.to_dict() for h in history],
-            'current_status': production.status
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@production_bp.route('/api/production/<int:production_id>/check-materials')
-@login_required
-def api_check_production_materials(production_id):
-    """Check material availability for production order"""
-    try:
-        production = ProductionOrder.query.get_or_404(production_id)
-        is_ready, message = production.check_material_readiness()
-        
-        # Get detailed shortage information if materials not ready
-        shortage_details = []
-        if not is_ready and production.bom:
-            for bom_item in production.bom.items:
-                material = bom_item.material or bom_item.item
-                if material:
-                    required_qty = bom_item.quantity_required * production.quantity_ordered
-                    available_qty = getattr(material, 'current_stock', 0) or 0
-                    
-                    if available_qty < required_qty:
-                        shortage_details.append({
-                            'material_id': material.id,
-                            'material_name': material.name,
-                            'material_code': getattr(material, 'code', ''),
-                            'required_quantity': required_qty,
-                            'available_quantity': available_qty,
-                            'shortage_quantity': required_qty - available_qty,
-                            'unit_of_measure': getattr(material, 'unit_of_measure', 'pcs')
-                        })
-        
-        return jsonify({
-            'success': True,
-            'materials_ready': is_ready,
-            'message': message,
-            'shortage_details': shortage_details,
-            'can_start_production': is_ready and production.can_transition_to_status('in_progress')
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@production_bp.route('/api/production/bulk-status-update', methods=['POST'])
-@login_required
-def api_bulk_update_production_status():
-    """Bulk update status for multiple production orders"""
-    try:
-        data = request.get_json() or {}
-        production_ids = data.get('production_ids', [])
-        new_status = data.get('status')
-        notes = data.get('notes', 'Bulk status update')
-        
-        if not production_ids or not new_status:
-            return jsonify({'success': False, 'message': 'Production IDs and status are required'}), 400
-        
-        updated_productions = []
-        failed_updates = []
-        
-        for production_id in production_ids:
-            try:
-                production = ProductionOrder.query.get(production_id)
-                if not production:
-                    failed_updates.append({'id': production_id, 'error': 'Production order not found'})
-                    continue
-                
-                production.update_status(
-                    new_status=new_status,
-                    user_id=current_user.id,
-                    notes=notes
-                )
-                updated_productions.append(production.to_dict())
-                
-            except ValueError as e:
-                failed_updates.append({'id': production_id, 'error': str(e)})
-            except Exception as e:
-                failed_updates.append({'id': production_id, 'error': f'Unexpected error: {str(e)}'})
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': f'Updated {len(updated_productions)} production orders',
-            'updated_count': len(updated_productions),
-            'failed_count': len(failed_updates),
-            'updated_productions': updated_productions,
-            'failed_updates': failed_updates
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@production_bp.route('/api/production/status-dashboard')
-@login_required
-def api_production_status_dashboard():
-    """Get production status dashboard data"""
-    try:
-        from models.status_tracking import StatusValidationService
-        
-        # Get production order counts by status
-        status_counts = {}
-        for status in StatusValidationService.PRODUCTION_STATUSES:
-            count = ProductionOrder.query.filter_by(status=status).count()
-            status_counts[status] = {
-                'count': count,
-                'description': StatusValidationService.PRODUCTION_STATUSES[status]
-            }
-        
-        # Get recent status changes
-        from models.status_tracking import ProductionStatusHistory
-        recent_changes = ProductionStatusHistory.query.order_by(
-            ProductionStatusHistory.timestamp.desc()
-        ).limit(10).all()
-        
-        # Get productions needing attention
-        needs_attention = []
-        
-        # Find productions with material shortages
-        for production in ProductionOrder.query.filter_by(status='draft').all():
-            is_ready, message = production.check_material_readiness()
-            if not is_ready:
-                needs_attention.append({
-                    'production_id': production.id,
-                    'production_number': production.po_number,
-                    'issue': 'Material shortage',
-                    'message': message,
-                    'priority': 'high' if 'shortage' in message.lower() else 'medium'
-                })
-        
-        # Find overdue productions
-        from datetime import date
-        overdue_productions = ProductionOrder.query.filter(
-            ProductionOrder.expected_completion < date.today(),
-            ProductionOrder.status.in_(['draft', 'in_progress', 'partial'])
-        ).all()
-        
-        for production in overdue_productions:
-            needs_attention.append({
-                'production_id': production.id,
-                'production_number': production.po_number,
-                'issue': 'Overdue',
-                'message': f'Expected completion: {production.expected_completion}',
-                'priority': 'high'
-            })
-        
-        return jsonify({
-            'success': True,
-            'status_counts': status_counts,
-            'recent_changes': [change.to_dict() for change in recent_changes],
-            'needs_attention': needs_attention,
-            'total_productions': ProductionOrder.query.count(),
-            'active_productions': ProductionOrder.query.filter(
-                ProductionOrder.status.in_(['draft', 'in_progress', 'partial'])
-            ).count()
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500

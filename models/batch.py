@@ -192,22 +192,9 @@ class JobWorkBatch(db.Model):
     vendor_name = db.Column(db.String(100))
     rate_per_unit = db.Column(db.Float, default=0.0)
     
-    # Enhanced vendor location tracking
-    current_location = db.Column(db.String(100), default='issued')  # issued, at_vendor, in_transit, returned, completed
-    current_vendor = db.Column(db.String(100))  # Current vendor holding the material
-    next_vendor = db.Column(db.String(100))  # Next vendor in the process chain
-    process_sequence = db.Column(db.Integer, default=1)  # Order in multi-process workflow
-    is_auto_forward_enabled = db.Column(db.Boolean, default=False)  # Auto-forward to next vendor
-    
     # Status
-    status = db.Column(db.String(20), default='issued')  # issued, in_progress, returned, completed
+    status = db.Column(db.String(20), default='issued')  # issued, returned, completed
     notes = db.Column(db.Text)
-    
-    # Quality tracking per process
-    quality_status = db.Column(db.String(20), default='pending')  # pending, passed, failed, rework_needed
-    quality_notes = db.Column(db.Text)
-    inspected_by = db.Column(db.String(100))
-    inspection_date = db.Column(db.Date)
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -238,66 +225,6 @@ class JobWorkBatch(db.Model):
     def is_completed(self):
         """Check if job work batch is completed"""
         return self.status == 'completed' and self.return_date is not None
-    
-    @property
-    def location_status_badge_class(self):
-        """Return Bootstrap badge class for location status"""
-        location_classes = {
-            'issued': 'bg-info',
-            'at_vendor': 'bg-warning', 
-            'in_transit': 'bg-primary',
-            'returned': 'bg-success',
-            'completed': 'bg-success'
-        }
-        return location_classes.get(self.current_location, 'bg-secondary')
-    
-    @property
-    def quality_status_badge_class(self):
-        """Return Bootstrap badge class for quality status"""
-        quality_classes = {
-            'pending': 'bg-secondary',
-            'passed': 'bg-success',
-            'failed': 'bg-danger',
-            'rework_needed': 'bg-warning'
-        }
-        return quality_classes.get(self.quality_status, 'bg-secondary')
-    
-    @property
-    def current_location_display(self):
-        """Human readable current location"""
-        if self.current_location == 'at_vendor' and self.current_vendor:
-            return f"At {self.current_vendor}"
-        elif self.current_location == 'in_transit' and self.next_vendor:
-            return f"In transit to {self.next_vendor}"
-        else:
-            return self.current_location.replace('_', ' ').title()
-    
-    def update_location(self, new_location, vendor=None, notes=None):
-        """Update location with history tracking"""
-        old_location = self.current_location
-        self.current_location = new_location
-        
-        if vendor:
-            if new_location == 'at_vendor':
-                self.current_vendor = vendor
-            elif new_location == 'in_transit':
-                self.next_vendor = vendor
-        
-        if notes:
-            self.notes = f"{self.notes or ''}\n{datetime.now().strftime('%Y-%m-%d %H:%M')}: {notes}".strip()
-        
-        # Create location history record
-        history = JobWorkLocationHistory(
-            jobwork_batch_id=self.id,
-            from_location=old_location,
-            to_location=new_location,
-            vendor_name=vendor,
-            notes=notes,
-            timestamp=datetime.utcnow()
-        )
-        db.session.add(history)
-        
-        self.updated_at = datetime.utcnow()
     
     def __repr__(self):
         return f'<JobWorkBatch {self.job_work.job_number if self.job_work else "Unknown"}: {self.process_name}>'
@@ -422,63 +349,6 @@ class BatchMovementLedger(db.Model):
     def get_batch_history(cls, batch_id):
         """Get complete movement history for a batch"""
         return cls.query.filter_by(batch_id=batch_id).order_by(cls.created_at).all()
-
-
-class JobWorkLocationHistory(db.Model):
-    """Track location history of job work batches"""
-    __tablename__ = 'jobwork_location_history'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    jobwork_batch_id = db.Column(db.Integer, db.ForeignKey('jobwork_batches.id'), nullable=False)
-    
-    from_location = db.Column(db.String(100))
-    to_location = db.Column(db.String(100), nullable=False)
-    vendor_name = db.Column(db.String(100))
-    
-    notes = db.Column(db.Text)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
-    
-    # Relationships
-    jobwork_batch = db.relationship('JobWorkBatch', backref='location_history')
-    user = db.relationship('User', backref='location_updates')
-    
-    def __repr__(self):
-        return f'<LocationHistory {self.from_location} → {self.to_location}>'
-
-
-class JobWorkProcessWorkflow(db.Model):
-    """Define multi-vendor process workflows"""
-    __tablename__ = 'jobwork_process_workflows'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    workflow_name = db.Column(db.String(100), nullable=False)
-    item_id = db.Column(db.Integer, db.ForeignKey('items.id'))
-    
-    # Process chain definition
-    sequence_number = db.Column(db.Integer, nullable=False)
-    process_name = db.Column(db.String(100), nullable=False)
-    vendor_name = db.Column(db.String(100))
-    department_name = db.Column(db.String(100))
-    
-    # Auto-forwarding settings
-    auto_forward_enabled = db.Column(db.Boolean, default=False)
-    requires_quality_check = db.Column(db.Boolean, default=True)
-    expected_duration_days = db.Column(db.Integer, default=3)
-    
-    # Notifications
-    send_alerts = db.Column(db.Boolean, default=True)
-    alert_email = db.Column(db.String(200))
-    alert_phone = db.Column(db.String(20))
-    
-    is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Relationships
-    item = db.relationship('Item', backref='process_workflows')
-    
-    def __repr__(self):
-        return f'<ProcessWorkflow {self.workflow_name}: {self.process_name}>'
     
     @classmethod
     def get_item_movements(cls, item_id, start_date=None, end_date=None):

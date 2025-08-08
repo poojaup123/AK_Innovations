@@ -182,41 +182,8 @@
                                 </td>
                                 <td>Automatic FIFO-based batch selection eliminates manual selection and ensures optimal inventory rotation</td>
                             </tr>
-                            <tr id="output_quantity_row">
-                                <td><strong>Output Quantity</strong></td>
-                                <td>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" id="output_quantity" placeholder="Enter desired output quantity" step="0.01" min="0" onchange="calculateInputQuantity()">
-                                        <span class="input-group-text" id="output_material_unit">Pcs</span>
-                                    </div>
-                                    <small class="text-muted">Enter how many finished pieces you want to produce</small>
-                                </td>
-                                <td>Target production quantity</td>
-                            </tr>
-                            <tr id="conversion_ratio_row" style="display: none;">
-                                <td><strong>Conversion Ratio</strong></td>
-                                <td>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" id="conversion_ratio" placeholder="Input per output unit" step="0.01" min="0" value="1" onchange="calculateInputQuantity()">
-                                        <span class="input-group-text">Input/Output</span>
-                                    </div>
-                                    <small class="text-muted">How much input material needed per output unit (e.g., 1.2 kg input per 1 piece output)</small>
-                                </td>
-                                <td>Material conversion factor for this process</td>
-                            </tr>
-                            <tr id="scrap_allowance_row" style="display: none;">
-                                <td><strong>Scrap Allowance</strong></td>
-                                <td>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" id="scrap_allowance" placeholder="Scrap percentage" step="0.1" min="0" max="50" value="0" onchange="calculateInputQuantity()">
-                                        <span class="input-group-text">%</span>
-                                    </div>
-                                    <small class="text-muted">Expected material loss percentage</small>
-                                </td>
-                                <td>Manufacturing waste allowance</td>
-                            </tr>
                             <tr>
-                                <td><strong>Input Required <small id="calculation_mode">(Auto-calculated)</small></strong></td>
+                                <td><strong>Quantity to Issue</strong></td>
                                 <td>
                                     <div class="input-group">
                                         {{ form.quantity_to_issue(class="form-control", id="quantity_to_issue") }}
@@ -231,7 +198,7 @@
                                     <div id="stock_status" class="mt-1"></div>
                                     <div id="calculation_display" class="mt-2"></div>
                                 </td>
-                                <td>Material requirement based on output quantity and conversion settings</td>
+                                <td>5 Pieces / Kg</td>
                             </tr>
                             <tr id="output_batch_row" style="display: none;">
                                 <td><strong>Create Output Batch</strong></td>
@@ -973,14 +940,6 @@ document.addEventListener('DOMContentLoaded', function() {
         loadAssignmentOptions();
     }
     
-    // Add event listener for job work type changes
-    const jobWorkTypeSelect = document.getElementById('job_work_type');
-    if (jobWorkTypeSelect) {
-        jobWorkTypeSelect.addEventListener('change', toggleConversionControls);
-        // Initialize controls based on current selection
-        toggleConversionControls();
-    }
-    
     // Add event listener for BOM selection
     const bomSelect = document.getElementById('bom_select');
     if (bomSelect) {
@@ -991,22 +950,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 clearBOMData();
                 clearJobWorkTitle();
             }
-            // Recalculate input quantity when BOM selection changes
-            calculateInputQuantity();
         });
-    }
-    
-    // Add event listener for output quantity for auto-calculation
-    const outputQuantityInput = document.getElementById('output_quantity');
-    if (outputQuantityInput) {
-        outputQuantityInput.addEventListener('input', calculateInputQuantity);
-        outputQuantityInput.addEventListener('change', calculateInputQuantity);
-        outputQuantityInput.addEventListener('change', calculateExpectedOutput);
     }
     
     // Add event listener for quantity to issue for auto-calculation
     const quantityToIssueInput = document.getElementById('quantity_to_issue');
     if (quantityToIssueInput) {
+        quantityToIssueInput.addEventListener('input', calculateExpectedOutput);
         quantityToIssueInput.addEventListener('change', calculateExpectedOutput);
     }
     
@@ -1019,7 +969,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // Automatic Batch Allocation Function
 async function autoAllocateBatches() {
     const itemSelect = document.getElementById('input_material');
-    const outputQuantityInput = document.getElementById('output_quantity');
     const quantityInput = document.getElementById('quantity_to_issue');
     const allocateBtn = document.getElementById('auto_allocate_btn');
     
@@ -1028,18 +977,8 @@ async function autoAllocateBatches() {
         return;
     }
     
-    if (!outputQuantityInput || !outputQuantityInput.value || parseFloat(outputQuantityInput.value) <= 0) {
-        alert('Please enter the desired output quantity first');
-        return;
-    }
-    
-    // Auto-calculate input quantity if not already done
-    if (!quantityInput.value) {
-        calculateInputQuantity();
-    }
-    
     if (!quantityInput || !quantityInput.value || parseFloat(quantityInput.value) <= 0) {
-        alert('Unable to calculate input requirement. Please check output quantity.');
+        alert('Please enter a valid quantity to issue');
         return;
     }
     
@@ -1124,109 +1063,6 @@ function updateAllocationStatus(allocatedQty, requiredQty) {
         const shortage = requiredQty - allocatedQty;
         statusDiv.innerHTML = `<span class="badge bg-warning">⚠ Shortage: ${shortage}</span>`;
     }
-}
-
-// Calculate input quantity based on output quantity and conversion settings
-function calculateInputQuantity() {
-    const outputQuantity = parseFloat(document.getElementById('output_quantity').value) || 0;
-    const inputQuantityField = document.getElementById('quantity_to_issue');
-    const calculationDisplay = document.getElementById('calculation_display');
-    const bomSelect = document.getElementById('bom_select');
-    const jobWorkType = document.getElementById('job_work_type')?.value;
-    
-    if (outputQuantity <= 0) {
-        inputQuantityField.value = '';
-        calculationDisplay.innerHTML = '';
-        return;
-    }
-    
-    // Get conversion settings based on mode
-    let conversionRatio, scrapAllowance;
-    const isManualMode = jobWorkType === 'manual';
-    const hasBOM = bomSelect && bomSelect.value;
-    
-    if (isManualMode) {
-        // Manual mode: use manual inputs
-        conversionRatio = parseFloat(document.getElementById('conversion_ratio').value) || 1.0;
-        scrapAllowance = (parseFloat(document.getElementById('scrap_allowance').value) || 0) / 100;
-    } else if (hasBOM) {
-        // BOM mode: use BOM data (can be enhanced to fetch from actual BOM)
-        conversionRatio = 1.0; // Should be fetched from BOM data
-        scrapAllowance = 0.05; // Should be fetched from BOM data
-    } else {
-        // Simple mode: direct conversion
-        conversionRatio = 1.0;
-        scrapAllowance = 0.0;
-    }
-    
-    const baseInputRequired = outputQuantity * conversionRatio;
-    const inputWithScrap = baseInputRequired * (1 + scrapAllowance);
-    const finalInputRequired = Math.ceil(inputWithScrap * 100) / 100;
-    
-    inputQuantityField.value = finalInputRequired;
-    
-    // Update calculation display
-    let calculationHtml = `<div class="small text-muted"><strong>`;
-    
-    if (isManualMode) {
-        calculationHtml += `Manual Calculation:</strong><br>`;
-    } else if (hasBOM) {
-        calculationHtml += `BOM-based Calculation:</strong><br>`;
-    } else {
-        calculationHtml += `Direct Conversion:</strong><br>`;
-    }
-    
-    calculationHtml += `• Base requirement: ${outputQuantity} × ${conversionRatio} = ${baseInputRequired.toFixed(2)}<br>`;
-    
-    if (scrapAllowance > 0) {
-        calculationHtml += `• Scrap allowance (${(scrapAllowance * 100).toFixed(1)}%): +${(inputWithScrap - baseInputRequired).toFixed(2)}<br>`;
-    }
-    
-    calculationHtml += `• <strong>Total input required: ${finalInputRequired}</strong></div>`;
-    
-    calculationDisplay.innerHTML = calculationHtml;
-    
-    // Trigger stock check if material is selected
-    const materialSelect = document.getElementById('input_material');
-    if (materialSelect && materialSelect.value) {
-        checkStock();
-    }
-}
-
-// Show/hide conversion controls based on job work type
-function toggleConversionControls() {
-    const jobWorkType = document.getElementById('job_work_type')?.value;
-    const bomSelect = document.getElementById('bom_select');
-    const conversionRow = document.getElementById('conversion_ratio_row');
-    const scrapRow = document.getElementById('scrap_allowance_row');
-    const calculationMode = document.getElementById('calculation_mode');
-    const inputQuantityField = document.getElementById('quantity_to_issue');
-    
-    const isManualMode = jobWorkType === 'manual';
-    const hasBOM = bomSelect && bomSelect.value;
-    
-    if (isManualMode) {
-        // Manual mode: show all controls
-        conversionRow.style.display = 'table-row';
-        scrapRow.style.display = 'table-row';
-        calculationMode.textContent = '(Manual)';
-        inputQuantityField.readOnly = false;
-    } else if (hasBOM) {
-        // BOM mode: hide manual controls
-        conversionRow.style.display = 'none';
-        scrapRow.style.display = 'none';
-        calculationMode.textContent = '(BOM-based)';
-        inputQuantityField.readOnly = true;
-    } else {
-        // Simple mode: hide controls
-        conversionRow.style.display = 'none';
-        scrapRow.style.display = 'none';
-        calculationMode.textContent = '(Auto-calculated)';
-        inputQuantityField.readOnly = true;
-    }
-    
-    // Recalculate when mode changes
-    calculateInputQuantity();
 }
 
 // Store batch selections in hidden inputs for form submission

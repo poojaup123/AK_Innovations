@@ -20,9 +20,6 @@ from .visual_scanning import ComponentDetection, DetectedComponent, ComponentDet
 # Import notification models
 from .notifications import NotificationRecipient, NotificationLog
 
-# Import status tracking models
-from .status_tracking import ProductionStatusHistory, JobWorkStatusHistory, StatusValidationService
-
 class CompanySettings(db.Model):
     __tablename__ = 'company_settings'
     
@@ -1004,7 +1001,7 @@ class PurchaseOrderItem(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships  
-    item = db.relationship('Item', overlaps="item_ref,purchase_order_items")
+    item = db.relationship('Item')
     
     @property
     def calculated_total_weight(self):
@@ -1089,7 +1086,7 @@ class SalesOrderItem(db.Model):
     taxable_amount = db.Column(db.Float, default=0.0)  # Amount before GST
     
     # Relationships
-    item = db.relationship('Item', overlaps="sales_order_items")
+    item = db.relationship('Item')
 
 class Employee(db.Model):
     __tablename__ = 'employees'
@@ -1414,67 +1411,8 @@ class JobWork(db.Model):
         """Get count of assigned team members"""
         return len(self.team_assignments)
     
-    def can_transition_to_status(self, new_status):
-        """Check if job work can transition to the specified status"""
-        from .status_tracking import StatusValidationService
-        return StatusValidationService.validate_jobwork_status_transition(self.status, new_status)
-    
-    def update_status(self, new_status, user_id=None, notes=None, auto_update=False):
-        """Update job work status with validation and logging"""
-        from .status_tracking import StatusValidationService, JobWorkStatusHistory
-        
-        # Validate transition
-        if not self.can_transition_to_status(new_status):
-            raise ValueError(f"Invalid status transition from {self.status} to {new_status}")
-        
-        # Check prerequisites
-        if not auto_update:
-            errors = StatusValidationService.check_jobwork_prerequisites(self, new_status)
-            if errors:
-                raise ValueError(f"Cannot change status: {'; '.join(errors)}")
-        
-        # Store previous status and update
-        old_status = self.status
-        self.status = new_status
-        
-        # Auto-update related fields based on status
-        if new_status == 'completed' and not self.received_date:
-            self.received_date = datetime.utcnow().date()
-        
-        # Create status history record
-        history = JobWorkStatusHistory(
-            job_work_id=self.id,
-            old_status=old_status,
-            new_status=new_status,
-            changed_by=user_id,
-            change_reason=notes or f"Status changed from {old_status} to {new_status}",
-            completion_percentage_at_change=self.completion_percentage,
-            quantity_received_at_change=self.quantity_received,
-            quality_status_at_change=self.inspection_status,
-            timestamp=datetime.utcnow()
-        )
-        db.session.add(history)
-        
-        return True
-    
-    def get_valid_status_transitions(self):
-        """Get list of valid status transitions from current status"""
-        from .status_tracking import StatusValidationService
-        return StatusValidationService.get_valid_jobwork_transitions(self.status)
-    
-    def get_status_display_info(self):
-        """Get comprehensive status information for UI display"""
-        return {
-            'current_status': self.status,
-            'valid_transitions': self.get_valid_status_transitions(),
-            'completion_percentage': self.completion_percentage,
-            'can_complete': self.can_transition_to_status('completed'),
-            'inspection_status': self.inspection_status,
-            'pending_quantity': self.pending_quantity
-        }
-    
     def check_and_update_completion_status(self):
-        """Enhanced team completion checking with status management"""
+        """Check if all team members are completed and update job work status"""
         if not self.is_team_work:
             return
             
@@ -1488,17 +1426,12 @@ class JobWork(db.Model):
         all_completed = all(assignment.completion_percentage >= 100.0 for assignment in assignments)
         
         if all_completed and self.status != 'completed':
-            try:
-                # Calculate total received quantity as sum of completed quantities
-                total_completed = sum(assignment.completed_quantity for assignment in assignments)
-                self.quantity_received = total_completed
-                
-                # Use enhanced status update method
-                self.update_status('completed', auto_update=True, 
-                                 notes=f"Auto-completed: All {len(assignments)} team members finished")
-            except ValueError:
-                # Status transition not allowed, just update quantities
-                self.quantity_received = sum(assignment.completed_quantity for assignment in assignments)
+            self.status = 'completed'
+            self.received_date = datetime.utcnow().date()
+            
+            # Calculate total received quantity as sum of completed quantities
+            total_completed = sum(assignment.completed_quantity for assignment in assignments)
+            self.quantity_received = total_completed
     
     @property
     def remaining_team_slots(self):
@@ -1509,41 +1442,6 @@ class JobWork(db.Model):
     def is_team_full(self):
         """Check if team is at maximum capacity"""
         return self.team_member_count >= self.max_team_members
-    
-    def update_progress_from_grn(self):
-        """Update job work progress based on GRN receipts with automatic status updates"""
-        if not self.grn_receipts:
-            return
-        
-        # Calculate total received from GRNs
-        total_grn_received = self.total_grn_received
-        total_grn_passed = self.total_grn_passed
-        
-        # Update quantities if GRN data is more recent
-        old_received = self.quantity_received or 0
-        if total_grn_passed != old_received:
-            self.quantity_received = total_grn_passed
-            
-            # Auto-update status based on progress
-            try:
-                if total_grn_passed >= self.quantity_sent:
-                    if self.can_transition_to_status('completed'):
-                        self.update_status('completed', auto_update=True,
-                                         notes=f"Auto-completed: All material received and passed inspection")
-                elif total_grn_received > 0 and self.status == 'sent':
-                    if self.can_transition_to_status('in_progress'):
-                        self.update_status('in_progress', auto_update=True,
-                                         notes=f"Auto-updated: Material receipt started via GRN")
-            except ValueError:
-                # Status transition not allowed, continue without status update
-                pass
-    
-    def get_status_history(self):
-        """Get status change history for this job work"""
-        from .status_tracking import JobWorkStatusHistory
-        return JobWorkStatusHistory.query.filter_by(
-            job_work_id=self.id
-        ).order_by(JobWorkStatusHistory.timestamp.desc()).all()
     
     @property
     def total_assigned_quantity(self):
@@ -1882,7 +1780,153 @@ class JobWorkProcess(db.Model):
         }
         return process_classes.get(self.process_name, 'bg-secondary')
 
-# JobWorkBatch model moved to models/batch.py for enhanced vendor location tracking
+class JobWorkBatch(db.Model):
+    """Model for tracking batch-wise job work processing"""
+    __tablename__ = 'job_work_batches'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    job_work_id = db.Column(db.Integer, db.ForeignKey('job_works.id'), nullable=False)
+    process_id = db.Column(db.Integer, db.ForeignKey('job_work_processes.id'), nullable=True)
+    
+    # Input batch tracking
+    input_batch_id = db.Column(db.Integer, db.ForeignKey('item_batches.id'), nullable=False)
+    input_item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    quantity_issued = db.Column(db.Float, nullable=False)
+    issue_date = db.Column(db.Date, default=datetime.utcnow().date())
+    
+    # Output batch tracking (filled when material is returned)
+    output_batch_id = db.Column(db.Integer, db.ForeignKey('item_batches.id'), nullable=True)
+    output_item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)
+    quantity_finished = db.Column(db.Float, default=0.0)
+    quantity_scrap = db.Column(db.Float, default=0.0)
+    quantity_returned_unused = db.Column(db.Float, default=0.0)
+    return_date = db.Column(db.Date)
+    
+    # Process details
+    process_name = db.Column(db.String(100), nullable=False)
+    vendor_name = db.Column(db.String(100))
+    department = db.Column(db.String(100))
+    rate_per_unit = db.Column(db.Float, default=0.0)
+    
+    # Status tracking
+    status = db.Column(db.String(20), default='issued')  # issued, in_progress, returned, completed
+    quality_status = db.Column(db.String(20), default='pending')  # pending, passed, failed, partial
+    
+    # Quality control data
+    qc_notes = db.Column(db.Text)
+    inspected_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    inspected_at = db.Column(db.DateTime)
+    
+    # Traceability
+    batch_notes = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    job_work = db.relationship('JobWork', backref='jobwork_batch_records')
+    process = db.relationship('JobWorkProcess', backref='process_batch_records')
+    input_batch = db.relationship('ItemBatch', foreign_keys=[input_batch_id], backref='jobwork_issues')
+    output_batch = db.relationship('ItemBatch', foreign_keys=[output_batch_id], backref='jobwork_returns')
+    input_item = db.relationship('Item', foreign_keys=[input_item_id])
+    output_item = db.relationship('Item', foreign_keys=[output_item_id])
+    creator = db.relationship('User', foreign_keys=[created_by], backref='jobwork_batches_created')
+    inspector = db.relationship('User', foreign_keys=[inspected_by], backref='jobwork_batches_inspected')
+    
+    @property
+    def yield_percentage(self):
+        """Calculate yield percentage (finished / issued * 100)"""
+        if self.quantity_issued == 0:
+            return 0.0
+        return (self.quantity_finished / self.quantity_issued) * 100
+    
+    @property
+    def scrap_percentage(self):
+        """Calculate scrap percentage (scrap / issued * 100)"""
+        if self.quantity_issued == 0:
+            return 0.0
+        return (self.quantity_scrap / self.quantity_issued) * 100
+    
+    @property
+    def utilization_percentage(self):
+        """Calculate material utilization (total processed / issued * 100)"""
+        if self.quantity_issued == 0:
+            return 0.0
+        total_processed = self.quantity_finished + self.quantity_scrap
+        return (total_processed / self.quantity_issued) * 100
+    
+    @property
+    def is_completed(self):
+        """Check if this batch job work is completed"""
+        return self.status == 'completed' and self.return_date is not None
+    
+    @property
+    def days_in_process(self):
+        """Calculate days between issue and return (or current date if not returned)"""
+        end_date = self.return_date or datetime.utcnow().date()
+        return (end_date - self.issue_date).days
+    
+    @property
+    def total_cost(self):
+        """Calculate total cost for this batch"""
+        return self.quantity_issued * self.rate_per_unit
+    
+    @property
+    def status_badge_class(self):
+        """Return Bootstrap badge class for status"""
+        status_classes = {
+            'issued': 'bg-info',
+            'in_progress': 'bg-warning',
+            'returned': 'bg-primary',
+            'completed': 'bg-success'
+        }
+        return status_classes.get(self.status, 'bg-secondary')
+    
+    def complete_return(self, finished_qty, scrap_qty, unused_qty, output_batch_code=None, qc_notes=None):
+        """Complete the return process for this batch"""
+        try:
+            # Update quantities
+            self.quantity_finished = finished_qty
+            self.quantity_scrap = scrap_qty
+            self.quantity_returned_unused = unused_qty
+            self.return_date = datetime.utcnow().date()
+            self.status = 'returned'
+            
+            if qc_notes:
+                self.qc_notes = qc_notes
+            
+            # Update input batch inventory
+            input_batch = self.input_batch
+            if input_batch:
+                success = input_batch.receive_from_jobwork(
+                    finished_qty, scrap_qty, unused_qty, self.process_name
+                )
+                if not success:
+                    return False, "Failed to update input batch inventory"
+            
+            # Create output batch if finished quantity > 0 and output item specified
+            if finished_qty > 0 and self.output_item_id:
+                output_batch = ItemBatch(
+                    item_id=self.output_item_id,
+                    batch_number=f"{self.input_batch.batch_number}-{self.process_name}",
+                    qty_finished=finished_qty,
+                    qty_scrap=scrap_qty,
+                    manufacture_date=self.return_date,
+                    quality_status='good' if scrap_qty == 0 else 'mixed',
+                    created_by=self.created_by
+                )
+                db.session.add(output_batch)
+                db.session.flush()
+                self.output_batch_id = output_batch.id
+            
+            self.updated_at = datetime.utcnow()
+            return True, "Batch return completed successfully"
+            
+        except Exception as e:
+            return False, f"Error completing batch return: {str(e)}"
+    
+    def __repr__(self):
+        return f'<JobWorkBatch {self.job_work.job_number if self.job_work else "Unknown"}: {self.process_name}>'
 
 class ProductionBatch(db.Model):
     """Track material batches consumed in production"""
@@ -2431,21 +2475,11 @@ class BOM(db.Model):
     def can_produce_quantity(self, production_qty):
         """Check if BOM can produce specified quantity with current inventory"""
         shortages = []
-        
-        # Calculate material sets needed based on BOM output quantity
-        if self.output_quantity and self.output_quantity > 0:
-            material_sets_needed = production_qty / self.output_quantity
-        else:
-            material_sets_needed = production_qty  # Fallback to 1:1 ratio
-        
         for bom_item in self.items:
             material = bom_item.material or bom_item.item  # Handle both old and new structure
             if material:
                 available_qty = material.total_stock if hasattr(material, 'total_stock') else (material.current_stock or 0)
-                
-                # Calculate required quantity considering BOM output ratio
-                base_qty_required = bom_item.qty_required or bom_item.quantity_required or 0
-                required_qty = base_qty_required * material_sets_needed
+                required_qty = bom_item.effective_quantity * production_qty
                 
                 if available_qty < required_qty:
                     shortages.append({

@@ -74,26 +74,6 @@
         </div>
     </div>
 
-    <!-- Production Context Banner -->
-    {% if production_context and production_context.production_number %}
-    <div class="row mb-3">
-        <div class="col">
-            <div class="alert alert-info alert-dismissible fade show" role="alert">
-                <i class="fas fa-info-circle"></i>
-                <strong>Production Context:</strong> This purchase order is being created for Production Order: 
-                <strong>{{ production_context.production_number }}</strong>
-                {% if production_context.item_code %}
-                    - Item: <strong>{{ production_context.item_code }}</strong>
-                {% endif %}
-                {% if production_context.quantity %}
-                    - Suggested Quantity: <strong>{{ production_context.quantity }}</strong>
-                {% endif %}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
     <form method="POST" id="purchaseOrderForm">
         {{ form.hidden_tag() }}
         
