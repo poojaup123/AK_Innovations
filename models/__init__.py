@@ -1001,7 +1001,7 @@ class PurchaseOrderItem(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships  
-    item = db.relationship('Item')
+    item = db.relationship('Item', overlaps="item_ref,purchase_order_items")
     
     @property
     def calculated_total_weight(self):
@@ -1086,7 +1086,7 @@ class SalesOrderItem(db.Model):
     taxable_amount = db.Column(db.Float, default=0.0)  # Amount before GST
     
     # Relationships
-    item = db.relationship('Item')
+    item = db.relationship('Item', overlaps="sales_order_items")
 
 class Employee(db.Model):
     __tablename__ = 'employees'
