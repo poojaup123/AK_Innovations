@@ -1023,7 +1023,7 @@ function updateProcessRates() {
                         <input type="number" class="form-control" id="rate_step_${stepNumber}" 
                                value="${processRate}" step="0.01" min="0"
                                data-step="${stepNumber}" data-process="${process.process_name}" data-process-rate>
-                        <span class="input-group-text">/unit</span>
+                        <span class="input-group-text">/${process.unit_of_measure || 'unit'}</span>
                     </div>
                 </div>
                 <div class="col-md-6">
@@ -1078,11 +1078,12 @@ function updateProcessRates() {
 
 function calculateProcessCost(process, ratePerUnit) {
     const quantity = parseFloat(document.getElementById('quantity_to_issue')?.value) || 1;
+    const unit = process.unit_of_measure || 'unit';
     
     // For per-unit costs, simply multiply rate by quantity
     const totalCost = ratePerUnit * quantity;
     
-    return `₹${totalCost.toFixed(2)} (₹${ratePerUnit.toFixed(2)} × ${quantity} units)`;
+    return `₹${totalCost.toFixed(2)} (₹${ratePerUnit.toFixed(2)} × ${quantity} ${unit}s)`;
 }
 
 function updateRatesData() {

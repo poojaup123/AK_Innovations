@@ -2785,6 +2785,13 @@ def get_bom_details(bom_id):
         
         processes = []
         for process in bom_processes:
+            # Get unit from input or output product if available
+            unit_of_measure = 'unit'
+            if hasattr(process, 'input_product') and process.input_product:
+                unit_of_measure = process.input_product.unit_of_measure or 'unit'
+            elif hasattr(process, 'output_product') and process.output_product:
+                unit_of_measure = process.output_product.unit_of_measure or 'unit'
+            
             processes.append({
                 'step_number': process.step_number,
                 'process_name': process.process_name,
@@ -2792,7 +2799,8 @@ def get_bom_details(bom_id):
                 'operation_description': process.operation_description,
                 'setup_time_minutes': process.setup_time_minutes,
                 'run_time_minutes': process.run_time_minutes,
-                'cost_per_unit': process.cost_per_unit or 0.0
+                'cost_per_unit': process.cost_per_unit or 0.0,
+                'unit_of_measure': unit_of_measure
             })
         
         return jsonify({
