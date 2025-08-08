@@ -223,33 +223,47 @@ class SmartBOMSuggestionService:
                 material_id = raw_material['material_id']
                 usage_info = raw_material_usage[material_id]
                 
-                # Calculate proportional allocation if multiple suggestions need same material
+                # Calculate what can be made with available materials
                 if len(usage_info['suggestions_using']) > 1:
                     available_qty = raw_material['available_qty']
                     total_needed_across_all = usage_info['total_needed']
                     
                     if available_qty >= total_needed_across_all:
                         # Sufficient for all - allocate proportionally
-                        allocated_qty = raw_material['needed_qty']  # Full allocation
+                        allocated_qty = raw_material['needed_qty']
                         sufficient = True
+                        can_produce_qty = raw_material['needed_qty']
                     else:
-                        # Insufficient - allocate proportionally
-                        proportion = raw_material['needed_qty'] / total_needed_across_all
-                        allocated_qty = available_qty * proportion
-                        sufficient = allocated_qty >= raw_material['needed_qty']
+                        # Calculate what portion can be produced with available material
+                        proportion = available_qty / total_needed_across_all
+                        can_produce_qty = raw_material['needed_qty'] * proportion
+                        allocated_qty = available_qty * (raw_material['needed_qty'] / total_needed_across_all)
+                        sufficient = False
+                    
+                    shortage_qty = max(0, raw_material['needed_qty'] - allocated_qty)
                     
                     optimized_material = {
                         **raw_material,
                         'allocated_qty': allocated_qty,
+                        'can_produce_qty': can_produce_qty,
+                        'shortage_qty': shortage_qty,
                         'sufficient': sufficient,
                         'shared_material': True,
                         'sharing_info': f"Shared with {len(usage_info['suggestions_using']) - 1} other items"
                     }
                 else:
                     # Only one suggestion needs this material
+                    available_qty = raw_material['available_qty']
+                    needed_qty = raw_material['needed_qty']
+                    can_produce_qty = min(available_qty, needed_qty)
+                    shortage_qty = max(0, needed_qty - available_qty)
+                    
                     optimized_material = {
                         **raw_material,
-                        'allocated_qty': raw_material['available_qty'],
+                        'allocated_qty': can_produce_qty,
+                        'can_produce_qty': can_produce_qty,
+                        'shortage_qty': shortage_qty,
+                        'sufficient': available_qty >= needed_qty,
                         'shared_material': False
                     }
                 
@@ -259,32 +273,63 @@ class SmartBOMSuggestionService:
                 total_cost += optimized_material['estimated_cost']
                 optimized_raw_materials.append(optimized_material)
             
-            # Update suggestion with optimized materials
-            optimized_suggestion = {
-                **suggestion,
-                'type': 'manufacturing_recommendation',
-                'title': f"Manufacture {suggestion['target_item_name']} from Raw Materials",
-                'description': f"Produce {suggestion['target_quantity']:.1f} units using available raw materials with smart optimization",
-                'raw_materials_required': optimized_raw_materials,  # Template expects this key
-                'raw_materials': optimized_raw_materials,
-                'can_manufacture': all_materials_sufficient,
-                'total_estimated_cost': total_cost,
-                'estimated_cost': total_cost,  # Template compatibility
-                'priority': 'high',  # Both suggestions are high priority
-                'feasibility': 'feasible' if all_materials_sufficient else 'limited_by_raw_materials',
-                'estimated_time': f"{suggestion.get('manufacturing_lead_time', 1)} days",
-                'bom_reference': suggestion.get('bom_code', 'N/A'),
-                'action_steps': SmartBOMSuggestionService._generate_action_steps({
-                    **suggestion,
-                    'raw_materials': optimized_raw_materials,
-                    'can_manufacture': all_materials_sufficient
-                }),
-                'optimization_notes': SmartBOMSuggestionService._generate_optimization_notes(
-                    optimized_raw_materials, usage_info if 'usage_info' in locals() else None
-                )
-            }
+            # Calculate what can be produced with available materials
+            max_producible = min([
+                (mat['allocated_qty'] / mat['needed_qty']) * suggestion['target_quantity'] 
+                for mat in optimized_raw_materials if mat['needed_qty'] > 0
+            ]) if optimized_raw_materials else 0
             
-            optimized_suggestions.append(optimized_suggestion)
+            # Generate suggestions for both partial production and material procurement
+            suggestions_to_add = []
+            
+            # Partial production suggestion (if any amount can be produced)
+            if max_producible > 0:
+                partial_suggestion = {
+                    **suggestion,
+                    'type': 'partial_manufacturing_recommendation',
+                    'title': f"Manufacture {max_producible:.1f} units of {suggestion['target_item_name']} (Partial Production)",
+                    'description': f"Produce {max_producible:.1f} out of {suggestion['target_quantity']:.1f} units using available materials",
+                    'producible_quantity': max_producible,
+                    'target_quantity': suggestion['target_quantity'],
+                    'raw_materials_required': optimized_raw_materials,
+                    'can_manufacture': True,
+                    'total_estimated_cost': total_cost * (max_producible / suggestion['target_quantity']),
+                    'estimated_cost': total_cost * (max_producible / suggestion['target_quantity']),
+                    'priority': 'high',
+                    'feasibility': 'feasible',
+                    'estimated_time': f"{suggestion.get('manufacturing_lead_time', 1)} days",
+                    'bom_reference': suggestion.get('bom_code', 'N/A'),
+                    'action_steps': [
+                        f"Create job work order for {max_producible:.1f} units using BOM: {suggestion.get('bom_code', 'N/A')}",
+                        f"Issue available raw materials (partial quantities)",
+                        f"Complete partial production: {max_producible:.1f} units",
+                        f"Remaining needed: {(suggestion['target_quantity'] - max_producible):.1f} units"
+                    ]
+                }
+                suggestions_to_add.append(partial_suggestion)
+            
+            # Material procurement suggestion for shortage
+            material_shortages = [mat for mat in optimized_raw_materials if mat['shortage_qty'] > 0]
+            if material_shortages:
+                procurement_suggestion = {
+                    'type': 'material_procurement_recommendation',
+                    'title': f"Purchase Additional Materials for {suggestion['target_item_name']} Production",
+                    'description': f"Purchase {len(material_shortages)} materials to satisfy remaining {(suggestion['target_quantity'] - max_producible):.1f} units",
+                    'target_item': suggestion['target_item_name'],
+                    'remaining_quantity': suggestion['target_quantity'] - max_producible,
+                    'material_shortages': material_shortages,
+                    'priority': 'high',
+                    'estimated_cost': sum(mat['shortage_qty'] * (mat.get('unit_cost', 0) or 0) for mat in material_shortages),
+                    'action_steps': [
+                        f"Purchase the following materials for remaining {(suggestion['target_quantity'] - max_producible):.1f} units:",
+                        *[f"  • {mat['material_name']}: {mat['shortage_qty']:.1f} {mat['unit']}" for mat in material_shortages],
+                        f"After procurement, complete remaining production"
+                    ]
+                }
+                suggestions_to_add.append(procurement_suggestion)
+            
+            # Add all generated suggestions for this item
+            optimized_suggestions.extend(suggestions_to_add)
         
         return optimized_suggestions
     
