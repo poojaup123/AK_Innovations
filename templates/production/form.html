@@ -556,7 +556,7 @@
                             </div>
                             {% elif suggestion.type == 'purchase_order_recommendation' %}
                             <div class="mt-3 text-center">
-                                <a href="{{ url_for('purchase_orders.add_purchase_order') }}?item_id={{ suggestion.item_details.item_id }}&qty={{ suggestion.item_details.recommended_qty }}" 
+                                <a href="{{ url_for('purchase.add_purchase_order') }}?item_id={{ suggestion.item_details.item_id }}&qty={{ suggestion.item_details.recommended_qty }}" 
                                    class="btn btn-info">
                                     <i class="fas fa-shopping-cart"></i> Create Purchase Order
                                 </a>
