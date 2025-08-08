@@ -625,6 +625,59 @@
 </style>
 
 <script>
+// Global cost calculation function (accessible by BOM functions)
+function updateCostCalculations() {
+    const quantity = parseFloat(document.getElementById('quantity_to_issue')?.value) || 0;
+    const transportCost = parseFloat(document.getElementById('transportationCost')?.value) || 0;
+    const overheadCost = parseFloat(document.getElementById('overheadCost')?.value) || 0;
+
+    // Calculate process cost from BOM rates
+    let processCost = 0;
+    const processRateInputs = document.querySelectorAll('#processRatesList input[data-process-rate]');
+    console.log('Found process rate inputs:', processRateInputs.length); // DEBUG
+    
+    processRateInputs.forEach(input => {
+        const rate = parseFloat(input.value) || 0;
+        console.log('Processing rate input:', rate, 'for quantity:', quantity); // DEBUG
+        processCost += rate * quantity;
+    });
+    
+    console.log('Total process cost calculated:', processCost); // DEBUG
+    
+    const totalCost = processCost + transportCost + overheadCost;
+    
+    // Update display elements safely
+    const processCostElement = document.getElementById('processCost');
+    if (processCostElement) {
+        processCostElement.textContent = processCost.toFixed(2);
+    }
+    
+    const processCostPerUnitElement = document.getElementById('processCostPerUnit');
+    if (processCostPerUnitElement) {
+        processCostPerUnitElement.textContent = (quantity > 0 ? (processCost / quantity).toFixed(2) : '0.00');
+    }
+    
+    const transportationCostPerUnitElement = document.getElementById('transportationCostPerUnit');
+    if (transportationCostPerUnitElement) {
+        transportationCostPerUnitElement.textContent = (quantity > 0 ? (transportCost / quantity).toFixed(2) : '0.00');
+    }
+    
+    const overheadCostPerUnitElement = document.getElementById('overheadCostPerUnit');
+    if (overheadCostPerUnitElement) {
+        overheadCostPerUnitElement.textContent = (quantity > 0 ? (overheadCost / quantity).toFixed(2) : '0.00');
+    }
+    
+    const totalCostElement = document.getElementById('totalCost');
+    if (totalCostElement) {
+        totalCostElement.textContent = totalCost.toFixed(2);
+    }
+    
+    const totalCostPerUnitElement = document.getElementById('totalCostPerUnit');
+    if (totalCostPerUnitElement) {
+        totalCostPerUnitElement.textContent = (quantity > 0 ? (totalCost / quantity).toFixed(2) : '0.00');
+    }
+}
+
 // Form functionality
 document.addEventListener('DOMContentLoaded', function() {
     // Job work type toggle
@@ -1291,6 +1344,9 @@ function populateBOMProcessSelection(processes, bomCode) {
     
     // Initial population of process rates
     updateProcessRates();
+    
+    // Update cost calculations after process rates are populated
+    setTimeout(updateCostCalculations, 100);
 }
 
 function updateSelectedProcesses() {
@@ -1391,8 +1447,14 @@ function updateProcessRates() {
             
             // Update hidden rates data
             updateRatesData();
+            
+            // Update overall cost calculations
+            updateCostCalculations();
         });
     });
+    
+    // Update cost calculations after populating rates
+    updateCostCalculations();
 }
 
 function calculateProcessCost(process, ratePerUnit) {
