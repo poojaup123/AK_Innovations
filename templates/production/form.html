@@ -415,11 +415,17 @@
                     </div>
                     
                     {% for suggestion in smart_suggestions %}
-                    <div class="card mb-3 border-{% if suggestion.feasibility == 'feasible' %}success{% else %}warning{% endif %}">
-                        <div class="card-header {% if suggestion.feasibility == 'feasible' %}bg-light-success{% else %}bg-light-warning{% endif %}">
+                    <div class="card mb-3 border-{% if suggestion.feasibility == 'feasible' %}success{% elif suggestion.type == 'purchase_order_recommendation' %}info{% else %}warning{% endif %}">
+                        <div class="card-header {% if suggestion.feasibility == 'feasible' %}bg-light-success{% elif suggestion.type == 'purchase_order_recommendation' %}bg-light-info{% else %}bg-light-warning{% endif %}">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0">
-                                    <i class="fas fa-{% if suggestion.feasibility == 'feasible' %}check-circle text-success{% else %}exclamation-triangle text-warning{% endif %}"></i>
+                                    {% if suggestion.type == 'purchase_order_recommendation' %}
+                                        <i class="fas fa-shopping-cart text-info"></i>
+                                    {% elif suggestion.feasibility == 'feasible' %}
+                                        <i class="fas fa-cogs text-success"></i>
+                                    {% else %}
+                                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                                    {% endif %}
                                     {{ suggestion.title }}
                                 </h6>
                                 <span class="badge bg-{% if suggestion.priority == 'high' %}success{% else %}secondary{% endif %}">
@@ -430,6 +436,7 @@
                         <div class="card-body">
                             <p class="text-muted mb-3">{{ suggestion.description }}</p>
                             
+                            {% if suggestion.type == 'manufacturing_recommendation' %}
                             <!-- Raw Materials Required -->
                             <div class="mb-3">
                                 <h6><i class="fas fa-boxes text-primary"></i> Raw Materials Required:</h6>
@@ -503,11 +510,55 @@
                                 </div>
                             </div>
                             
-                            {% if suggestion.feasibility == 'feasible' %}
+                            <!-- Optimization Notes for Manufacturing -->
+                            {% if suggestion.optimization_notes %}
+                            <div class="mb-3">
+                                <h6><i class="fas fa-lightbulb text-warning"></i> Smart Optimization:</h6>
+                                <div class="alert alert-info">
+                                    {% for note in suggestion.optimization_notes %}
+                                    <div>{{ note }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% elif suggestion.type == 'purchase_order_recommendation' %}
+                            <!-- Purchase Order Details -->
+                            <div class="mb-3">
+                                <h6><i class="fas fa-shopping-cart text-info"></i> Purchase Requirements:</h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>Item:</strong><br>
+                                        <span>{{ suggestion.item_details.item_code }}</span><br>
+                                        <small class="text-muted">{{ suggestion.item_details.item_name }}</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Required Qty:</strong><br>
+                                        <span class="text-danger">{{ suggestion.item_details.shortage_qty }} {{ suggestion.item_details.unit }}</span><br>
+                                        <small class="text-muted">Recommended: {{ suggestion.item_details.recommended_qty }} {{ suggestion.item_details.unit }}</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Priority:</strong><br>
+                                        <span class="badge bg-{{ 'danger' if suggestion.purchase_priority == 'immediate' else 'warning' }}">
+                                            {{ suggestion.purchase_priority.title() }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if suggestion.feasibility == 'feasible' and suggestion.type == 'manufacturing_recommendation' %}
                             <div class="mt-3 text-center">
                                 <a href="{{ url_for('jobwork.add_job_work') }}?bom_ref={{ suggestion.bom_reference }}" 
                                    class="btn btn-success">
-                                    <i class="fas fa-play"></i> Start Manufacturing Job Work
+                                    <i class="fas fa-cogs"></i> Start Manufacturing Job Work
+                                </a>
+                            </div>
+                            {% elif suggestion.type == 'purchase_order_recommendation' %}
+                            <div class="mt-3 text-center">
+                                <a href="{{ url_for('purchase_orders.add_purchase_order') }}?item_id={{ suggestion.item_details.item_id }}&qty={{ suggestion.item_details.recommended_qty }}" 
+                                   class="btn btn-info">
+                                    <i class="fas fa-shopping-cart"></i> Create Purchase Order
                                 </a>
                             </div>
                             {% else %}

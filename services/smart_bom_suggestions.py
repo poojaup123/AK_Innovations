@@ -64,12 +64,23 @@ class SmartBOMSuggestionService:
                 
                 shortages.append(shortage_info)
         
+        # Optimize manufacturing suggestions with shared raw materials
+        optimized_suggestions = SmartBOMSuggestionService._optimize_shared_raw_materials(suggestions)
+        
+        # Generate purchase order suggestions for direct materials 
+        purchase_suggestions = SmartBOMSuggestionService._generate_purchase_suggestions([
+            s for s in shortages if not s.get('can_manufacture', False)
+        ])
+        
+        all_suggestions = optimized_suggestions + purchase_suggestions
+        
         return {
             'has_shortages': len(shortages) > 0,
             'shortages': shortages,
-            'suggestions': suggestions,
+            'suggestions': all_suggestions,
             'total_shortage_items': len(shortages),
-            'manufacturable_items': len([s for s in shortages if s.get('can_manufacture', False)])
+            'manufacturable_items': len([s for s in shortages if s.get('can_manufacture', False)]),
+            'direct_purchase_items': len([s for s in shortages if not s.get('can_manufacture', False)])
         }
     
     @staticmethod
@@ -161,7 +172,7 @@ class SmartBOMSuggestionService:
                 # Enhanced suggestion with actionable steps
                 smart_suggestion = {
                     'type': 'manufacturing_recommendation',
-                    'priority': 'high' if suggestion['can_manufacture'] else 'medium',
+                    'priority': 'high',  # All manufacturing suggestions are high priority
                     'title': f"Manufacture {shortage['item_name']} from Raw Materials",
                     'description': f"You can produce {shortage['shortage_qty']:.1f} {shortage['unit']} of {shortage['item_name']} using available raw materials",
                     'action_steps': SmartBOMSuggestionService._generate_action_steps(suggestion),
@@ -201,3 +212,154 @@ class SmartBOMSuggestionService:
             steps.append("Consider purchasing additional raw materials or finding alternative suppliers")
         
         return steps
+    
+    @staticmethod
+    def _optimize_shared_raw_materials(manufacturing_suggestions: List[Dict]) -> List[Dict]:
+        """
+        Optimize manufacturing suggestions when multiple items share the same raw materials
+        Intelligently allocate raw materials and adjust priorities
+        """
+        if not manufacturing_suggestions:
+            return []
+        
+        # Group suggestions by shared raw materials
+        raw_material_usage = {}
+        
+        for suggestion in manufacturing_suggestions:
+            for raw_material in suggestion['raw_materials']:
+                material_id = raw_material['material_id']
+                if material_id not in raw_material_usage:
+                    raw_material_usage[material_id] = {
+                        'material_info': raw_material,
+                        'total_needed': 0,
+                        'suggestions_using': []
+                    }
+                
+                raw_material_usage[material_id]['total_needed'] += raw_material['needed_qty']
+                raw_material_usage[material_id]['suggestions_using'].append(suggestion)
+        
+        optimized_suggestions = []
+        
+        for suggestion in manufacturing_suggestions:
+            # Update raw material allocations based on shared usage
+            optimized_raw_materials = []
+            total_cost = 0
+            all_materials_sufficient = True
+            
+            for raw_material in suggestion['raw_materials']:
+                material_id = raw_material['material_id']
+                usage_info = raw_material_usage[material_id]
+                
+                # Calculate proportional allocation if multiple suggestions need same material
+                if len(usage_info['suggestions_using']) > 1:
+                    available_qty = raw_material['available_qty']
+                    total_needed_across_all = usage_info['total_needed']
+                    
+                    if available_qty >= total_needed_across_all:
+                        # Sufficient for all - allocate proportionally
+                        allocated_qty = raw_material['needed_qty']  # Full allocation
+                        sufficient = True
+                    else:
+                        # Insufficient - allocate proportionally
+                        proportion = raw_material['needed_qty'] / total_needed_across_all
+                        allocated_qty = available_qty * proportion
+                        sufficient = allocated_qty >= raw_material['needed_qty']
+                    
+                    optimized_material = {
+                        **raw_material,
+                        'allocated_qty': allocated_qty,
+                        'sufficient': sufficient,
+                        'shared_material': True,
+                        'sharing_info': f"Shared with {len(usage_info['suggestions_using']) - 1} other items"
+                    }
+                else:
+                    # Only one suggestion needs this material
+                    optimized_material = {
+                        **raw_material,
+                        'allocated_qty': raw_material['available_qty'],
+                        'shared_material': False
+                    }
+                
+                if not optimized_material['sufficient']:
+                    all_materials_sufficient = False
+                
+                total_cost += optimized_material['estimated_cost']
+                optimized_raw_materials.append(optimized_material)
+            
+            # Update suggestion with optimized materials
+            optimized_suggestion = {
+                **suggestion,
+                'raw_materials': optimized_raw_materials,
+                'can_manufacture': all_materials_sufficient,
+                'total_estimated_cost': total_cost,
+                'priority': 'high',  # Both suggestions are high priority
+                'optimization_notes': SmartBOMSuggestionService._generate_optimization_notes(
+                    optimized_raw_materials, usage_info if 'usage_info' in locals() else None
+                )
+            }
+            
+            optimized_suggestions.append(optimized_suggestion)
+        
+        return optimized_suggestions
+    
+    @staticmethod
+    def _generate_purchase_suggestions(direct_material_shortages: List[Dict]) -> List[Dict]:
+        """
+        Generate purchase order suggestions for direct materials that cannot be manufactured
+        """
+        purchase_suggestions = []
+        
+        for shortage in direct_material_shortages:
+            if shortage.get('can_manufacture', False):
+                continue  # Skip items that can be manufactured
+                
+            purchase_suggestion = {
+                'type': 'purchase_order_recommendation',
+                'priority': 'high',  # Direct materials are high priority
+                'title': f"Purchase {shortage['item_name']} - Direct Material",
+                'description': f"Create purchase order for {shortage['shortage_qty']:.1f} {shortage['unit']} of {shortage['item_name']}",
+                'action_steps': [
+                    f"Create Purchase Order for {shortage['shortage_qty']:.1f} {shortage['unit']} of {shortage['item_name']}",
+                    "Contact supplier and negotiate pricing",
+                    "Include additional safety stock (recommend +20%)",
+                    f"Expected cost: ₹{(shortage.get('item_type') == 'material' and getattr(shortage, 'unit_price', 0) or 0) * shortage['shortage_qty']:.2f}",
+                    "Track delivery schedule and update inventory upon receipt"
+                ],
+                'item_details': {
+                    'item_id': shortage['item_id'],
+                    'item_code': shortage['item_code'],
+                    'item_name': shortage['item_name'],
+                    'shortage_qty': shortage['shortage_qty'],
+                    'recommended_qty': shortage['shortage_qty'] * 1.2,  # Add 20% safety stock
+                    'unit': shortage['unit']
+                },
+                'estimated_cost': shortage.get('estimated_cost', 0),
+                'estimated_time': "3-7 days (depends on supplier)",
+                'feasibility': 'requires_supplier_contact',
+                'purchase_priority': 'immediate' if shortage['shortage_qty'] > shortage['available_qty'] * 2 else 'normal'
+            }
+            
+            purchase_suggestions.append(purchase_suggestion)
+        
+        return purchase_suggestions
+    
+    @staticmethod
+    def _generate_optimization_notes(optimized_materials: List[Dict], usage_info: Dict = None) -> List[str]:
+        """Generate optimization notes for material allocation"""
+        notes = []
+        
+        shared_materials = [m for m in optimized_materials if m.get('shared_material', False)]
+        if shared_materials:
+            notes.append("⚠ Raw material optimization applied:")
+            for material in shared_materials:
+                notes.append(f"  • {material['material_name']}: {material.get('sharing_info', 'Shared resource')}")
+        
+        insufficient_materials = [m for m in optimized_materials if not m.get('sufficient', True)]
+        if insufficient_materials:
+            notes.append("📋 Additional materials needed:")
+            for material in insufficient_materials:
+                shortage = material['needed_qty'] - material.get('allocated_qty', material['available_qty'])
+                notes.append(f"  • {material['material_name']}: {shortage:.1f} {material['unit']} more required")
+                notes.append(f"    Recommended: Purchase additional {material['material_name']} sheets")
+        
+        return notes
