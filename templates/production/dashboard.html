@@ -303,7 +303,220 @@
             </div>
         </div>
     </div>
-</div>
 
+    <!-- Enhanced Analytics Section -->
+    {% if vendor_analytics and vendor_analytics.summary.total_vendors > 0 %}
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-bar"></i> Vendor Performance Analytics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center p-3">
+                                <h4 class="text-primary">{{ vendor_analytics.summary.total_vendors }}</h4>
+                                <small class="text-muted">Active Vendors</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3">
+                                <h4 class="text-success">{{ vendor_analytics.summary.total_jobs }}</h4>
+                                <small class="text-muted">Total Jobs</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3">
+                                <h4 class="text-info">{{ "{:.1f}%".format(vendor_analytics.summary.overall_completion_rate or 0) }}</h4>
+                                <small class="text-muted">Completion Rate</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3">
+                                <h4 class="text-warning">{{ vendor_analytics.summary.total_completed }}</h4>
+                                <small class="text-muted">Completed Jobs</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Top Performing Vendors -->
+                    <div class="row mt-3">
+                        <div class="col">
+                            <h6>Top Performing Vendors</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Vendor</th>
+                                            <th>Jobs</th>
+                                            <th>Completion Rate</th>
+                                            <th>Delivery Performance</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for vendor_name, data in vendor_analytics.vendors.items() %}
+                                        <tr>
+                                            <td>{{ vendor_name }}</td>
+                                            <td>{{ data.summary.total_jobs }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ 'success' if data.summary.completion_rate > 80 else 'warning' if data.summary.completion_rate > 60 else 'danger' }}">
+                                                    {{ "{:.1f}%".format(data.summary.completion_rate or 0) }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-{{ 'success' if data.delivery_performance.delivery_reliability > 80 else 'warning' if data.delivery_performance.delivery_reliability > 60 else 'danger' }}">
+                                                    {{ "{:.1f}%".format(data.delivery_performance.delivery_reliability or 0) }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quality Management Dashboard -->
+    {% if quality_data %}
+    <div class="row mt-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-shield-alt"></i> Quality Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-6">
+                            <div class="p-3">
+                                <h4 class="text-success">{{ quality_data.summary.total_inspections or 0 }}</h4>
+                                <small class="text-muted">Total Inspections</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3">
+                                <h4 class="text-{{ 'success' if quality_data.summary.overall_pass_rate > 90 else 'warning' if quality_data.summary.overall_pass_rate > 75 else 'danger' }}">
+                                    {{ "{:.1f}%".format(quality_data.summary.overall_pass_rate or 0) }}
+                                </h4>
+                                <small class="text-muted">Pass Rate</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if quality_data.pending_inspections > 0 %}
+                    <div class="alert alert-warning mt-3">
+                        <strong>{{ quality_data.pending_inspections }} inspections</strong> are pending review.
+                        <a href="{{ url_for('jobwork.list_jobworks') }}?quality_status=pending" class="btn btn-sm btn-outline-warning ms-2">
+                            Review Now
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-tasks"></i> Workflow Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-6">
+                            <div class="p-3">
+                                <h4 class="text-primary">{{ quality_data.active_workflows or 0 }}</h4>
+                                <small class="text-muted">Active Workflows</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3">
+                                <h4 class="text-info">{{ quality_data.auto_forwarded_today or 0 }}</h4>
+                                <small class="text-muted">Auto-Forwarded Today</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if quality_data.delayed_batches and quality_data.delayed_batches > 0 %}
+                    <div class="alert alert-danger mt-3">
+                        <strong>{{ quality_data.delayed_batches }} batches</strong> are delayed in processing.
+                        <a href="{{ url_for('jobwork.list_jobworks') }}?status=delayed" class="btn btn-sm btn-outline-danger ms-2">
+                            Check Delays
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Smart Insights and Recommendations -->
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-lightbulb"></i> Smart Insights & Recommendations</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title"><i class="fas fa-chart-line"></i> Material Flow Analysis</h6>
+                                    <p class="card-text">Track materials through multi-vendor processes with real-time location updates.</p>
+                                    <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-sm btn-primary">View Report</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title"><i class="fas fa-users"></i> Vendor Performance</h6>
+                                    <p class="card-text">Comprehensive vendor scorecards with delivery, quality, and cost analytics.</p>
+                                    <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-sm btn-success">View Analytics</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title"><i class="fas fa-bell"></i> Smart Notifications</h6>
+                                    <p class="card-text">Automated alerts for quality issues, delays, and vendor communication.</p>
+                                    <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-sm btn-warning">Configure</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions for Enhanced Features -->
+                    <div class="row mt-3">
+                        <div class="col">
+                            <h6>Enhanced Features</h6>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-tasks"></i> Partial Processing
+                                </a>
+                                <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-outline-success">
+                                    <i class="fas fa-shield-alt"></i> Quality Control
+                                </a>
+                                <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-outline-info">
+                                    <i class="fas fa-route"></i> Multi-Vendor Workflows
+                                </a>
+                                <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-outline-warning">
+                                    <i class="fas fa-analytics"></i> Advanced Analytics
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
