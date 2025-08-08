@@ -158,34 +158,7 @@ class SmartBOMSuggestionService:
             'confidence_level': 'high' if can_manufacture else 'medium'
         }
     
-    @staticmethod
-    def get_smart_suggestions_for_shortages(shortages: List[Dict]) -> List[Dict]:
-        """
-        Generate actionable smart suggestions for a list of material shortages
-        """
-        smart_suggestions = []
-        
-        for shortage in shortages:
-            if shortage.get('can_manufacture', False):
-                suggestion = shortage['manufacturing_suggestion']
-                
-                # Enhanced suggestion with actionable steps
-                smart_suggestion = {
-                    'type': 'manufacturing_recommendation',
-                    'priority': 'high',  # All manufacturing suggestions are high priority
-                    'title': f"Manufacture {shortage['item_name']} from Raw Materials",
-                    'description': f"You can produce {shortage['shortage_qty']:.1f} {shortage['unit']} of {shortage['item_name']} using available raw materials",
-                    'action_steps': SmartBOMSuggestionService._generate_action_steps(suggestion),
-                    'raw_materials_required': suggestion['raw_materials'],
-                    'estimated_cost': suggestion['total_estimated_cost'],
-                    'estimated_time': f"{suggestion['manufacturing_lead_time']} days",
-                    'bom_reference': suggestion['bom_code'],
-                    'feasibility': 'feasible' if suggestion['can_manufacture'] else 'limited_by_raw_materials'
-                }
-                
-                smart_suggestions.append(smart_suggestion)
-        
-        return smart_suggestions
+
     
     @staticmethod
     def _generate_action_steps(manufacturing_suggestion: Dict) -> List[str]:

@@ -407,9 +407,8 @@ def add_production():
                 active_bom, form.quantity_planned.data
             )
             
-            smart_suggestions = SmartBOMSuggestionService.get_smart_suggestions_for_shortages(
-                smart_analysis.get('shortages', [])
-            )
+            # Smart suggestions are now included in the analysis result
+            smart_suggestions = smart_analysis.get('suggestions', [])
             
             return render_template('production/form.html', 
                                  form=form, 
