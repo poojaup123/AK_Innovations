@@ -133,6 +133,26 @@ class SmartBOMSuggestionService:
         # Calculate maximum possible finished product quantity
         max_finished_products = int(max_possible_production) if max_possible_production != float('inf') else 0
         
+        # Generate component breakdown for display
+        component_breakdown = []
+        if limiting_factor and suggestions:
+            for suggestion in suggestions:
+                component_name = suggestion.get('target_item_name', 'Unknown Component')
+                ms_sheet_needed = 0
+                
+                # Find Ms sheet usage for this component
+                for material in suggestion.get('raw_materials', []):
+                    if 'Ms sheet' in material.get('material_name', ''):
+                        ms_sheet_needed = material.get('needed_qty', 0)
+                        break
+                
+                component_breakdown.append({
+                    'component_name': component_name,
+                    'ms_sheet_per_unit': ms_sheet_needed,
+                    'max_possible': max_finished_products,
+                    'component_type': 'Mounted Plate' if 'Mounted' in component_name else 'Base Plate'
+                })
+
         return {
             'has_limiting_factor': limiting_factor is not None,
             'limiting_factor': limiting_factor,
@@ -140,7 +160,8 @@ class SmartBOMSuggestionService:
             'max_finished_products': max_finished_products,
             'planned_quantity': planned_quantity,
             'production_efficiency': (max_finished_products / planned_quantity * 100) if planned_quantity > 0 else 0,
-            'raw_material_utilization': raw_material_usage
+            'raw_material_utilization': raw_material_usage,
+            'component_breakdown': component_breakdown
         }
 
     @staticmethod
