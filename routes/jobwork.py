@@ -2760,7 +2760,6 @@ def perform_quality_inspection():
         }), 500
 
 @jobwork_bp.route('/api/bom-details/<int:bom_id>')
-@login_required
 def get_bom_details(bom_id):
     """API endpoint to fetch BOM details for auto-populating job work form"""
     try:
