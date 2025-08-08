@@ -733,8 +733,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (itemSelect) {
         itemSelect.addEventListener('change', function() {
-            // Reload page to get new BOM data when item changes  
-            if (this.value && this.value !== '0') {
+            // Only reload if the item actually changed to prevent infinite loops
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentItemId = urlParams.get('item_id');
+            
+            if (this.value && this.value !== '0' && this.value !== currentItemId) {
                 const currentUrl = new URL(window.location);
                 currentUrl.searchParams.set('item_id', this.value);
                 window.location.href = currentUrl.toString();
@@ -788,10 +791,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const itemId = urlParams.get('item_id');
     const itemSelect = document.getElementById('item_id');
     
-    if (itemId && itemSelect) {
+    if (itemId && itemSelect && itemSelect.value !== itemId) {
+        // Only set the value if it's different to prevent loops
         itemSelect.value = itemId;
-        // Trigger change event to load BOM if needed
-        itemSelect.dispatchEvent(new Event('change'));
+        // Don't trigger change event since we're just syncing the dropdown
     }
 });
 </script>
