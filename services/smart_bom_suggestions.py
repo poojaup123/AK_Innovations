@@ -83,19 +83,9 @@ class SmartBOMSuggestionService:
             available_qty = item.current_stock or 0
         
         # Batch-level quantities (use higher value)
+        # Use actual InventoryBatch fields: qty_raw, qty_finished, qty_wip
         batch_qty = db.session.query(
-            func.sum(
-                InventoryBatch.qty_raw + 
-                InventoryBatch.qty_finished + 
-                InventoryBatch.qty_wip_cutting +
-                InventoryBatch.qty_wip_bending +
-                InventoryBatch.qty_wip_welding +
-                InventoryBatch.qty_wip_zinc +
-                InventoryBatch.qty_wip_painting +
-                InventoryBatch.qty_wip_assembly +
-                InventoryBatch.qty_wip_machining +
-                InventoryBatch.qty_wip_polishing
-            )
+            func.sum(InventoryBatch.qty_raw + InventoryBatch.qty_finished + InventoryBatch.qty_wip)
         ).filter_by(item_id=item.id).scalar() or 0
         
         return max(available_qty, batch_qty)
