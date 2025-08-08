@@ -1,0 +1,781 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block head %}
+<style>
+/* Enhanced section styling for better visual organization */
+.section-card {
+    border-left: 4px solid;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.section-card.section-form {
+    border-left-color: #0d6efd;
+}
+
+.section-card.section-bom {
+    border-left-color: #198754;
+}
+
+.section-card.section-shortages {
+    border-left-color: #dc3545;
+}
+
+.section-card.section-suggestions {
+    border-left-color: #0dcaf0;
+}
+
+.section-header {
+    background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-primary-dark) 100%);
+    border-bottom: 3px solid rgba(255,255,255,0.2);
+}
+
+.section-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    font-weight: bold;
+    margin-right: 10px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-0">Add Production Order</h2>
+                    <small class="text-muted">Create new manufacturing orders with smart material analysis</small>
+                </div>
+                <a href="{{ url_for('production.view_production') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-list"></i> View All Orders
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section (Similar to Batch Tracking) -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body py-3">
+                    <form method="POST" id="productionForm">
+                        {{ form.hidden_tag() }}
+                        <div class="row align-items-end">
+                            <div class="col-md-3">
+                                {{ form.item_id.label(class="form-label small") }}
+                                {{ form.item_id(class="form-select form-select-sm") }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ form.quantity_planned.label(class="form-label small") }}
+                                {{ form.quantity_planned(class="form-control form-control-sm") }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ form.status.label(class="form-label small") }}
+                                {{ form.status(class="form-select form-select-sm") }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.notes.label(class="form-label small") }}
+                                {{ form.notes(class="form-control form-control-sm") }}
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary btn-sm w-100">
+                                    <i class="fas fa-search"></i> Analyze
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    {% if smart_suggestions %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0"><i class="fas fa-cubes"></i> Smart Analysis Results</h5>
+                <span class="badge bg-success">{{ smart_suggestions|length }} suggestions found</span>
+            </div>
+        </div>
+    </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.production_number.label(class="form-label") }}
+                                {{ form.production_number(class="form-control") }}
+                                {% if form.production_number.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.production_number.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.item_id.label(class="form-label") }}
+                                {{ form.item_id(class="form-select", id="item_id") }}
+                                {% if form.item_id.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.item_id.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                {{ form.quantity_planned.label(class="form-label") }}
+                                {{ form.quantity_planned(class="form-control") }}
+                                {% if form.quantity_planned.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quantity_planned.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                {{ form.planned_uom.label(class="form-label") }}
+                                {{ form.planned_uom(class="form-select") }}
+                                {% if form.planned_uom.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.planned_uom.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.production_date.label(class="form-label") }}
+                                {{ form.production_date(class="form-control") }}
+                                {% if form.production_date.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.production_date.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                {{ form.status.label(class="form-label") }}
+                                {{ form.status(class="form-select") }}
+                                {% if form.status.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.status.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Production Results - Only show when editing existing production or status is not 'planned' -->
+                        <div class="row" id="production-results" {% if not production and (not form.status.data or form.status.data == 'planned') %}style="display: none;"{% endif %}>
+                            <div class="col-12 mb-2">
+                                <h6 class="text-muted">Production Results (Fill during/after production)</h6>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                {{ form.quantity_produced.label(class="form-label") }}
+                                {{ form.quantity_produced(class="form-control") }}
+                                {% if form.quantity_produced.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quantity_produced.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                {{ form.produced_uom.label(class="form-label") }}
+                                {{ form.produced_uom(class="form-select") }}
+                                {% if form.produced_uom.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.produced_uom.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                {{ form.quantity_good.label(class="form-label") }}
+                                {{ form.quantity_good(class="form-control") }}
+                                {% if form.quantity_good.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quantity_good.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                {{ form.good_uom.label(class="form-label") }}
+                                {{ form.good_uom(class="form-select") }}
+                                {% if form.good_uom.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.good_uom.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                {{ form.quantity_damaged.label(class="form-label") }}
+                                {{ form.quantity_damaged(class="form-control") }}
+                                {% if form.quantity_damaged.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.quantity_damaged.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                {{ form.damaged_uom.label(class="form-label") }}
+                                {{ form.damaged_uom(class="form-select") }}
+                                {% if form.damaged_uom.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.damaged_uom.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Scrap Tracking Section -->
+                        <div class="row">
+                            <div class="col-12 mb-2">
+                                <h6 class="text-muted"><i class="fas fa-recycle text-warning"></i> Scrap & Waste Tracking</h6>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.scrap_quantity.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.scrap_quantity(class="form-control", placeholder="Weight-based scrap generated") }}
+                                    <span class="input-group-text text-muted">
+                                        <i class="fas fa-recycle"></i>
+                                    </span>
+                                </div>
+                                {% if form.scrap_quantity.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.scrap_quantity.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Track scrap material generated during production</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.scrap_uom.label(class="form-label") }}
+                                {{ form.scrap_uom(class="form-select") }}
+                                {% if form.scrap_uom.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.scrap_uom.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Typically measured in weight units (kg, g)</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control", rows="3") }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.notes.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('production.list_productions') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <div>
+                                <button type="button" class="btn btn-outline-info me-2" onclick="previewForm()">
+                                    <i class="fas fa-eye"></i> Preview
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> {{ 'Update' if production else 'Save' }} Production Order
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Section 2: Bill of Materials -->
+    {% if bom_items %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card section-card section-bom">
+                <div class="card-header bg-success text-white section-header">
+                    <h5><span class="section-number">2</span><i class="fas fa-list-alt"></i> Bill of Materials</h5>
+                    {% if selected_item %}
+                    <small>BOM for {{ selected_item.code }} - {{ selected_item.name }}</small>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm" data-bom-output="{{ selected_item.bom_set[0].output_quantity if selected_item and selected_item.bom_set else 1.0 }}">
+                            <thead>
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Per Unit</th>
+                                    <th>Available</th>
+                                    <th>Batches</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for bom_item in bom_items %}
+                                {% set planned_qty = 1 %}
+                                {% if production %}
+                                    {% set planned_qty = production.quantity_planned %}
+                                {% elif form.quantity_planned.data %}
+                                    {% set planned_qty = form.quantity_planned.data %}
+                                {% endif %}
+                                {% set material_qty_per_output = bom_item.quantity_required or bom_item.qty_required %}
+                                {% set bom_output_qty = bom_items[0].bom.output_quantity if bom_items and bom_items[0].bom else 1.0 %}
+                                {% set total_required = (planned_qty / bom_output_qty) * material_qty_per_output %}
+                                {% set available = (bom_item.item.qty_raw or 0) + (bom_item.item.qty_finished or 0) if bom_item.item.qty_raw is not none else (bom_item.item.current_stock or 0) %}
+                                {% set is_sufficient = available >= total_required %}
+                                <tr class="{% if not is_sufficient %}table-danger{% endif %}">
+                                    <td>
+                                        <small class="text-muted">{{ bom_item.item.code }}</small><br>
+                                        {{ bom_item.item.name }}
+                                    </td>
+                                    <td>{{ bom_item.quantity_required }} {{ bom_item.item.unit_of_measure }}</td>
+                                    <td>
+                                        <strong>{{ available }}</strong> {{ bom_item.item.unit_of_measure }}
+                                        <br><small class="text-muted">Need: {{ total_required }}</small>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-info" 
+                                                onclick="showBatchDetails('{{ bom_item.item.code }}')" 
+                                                title="View available batches">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+                                        <div id="batch-info-{{ bom_item.item.code }}" class="mt-1" style="display: none;">
+                                            <small class="text-muted">Loading batches...</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if is_sufficient %}
+                                            <span class="badge bg-success">✓ OK</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">⚠ Short</span>
+                                            <br><small class="text-danger">{{ total_required - available }} short</small>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Section 3: Material Shortages -->
+    {% if material_shortages %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card section-card section-shortages">
+                <div class="card-header bg-danger text-white section-header">
+                    <h5><span class="section-number">3</span><i class="fas fa-exclamation-triangle"></i> Material Shortages</h5>
+                    <small>Critical material availability issues that need attention</small>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <strong>Cannot create production order!</strong><br>
+                        The following materials are insufficient:
+                    </div>
+                    {% for shortage in material_shortages %}
+                    <div class="border-bottom pb-2 mb-2">
+                        <strong>{{ shortage.item_code }} - {{ shortage.item_name }}</strong><br>
+                        <small class="text-muted">
+                            Required: {{ shortage.required_qty }} {{ shortage.unit }}<br>
+                            Available: {{ shortage.available_qty }} {{ shortage.unit }}<br>
+                            <span class="text-danger">Short by: {{ shortage.shortage_qty }} {{ shortage.unit }}</span>
+                        </small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Section 4: Smart BOM Suggestions -->
+    {% if smart_suggestions %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card section-card section-suggestions">
+                <div class="card-header bg-info text-white section-header">
+                    <h5><span class="section-number">4</span><i class="fas fa-lightbulb"></i> Smart BOM Suggestions</h5>
+                    <small>AI-powered manufacturing alternatives using nested BOM analysis</small>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-robot"></i> <strong>Smart Analysis Found Solutions!</strong><br>
+                        You can manufacture the required materials using available raw materials.
+                    </div>
+                    
+                    <div class="row">
+                    {% for suggestion in smart_suggestions %}
+                    <div class="col-lg-6 col-xl-4 mb-3">
+                        <div class="card h-100 border-{% if suggestion.feasibility == 'feasible' or suggestion.type == 'partial_manufacturing_recommendation' %}success{% elif suggestion.type == 'purchase_order_recommendation' or suggestion.type == 'material_procurement_recommendation' %}info{% else %}warning{% endif %}">
+                            <div class="card-header {% if suggestion.feasibility == 'feasible' or suggestion.type == 'partial_manufacturing_recommendation' %}bg-light-success{% elif suggestion.type == 'purchase_order_recommendation' or suggestion.type == 'material_procurement_recommendation' %}bg-light-info{% else %}bg-light-warning{% endif %} py-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 small">
+                                        {% if suggestion.type == 'purchase_order_recommendation' %}
+                                            <i class="fas fa-shopping-cart text-info"></i>
+                                        {% elif suggestion.type == 'material_procurement_recommendation' %}
+                                            <i class="fas fa-truck text-info"></i>
+                                        {% elif suggestion.type == 'partial_manufacturing_recommendation' %}
+                                            <i class="fas fa-cogs text-success"></i>
+                                        {% elif suggestion.feasibility == 'feasible' %}
+                                            <i class="fas fa-cogs text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-exclamation-triangle text-warning"></i>
+                                        {% endif %}
+                                        {% if suggestion.title|length > 40 %}
+                                            {{ suggestion.title[:40] }}...
+                                        {% else %}
+                                            {{ suggestion.title }}
+                                        {% endif %}
+                                    </h6>
+                                    <span class="badge bg-{% if suggestion.priority == 'high' %}success{% else %}secondary{% endif %} badge-sm">
+                                        HIGH
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="text-muted mb-2" style="font-size: 0.85rem;">{{ suggestion.description }}</div>
+                            
+                            {% if suggestion.type == 'manufacturing_recommendation' %}
+                                <!-- Raw Materials Summary -->
+                                <div class="mb-2">
+                                    <small class="text-primary"><i class="fas fa-boxes"></i> Materials:</small>
+                                    {% for material in suggestion.raw_materials_required[:2] %}
+                                        <div class="d-flex justify-content-between">
+                                            <small>{{ material.material_name[:15] }}{% if material.material_name|length > 15 %}...{% endif %}</small>
+                                            <small class="{% if material.sufficient %}text-success{% else %}text-warning{% endif %}">
+                                                {{ material.needed_qty|round(1) }} {{ material.unit }}
+                                            </small>
+                                        </div>
+                                    {% endfor %}
+                                    {% if suggestion.raw_materials_required|length > 2 %}
+                                        <small class="text-muted">+{{ suggestion.raw_materials_required|length - 2 }} more...</small>
+                                    {% endif %}
+                                </div>
+                            
+                                <!-- Compact stats and action button -->
+                                <div class="row mb-2">
+                                    <div class="col-4 text-center">
+                                        <small class="text-primary"><i class="fas fa-rupee-sign"></i></small><br>
+                                        <small class="text-primary">₹{{ (suggestion.estimated_cost or suggestion.total_estimated_cost or 0)|round(0) }}</small>
+                                    </div>
+                                    <div class="col-4 text-center">
+                                        <small class="text-info"><i class="fas fa-clock"></i></small><br>
+                                        <small class="text-info">{{ suggestion.estimated_time }}</small>
+                                    </div>
+                                    <div class="col-4 text-center">
+                                        <small class="text-secondary"><i class="fas fa-file-alt"></i></small><br>
+                                        <small class="text-secondary">{{ suggestion.bom_reference }}</small>
+                                    </div>
+                                </div>
+                            
+                            {% elif suggestion.type == 'purchase_order_recommendation' %}
+                                <!-- Purchase Order Compact Details -->
+                                <div class="mb-2">
+                                    <small class="text-info"><i class="fas fa-shopping-cart"></i> Purchase Details:</small>
+                                    <div class="d-flex justify-content-between">
+                                        <small><strong>{{ suggestion.item_details.item_code }}</strong></small>
+                                        <small class="text-danger">{{ suggestion.item_details.shortage_qty }} {{ suggestion.item_details.unit }}</small>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">Recommended:</small>
+                                        <small class="text-success">{{ suggestion.item_details.recommended_qty }} {{ suggestion.item_details.unit }}</small>
+                                    </div>
+                                </div>
+                                
+                            {% elif suggestion.type == 'material_procurement_recommendation' %}
+                                <!-- Material Procurement Compact Details -->
+                                <div class="mb-2">
+                                    <small class="text-info"><i class="fas fa-truck"></i> For: {{ suggestion.target_item }}</small>
+                                    <div class="alert alert-info p-1 mb-1">
+                                        <small><strong>Remaining:</strong> {{ suggestion.remaining_quantity|round(1) }} units needed</small>
+                                    </div>
+                                    {% for material in suggestion.material_shortages[:2] %}
+                                        <div class="d-flex justify-content-between">
+                                            <small>{{ material.material_name[:15] }}{% if material.material_name|length > 15 %}...{% endif %}</small>
+                                            <small class="text-danger">{{ material.shortage_qty|round(1) }} {{ material.unit }}</small>
+                                        </div>
+                                    {% endfor %}
+                                    {% if suggestion.material_shortages|length > 2 %}
+                                        <small class="text-muted">+{{ suggestion.material_shortages|length - 2 }} more...</small>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            
+                                {% if (suggestion.feasibility == 'feasible' and suggestion.type == 'manufacturing_recommendation') or suggestion.type == 'partial_manufacturing_recommendation' %}
+                                <div class="text-center">
+                                    <a href="{{ url_for('jobwork.add_job_work') }}?bom_ref={{ suggestion.bom_reference }}" 
+                                       class="btn btn-success btn-sm w-100">
+                                        <i class="fas fa-cogs"></i> 
+                                        {% if suggestion.type == 'partial_manufacturing_recommendation' %}
+                                            Start Job Work
+                                        {% else %}
+                                            Start Manufacturing
+                                        {% endif %}
+                                    </a>
+                                </div>
+                                {% elif suggestion.type == 'purchase_order_recommendation' %}
+                                <div class="text-center">
+                                    <a href="{{ url_for('purchase.add_purchase_order') }}?item_id={{ suggestion.item_details.item_id }}&qty={{ suggestion.item_details.recommended_qty }}" 
+                                       class="btn btn-info btn-sm w-100">
+                                        <i class="fas fa-shopping-cart"></i> Create Purchase Order
+                                    </a>
+                                </div>
+                                {% elif suggestion.type == 'material_procurement_recommendation' %}
+                                <div class="text-center">
+                                    <div class="btn-group w-100">
+                                        <button class="btn btn-info btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-truck"></i> Purchase Materials
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            {% for material in suggestion.material_shortages %}
+                                            <li><a class="dropdown-item" href="{{ url_for('purchase.add_purchase_order') }}?item_name={{ material.material_name }}&qty={{ material.shortage_qty }}">
+                                                Purchase {{ material.material_name }}
+                                            </a></li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="alert alert-warning p-1 mb-0">
+                                    <small><i class="fas fa-info-circle"></i> Purchase materials needed</small>
+                                </div>
+                                {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    </div>
+                    
+                    <div class="alert alert-light mt-3">
+                        <small><i class="fas fa-info-circle text-info"></i>
+                        <strong>Smart BOM Analysis:</strong> This system analyzed your nested BOM structure and identified that 
+                        {% if shortage_analysis.manufacturable_items > 0 %}
+                        {{ shortage_analysis.manufacturable_items }} out of {{ shortage_analysis.total_shortage_items }} shortage items 
+                        can be manufactured using available raw materials like Ms sheet.
+                        {% else %}
+                        no shortage items can be currently manufactured due to insufficient raw materials.
+                        {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script src="{{ url_for('static', filename='js/preview-system.js') }}"></script>
+<script>
+// Initialize preview system for production orders
+document.addEventListener('DOMContentLoaded', function() {
+    initializePreviewSystem('production');
+});
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    const statusSelect = document.getElementById('status');
+    const productionResults = document.getElementById('production-results');
+    const itemSelect = document.getElementById('item_id');
+    const quantityInput = document.getElementById('quantity_planned');
+    
+    // Handle status change to show/hide production results
+    if (statusSelect && productionResults) {
+        statusSelect.addEventListener('change', function() {
+            if (this.value === 'planned') {
+                productionResults.style.display = 'none';
+                // Clear the production result fields when hiding
+                const productionFields = ['quantity_produced', 'quantity_good', 'quantity_damaged'];
+                productionFields.forEach(fieldName => {
+                    const field = document.getElementById(fieldName);
+                    if (field) field.value = '0.0';
+                });
+            } else {
+                productionResults.style.display = 'block';
+            }
+        });
+    }
+    
+    // Add real-time material availability checking
+    function checkMaterialAvailability() {
+        const itemId = itemSelect ? itemSelect.value : null;
+        const quantity = quantityInput ? parseFloat(quantityInput.value) || 1 : 1;
+        
+        if (itemId && quantity > 0) {
+            // Update the BOM table calculations dynamically
+            const bomRows = document.querySelectorAll('tbody tr');
+            bomRows.forEach(row => {
+                const perUnitCell = row.cells[1];
+                const availableCell = row.cells[2];
+                const statusCell = row.cells[3];
+                
+                if (perUnitCell && availableCell && statusCell) {
+                    const perUnitText = perUnitCell.textContent.trim();
+                    const perUnitMatch = perUnitText.match(/^([\d.]+)/);
+                    const perUnit = perUnitMatch ? parseFloat(perUnitMatch[1]) : 0;
+                    
+                    const availableMatch = availableCell.innerHTML.match(/<strong>([\d.]+)<\/strong>/);
+                    const available = availableMatch ? parseFloat(availableMatch[1]) : 0;
+                    
+                    // Calculate based on BOM output quantity (e.g., 1 sheet = 400 pieces)
+                    const bomOutputQty = parseFloat(document.querySelector('[data-bom-output]')?.dataset.bomOutput) || 1.0;
+                    const totalRequired = (quantity / bomOutputQty) * perUnit;
+                    const isSufficient = available >= totalRequired;
+                    
+                    // Update the "Need" text
+                    availableCell.innerHTML = availableCell.innerHTML.replace(
+                        /Need: [\d.]+/,
+                        `Need: ${totalRequired.toFixed(2)}`
+                    );
+                    
+                    // Update row styling and status
+                    if (isSufficient) {
+                        row.className = '';
+                        statusCell.innerHTML = '<span class="badge bg-success">✓ OK</span>';
+                    } else {
+                        row.className = 'table-danger';
+                        const shortage = totalRequired - available;
+                        statusCell.innerHTML = `<span class="badge bg-danger">⚠ Short</span><br><small class="text-danger">${shortage.toFixed(2)} short</small>`;
+                    }
+                }
+            });
+        }
+    }
+    
+    // Add event listeners for real-time updates
+    if (quantityInput) {
+        quantityInput.addEventListener('input', checkMaterialAvailability);
+        quantityInput.addEventListener('change', checkMaterialAvailability);
+    }
+    
+    if (itemSelect) {
+        itemSelect.addEventListener('change', function() {
+            // Reload page to get new BOM data when item changes  
+            if (this.value && this.value !== '0') {
+                const currentUrl = new URL(window.location);
+                currentUrl.searchParams.set('item_id', this.value);
+                window.location.href = currentUrl.toString();
+            }
+        });
+    }
+});
+
+// Function to show batch details
+function showBatchDetails(itemCode) {
+    const batchInfo = document.getElementById(`batch-info-${itemCode}`);
+    const button = event.target.closest('button');
+    
+    if (batchInfo.style.display === 'none') {
+        batchInfo.style.display = 'block';
+        button.innerHTML = '<i class="fas fa-eye-slash"></i> Hide';
+        
+        // Load batch data via API
+        fetch(`/inventory/api/item-batch-details/${itemCode}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.batches && data.batches.length > 0) {
+                    let batchHtml = '<div class="small">';
+                    data.batches.forEach(batch => {
+                        const totalQty = batch.qty_raw + batch.qty_finished;
+                        if (totalQty > 0) {
+                            batchHtml += `<div class="badge bg-light text-dark me-1 mb-1">
+                                ${batch.batch_code}: ${totalQty.toFixed(1)} ${batch.uom}
+                            </div>`;
+                        }
+                    });
+                    batchHtml += '</div>';
+                    batchInfo.innerHTML = batchHtml;
+                } else {
+                    batchInfo.innerHTML = '<small class="text-muted">No batches available</small>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading batch details:', error);
+                batchInfo.innerHTML = '<small class="text-danger">Error loading batches</small>';
+            });
+    } else {
+        batchInfo.style.display = 'none';
+        button.innerHTML = '<i class="fas fa-eye"></i> View';
+    }
+}
+
+// Auto-load BOM when page loads with item_id parameter
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const itemId = urlParams.get('item_id');
+    const itemSelect = document.getElementById('item_id');
+    
+    if (itemId && itemSelect) {
+        itemSelect.value = itemId;
+        // Trigger change event to load BOM if needed
+        itemSelect.dispatchEvent(new Event('change'));
+    }
+                    // Set a flag to indicate we want to see BOM
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'preview_bom';
+                    hiddenInput.value = '1';
+                    form.appendChild(hiddenInput);
+                    
+                    // Submit form to reload with BOM data
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.click();
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
