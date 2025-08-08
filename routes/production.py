@@ -402,12 +402,11 @@ def add_production():
         
         # If there are material shortages, analyze with smart BOM suggestions
         if material_shortages:
-            # Get smart BOM-based suggestions with limiting factor analysis
+            # Get smart BOM-based suggestions
             smart_analysis = SmartBOMSuggestionService.analyze_material_shortages_with_suggestions(
                 active_bom, form.quantity_planned.data
             )
             
-            # Get suggestions with proper format using the dedicated function
             smart_suggestions = SmartBOMSuggestionService.get_smart_suggestions_for_shortages(
                 smart_analysis.get('shortages', [])
             )

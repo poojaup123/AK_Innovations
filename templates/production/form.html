@@ -414,59 +414,21 @@
                         You can manufacture the required materials using available raw materials.
                     </div>
                     
-                    <!-- Limiting Factor Analysis -->
-                    {% if shortage_analysis.limiting_factor_analysis and shortage_analysis.limiting_factor_analysis.has_limiting_factor %}
-                    <div class="alert alert-warning border-0 shadow-sm mb-4">
-                        <h6><i class="fas fa-exclamation-triangle text-warning me-2"></i><strong>Limiting Factor Analysis</strong></h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p class="mb-2"><strong>Constraining Material:</strong> {{ shortage_analysis.limiting_factor_analysis.limiting_factor.material_name }}</p>
-                                <p class="mb-2"><strong>Available Quantity:</strong> {{ shortage_analysis.limiting_factor_analysis.limiting_factor.available }} {{ shortage_analysis.limiting_factor_analysis.limiting_factor.unit }}</p>
-                                <p class="mb-2"><strong>Needed Per Set:</strong> {{ shortage_analysis.limiting_factor_analysis.limiting_factor.needed_per_set }} {{ shortage_analysis.limiting_factor_analysis.limiting_factor.unit }}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <p class="mb-2"><strong>Planned Quantity:</strong> {{ shortage_analysis.limiting_factor_analysis.planned_quantity }} Castors</p>
-                                <p class="mb-2"><strong>Maximum Possible:</strong> <span class="text-success fw-bold">{{ shortage_analysis.limiting_factor_analysis.max_finished_products }} Castors</span></p>
-                                <p class="mb-2"><strong>Production Efficiency:</strong> <span class="text-{% if shortage_analysis.limiting_factor_analysis.production_efficiency >= 80 %}success{% elif shortage_analysis.limiting_factor_analysis.production_efficiency >= 50 %}warning{% else %}danger{% endif %} fw-bold">{{ shortage_analysis.limiting_factor_analysis.production_efficiency|round(1) }}%</span></p>
-                            </div>
-                        </div>
-                        <div class="mt-3">
-                            <h6><i class="fas fa-info-circle text-info me-2"></i>Component Breakdown:</h6>
-                            <div class="row">
-                                {% for component in shortage_analysis.limiting_factor_analysis.component_breakdown %}
-                                <div class="col-md-6">
-                                    <div class="border p-3 rounded {% if 'Mounted' in component.component_name %}border-primary{% else %}border-success{% endif %}">
-                                        <h6 class="{% if 'Mounted' in component.component_name %}text-primary{% else %}text-success{% endif %}">{{ component.component_name }}</h6>
-                                        <p class="mb-1"><strong>Ms Sheet Needed:</strong> {{ component.ms_sheet_per_unit|round(2) }} {{ shortage_analysis.limiting_factor_analysis.limiting_factor.unit }}</p>
-                                        <p class="mb-1"><strong>Max Possible:</strong> {{ component.max_possible|round(0) }} pieces</p>
-                                        <p class="mb-0"><small class="text-muted">Per Castor requirement</small></p>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            <div class="mt-3 p-3 bg-light rounded">
-                                <h6><i class="fas fa-calculator text-warning me-2"></i>Limiting Factor Summary:</h6>
-                                <p class="mb-0">Both components require <strong>{{ shortage_analysis.limiting_factor_analysis.limiting_factor.material_code }}</strong>, creating a shared resource constraint. Total Ms sheet needed per Castor: <strong>{{ shortage_analysis.limiting_factor_analysis.limiting_factor.needed_per_set }} {{ shortage_analysis.limiting_factor_analysis.limiting_factor.unit }}</strong>. You can manufacture <strong>{{ shortage_analysis.limiting_factor_analysis.max_finished_products }} complete Castor sets</strong> with current inventory.</p>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
                     {% for suggestion in smart_suggestions %}
-                    <div class="card mb-3 border-{% if suggestion.get('feasibility') == 'feasible' %}success{% else %}warning{% endif %}">
-                        <div class="card-header {% if suggestion.get('feasibility') == 'feasible' %}bg-light-success{% else %}bg-light-warning{% endif %}">
+                    <div class="card mb-3 border-{% if suggestion.feasibility == 'feasible' %}success{% else %}warning{% endif %}">
+                        <div class="card-header {% if suggestion.feasibility == 'feasible' %}bg-light-success{% else %}bg-light-warning{% endif %}">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0">
-                                    <i class="fas fa-{% if suggestion.get('feasibility') == 'feasible' %}check-circle text-success{% else %}exclamation-triangle text-warning{% endif %}"></i>
-                                    {{ suggestion.get('title', 'Manufacturing Suggestion') }}
+                                    <i class="fas fa-{% if suggestion.feasibility == 'feasible' %}check-circle text-success{% else %}exclamation-triangle text-warning{% endif %}"></i>
+                                    {{ suggestion.title }}
                                 </h6>
-                                <span class="badge bg-{% if suggestion.get('priority', 'medium') == 'high' %}success{% else %}secondary{% endif %}">
-                                    {{ (suggestion.get('priority', 'medium')|title) }} Priority
+                                <span class="badge bg-{% if suggestion.priority == 'high' %}success{% else %}secondary{% endif %}">
+                                    {{ suggestion.priority.title() }} Priority
                                 </span>
                             </div>
                         </div>
                         <div class="card-body">
-                            <p class="text-muted mb-3">{{ suggestion.get('description', 'Manufacturing recommendation based on BOM analysis') }}</p>
+                            <p class="text-muted mb-3">{{ suggestion.description }}</p>
                             
                             <!-- Raw Materials Required -->
                             <div class="mb-3">
@@ -483,7 +445,7 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {% for material in suggestion.get('raw_materials_required', []) %}
+                                            {% for material in suggestion.raw_materials_required %}
                                             <tr class="{% if not material.sufficient %}table-warning{% endif %}">
                                                 <td>
                                                     <strong>{{ material.material_code }}</strong><br>
@@ -510,7 +472,7 @@
                             <div class="mb-3">
                                 <h6><i class="fas fa-tasks text-success"></i> Recommended Actions:</h6>
                                 <ol class="mb-0">
-                                    {% for step in suggestion.get('action_steps', []) %}
+                                    {% for step in suggestion.action_steps %}
                                     <li class="mb-1">{{ step }}</li>
                                     {% endfor %}
                                 </ol>
@@ -522,28 +484,28 @@
                                     <div class="text-center">
                                         <i class="fas fa-rupee-sign text-primary"></i>
                                         <strong>Est. Cost</strong><br>
-                                        <span class="h6 text-primary">₹{{ suggestion.get('estimated_cost', 0)|round(2) }}</span>
+                                        <span class="h6 text-primary">₹{{ suggestion.estimated_cost|round(2) }}</span>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="text-center">
                                         <i class="fas fa-clock text-info"></i>
                                         <strong>Est. Time</strong><br>
-                                        <span class="h6 text-info">{{ suggestion.get('estimated_time', 'TBD') }}</span>
+                                        <span class="h6 text-info">{{ suggestion.estimated_time }}</span>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="text-center">
                                         <i class="fas fa-file-alt text-secondary"></i>
                                         <strong>BOM Ref</strong><br>
-                                        <span class="h6 text-secondary">{{ suggestion.get('bom_reference', 'N/A') }}</span>
+                                        <span class="h6 text-secondary">{{ suggestion.bom_reference }}</span>
                                     </div>
                                 </div>
                             </div>
                             
-                            {% if suggestion.get('feasibility') == 'feasible' %}
+                            {% if suggestion.feasibility == 'feasible' %}
                             <div class="mt-3 text-center">
-                                <a href="{{ url_for('jobwork.add_job_work') }}?bom_ref={{ suggestion.get('bom_reference', '') }}" 
+                                <a href="{{ url_for('jobwork.add_job_work') }}?bom_ref={{ suggestion.bom_reference }}" 
                                    class="btn btn-success">
                                     <i class="fas fa-play"></i> Start Manufacturing Job Work
                                 </a>
@@ -560,44 +522,6 @@
                     </div>
                     {% endfor %}
                     
-                    <!-- Limiting Factor Analysis -->
-                    {% if shortage_analysis.limiting_factor_analysis and shortage_analysis.limiting_factor_analysis.has_limiting_factor %}
-                    <div class="alert alert-warning mt-3">
-                        <h6><i class="fas fa-chart-line text-warning"></i> <strong>Limiting Factor Analysis</strong></h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <strong>Constraining Material:</strong><br>
-                                <span class="text-warning">{{ shortage_analysis.limiting_factor_analysis.limiting_factor.material_name }}</span> 
-                                ({{ shortage_analysis.limiting_factor_analysis.limiting_factor.material_code }})
-                                <br>
-                                <small class="text-muted">
-                                    Available: {{ shortage_analysis.limiting_factor_analysis.limiting_factor.available|round(2) }} {{ shortage_analysis.limiting_factor_analysis.limiting_factor.unit }}<br>
-                                    Needed per set: {{ shortage_analysis.limiting_factor_analysis.limiting_factor.needed_per_set|round(2) }} {{ shortage_analysis.limiting_factor_analysis.limiting_factor.unit }}
-                                </small>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="text-center">
-                                    <div class="h3 text-success mb-1">{{ shortage_analysis.limiting_factor_analysis.max_finished_products }}</div>
-                                    <strong>Maximum Possible Castors</strong><br>
-                                    <small class="text-muted">
-                                        Planned: {{ shortage_analysis.limiting_factor_analysis.planned_quantity|int }} | 
-                                        Efficiency: {{ shortage_analysis.limiting_factor_analysis.production_efficiency|round(1) }}%
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-2">
-                            <strong>Raw Material Usage per Set:</strong>
-                            <ul class="mb-0">
-                                {% for suggestion_item in shortage_analysis.limiting_factor_analysis.limiting_factor.suggestions_affected %}
-                                <li><strong>{{ suggestion_item.suggestion_title }}:</strong> {{ suggestion_item.qty_needed|round(2) }} {{ shortage_analysis.limiting_factor_analysis.limiting_factor.unit }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
                     <div class="alert alert-light mt-3">
                         <i class="fas fa-info-circle text-info"></i>
                         <strong>Smart BOM Analysis:</strong> This system analyzed your nested BOM structure and identified that 
@@ -606,12 +530,6 @@
                         can be manufactured using available raw materials like Ms sheet.
                         {% else %}
                         no shortage items can be currently manufactured due to insufficient raw materials.
-                        {% endif %}
-                        
-                        {% if shortage_analysis.limiting_factor_analysis and shortage_analysis.limiting_factor_analysis.has_limiting_factor %}
-                        <br><strong>Manufacturing Intelligence:</strong> Based on limiting factor analysis, you can produce 
-                        <strong>{{ shortage_analysis.limiting_factor_analysis.max_finished_products }} complete Castors</strong> 
-                        with your current {{ shortage_analysis.limiting_factor_analysis.limiting_factor.material_name }} inventory.
                         {% endif %}
                     </div>
                 </div>
