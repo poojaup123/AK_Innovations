@@ -305,7 +305,7 @@
     </div>
 
     <!-- Enhanced Analytics Section -->
-    {% if vendor_analytics and vendor_analytics.summary.total_vendors > 0 %}
+    {% if vendor_analytics and vendor_analytics.summary and vendor_analytics.summary.total_vendors > 0 %}
     <div class="row mt-4">
         <div class="col">
             <div class="card">
@@ -380,10 +380,30 @@
             </div>
         </div>
     </div>
+    {% else %}
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-bar"></i> Vendor Performance Analytics</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="py-4">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Vendor Data Yet</h5>
+                        <p class="text-muted">Create job work orders with vendors to see comprehensive vendor performance analytics.</p>
+                        <a href="{{ url_for('jobwork.add_jobwork') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Job Work
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     {% endif %}
 
     <!-- Quality Management Dashboard -->
-    {% if quality_data %}
+    {% if quality_data and quality_data.summary %}
     <div class="row mt-4">
         <div class="col-lg-6">
             <div class="card">
@@ -449,6 +469,44 @@
                         </a>
                     </div>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row mt-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-shield-alt"></i> Quality Overview</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="py-3">
+                        <i class="fas fa-shield-alt fa-2x text-muted mb-3"></i>
+                        <h6 class="text-muted">Quality Control Ready</h6>
+                        <p class="text-muted">Set up quality templates and perform inspections to track quality metrics.</p>
+                        <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-success btn-sm">
+                            <i class="fas fa-cog"></i> Setup Quality Control
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-tasks"></i> Workflow Status</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="py-3">
+                        <i class="fas fa-route fa-2x text-muted mb-3"></i>
+                        <h6 class="text-muted">Multi-Vendor Workflows Ready</h6>
+                        <p class="text-muted">Create job works to enable automatic vendor workflow management.</p>
+                        <a href="{{ url_for('jobwork.add_jobwork') }}" class="btn btn-info btn-sm">
+                            <i class="fas fa-plus"></i> Start Workflow
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
