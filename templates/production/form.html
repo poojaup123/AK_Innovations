@@ -343,6 +343,140 @@
                 </div>
             </div>
             {% endif %}
+            
+            {% if smart_suggestions %}
+            <div class="card mt-3">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-lightbulb"></i> Smart BOM Suggestions</h5>
+                    <small>Intelligent manufacturing recommendations based on nested BOM analysis</small>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-robot"></i> <strong>Smart Analysis Found Solutions!</strong><br>
+                        You can manufacture the required materials using available raw materials.
+                    </div>
+                    
+                    {% for suggestion in smart_suggestions %}
+                    <div class="card mb-3 border-{% if suggestion.feasibility == 'feasible' %}success{% else %}warning{% endif %}">
+                        <div class="card-header {% if suggestion.feasibility == 'feasible' %}bg-light-success{% else %}bg-light-warning{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-{% if suggestion.feasibility == 'feasible' %}check-circle text-success{% else %}exclamation-triangle text-warning{% endif %}"></i>
+                                    {{ suggestion.title }}
+                                </h6>
+                                <span class="badge bg-{% if suggestion.priority == 'high' %}success{% else %}secondary{% endif %}">
+                                    {{ suggestion.priority.title() }} Priority
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-3">{{ suggestion.description }}</p>
+                            
+                            <!-- Raw Materials Required -->
+                            <div class="mb-3">
+                                <h6><i class="fas fa-boxes text-primary"></i> Raw Materials Required:</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Material</th>
+                                                <th>Needed</th>
+                                                <th>Available</th>
+                                                <th>Status</th>
+                                                <th>Cost</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for material in suggestion.raw_materials_required %}
+                                            <tr class="{% if not material.sufficient %}table-warning{% endif %}">
+                                                <td>
+                                                    <strong>{{ material.material_code }}</strong><br>
+                                                    <small class="text-muted">{{ material.material_name }}</small>
+                                                </td>
+                                                <td>{{ material.needed_qty|round(2) }} {{ material.unit }}</td>
+                                                <td>{{ material.available_qty|round(2) }} {{ material.unit }}</td>
+                                                <td>
+                                                    {% if material.sufficient %}
+                                                        <span class="badge bg-success"><i class="fas fa-check"></i> Available</span>
+                                                    {% else %}
+                                                        <span class="badge bg-warning"><i class="fas fa-exclamation"></i> Insufficient</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>₹{{ material.estimated_cost|round(2) }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- Action Steps -->
+                            <div class="mb-3">
+                                <h6><i class="fas fa-tasks text-success"></i> Recommended Actions:</h6>
+                                <ol class="mb-0">
+                                    {% for step in suggestion.action_steps %}
+                                    <li class="mb-1">{{ step }}</li>
+                                    {% endfor %}
+                                </ol>
+                            </div>
+                            
+                            <!-- Summary Information -->
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="text-center">
+                                        <i class="fas fa-rupee-sign text-primary"></i>
+                                        <strong>Est. Cost</strong><br>
+                                        <span class="h6 text-primary">₹{{ suggestion.estimated_cost|round(2) }}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="text-center">
+                                        <i class="fas fa-clock text-info"></i>
+                                        <strong>Est. Time</strong><br>
+                                        <span class="h6 text-info">{{ suggestion.estimated_time }}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="text-center">
+                                        <i class="fas fa-file-alt text-secondary"></i>
+                                        <strong>BOM Ref</strong><br>
+                                        <span class="h6 text-secondary">{{ suggestion.bom_reference }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if suggestion.feasibility == 'feasible' %}
+                            <div class="mt-3 text-center">
+                                <a href="{{ url_for('jobwork.add') }}?bom_ref={{ suggestion.bom_reference }}" 
+                                   class="btn btn-success">
+                                    <i class="fas fa-play"></i> Start Manufacturing Job Work
+                                </a>
+                            </div>
+                            {% else %}
+                            <div class="mt-3">
+                                <div class="alert alert-warning mb-0">
+                                    <i class="fas fa-info-circle"></i> 
+                                    <strong>Action Required:</strong> Purchase additional raw materials before proceeding with this manufacturing option.
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="alert alert-light mt-3">
+                        <i class="fas fa-info-circle text-info"></i>
+                        <strong>Smart BOM Analysis:</strong> This system analyzed your nested BOM structure and identified that 
+                        {% if shortage_analysis.manufacturable_items > 0 %}
+                        {{ shortage_analysis.manufacturable_items }} out of {{ shortage_analysis.total_shortage_items }} shortage items 
+                        can be manufactured using available raw materials like Ms sheet.
+                        {% else %}
+                        no shortage items can be currently manufactured due to insufficient raw materials.
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

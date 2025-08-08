@@ -5,6 +5,7 @@ from forms import ProductionForm, BOMForm, BOMItemForm, BOMProcessForm
 from models import Production, Item, BOM, BOMItem, BOMProcess, Supplier, ItemBatch, ProductionBatch
 from services.process_integration import ProcessIntegrationService
 from services.authentic_accounting_integration import AuthenticAccountingIntegration
+from services.smart_bom_suggestions import SmartBOMSuggestionService
 from app import db
 from sqlalchemy import func, or_
 from utils import generate_production_number
@@ -399,20 +400,23 @@ def add_production():
                         'unit': bom_item.item.unit_of_measure
                     })
         
-        # If there are material shortages, show them and prevent production creation
+        # If there are material shortages, analyze with smart BOM suggestions
         if material_shortages:
-            shortage_message = "Cannot create production order. Material shortages detected:<br>"
-            for shortage in material_shortages:
-                shortage_message += f"• {shortage['item_code']} - {shortage['item_name']}: "
-                shortage_message += f"Need {shortage['required_qty']:.2f} {shortage['unit']}, "
-                shortage_message += f"Available {shortage['available_qty']:.2f} {shortage['unit']}, "
-                shortage_message += f"<strong>Short by {shortage['shortage_qty']:.2f} {shortage['unit']}</strong><br>"
+            # Get smart BOM-based suggestions
+            smart_analysis = SmartBOMSuggestionService.analyze_material_shortages_with_suggestions(
+                active_bom, form.quantity_planned.data
+            )
             
-            flash(shortage_message, 'danger')
+            smart_suggestions = SmartBOMSuggestionService.get_smart_suggestions_for_shortages(
+                smart_analysis.get('shortages', [])
+            )
+            
             return render_template('production/form.html', 
                                  form=form, 
                                  title='Add Production',
                                  material_shortages=material_shortages,
+                                 smart_suggestions=smart_suggestions,
+                                 shortage_analysis=smart_analysis,
                                  bom_items=bom_items,
                                  selected_item=selected_item)
         
