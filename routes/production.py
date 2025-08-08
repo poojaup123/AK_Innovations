@@ -407,8 +407,10 @@ def add_production():
                 active_bom, form.quantity_planned.data
             )
             
-            # Use suggestions from the analysis (which includes limiting factor data)
-            smart_suggestions = smart_analysis.get('suggestions', [])
+            # Get suggestions with proper format using the dedicated function
+            smart_suggestions = SmartBOMSuggestionService.get_smart_suggestions_for_shortages(
+                smart_analysis.get('shortages', [])
+            )
             
             return render_template('production/form.html', 
                                  form=form, 
