@@ -447,12 +447,12 @@
                                         </span>
                                     </div>
                                     {% if is_po_suggestion %}
-                                        <a href="{{ url_for('purchase.add_purchase_order') }}?item={{ suggestion.component_code }}&quantity={{ suggestion.suggested_qty|int }}" 
+                                        <a href="{{ url_for('purchase.add_purchase_order') }}?item={{ suggestion.component_code }}&quantity={{ suggestion.suggested_qty|int }}{% if form.production_number.data %}&production_number={{ form.production_number.data }}{% endif %}" 
                                            class="btn btn-warning btn-sm">
                                             <i class="fas fa-shopping-cart"></i> Create Purchase Order
                                         </a>
                                     {% else %}
-                                        <a href="{{ url_for('jobwork.add_job_work') }}?component={{ suggestion.component_code }}&quantity={{ suggestion.suggested_qty|int }}" 
+                                        <a href="{{ url_for('jobwork.add_job_work') }}?component={{ suggestion.component_code }}&quantity={{ suggestion.suggested_qty|int }}{% if form.production_number.data %}&production_number={{ form.production_number.data }}{% endif %}" 
                                            class="btn {% if is_complete_set %}btn-primary{% else %}btn-success{% endif %} btn-sm">
                                             <i class="fas fa-plus"></i> 
                                             {% if is_complete_set %}

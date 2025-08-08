@@ -163,12 +163,24 @@ def list_purchase_orders():
 @purchase_bp.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_purchase_order():
+    # Get production context from URL parameters
+    production_context = {
+        'item_code': request.args.get('item'),
+        'quantity': request.args.get('quantity', type=int),
+        'production_id': request.args.get('production_id', type=int),
+        'production_number': request.args.get('production_number')
+    }
+    
     form = PurchaseOrderForm()
     form.supplier_id.choices = [(s.id, s.name) for s in Supplier.query.all()]
     
     # Auto-generate PO number if not provided
     if not form.po_number.data:
         form.po_number.data = generate_po_number()
+        
+    # Pre-populate form with production context if available
+    if production_context['production_number']:
+        form.description.data = f"Purchase for Production Order: {production_context['production_number']}"
     
     if form.validate_on_submit():
         try:
@@ -177,7 +189,7 @@ def add_purchase_order():
             if existing_po:
                 flash('PO number already exists', 'danger')
                 items = Item.query.all()
-                return render_template('purchase/form_enhanced.html', form=form, title='Add Purchase Order', items=items)
+                return render_template('purchase/form_enhanced.html', form=form, title='Add Purchase Order', items=items, production_context=production_context)
             
             po = PurchaseOrder(
                 po_number=form.po_number.data,
@@ -210,7 +222,7 @@ def add_purchase_order():
             db.session.rollback()
             flash(f'Error creating Purchase Order: {str(e)}', 'danger')
             items = Item.query.all()
-            return render_template('purchase/form_enhanced.html', form=form, title='Add Purchase Order', items=items)
+            return render_template('purchase/form_enhanced.html', form=form, title='Add Purchase Order', items=items, production_context=production_context)
         
         # Send notifications
         from services.comprehensive_notifications import comprehensive_notification_service
@@ -268,7 +280,7 @@ def add_purchase_order():
         item.bom_rate = item.purchase_rate
         items.append(item)
     
-    return render_template('purchase/form_enhanced.html', form=form, title='Add Purchase Order', items=items)
+    return render_template('purchase/form_enhanced.html', form=form, title='Add Purchase Order', items=items, production_context=production_context)
 
 @purchase_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required

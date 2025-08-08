@@ -517,6 +517,14 @@ def add_job_work():
     # Check if user wants the systematic form (optional for backwards compatibility)
     use_systematic = request.args.get('systematic', 'false') == 'true'
     
+    # Get production context from URL parameters
+    production_context = {
+        'component_code': request.args.get('component'),
+        'quantity': request.args.get('quantity', type=int),
+        'production_id': request.args.get('production_id', type=int),
+        'production_number': request.args.get('production_number')
+    }
+    
     if request.method == 'GET':
         form = JobWorkForm()
         
@@ -574,11 +582,36 @@ def add_job_work():
                 ('supplier_demo_1', 'Vendor: Sample Vendor A')
             ]
         
+        # Pre-populate form with production context if available
+        if production_context['component_code']:
+            try:
+                # Find the component item
+                component_item = Item.query.filter_by(code=production_context['component_code']).first()
+                if component_item:
+                    form.input_material_id.data = component_item.id
+                    # Look for BOM for this component
+                    component_bom = BOM.query.filter_by(product_id=component_item.id, is_active=True).first()
+                    if component_bom:
+                        form.bom_id.data = component_bom.id
+                        form.job_work_type.data = 'bom_based'
+                    else:
+                        form.job_work_type.data = 'manual_entry'
+            except Exception as e:
+                print(f"Error finding component: {e}")
+        
+        if production_context['quantity']:
+            form.quantity.data = production_context['quantity']
+            
+        # Add production reference to narration if available
+        if production_context['production_number']:
+            form.narration.data = f"Job work for Production Order: {production_context['production_number']}"
+        
         # Render single-page form by default, systematic form only if explicitly requested
         template_name = 'jobwork/form_systematic.html' if use_systematic else 'jobwork/form_single_page.html'
         title = 'Create New Job Work - Single Page' if not use_systematic else 'Create New Job Work - Systematic'
         return render_template(template_name, 
-                             form=form, 
+                             form=form,
+                             production_context=production_context,
                              title=title)
     
     # Handle both systematic and regular form submission
