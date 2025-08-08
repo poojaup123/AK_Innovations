@@ -338,17 +338,10 @@
                     <i class="fas fa-dollar-sign me-2"></i>
                     Costing Details
                 </h5>
-                <small>Configure rates, cost calculation, overhead allocation, and pricing details</small>
+<small>Configure payment terms, quality requirements, and additional costs (rates are handled in Process Details above)</small>
             </div>
             <div class="card-body">
                 <div class="row">
-                    <!-- Rate per Unit -->
-                    <div class="col-md-4 mb-3">
-                        <label for="rate_per_unit" class="form-label">Rate per Unit (₹)</label>
-                        {{ form.rate_per_unit(class="form-control", id="rate_per_unit") }}
-                        <div class="form-text">Job work rate per unit</div>
-                    </div>
-
                     <!-- Payment Terms -->
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Payment Terms</label>
@@ -387,9 +380,9 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>Job Work Cost</td>
-                                        <td class="text-end" id="jobWorkCost">0.00</td>
-                                        <td class="text-end" id="jobWorkCostPerUnit">0.00</td>
+                                        <td>Process Cost (from BOM)</td>
+                                        <td class="text-end" id="processCost">0.00</td>
+                                        <td class="text-end" id="processCostPerUnit">0.00</td>
                                     </tr>
                                     <tr>
                                         <td>Transportation Cost</td>
@@ -723,18 +716,24 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('job_title').value = title;
     });
 
-    // Cost calculations
+    // Cost calculations based on BOM process rates
     function updateCostCalculations() {
-        const ratePerUnit = parseFloat(document.getElementById('rate_per_unit').value) || 0;
         const quantity = parseFloat(document.getElementById('quantity_to_issue').value) || 0;
         const transportCost = parseFloat(document.getElementById('transportationCost').value) || 0;
         const overheadCost = parseFloat(document.getElementById('overheadCost').value) || 0;
 
-        const jobWorkCost = ratePerUnit * quantity;
-        const totalCost = jobWorkCost + transportCost + overheadCost;
+        // Calculate process cost from BOM rates (this will be populated when BOM processes are selected)
+        let processCost = 0;
+        const processRateInputs = document.querySelectorAll('#processRatesList input[data-process-rate]');
+        processRateInputs.forEach(input => {
+            const rate = parseFloat(input.value) || 0;
+            processCost += rate * quantity;
+        });
         
-        document.getElementById('jobWorkCost').textContent = jobWorkCost.toFixed(2);
-        document.getElementById('jobWorkCostPerUnit').textContent = (quantity > 0 ? (jobWorkCost / quantity).toFixed(2) : '0.00');
+        const totalCost = processCost + transportCost + overheadCost;
+        
+        document.getElementById('processCost').textContent = processCost.toFixed(2);
+        document.getElementById('processCostPerUnit').textContent = (quantity > 0 ? (processCost / quantity).toFixed(2) : '0.00');
         document.getElementById('transportationCostPerUnit').textContent = (quantity > 0 ? (transportCost / quantity).toFixed(2) : '0.00');
         document.getElementById('overheadCostPerUnit').textContent = (quantity > 0 ? (overheadCost / quantity).toFixed(2) : '0.00');
         document.getElementById('totalCost').textContent = totalCost.toFixed(2);
@@ -742,10 +741,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Add event listeners for cost calculations
-    ['rate_per_unit', 'quantity_to_issue', 'transportationCost', 'overheadCost'].forEach(id => {
+    ['quantity_to_issue', 'transportationCost', 'overheadCost'].forEach(id => {
         const element = document.getElementById(id);
         if (element) {
             element.addEventListener('input', updateCostCalculations);
+        }
+    });
+    
+    // Add event listener for process rate changes (will be added dynamically when BOM processes load)
+    document.addEventListener('input', function(e) {
+        if (e.target.matches('#processRatesList input[data-process-rate]')) {
+            updateCostCalculations();
         }
     });
 
