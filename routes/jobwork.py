@@ -2792,7 +2792,7 @@ def get_bom_details(bom_id):
                 'operation_description': process.operation_description,
                 'setup_time_minutes': process.setup_time_minutes,
                 'run_time_minutes': process.run_time_minutes,
-                'labor_rate_per_hour': process.labor_rate_per_hour or 0.0
+                'cost_per_unit': process.cost_per_unit or 0.0
             })
         
         return jsonify({
