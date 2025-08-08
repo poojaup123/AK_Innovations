@@ -527,7 +527,7 @@
                                 <div class="card-body">
                                     <h6 class="card-title"><i class="fas fa-chart-line"></i> Material Flow Analysis</h6>
                                     <p class="card-text">Track materials through multi-vendor processes with real-time location updates.</p>
-                                    <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-sm btn-primary">View Report</a>
+                                    <a href="{{ url_for('jobwork.material_flow_analysis') }}" class="btn btn-sm btn-primary">View Report</a>
                                 </div>
                             </div>
                         </div>
@@ -536,7 +536,7 @@
                                 <div class="card-body">
                                     <h6 class="card-title"><i class="fas fa-users"></i> Vendor Performance</h6>
                                     <p class="card-text">Comprehensive vendor scorecards with delivery, quality, and cost analytics.</p>
-                                    <a href="{{ url_for('reports.production_report') }}" class="btn btn-sm btn-success">View Analytics</a>
+                                    <a href="{{ url_for('quality.quality_reports') }}" class="btn btn-sm btn-success">View Analytics</a>
                                 </div>
                             </div>
                         </div>
@@ -545,7 +545,7 @@
                                 <div class="card-body">
                                     <h6 class="card-title"><i class="fas fa-bell"></i> Smart Notifications</h6>
                                     <p class="card-text">Automated alerts for quality issues, delays, and vendor communication.</p>
-                                    <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-sm btn-warning">Configure</a>
+                                    <a href="{{ url_for('jobwork.notification_management') }}" class="btn btn-sm btn-warning">Configure</a>
                                 </div>
                             </div>
                         </div>
@@ -556,13 +556,13 @@
                         <div class="col">
                             <h6>Enhanced Features</h6>
                             <div class="btn-group" role="group">
-                                <a href="{{ url_for('jobwork.add_job_work') }}" class="btn btn-outline-primary">
+                                <a href="{{ url_for('jobwork.partial_processing_dashboard') }}" class="btn btn-outline-primary">
                                     <i class="fas fa-tasks"></i> Partial Processing
                                 </a>
-                                <a href="{{ url_for('jobwork.dashboard') }}" class="btn btn-outline-success">
+                                <a href="{{ url_for('jobwork.quality_control_dashboard') }}" class="btn btn-outline-success">
                                     <i class="fas fa-shield-alt"></i> Quality Control
                                 </a>
-                                <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-outline-info">
+                                <a href="{{ url_for('jobwork.workflow_management') }}" class="btn btn-outline-info">
                                     <i class="fas fa-route"></i> Multi-Vendor Workflows
                                 </a>
                                 <a href="{{ url_for('accounting.reports_dashboard') }}" class="btn btn-outline-warning">

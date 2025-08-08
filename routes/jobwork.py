@@ -2406,4 +2406,297 @@ def load_draft(draft_id):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
+# Enhanced workflow management routes
+
+@jobwork_bp.route('/workflows')
+@login_required
+def workflow_management():
+    """Multi-vendor workflow management dashboard"""
+    try:
+        # Get active workflows
+        active_workflows = WorkflowAutomationService.get_active_workflows()
+        
+        # Get workflow statistics
+        workflow_stats = WorkflowAutomationService.get_workflow_statistics()
+        
+        # Get delayed batches
+        delayed_batches = WorkflowAutomationService.detect_delayed_batches()
+        
+        return render_template('jobwork/workflows.html',
+                             active_workflows=active_workflows,
+                             workflow_stats=workflow_stats,
+                             delayed_batches=delayed_batches)
+                             
+    except Exception as e:
+        flash(f'Error loading workflow management: {str(e)}', 'error')
+        return redirect(url_for('jobwork.dashboard'))
+
+@jobwork_bp.route('/workflows/create', methods=['GET', 'POST'])
+@login_required
+def create_workflow():
+    """Create new multi-vendor workflow"""
+    if request.method == 'POST':
+        try:
+            data = request.get_json() or request.form
+            result = WorkflowAutomationService.create_multi_vendor_workflow(
+                item_id=data['item_id'],
+                vendor_sequence=data.getlist('vendor_sequence') if hasattr(data, 'getlist') else data['vendor_sequence'],
+                process_details=data['process_details'],
+                auto_forward_rules=data.get('auto_forward_rules', {}),
+                created_by=current_user.id
+            )
+            
+            if result['success']:
+                flash('Multi-vendor workflow created successfully!', 'success')
+                return redirect(url_for('jobwork.workflow_management'))
+            else:
+                flash(f'Error creating workflow: {result["error"]}', 'error')
+                
+        except Exception as e:
+            flash(f'Error creating workflow: {str(e)}', 'error')
+    
+    # Get items and suppliers for form
+    items = Item.query.filter_by(is_active=True).all()
+    suppliers = Supplier.query.filter_by(is_active=True).all()
+    
+    return render_template('jobwork/create_workflow.html',
+                         items=items,
+                         suppliers=suppliers)
+
+@jobwork_bp.route('/partial-processing')
+@login_required
+def partial_processing_dashboard():
+    """Enhanced partial processing dashboard"""
+    try:
+        # Get partial processing dashboard data
+        dashboard_result = PartialProcessingService.get_partial_processing_dashboard()
+        
+        if dashboard_result['success']:
+            dashboard_data = dashboard_result['dashboard_data']
+        else:
+            dashboard_data = {}
+            flash(f'Error loading partial processing data: {dashboard_result.get("error", "Unknown error")}', 'warning')
+        
+        # Get consolidation opportunities
+        consolidation_result = PartialProcessingService.get_consolidation_opportunities()
+        consolidation_opportunities = consolidation_result.get('opportunities', []) if consolidation_result['success'] else []
+        
+        return render_template('jobwork/partial_processing.html',
+                             dashboard_data=dashboard_data,
+                             consolidation_opportunities=consolidation_opportunities)
+                             
+    except Exception as e:
+        flash(f'Error loading partial processing dashboard: {str(e)}', 'error')
+        return redirect(url_for('jobwork.dashboard'))
+
+@jobwork_bp.route('/notifications')
+@login_required
+def notification_management():
+    """Smart notification management"""
+    try:
+        # Get active notification rules
+        active_rules = SmartNotificationService.get_active_notification_rules()
+        
+        # Get recent notifications
+        recent_notifications = SmartNotificationService.get_recent_notifications(limit=50)
+        
+        # Get notification statistics
+        notification_stats = SmartNotificationService.get_notification_statistics()
+        
+        return render_template('jobwork/notifications.html',
+                             active_rules=active_rules,
+                             recent_notifications=recent_notifications,
+                             notification_stats=notification_stats)
+                             
+    except Exception as e:
+        flash(f'Error loading notification management: {str(e)}', 'error')
+        return redirect(url_for('jobwork.dashboard'))
+
+@jobwork_bp.route('/quality-control')
+@login_required
+def quality_control_dashboard():
+    """Quality control management dashboard"""
+    try:
+        # Get quality dashboard data
+        quality_result = QualityManagementService.get_quality_dashboard_data()
+        
+        if quality_result['success']:
+            quality_data = quality_result['dashboard_data']
+        else:
+            quality_data = {}
+            flash(f'Error loading quality data: {quality_result.get("error", "Unknown error")}', 'warning')
+        
+        # Get quality templates
+        templates = QualityManagementService.get_active_quality_templates()
+        
+        # Get pending inspections
+        pending_inspections = QualityManagementService.get_pending_inspections()
+        
+        return render_template('jobwork/quality_control.html',
+                             quality_data=quality_data,
+                             templates=templates,
+                             pending_inspections=pending_inspections)
+                             
+    except Exception as e:
+        flash(f'Error loading quality control dashboard: {str(e)}', 'error')
+        return redirect(url_for('jobwork.dashboard'))
+
+@jobwork_bp.route('/material-flow-analysis')
+@login_required
+def material_flow_analysis():
+    """Advanced material flow analysis and reporting"""
+    try:
+        # Get filter parameters
+        filters = {
+            'start_date': request.args.get('start_date'),
+            'end_date': request.args.get('end_date'),
+            'item_ids': request.args.getlist('item_ids'),
+            'vendor_names': request.args.getlist('vendor_names'),
+            'process_names': request.args.getlist('process_names')
+        }
+        
+        # Generate material flow report
+        flow_result = AdvancedReportingService.generate_material_flow_report(filters)
+        
+        if flow_result['success']:
+            flow_report = flow_result['report']
+        else:
+            flow_report = {}
+            flash(f'Error generating material flow report: {flow_result.get("error", "Unknown error")}', 'warning')
+        
+        # Get filter options
+        items = Item.query.filter_by(is_active=True).all()
+        suppliers = Supplier.query.filter_by(is_active=True).all()
+        
+        return render_template('jobwork/material_flow_analysis.html',
+                             flow_report=flow_report,
+                             items=items,
+                             suppliers=suppliers,
+                             filters=filters)
+                             
+    except Exception as e:
+        flash(f'Error loading material flow analysis: {str(e)}', 'error')
+        return redirect(url_for('jobwork.dashboard'))
+
+# API endpoints for enhanced job work management
+
+@jobwork_bp.route('/api/multi-vendor-workflow', methods=['POST'])
+@login_required
+def create_multi_vendor_workflow_api():
+    """API endpoint to create multi-vendor sequential workflow"""
+    try:
+        data = request.get_json()
+        result = WorkflowAutomationService.create_multi_vendor_workflow(
+            item_id=data['item_id'],
+            vendor_sequence=data['vendor_sequence'],
+            process_details=data['process_details'],
+            auto_forward_rules=data.get('auto_forward_rules', {}),
+            created_by=current_user.id
+        )
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'workflow_id': result['workflow_id'],
+                'message': 'Multi-vendor workflow created successfully!'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result['error']
+            }), 400
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@jobwork_bp.route('/api/vendor-analytics/<int:vendor_id>')
+@login_required
+def get_vendor_analytics(vendor_id):
+    """API endpoint for vendor performance analytics"""
+    try:
+        result = VendorAnalyticsService.generate_vendor_scorecard(vendor_id)
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'analytics': result['scorecard']
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result['error']
+            }), 400
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@jobwork_bp.route('/api/smart-notifications', methods=['POST'])
+@login_required
+def configure_smart_notifications():
+    """API endpoint to configure smart notification rules"""
+    try:
+        data = request.get_json()
+        result = SmartNotificationService.create_notification_rule(
+            rule_name=data['rule_name'],
+            trigger_conditions=data['trigger_conditions'],
+            notification_channels=data['notification_channels'],
+            escalation_rules=data.get('escalation_rules'),
+            created_by=current_user.id
+        )
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'rule_id': result['rule_id'],
+                'message': 'Notification rule configured successfully!'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result['error']
+            }), 400
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@jobwork_bp.route('/api/quality-inspection', methods=['POST'])
+@login_required
+def perform_quality_inspection():
+    """API endpoint for quality inspection"""
+    try:
+        data = request.get_json()
+        result = QualityManagementService.perform_quality_inspection(
+            job_batch_id=data['job_batch_id'],
+            template_id=data['template_id'],
+            inspection_data=data['inspection_data'],
+            inspector_id=current_user.id
+        )
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'inspection_id': result['inspection_id'],
+                'message': 'Quality inspection completed successfully!'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result['error']
+            }), 400
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 
