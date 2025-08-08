@@ -3,7 +3,8 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from forms import ProductionForm, BOMForm, BOMItemForm, BOMProcessForm
 from models import Item, BOM, BOMItem, BOMProcess, Supplier, ItemBatch
-from models.production import ProductionOrder, ProductionBatch
+from models.production import ProductionOrder
+from models import ProductionBatch
 from models.batch import InventoryBatch, BatchMovement, JobWorkBatch, BatchTraceability
 from models.accounting import JournalEntry, Account
 from services.process_integration import ProcessIntegrationService
