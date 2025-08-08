@@ -120,7 +120,7 @@
                     <div class="col-md-6 mb-3">
                         <label for="assigned_to" class="form-label required">Assigned To</label>
                         {{ form.assigned_to(class="form-select", id="assigned_to") }}
-                        <div class="form-text">Select vendor for outsourced work or department for in-house work. Supports multi-vendor sequential routing.</div>
+                        <div class="form-text" id="assignmentHelpText">Options will change based on execution type: departments for in-house work, vendors for outsourced work.</div>
                     </div>
 
                     <!-- Job Title -->
@@ -632,22 +632,68 @@ document.addEventListener('DOMContentLoaded', function() {
     bomRadio.addEventListener('change', toggleJobWorkType);
     manualRadio.addEventListener('change', toggleJobWorkType);
 
-    // Work type toggle
+    // Work type toggle with assignment filtering
     const inHouseRadio = document.getElementById('work_in_house');
     const outsourcedRadio = document.getElementById('work_outsourced');
     const assignedToSelect = document.getElementById('assigned_to');
-    const assignmentHelp = document.getElementById('assignmentHelp');
+    
+    // Store all original options when page loads
+    let allAssignedToOptions = [];
+    
+    // Store original options on page load
+    function storeOriginalOptions() {
+        const options = assignedToSelect.querySelectorAll('option');
+        allAssignedToOptions = Array.from(options).map(option => ({
+            value: option.value,
+            text: option.text,
+            isDepartment: option.value.startsWith('dept_'),
+            isVendor: option.value.startsWith('supplier_')
+        }));
+    }
+    
+    function filterAssignedToOptions(showDepartments, showVendors) {
+        // Clear current options
+        assignedToSelect.innerHTML = '';
+        
+        // Add filtered options back
+        allAssignedToOptions.forEach(option => {
+            if (option.value === '' || // Always include empty/default option
+                (showDepartments && option.isDepartment) ||
+                (showVendors && option.isVendor)) {
+                const optionElement = document.createElement('option');
+                optionElement.value = option.value;
+                optionElement.text = option.text;
+                assignedToSelect.appendChild(optionElement);
+            }
+        });
+        
+        // Reset selection to default
+        assignedToSelect.value = '';
+    }
 
     function toggleWorkType() {
+        const helpText = document.getElementById('assignmentHelpText');
+        
         if (inHouseRadio.checked) {
-            assignmentHelp.textContent = 'Select department for in-house work';
+            // Show only departments for in-house work
+            filterAssignedToOptions(true, false);
+            helpText.textContent = 'Select internal department for in-house work execution.';
         } else {
-            assignmentHelp.textContent = 'Select vendor for outsourced work with multi-vendor routing support';
+            // Show only vendors for outsourced work
+            filterAssignedToOptions(false, true);
+            helpText.textContent = 'Select vendor for outsourced work. Supports multi-vendor sequential routing.';
         }
     }
 
+    // Store original options when page loads
+    storeOriginalOptions();
+    
+    // Add event listeners
     inHouseRadio.addEventListener('change', toggleWorkType);
     outsourcedRadio.addEventListener('change', toggleWorkType);
+    
+    // Initialize filtering based on current selection
+    toggleWorkType();
 
     // Team work toggle
     const teamWorkCheckbox = document.getElementById('is_team_work');
