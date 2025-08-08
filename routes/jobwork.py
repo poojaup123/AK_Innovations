@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from forms import JobWorkForm, JobWorkQuantityUpdateForm, DailyJobWorkForm, JobWorkTeamAssignmentForm, JobWorkBatchReturnForm
-from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings, DailyJobWorkEntry, JobWorkTeamAssignment, Employee, ItemBatch
+from models import JobWork, Supplier, Item, BOM, BOMItem, BOMProcess, CompanySettings, DailyJobWorkEntry, JobWorkTeamAssignment, Employee, ItemBatch
 from models.batch import InventoryBatch as Batch, JobWorkBatch, BatchMovementLedger, BatchConsumptionReport
 from utils.batch_tracking import BatchTracker, BatchValidator, get_batch_options_for_item_api, validate_batch_selection_api
 from services.batch_management import BatchManager, BatchValidator as BatchValidatorService
@@ -2726,6 +2726,60 @@ def perform_quality_inspection():
                 'error': result['error']
             }), 400
             
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@jobwork_bp.route('/api/bom-details/<int:bom_id>')
+@login_required
+def get_bom_details(bom_id):
+    """API endpoint to fetch BOM details for auto-populating job work form"""
+    try:
+        bom = BOM.query.get_or_404(bom_id)
+        
+        # Get BOM items (input materials)
+        bom_items = BOMItem.query.filter_by(bom_id=bom_id).all()
+        
+        # Get BOM processes
+        bom_processes = BOMProcess.query.filter_by(bom_id=bom_id).order_by(BOMProcess.step_number).all()
+        
+        # Prepare response data
+        input_materials = []
+        for item in bom_items:
+            input_materials.append({
+                'material_id': item.material_id,
+                'material_name': item.material.name if item.material else 'Unknown',
+                'qty_required': item.qty_required,
+                'uom': item.uom.name if item.uom else 'pcs',
+                'process_step': item.process_step,
+                'process_name': item.process_name
+            })
+        
+        processes = []
+        for process in bom_processes:
+            processes.append({
+                'step_number': process.step_number,
+                'process_name': process.process_name,
+                'process_code': process.process_code,
+                'operation_description': process.operation_description,
+                'setup_time_minutes': process.setup_time_minutes,
+                'run_time_minutes': process.run_time_minutes
+            })
+        
+        return jsonify({
+            'success': True,
+            'bom_data': {
+                'bom_code': bom.bom_code,
+                'product_id': bom.product_id,
+                'product_name': bom.product.name if bom.product else 'Unknown',
+                'output_quantity': bom.output_quantity,
+                'input_materials': input_materials,
+                'processes': processes
+            }
+        })
+        
     except Exception as e:
         return jsonify({
             'success': False,

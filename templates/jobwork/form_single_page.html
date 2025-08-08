@@ -721,6 +721,206 @@ function resetForm() {
         document.getElementById('submitBtn').disabled = false;
     }
 }
+
+// BOM Auto-Population Functionality
+function handleBOMSelection() {
+    const bomSelect = document.getElementById('bom_id');
+    const bomId = bomSelect.value;
+    
+    if (!bomId || bomId === '0') {
+        // Clear auto-populated fields when no BOM is selected
+        clearBOMFields();
+        return;
+    }
+    
+    // Show loading indicator
+    showBOMLoadingState(true);
+    
+    // Fetch BOM details from API
+    fetch(`{{ url_for('jobwork.get_bom_details', bom_id=0) }}`.replace('0', bomId))
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                populateFormFromBOM(data.bom_data);
+                showBOMSuccessMessage(data.bom_data.bom_code);
+            } else {
+                showBOMErrorMessage(data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching BOM details:', error);
+            showBOMErrorMessage('Failed to fetch BOM details. Please try again.');
+        })
+        .finally(() => {
+            showBOMLoadingState(false);
+        });
+}
+
+function populateFormFromBOM(bomData) {
+    // 1. Set output item (product that BOM produces)
+    const outputItemSelect = document.getElementById('item_id');
+    if (outputItemSelect && bomData.product_id) {
+        outputItemSelect.value = bomData.product_id;
+        // Trigger change event to update dependent fields
+        outputItemSelect.dispatchEvent(new Event('change'));
+    }
+    
+    // 2. Set input material (first material from BOM items)
+    const inputMaterialSelect = document.getElementById('input_material_id');
+    if (inputMaterialSelect && bomData.input_materials.length > 0) {
+        const firstMaterial = bomData.input_materials[0];
+        inputMaterialSelect.value = firstMaterial.material_id;
+        // Trigger change event to update dependent fields
+        inputMaterialSelect.dispatchEvent(new Event('change'));
+        
+        // Set suggested quantity
+        const quantityField = document.getElementById('quantity_to_issue');
+        if (quantityField) {
+            quantityField.value = firstMaterial.qty_required;
+        }
+    }
+    
+    // 3. Set process information (first process from BOM processes)
+    if (bomData.processes.length > 0) {
+        const firstProcess = bomData.processes[0];
+        
+        // Set job title with process information
+        const jobTitleField = document.getElementById('job_title');
+        if (jobTitleField && !jobTitleField.value) {
+            jobTitleField.value = `${bomData.bom_code} - ${firstProcess.process_name}`;
+        }
+        
+        // Set remarks with process description
+        const remarksField = document.getElementById('remarks');
+        if (remarksField && firstProcess.operation_description) {
+            remarksField.value = firstProcess.operation_description;
+        }
+    }
+    
+    // 4. Show BOM details summary
+    showBOMDetailsSummary(bomData);
+}
+
+function clearBOMFields() {
+    // Clear the BOM info display
+    const bomInfoDiv = document.getElementById('bomInfoDisplay');
+    if (bomInfoDiv) {
+        bomInfoDiv.style.display = 'none';
+    }
+}
+
+function showBOMLoadingState(isLoading) {
+    const bomSelect = document.getElementById('bom_id');
+    const loadingDiv = document.getElementById('bomLoadingIndicator');
+    
+    if (isLoading) {
+        bomSelect.disabled = true;
+        if (loadingDiv) {
+            loadingDiv.style.display = 'block';
+        } else {
+            // Create loading indicator if it doesn't exist
+            const loading = document.createElement('div');
+            loading.id = 'bomLoadingIndicator';
+            loading.className = 'alert alert-info mt-2';
+            loading.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading BOM details...';
+            bomSelect.parentNode.appendChild(loading);
+        }
+    } else {
+        bomSelect.disabled = false;
+        if (loadingDiv) {
+            loadingDiv.style.display = 'none';
+        }
+    }
+}
+
+function showBOMSuccessMessage(bomCode) {
+    const messageDiv = document.getElementById('bomMessage') || createBOMMessageDiv();
+    messageDiv.className = 'alert alert-success mt-2';
+    messageDiv.innerHTML = `<i class="fas fa-check-circle"></i> BOM "${bomCode}" loaded successfully! Form fields have been auto-populated.`;
+    messageDiv.style.display = 'block';
+    
+    // Hide message after 5 seconds
+    setTimeout(() => {
+        messageDiv.style.display = 'none';
+    }, 5000);
+}
+
+function showBOMErrorMessage(error) {
+    const messageDiv = document.getElementById('bomMessage') || createBOMMessageDiv();
+    messageDiv.className = 'alert alert-danger mt-2';
+    messageDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error: ${error}`;
+    messageDiv.style.display = 'block';
+}
+
+function createBOMMessageDiv() {
+    const messageDiv = document.createElement('div');
+    messageDiv.id = 'bomMessage';
+    messageDiv.style.display = 'none';
+    
+    const bomSelect = document.getElementById('bom_id');
+    bomSelect.parentNode.appendChild(messageDiv);
+    
+    return messageDiv;
+}
+
+function showBOMDetailsSummary(bomData) {
+    let summaryHtml = `
+        <div class="card mt-3" id="bomInfoDisplay">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-sitemap"></i> BOM Details: ${bomData.bom_code}</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Output:</strong> ${bomData.product_name} (${bomData.output_quantity} units)
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Input Materials:</strong> ${bomData.input_materials.length} items
+                    </div>
+                </div>`;
+    
+    if (bomData.input_materials.length > 0) {
+        summaryHtml += `
+                <div class="mt-2">
+                    <strong>Primary Input:</strong> ${bomData.input_materials[0].material_name} 
+                    (${bomData.input_materials[0].qty_required} ${bomData.input_materials[0].uom})
+                </div>`;
+    }
+    
+    if (bomData.processes.length > 0) {
+        summaryHtml += `
+                <div class="mt-2">
+                    <strong>Primary Process:</strong> ${bomData.processes[0].process_name}
+                </div>`;
+    }
+    
+    summaryHtml += `
+            </div>
+        </div>`;
+    
+    // Remove existing BOM info display
+    const existingDisplay = document.getElementById('bomInfoDisplay');
+    if (existingDisplay) {
+        existingDisplay.remove();
+    }
+    
+    // Add new display after BOM select field
+    const bomSelect = document.getElementById('bom_id');
+    bomSelect.parentNode.insertAdjacentHTML('afterend', summaryHtml);
+}
+
+// Initialize BOM functionality when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const bomSelect = document.getElementById('bom_id');
+    if (bomSelect) {
+        bomSelect.addEventListener('change', handleBOMSelection);
+        
+        // If BOM is pre-selected, load its details
+        if (bomSelect.value && bomSelect.value !== '0') {
+            handleBOMSelection();
+        }
+    }
+});
 </script>
 
 {% endblock %}
