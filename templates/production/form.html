@@ -3,6 +3,48 @@
 {% block title %}{{ title }} - Factory Management System{% endblock %}
 
 {% block head %}
+<style>
+/* Enhanced section styling for better visual organization */
+.section-card {
+    border-left: 4px solid;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.section-card.section-form {
+    border-left-color: #0d6efd;
+}
+
+.section-card.section-bom {
+    border-left-color: #198754;
+}
+
+.section-card.section-shortages {
+    border-left-color: #dc3545;
+}
+
+.section-card.section-suggestions {
+    border-left-color: #0dcaf0;
+}
+
+.section-header {
+    background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-primary-dark) 100%);
+    border-bottom: 3px solid rgba(255,255,255,0.2);
+}
+
+.section-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    font-weight: bold;
+    margin-right: 10px;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -18,11 +60,13 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5>Production Order Details</h5>
+    <!-- Section 1: Production Order Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card section-card section-form">
+                <div class="card-header bg-primary text-white section-header">
+                    <h5><span class="section-number">1</span><i class="fas fa-edit"></i> Production Order Form</h5>
+                    <small>Enter production order details and specifications</small>
                 </div>
                 <div class="card-body">
                     <form method="POST">
@@ -248,14 +292,17 @@
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-4">
-            {% if bom_items %}
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-list-alt"></i> Bill of Materials</h5>
+    </div>
+    
+    <!-- Section 2: Bill of Materials -->
+    {% if bom_items %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card section-card section-bom">
+                <div class="card-header bg-success text-white section-header">
+                    <h5><span class="section-number">2</span><i class="fas fa-list-alt"></i> Bill of Materials</h5>
                     {% if selected_item %}
-                    <small class="text-muted">for {{ selected_item.code }} - {{ selected_item.name }}</small>
+                    <small>BOM for {{ selected_item.code }} - {{ selected_item.name }}</small>
                     {% endif %}
                 </div>
                 <div class="card-body">
@@ -318,12 +365,18 @@
                     </div>
                 </div>
             </div>
-            {% endif %}
-            
-            {% if material_shortages %}
-            <div class="card mt-3">
-                <div class="card-header bg-danger text-white">
-                    <h5><i class="fas fa-exclamation-triangle"></i> Material Shortages</h5>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Section 3: Material Shortages -->
+    {% if material_shortages %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card section-card section-shortages">
+                <div class="card-header bg-danger text-white section-header">
+                    <h5><span class="section-number">3</span><i class="fas fa-exclamation-triangle"></i> Material Shortages</h5>
+                    <small>Critical material availability issues that need attention</small>
                 </div>
                 <div class="card-body">
                     <div class="alert alert-danger">
@@ -342,13 +395,18 @@
                     {% endfor %}
                 </div>
             </div>
-            {% endif %}
-            
-            {% if smart_suggestions %}
-            <div class="card mt-3">
-                <div class="card-header bg-info text-white">
-                    <h5><i class="fas fa-lightbulb"></i> Smart BOM Suggestions</h5>
-                    <small>Intelligent manufacturing recommendations based on nested BOM analysis</small>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Section 4: Smart BOM Suggestions -->
+    {% if smart_suggestions %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card section-card section-suggestions">
+                <div class="card-header bg-info text-white section-header">
+                    <h5><span class="section-number">4</span><i class="fas fa-lightbulb"></i> Smart BOM Suggestions</h5>
+                    <small>AI-powered manufacturing alternatives using nested BOM analysis</small>
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info">
@@ -476,9 +534,9 @@
                     </div>
                 </div>
             </div>
-            {% endif %}
         </div>
     </div>
+    {% endif %}
 </div>
 
 <script src="{{ url_for('static', filename='js/preview-system.js') }}"></script>
