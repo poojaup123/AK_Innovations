@@ -9,6 +9,10 @@ from models.accounting import JournalEntry, Account
 from services.process_integration import ProcessIntegrationService
 from services.authentic_accounting_integration import AuthenticAccountingIntegration
 from services.production_service import ProductionService
+from services.workflow_automation import WorkflowAutomationService
+from services.quality_management import QualityManagementService
+from services.vendor_analytics import VendorAnalyticsService
+from services.advanced_reporting import AdvancedReportingService
 from app import db
 from sqlalchemy import func, or_
 from utils import generate_production_number
@@ -93,12 +97,28 @@ def dashboard():
     # Products with BOM
     products_with_bom = db.session.query(Item).join(BOM).filter(BOM.is_active == True).all()
     
+    # Get vendor analytics for dashboard
+    vendor_analytics = None
+    quality_data = None
+    try:
+        vendor_result = VendorAnalyticsService.calculate_vendor_performance_kpis()
+        if vendor_result['success']:
+            vendor_analytics = vendor_result['vendor_performance']
+        
+        quality_result = QualityManagementService.get_quality_dashboard_data()
+        if quality_result['success']:
+            quality_data = quality_result['dashboard_data']
+    except Exception as e:
+        print(f"Error getting analytics: {e}")
+    
     return render_template('production/dashboard.html', 
                          stats=stats, 
                          recent_productions=recent_productions,
                          active_productions=active_productions,
                          today_productions=today_productions,
-                         products_with_bom=products_with_bom)
+                         products_with_bom=products_with_bom,
+                         vendor_analytics=vendor_analytics,
+                         quality_data=quality_data)
 
 @production_bp.route('/list')
 @login_required
@@ -1874,3 +1894,65 @@ def get_bom_job_work_data(bom_id):
             'success': False,
             'error': f'Error loading BOM data: {str(e)}'
         })
+
+
+# Enhanced Production API Endpoints with Advanced Analytics
+
+@production_bp.route('/api/analytics/material-flow')
+@login_required
+def api_material_flow_analytics():
+    """API to get material flow analytics"""
+    try:
+        filters = {
+            'start_date': request.args.get('start_date'),
+            'end_date': request.args.get('end_date'),
+            'item_ids': request.args.getlist('item_ids'),
+            'vendor_names': request.args.getlist('vendor_names')
+        }
+        result = AdvancedReportingService.generate_material_flow_report(filters)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@production_bp.route('/api/analytics/vendor-performance')
+@login_required
+def api_vendor_performance_analytics():
+    """API to get vendor performance analytics"""
+    try:
+        vendor_id = request.args.get('vendor_id', type=int)
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        
+        from datetime import datetime
+        if start_date:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        if end_date:
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            
+        result = VendorAnalyticsService.calculate_vendor_performance_kpis(vendor_id, start_date, end_date)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@production_bp.route('/api/quality/dashboard')
+@login_required
+def api_quality_dashboard():
+    """API to get quality management dashboard data"""
+    try:
+        result = QualityManagementService.get_quality_dashboard_data()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@production_bp.route('/api/workflow/auto-forward', methods=['POST'])
+@login_required
+def api_auto_forward_material():
+    """API to auto-forward materials to next vendor"""
+    try:
+        data = request.get_json()
+        job_batch_id = data.get('job_batch_id')
+        quality_status = data.get('quality_status', 'passed')
+        result = WorkflowAutomationService.auto_forward_to_next_vendor(job_batch_id, quality_status)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500

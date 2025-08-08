@@ -1,7 +1,8 @@
 """3-Step GRN Workflow Service with complete Job Work integration"""
 
 from app import db
-from models import GRN, GRNLineItem, JobWork, Supplier
+from models.grn import GRN, GRNLineItem
+from models import JobWork, Supplier
 from models.batch import InventoryBatch, BatchMovement
 from models.production import ProductionOrder, ProductionProcess
 from services.accounting_service import AccountingService

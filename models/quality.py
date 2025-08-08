@@ -31,7 +31,7 @@ class QualityTemplate(db.Model):
     # Relationships
     checkpoints = db.relationship('QualityCheckpoint', backref='template', lazy=True, cascade='all, delete-orphan')
     inspections = db.relationship('QualityInspection', backref='template', lazy=True)
-    creator = db.relationship('User', backref='quality_templates')
+    creator = db.relationship('User', backref='created_quality_templates')
     
     def __repr__(self):
         return f'<QualityTemplate {self.template_name} for {self.process_name}>'
@@ -110,7 +110,7 @@ class QualityInspection(db.Model):
     
     # Relationships
     job_batch = db.relationship('JobWorkBatch', backref='quality_inspections')
-    inspector = db.relationship('User', backref='quality_inspections')
+    inspector = db.relationship('User', backref='conducted_quality_inspections')
     results = db.relationship('QualityResult', backref='inspection', lazy=True, cascade='all, delete-orphan')
     rework_records = db.relationship('QualityRework', backref='inspection', lazy=True)
     

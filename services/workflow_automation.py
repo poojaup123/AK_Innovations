@@ -9,7 +9,7 @@ from app import db
 from models.batch import JobWorkBatch, JobWorkLocationHistory, JobWorkProcessWorkflow
 from models import JobWork, Supplier, User
 from services.notification_helpers import send_email_notification, send_whatsapp_notification
-from services.partial_job_service import PartialJobService
+# from services.partial_job_service import PartialJobService  # Import removed to avoid circular dependency
 import logging
 
 logger = logging.getLogger(__name__)

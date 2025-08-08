@@ -12,6 +12,12 @@ from utils import generate_job_number
 from services.notification_helpers import send_email_notification, send_whatsapp_notification, send_email_with_attachment
 from utils.documents import get_documents_for_transaction
 from services.jobwork_automation import JobWorkAutomationService, JobWorkProgressTracker
+from services.workflow_automation import WorkflowAutomationService
+from services.smart_notifications import SmartNotificationService
+from services.quality_management import QualityManagementService
+from services.partial_processing_service import PartialProcessingService
+from services.vendor_analytics import VendorAnalyticsService
+from services.advanced_reporting import AdvancedReportingService
 
 jobwork_bp = Blueprint('jobwork', __name__)
 
@@ -51,13 +57,29 @@ def dashboard():
         func.count(JobWork.id).label('job_count')
     ).group_by(JobWork.customer_name).order_by(func.count(JobWork.id).desc()).limit(5).all()
     
+    # Get enhanced analytics for dashboard
+    partial_processing_data = None
+    vendor_performance = None
+    try:
+        partial_result = PartialProcessingService.get_partial_processing_dashboard()
+        if partial_result['success']:
+            partial_processing_data = partial_result['dashboard_data']
+        
+        vendor_result = VendorAnalyticsService.calculate_vendor_performance_kpis()
+        if vendor_result['success']:
+            vendor_performance = vendor_result['vendor_performance']
+    except Exception as e:
+        print(f"Error getting dashboard analytics: {e}")
+    
     return render_template('jobwork/dashboard.html', 
                          stats=stats, 
                          active_jobs=active_jobs,
                          team_assignments=team_assignments,
                          recent_jobs=recent_jobs,
                          pending_jobs=pending_jobs,
-                         top_customers=top_customers)
+                         top_customers=top_customers,
+                         partial_processing_data=partial_processing_data,
+                         vendor_performance=vendor_performance)
 
 @jobwork_bp.route('/list')
 @login_required
@@ -429,7 +451,63 @@ def api_receive_from_jobwork():
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error receiving materials: {str(e)}'})
 
-# API endpoint handled in inventory module
+# Enhanced Job Work API Endpoints with Advanced Services
+
+@jobwork_bp.route('/api/workflow/create-multi-vendor', methods=['POST'])
+@login_required
+def api_create_multi_vendor_workflow():
+    """API to create multi-vendor sequential workflow"""
+    try:
+        data = request.get_json()
+        result = WorkflowAutomationService.create_multi_vendor_workflow(data)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@jobwork_bp.route('/api/quality/perform-inspection', methods=['POST'])
+@login_required
+def api_perform_quality_inspection():
+    """API to perform quality inspection"""
+    try:
+        data = request.get_json()
+        job_batch_id = data.get('job_batch_id')
+        result = QualityManagementService.perform_quality_inspection(job_batch_id, data)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@jobwork_bp.route('/api/partial/dashboard')
+@login_required
+def api_partial_processing_dashboard():
+    """API to get partial processing dashboard data"""
+    try:
+        result = PartialProcessingService.get_partial_processing_dashboard()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@jobwork_bp.route('/api/vendor/analytics/<int:vendor_id>')
+@login_required
+def api_vendor_analytics(vendor_id):
+    """API to get vendor performance analytics"""
+    try:
+        result = VendorAnalyticsService.generate_vendor_scorecard(vendor_id)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@jobwork_bp.route('/api/notifications/send-stage', methods=['POST'])
+@login_required
+def api_send_stage_notification():
+    """API to send stage-based notifications"""
+    try:
+        data = request.get_json()
+        job_batch_id = data.get('job_batch_id')
+        stage = data.get('stage')
+        result = SmartNotificationService.send_stage_notification(job_batch_id, stage, data.get('additional_data', {}))
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @jobwork_bp.route('/add', methods=['GET', 'POST'])
 @jobwork_bp.route('/single-page', methods=['GET', 'POST'])
