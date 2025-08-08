@@ -25,8 +25,12 @@ def populate_form_choices(form):
         # BOM choices
         form.bom_id.choices = [(0, 'Select BOM')] + [(bom.id, f"{bom.bom_code} - {bom.product.name if bom.product else 'Unknown'}") for bom in BOM.query.all()]
         
-        # Material choices
-        form.input_material_id.choices = [(0, 'Select Material')] + [(item.id, item.name) for item in Item.query.all()]
+        # Material choices (for both input_material_id and item_id fields)
+        items = Item.query.all()
+        item_choices = [(0, 'Select Material')] + [(item.id, item.name) for item in items]
+        form.input_material_id.choices = item_choices
+        if hasattr(form, 'item_id'):
+            form.item_id.choices = [(0, 'Select Output Item')] + [(item.id, item.name) for item in items]
         
         # Batch choices
         from models.batch import InventoryBatch as Batch
@@ -34,6 +38,21 @@ def populate_form_choices(form):
         
         # UOM choices
         form.input_uom.choices = [('kg', 'Kilogram'), ('grams', 'Grams'), ('pieces', 'Pieces'), ('liters', 'Liters')]
+        
+        # Department choices for department field
+        if hasattr(form, 'department'):
+            try:
+                from models.department import Department
+                departments = Department.query.filter_by(is_active=True).all()
+                form.department.choices = [('', 'Select Department')] + [(dept.code, dept.name) for dept in departments]
+            except:
+                # Fallback departments
+                form.department.choices = [
+                    ('', 'Select Department'),
+                    ('production', 'Production'),
+                    ('quality', 'Quality Control'),
+                    ('maintenance', 'Maintenance')
+                ]
         
         # Get suppliers who can be vendors
         vendors = Supplier.query.filter(
@@ -67,9 +86,13 @@ def populate_form_choices(form):
         # Set minimal choices to prevent None error
         form.bom_id.choices = [(0, 'Select BOM')]
         form.input_material_id.choices = [(0, 'Select Material')]
+        if hasattr(form, 'item_id'):
+            form.item_id.choices = [(0, 'Select Output Item')]
         form.batch_id.choices = [(0, 'Auto Select (FIFO)')]
         form.input_uom.choices = [('kg', 'Kilogram'), ('pieces', 'Pieces')]
         form.assigned_to.choices = [('', 'Select Assigned To')]
+        if hasattr(form, 'department'):
+            form.department.choices = [('', 'Select Department'), ('production', 'Production')]
 
 jobwork_bp = Blueprint('jobwork', __name__)
 
