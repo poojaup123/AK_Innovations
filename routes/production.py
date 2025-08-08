@@ -431,26 +431,37 @@ def add_production():
                                  bom_items=bom_items,
                                  selected_item=selected_item)
         
-        # Create new Production instance
-        production = Production()
-        production.production_number = form.production_number.data
-        production.item_id = form.item_id.data
-        production.quantity_planned = form.quantity_planned.data
-        production.planned_uom = form.planned_uom.data
-        production.quantity_produced = form.quantity_produced.data or 0.0
-        production.quantity_good = form.quantity_good.data or 0.0
-        production.quantity_damaged = form.quantity_damaged.data or 0.0
-        production.scrap_quantity = form.scrap_quantity.data or 0.0
-        production.production_date = form.production_date.data
-        production.status = form.status.data
-        production.notes = form.notes.data
-        production.bom_id = active_bom.id if active_bom else None
-        production.batch_tracking_enabled = True  # Enable batch tracking by default
-        production.created_by = current_user.id
-        db.session.add(production)
-        db.session.commit()
-        flash('Production order created successfully! All required materials are available.', 'success')
-        return redirect(url_for('production.list_productions'))
+        try:
+            # Create new Production instance
+            production = Production()
+            production.production_number = form.production_number.data
+            production.item_id = form.item_id.data
+            production.quantity_planned = form.quantity_planned.data
+            production.planned_uom = form.planned_uom.data
+            production.quantity_produced = form.quantity_produced.data or 0.0
+            production.quantity_good = form.quantity_good.data or 0.0
+            production.quantity_damaged = form.quantity_damaged.data or 0.0
+            production.scrap_quantity = form.scrap_quantity.data or 0.0
+            production.production_date = form.production_date.data
+            production.status = form.status.data
+            production.notes = form.notes.data
+            production.bom_id = active_bom.id if active_bom else None
+            production.batch_tracking_enabled = True  # Enable batch tracking by default
+            production.created_by = current_user.id
+            
+            print(f"About to save production: {production.production_number}")
+            db.session.add(production)
+            db.session.commit()
+            print("Production saved successfully")
+            flash('Production order created successfully! All required materials are available.', 'success')
+            return redirect(url_for('production.list_productions'))
+        except Exception as e:
+            print(f"Error saving production: {str(e)}")
+            db.session.rollback()
+            flash(f'Error creating production order: {str(e)}', 'danger')
+            return render_template('production/form.html', 
+                                 form=form, 
+                                 title='Add Production')
     
     # Get BOM items for display if an item is selected (including from URL parameters)
     bom_items = []
