@@ -123,7 +123,7 @@ class SmartBOMSuggestionService:
                 'available_qty': raw_material_available,
                 'sufficient': raw_material_available >= raw_material_needed,
                 'unit': raw_material.unit_of_measure,
-                'estimated_cost': (raw_material.purchase_price or 0) * raw_material_needed
+                'estimated_cost': (raw_material.unit_price or 0) * raw_material_needed
             }
             
             if not raw_material_info['sufficient']:
