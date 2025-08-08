@@ -250,6 +250,23 @@
                         <label for="expected_finished_material" class="form-label">Expected Output Quantity</label>
                         {{ form.expected_finished_material(class="form-control", id="expected_finished_material") }}
                     </div>
+                    
+                    <!-- Material Availability Status -->
+                    <div class="col-12 mb-3" id="materialAvailabilitySection" style="display: none;">
+                        <div class="card border-info">
+                            <div class="card-header bg-info bg-opacity-10">
+                                <h6 class="mb-0"><i class="fas fa-check-circle"></i> Material Availability Check</h6>
+                            </div>
+                            <div class="card-body" id="materialAvailabilityContent">
+                                <div class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm" role="status">
+                                        <span class="visually-hidden">Checking...</span>
+                                    </div>
+                                    <span class="ms-2">Checking material availability...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Expected Scrap -->
                     <div class="col-md-4 mb-3">
@@ -625,6 +642,158 @@
 </style>
 
 <script>
+// Material availability check functionality
+let materialCheckTimeout;
+
+function setupMaterialAvailabilityCheck() {
+    const outputQuantityField = document.getElementById('expected_finished_material');
+    const bomSelect = document.getElementById('bom_id');
+    
+    if (outputQuantityField) {
+        outputQuantityField.addEventListener('input', function() {
+            clearTimeout(materialCheckTimeout);
+            materialCheckTimeout = setTimeout(checkMaterialAvailability, 500);
+        });
+    }
+}
+
+function checkMaterialAvailability() {
+    const bomSelect = document.getElementById('bom_id');
+    const outputQuantityField = document.getElementById('expected_finished_material');
+    const availabilitySection = document.getElementById('materialAvailabilitySection');
+    const availabilityContent = document.getElementById('materialAvailabilityContent');
+    
+    if (!bomSelect || !outputQuantityField || !availabilitySection) {
+        return;
+    }
+    
+    const bomId = bomSelect.value;
+    const quantity = parseInt(outputQuantityField.value) || 0;
+    
+    if (!bomId || bomId === '0' || quantity <= 0) {
+        availabilitySection.style.display = 'none';
+        return;
+    }
+    
+    // Show loading state
+    availabilitySection.style.display = 'block';
+    availabilityContent.innerHTML = `
+        <div class="text-center py-3">
+            <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Checking...</span>
+            </div>
+            <span class="ms-2">Checking material availability for ${quantity} units...</span>
+        </div>
+    `;
+    
+    // Make API call to check material availability
+    fetch(`/jobwork/api/bom/${bomId}/production_check/${quantity}`)
+        .then(response => response.json())
+        .then(data => {
+            displayMaterialAvailabilityResult(data, quantity);
+        })
+        .catch(error => {
+            console.error('Error checking material availability:', error);
+            availabilityContent.innerHTML = `
+                <div class="alert alert-danger mb-0">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Error checking material availability. Please try again.
+                </div>
+            `;
+        });
+}
+
+function displayMaterialAvailabilityResult(data, quantity) {
+    const availabilityContent = document.getElementById('materialAvailabilityContent');
+    
+    if (data.error) {
+        availabilityContent.innerHTML = `
+            <div class="alert alert-danger mb-0">
+                <i class="fas fa-exclamation-triangle"></i>
+                Error: ${data.error}
+            </div>
+        `;
+        return;
+    }
+    
+    let content = '';
+    
+    if (data.can_produce) {
+        // Sufficient materials available
+        content = `
+            <div class="alert alert-success mb-0">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-check-circle me-2 text-success" style="font-size: 1.2em;"></i>
+                    <div>
+                        <strong>✓ Materials Available</strong><br>
+                        <small>Sufficient raw materials available to produce ${quantity} units</small>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        // Material shortages found
+        content = `
+            <div class="alert alert-warning mb-3">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle me-2 text-warning" style="font-size: 1.2em;"></i>
+                    <div>
+                        <strong>⚠️ Material Shortages Detected</strong><br>
+                        <small>Insufficient materials for producing ${quantity} units</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-sm table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th class="text-end">Required</th>
+                            <th class="text-end">Available</th>
+                            <th class="text-end">Shortage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        data.shortages.forEach(shortage => {
+            content += `
+                <tr>
+                    <td>
+                        <strong>${shortage.material_name}</strong><br>
+                        <small class="text-muted">${shortage.material_code}</small>
+                    </td>
+                    <td class="text-end">${shortage.required.toFixed(2)}</td>
+                    <td class="text-end">${shortage.available.toFixed(2)}</td>
+                    <td class="text-end text-danger">
+                        <strong>${shortage.shortage.toFixed(2)}</strong>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        content += `
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-3">
+                <div class="d-flex gap-2">
+                    <a href="/purchase/add" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-shopping-cart"></i> Create Purchase Order
+                    </a>
+                    <a href="/inventory" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-boxes"></i> Check Inventory
+                    </a>
+                </div>
+            </div>
+        `;
+    }
+    
+    availabilityContent.innerHTML = content;
+}
+
 // Global cost calculation function (accessible by BOM functions)
 function updateCostCalculations() {
     const quantity = parseFloat(document.getElementById('quantity_to_issue')?.value) || 0;
@@ -1129,6 +1298,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize calculations
     updateCostCalculations();
+    
+    // Initialize material availability check
+    setupMaterialAvailabilityCheck();
 });
 
 function validateForm() {
@@ -1276,6 +1448,9 @@ function populateFormFromBOM(bomData) {
     
     // 4. Show BOM details summary
     showBOMDetailsSummary(bomData);
+    
+    // 5. Set up material availability check
+    setupMaterialAvailabilityCheck();
 }
 
 function populateBOMProcessSelection(processes, bomCode) {
