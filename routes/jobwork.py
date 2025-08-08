@@ -19,6 +19,58 @@ from services.partial_processing_service import PartialProcessingService
 from services.vendor_analytics import VendorAnalyticsService
 from services.advanced_reporting import AdvancedReportingService
 
+def populate_form_choices(form):
+    """Helper function to populate form choices for job work form"""
+    try:
+        # BOM choices
+        form.bom_id.choices = [(0, 'Select BOM')] + [(bom.id, f"{bom.bom_code} - {bom.product.name if bom.product else 'Unknown'}") for bom in BOM.query.all()]
+        
+        # Material choices
+        form.input_material_id.choices = [(0, 'Select Material')] + [(item.id, item.name) for item in Item.query.all()]
+        
+        # Batch choices
+        from models.batch import InventoryBatch as Batch
+        form.batch_id.choices = [(0, 'Auto Select (FIFO)')] + [(batch.id, f"Batch {batch.batch_code} - Qty: {batch.qty_raw + batch.qty_finished}") for batch in Batch.query.all()[:10]]
+        
+        # UOM choices
+        form.input_uom.choices = [('kg', 'Kilogram'), ('grams', 'Grams'), ('pieces', 'Pieces'), ('liters', 'Liters')]
+        
+        # Get suppliers who can be vendors
+        vendors = Supplier.query.filter(
+            Supplier.is_active == True,
+            Supplier.partner_type.in_(['vendor', 'both', 'supplier'])
+        ).all()
+        
+        # Build assigned_to choices
+        form.assigned_to.choices = [('', 'Select Assigned To')]
+        
+        # Add departments (with fallback)
+        try:
+            from models.department import Department
+            departments = Department.query.filter_by(is_active=True).all()
+            for dept in departments:
+                form.assigned_to.choices.append(('dept_' + dept.code, f"Department: {dept.name}"))
+        except:
+            # Fallback departments
+            form.assigned_to.choices.extend([
+                ('dept_production', 'Department: Production'),
+                ('dept_quality', 'Department: Quality Control'),
+                ('dept_maintenance', 'Department: Maintenance')
+            ])
+        
+        # Add vendors
+        for vendor in vendors:
+            form.assigned_to.choices.append(('supplier_' + str(vendor.id), f"Vendor: {vendor.name}"))
+            
+    except Exception as e:
+        print(f"Error populating form choices: {e}")
+        # Set minimal choices to prevent None error
+        form.bom_id.choices = [(0, 'Select BOM')]
+        form.input_material_id.choices = [(0, 'Select Material')]
+        form.batch_id.choices = [(0, 'Auto Select (FIFO)')]
+        form.input_uom.choices = [('kg', 'Kilogram'), ('pieces', 'Pieces')]
+        form.assigned_to.choices = [('', 'Select Assigned To')]
+
 jobwork_bp = Blueprint('jobwork', __name__)
 
 @jobwork_bp.route('/dashboard')
@@ -528,59 +580,8 @@ def add_job_work():
     if request.method == 'GET':
         form = JobWorkForm()
         
-        # Populate form choices with vendors and suppliers
-        try:
-            from models import BOM, Item, Supplier
-            from models.batch import InventoryBatch as Batch
-            
-            form.bom_id.choices = [(0, 'Select BOM')] + [(bom.id, f"{bom.bom_code} - {bom.product.name if bom.product else 'Unknown'}") for bom in BOM.query.all()]
-            form.input_material_id.choices = [(0, 'Select Material')] + [(item.id, item.name) for item in Item.query.all()]
-            form.batch_id.choices = [(0, 'Auto Select (FIFO)')] + [(batch.id, f"Batch {batch.batch_code} - Qty: {batch.qty_raw + batch.qty_finished}") for batch in Batch.query.all()[:10]]
-            form.input_uom.choices = [('kg', 'Kilogram'), ('grams', 'Grams'), ('pieces', 'Pieces'), ('liters', 'Liters')]
-            
-            # Get suppliers who can be vendors
-            vendors = Supplier.query.filter(
-                Supplier.is_active == True,
-                Supplier.partner_type.in_(['vendor', 'both', 'supplier'])
-            ).all()
-            
-            # Build assigned_to choices
-            form.assigned_to.choices = [('', 'Select Assigned To')]
-            
-            # Add departments (with fallback)
-            try:
-                from models.department import Department
-                departments = Department.query.filter_by(is_active=True).all()
-                for dept in departments:
-                    form.assigned_to.choices.append(('dept_' + dept.code, f"Department: {dept.name}"))
-            except:
-                # Fallback departments
-                form.assigned_to.choices.extend([
-                    ('dept_production', 'Department: Production'),
-                    ('dept_assembly', 'Department: Assembly'),
-                    ('dept_quality', 'Department: Quality Control')
-                ])
-            
-            # Add vendors
-            for vendor in vendors:
-                form.assigned_to.choices.append(('supplier_' + str(vendor.id), f"Vendor: {vendor.name}"))
-                
-            # Ensure we have some vendors (fallback if needed)
-            if not vendors:
-                form.assigned_to.choices.extend([
-                    ('supplier_demo_1', 'Vendor: Sample Vendor A'),
-                    ('supplier_demo_2', 'Vendor: Sample Vendor B'),
-                    ('supplier_demo_3', 'Vendor: Sample Vendor C')
-                ])
-                
-        except Exception as e:
-            print(f"Error populating form choices: {e}")
-            # Basic fallback choices
-            form.assigned_to.choices = [
-                ('', 'Select Assigned To'),
-                ('dept_production', 'Department: Production'),
-                ('supplier_demo_1', 'Vendor: Sample Vendor A')
-            ]
+        # Populate form choices
+        populate_form_choices(form)
         
         # Pre-populate form with production context if available
         if production_context['component_code']:
@@ -616,6 +617,9 @@ def add_job_work():
     
     # Handle both systematic and regular form submission
     form = JobWorkForm()
+    
+    # Always populate form choices for validation
+    populate_form_choices(form)
     
     # Debug form submission
     if request.method == 'POST':

@@ -194,12 +194,12 @@ def quality_reports():
         func.count(QualityIssue.id).label('count')
     ).group_by(QualityIssue.severity).all()
     
-    # Monthly quality trends
+    # Monthly quality trends - PostgreSQL compatible
     monthly_trends = db.session.query(
-        func.strftime('%Y-%m', QualityIssue.detected_date).label('month'),
+        func.to_char(QualityIssue.detected_date, 'YYYY-MM').label('month'),
         func.count(QualityIssue.id).label('issues'),
         func.sum(QualityIssue.cost_impact).label('cost')
-    ).group_by('month').order_by('month').limit(12).all()
+    ).group_by(func.to_char(QualityIssue.detected_date, 'YYYY-MM')).order_by('month').limit(12).all()
     
     # Average rejection rates
     avg_rejection_rate = db.session.query(
