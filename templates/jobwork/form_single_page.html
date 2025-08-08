@@ -727,7 +727,10 @@ function handleBOMSelection() {
     const bomSelect = document.getElementById('bom_id');
     const bomId = bomSelect.value;
     
+    console.log('BOM Selection changed:', bomId); // DEBUG
+    
     if (!bomId || bomId === '0') {
+        console.log('No BOM selected, clearing fields'); // DEBUG
         // Clear auto-populated fields when no BOM is selected
         clearBOMFields();
         return;
@@ -736,14 +739,23 @@ function handleBOMSelection() {
     // Show loading indicator
     showBOMLoadingState(true);
     
+    const apiUrl = `{{ url_for('jobwork.get_bom_details', bom_id=0) }}`.replace('0', bomId);
+    console.log('Fetching BOM details from:', apiUrl); // DEBUG
+    
     // Fetch BOM details from API
-    fetch(`{{ url_for('jobwork.get_bom_details', bom_id=0) }}`.replace('0', bomId))
-        .then(response => response.json())
+    fetch(apiUrl)
+        .then(response => {
+            console.log('API Response status:', response.status); // DEBUG
+            return response.json();
+        })
         .then(data => {
+            console.log('API Response data:', data); // DEBUG
             if (data.success) {
+                console.log('Populating form with BOM data:', data.bom_data); // DEBUG
                 populateFormFromBOM(data.bom_data);
                 showBOMSuccessMessage(data.bom_data.bom_code);
             } else {
+                console.error('API Error:', data.error); // DEBUG
                 showBOMErrorMessage(data.error);
             }
         })
@@ -757,9 +769,13 @@ function handleBOMSelection() {
 }
 
 function populateFormFromBOM(bomData) {
+    console.log('Starting form population with BOM data:', bomData); // DEBUG
+    
     // 1. Set output item (product that BOM produces)
     const outputItemSelect = document.getElementById('item_id');
+    console.log('Output item select element:', outputItemSelect); // DEBUG
     if (outputItemSelect && bomData.product_id) {
+        console.log('Setting output item to:', bomData.product_id); // DEBUG
         outputItemSelect.value = bomData.product_id;
         // Trigger change event to update dependent fields
         outputItemSelect.dispatchEvent(new Event('change'));
@@ -767,34 +783,48 @@ function populateFormFromBOM(bomData) {
     
     // 2. Set input material (first material from BOM items)
     const inputMaterialSelect = document.getElementById('input_material_id');
-    if (inputMaterialSelect && bomData.input_materials.length > 0) {
+    console.log('Input material select element:', inputMaterialSelect); // DEBUG
+    console.log('Available input materials:', bomData.input_materials); // DEBUG
+    if (inputMaterialSelect && bomData.input_materials && bomData.input_materials.length > 0) {
         const firstMaterial = bomData.input_materials[0];
+        console.log('Setting input material to:', firstMaterial.material_id); // DEBUG
         inputMaterialSelect.value = firstMaterial.material_id;
         // Trigger change event to update dependent fields
         inputMaterialSelect.dispatchEvent(new Event('change'));
         
         // Set suggested quantity
         const quantityField = document.getElementById('quantity_to_issue');
+        console.log('Quantity field element:', quantityField); // DEBUG
         if (quantityField) {
+            console.log('Setting quantity to:', firstMaterial.qty_required); // DEBUG
             quantityField.value = firstMaterial.qty_required;
         }
+    } else {
+        console.log('No input materials found or input material select not found'); // DEBUG
     }
     
     // 3. Set process information (first process from BOM processes)
-    if (bomData.processes.length > 0) {
+    console.log('Available processes:', bomData.processes); // DEBUG
+    if (bomData.processes && bomData.processes.length > 0) {
         const firstProcess = bomData.processes[0];
+        console.log('Setting process info from:', firstProcess); // DEBUG
         
         // Set job title with process information
         const jobTitleField = document.getElementById('job_title');
         if (jobTitleField && !jobTitleField.value) {
-            jobTitleField.value = `${bomData.bom_code} - ${firstProcess.process_name}`;
+            const newTitle = `${bomData.bom_code} - ${firstProcess.process_name}`;
+            console.log('Setting job title to:', newTitle); // DEBUG
+            jobTitleField.value = newTitle;
         }
         
         // Set remarks with process description
         const remarksField = document.getElementById('remarks');
         if (remarksField && firstProcess.operation_description) {
+            console.log('Setting remarks to:', firstProcess.operation_description); // DEBUG
             remarksField.value = firstProcess.operation_description;
         }
+    } else {
+        console.log('No processes found in BOM data'); // DEBUG
     }
     
     // 4. Show BOM details summary
