@@ -325,6 +325,30 @@
                             <div class="alert alert-info mt-2">
                                 <i class="fas fa-info-circle"></i> Configure the sequence of vendors for this job work. Material will auto-forward between vendors.
                             </div>
+                            
+                            <div class="card mt-3 border-warning">
+                                <div class="card-header bg-warning bg-opacity-10">
+                                    <h6 class="mb-0"><i class="fas fa-route"></i> Vendor Routing Configuration</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="vendorSequenceList" class="mb-3">
+                                        <!-- Vendor sequence items will be added here -->
+                                    </div>
+                                    
+                                    <button type="button" class="btn btn-outline-success btn-sm" id="addVendorStep">
+                                        <i class="fas fa-plus"></i> Add Vendor Step
+                                    </button>
+                                    
+                                    <div class="mt-3">
+                                        <h6>Routing Summary</h6>
+                                        <div id="routingSummary" class="bg-light p-2 rounded">
+                                            <small class="text-muted">No vendor steps configured yet.</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <input type="hidden" id="vendorRoutingData" name="vendor_routing_data" value="">
                         </div>
                     </div>
                 </div>
@@ -702,7 +726,267 @@ document.addEventListener('DOMContentLoaded', function() {
 
     multiVendorCheckbox.addEventListener('change', function() {
         multiVendorRouting.style.display = this.checked ? 'block' : 'none';
+        if (this.checked) {
+            initializeVendorRouting();
+        }
     });
+    
+    // Vendor routing functionality
+    let vendorStepCounter = 0;
+    let vendorSteps = [];
+    let availableVendors = [];
+    let selectedProcesses = [];
+    
+    function initializeVendorRouting() {
+        // Load available vendors
+        loadAvailableVendors();
+        
+        // Add event listener for adding vendor steps
+        document.getElementById('addVendorStep').addEventListener('click', addVendorStep);
+    }
+    
+    function loadAvailableVendors() {
+        fetch('/jobwork/api/suppliers')
+            .then(response => response.json())
+            .then(data => {
+                availableVendors = data.suppliers.filter(s => s.partner_type === 'vendor' || s.partner_type === 'both');
+            })
+            .catch(error => console.error('Error loading vendors:', error));
+    }
+    
+    function addVendorStep() {
+        vendorStepCounter++;
+        const stepNumber = vendorSteps.length + 1;
+        
+        const vendorStepDiv = document.createElement('div');
+        vendorStepDiv.className = 'vendor-step card mb-3 border-info';
+        vendorStepDiv.setAttribute('data-step', vendorStepCounter);
+        
+        vendorStepDiv.innerHTML = `
+            <div class="card-header bg-info bg-opacity-10 d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-cog"></i> Step ${stepNumber}</span>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeVendorStep(${vendorStepCounter})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Vendor</label>
+                        <select class="form-select vendor-select" data-step="${vendorStepCounter}">
+                            <option value="">Select Vendor</option>
+                            ${availableVendors.map(v => `<option value="${v.id}">${v.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Expected Duration (Days)</label>
+                        <input type="number" class="form-control duration-input" data-step="${vendorStepCounter}" 
+                               placeholder="e.g., 3" min="1" step="1">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label class="form-label">Processes for this Vendor</label>
+                        <div class="processes-checklist" id="processes_${vendorStepCounter}">
+                            <!-- Process checkboxes will be populated from selected BOM processes -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input auto-forward-check" type="checkbox" 
+                                   id="autoForward_${vendorStepCounter}" data-step="${vendorStepCounter}" checked>
+                            <label class="form-check-label" for="autoForward_${vendorStepCounter}">
+                                Auto-forward to next vendor upon completion
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('vendorSequenceList').appendChild(vendorStepDiv);
+        
+        // Populate processes for this step
+        populateProcessesForStep(vendorStepCounter);
+        
+        // Add event listeners
+        addStepEventListeners(vendorStepCounter);
+        
+        // Update vendor steps array
+        vendorSteps.push({
+            stepNumber: stepNumber,
+            id: vendorStepCounter,
+            vendorId: '',
+            duration: '',
+            processes: [],
+            autoForward: true
+        });
+        
+        updateRoutingSummary();
+    }
+    
+    function removeVendorStep(stepId) {
+        const stepDiv = document.querySelector(`[data-step="${stepId}"]`);
+        if (stepDiv) {
+            stepDiv.remove();
+        }
+        
+        // Remove from vendorSteps array
+        vendorSteps = vendorSteps.filter(step => step.id !== stepId);
+        
+        // Renumber remaining steps
+        renumberVendorSteps();
+        updateRoutingSummary();
+    }
+    
+    function renumberVendorSteps() {
+        const stepDivs = document.querySelectorAll('.vendor-step');
+        stepDivs.forEach((div, index) => {
+            const stepNumber = index + 1;
+            const header = div.querySelector('.card-header span');
+            header.innerHTML = `<i class="fas fa-cog"></i> Step ${stepNumber}`;
+            
+            // Update step number in vendorSteps array
+            const stepId = parseInt(div.getAttribute('data-step'));
+            const step = vendorSteps.find(s => s.id === stepId);
+            if (step) {
+                step.stepNumber = stepNumber;
+            }
+        });
+    }
+    
+    function populateProcessesForStep(stepId) {
+        const processesDiv = document.getElementById(`processes_${stepId}`);
+        if (!window.bomProcesses || window.bomProcesses.length === 0) {
+            processesDiv.innerHTML = '<small class="text-muted">No BOM processes available. Please select a BOM first.</small>';
+            return;
+        }
+        
+        let processesHtml = '';
+        window.bomProcesses.forEach(process => {
+            const processId = `process_${stepId}_${process.step_number}`;
+            processesHtml += `
+                <div class="form-check">
+                    <input class="form-check-input process-check" type="checkbox" 
+                           value="${process.step_number}" id="${processId}" 
+                           data-step="${stepId}" data-process="${process.step_number}">
+                    <label class="form-check-label" for="${processId}">
+                        ${process.process_name} (Step ${process.step_number})
+                    </label>
+                </div>
+            `;
+        });
+        
+        processesDiv.innerHTML = processesHtml;
+    }
+    
+    function addStepEventListeners(stepId) {
+        // Vendor selection change
+        const vendorSelect = document.querySelector(`[data-step="${stepId}"].vendor-select`);
+        vendorSelect.addEventListener('change', function() {
+            updateStepData(stepId, 'vendorId', this.value);
+        });
+        
+        // Duration change
+        const durationInput = document.querySelector(`[data-step="${stepId}"].duration-input`);
+        durationInput.addEventListener('input', function() {
+            updateStepData(stepId, 'duration', this.value);
+        });
+        
+        // Auto-forward change
+        const autoForwardCheck = document.querySelector(`[data-step="${stepId}"].auto-forward-check`);
+        autoForwardCheck.addEventListener('change', function() {
+            updateStepData(stepId, 'autoForward', this.checked);
+        });
+        
+        // Process checkboxes
+        const processChecks = document.querySelectorAll(`[data-step="${stepId}"].process-check`);
+        processChecks.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                updateStepProcesses(stepId);
+            });
+        });
+    }
+    
+    function updateStepData(stepId, field, value) {
+        const step = vendorSteps.find(s => s.id === stepId);
+        if (step) {
+            step[field] = value;
+            updateRoutingSummary();
+            updateHiddenField();
+        }
+    }
+    
+    function updateStepProcesses(stepId) {
+        const step = vendorSteps.find(s => s.id === stepId);
+        if (step) {
+            const checkedProcesses = document.querySelectorAll(`[data-step="${stepId}"].process-check:checked`);
+            step.processes = Array.from(checkedProcesses).map(cb => parseInt(cb.value));
+            updateRoutingSummary();
+            updateHiddenField();
+        }
+    }
+    
+    function updateRoutingSummary() {
+        const summaryDiv = document.getElementById('routingSummary');
+        
+        if (vendorSteps.length === 0) {
+            summaryDiv.innerHTML = '<small class="text-muted">No vendor steps configured yet.</small>';
+            return;
+        }
+        
+        let summaryHtml = '<div class="routing-flow">';
+        
+        vendorSteps.forEach((step, index) => {
+            const vendor = availableVendors.find(v => v.id == step.vendorId);
+            const vendorName = vendor ? vendor.name : 'Not Selected';
+            const processNames = step.processes.map(pNum => {
+                const process = window.bomProcesses?.find(p => p.step_number == pNum);
+                return process ? process.process_name : `Process ${pNum}`;
+            }).join(', ');
+            
+            summaryHtml += `
+                <div class="step-summary mb-2 p-2 border rounded ${step.vendorId ? 'border-success' : 'border-warning'}">
+                    <strong>Step ${step.stepNumber}:</strong> ${vendorName}
+                    ${step.duration ? `<span class="badge bg-secondary ms-2">${step.duration} days</span>` : ''}
+                    <br>
+                    <small class="text-muted">
+                        Processes: ${processNames || 'None selected'}
+                        ${step.autoForward ? ' → Auto-forward' : ' → Manual forward'}
+                    </small>
+                </div>
+            `;
+            
+            if (index < vendorSteps.length - 1) {
+                summaryHtml += '<div class="text-center"><i class="fas fa-arrow-down text-primary"></i></div>';
+            }
+        });
+        
+        summaryHtml += '</div>';
+        summaryDiv.innerHTML = summaryHtml;
+    }
+    
+    function updateHiddenField() {
+        const routingData = {
+            enabled: true,
+            steps: vendorSteps.map(step => ({
+                stepNumber: step.stepNumber,
+                vendorId: step.vendorId,
+                duration: step.duration,
+                processes: step.processes,
+                autoForward: step.autoForward
+            }))
+        };
+        
+        document.getElementById('vendorRoutingData').value = JSON.stringify(routingData);
+    }
+    
+    // Make removeVendorStep available globally
+    window.removeVendorStep = removeVendorStep;
 
     // Auto-generate title
     document.getElementById('autoGenerateTitle').addEventListener('click', function() {
