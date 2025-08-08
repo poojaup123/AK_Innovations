@@ -101,38 +101,16 @@ def dashboard():
     # Get vendor analytics for dashboard
     vendor_analytics = None
     quality_data = None
-    
-    # Debug: Check if services are working
-    print("=== DASHBOARD DEBUG ===")
     try:
-        print("Calling VendorAnalyticsService...")
         vendor_result = VendorAnalyticsService.calculate_vendor_performance_kpis()
-        print(f"Vendor result: {vendor_result}")
         if vendor_result['success']:
             vendor_analytics = vendor_result['vendor_performance']
-            print(f"Vendor analytics data: {vendor_analytics}")
-        else:
-            print(f"Vendor analytics failed: {vendor_result.get('error', 'Unknown error')}")
-    except Exception as e:
-        print(f"Exception in VendorAnalyticsService: {e}")
-        import traceback
-        traceback.print_exc()
-    
-    try:
-        print("Calling QualityManagementService...")
+        
         quality_result = QualityManagementService.get_quality_dashboard_data()
-        print(f"Quality result: {quality_result}")
         if quality_result['success']:
             quality_data = quality_result['dashboard_data']
-            print(f"Quality data: {quality_data}")
-        else:
-            print(f"Quality service failed: {quality_result.get('error', 'Unknown error')}")
     except Exception as e:
-        print(f"Exception in QualityManagementService: {e}")
-        import traceback
-        traceback.print_exc()
-    
-    print("=== END DASHBOARD DEBUG ===")
+        print(f"Error getting analytics: {e}")
     
     return render_template('production/dashboard.html', 
                          stats=stats, 

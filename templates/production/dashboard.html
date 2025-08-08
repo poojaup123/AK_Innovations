@@ -305,7 +305,7 @@
     </div>
 
     <!-- Enhanced Analytics Section -->
-    {% if vendor_analytics and vendor_analytics.summary and vendor_analytics.summary.total_vendors > 0 %}
+    {% if vendor_analytics and vendor_analytics.summary and vendor_analytics.summary.total_jobs > 0 %}
     <div class="row mt-4">
         <div class="col">
             <div class="card">
@@ -403,7 +403,7 @@
     {% endif %}
 
     <!-- Quality Management Dashboard -->
-    {% if quality_data and quality_data.summary %}
+    {% if quality_data and quality_data.current_month_kpis %}
     <div class="row mt-4">
         <div class="col-lg-6">
             <div class="card">
@@ -414,14 +414,14 @@
                     <div class="row text-center">
                         <div class="col-md-6">
                             <div class="p-3">
-                                <h4 class="text-success">{{ quality_data.summary.total_inspections or 0 }}</h4>
+                                <h4 class="text-success">{{ quality_data.current_month_kpis.total_inspections or 0 }}</h4>
                                 <small class="text-muted">Total Inspections</small>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="p-3">
-                                <h4 class="text-{{ 'success' if quality_data.summary.overall_pass_rate > 90 else 'warning' if quality_data.summary.overall_pass_rate > 75 else 'danger' }}">
-                                    {{ "{:.1f}%".format(quality_data.summary.overall_pass_rate or 0) }}
+                                <h4 class="text-{{ 'success' if quality_data.current_month_kpis.overall_pass_rate > 90 else 'warning' if quality_data.current_month_kpis.overall_pass_rate > 75 else 'danger' }}">
+                                    {{ "{:.1f}%".format(quality_data.current_month_kpis.overall_pass_rate or 0) }}
                                 </h4>
                                 <small class="text-muted">Pass Rate</small>
                             </div>

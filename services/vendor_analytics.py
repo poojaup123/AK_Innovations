@@ -49,7 +49,16 @@ class VendorAnalyticsService:
                 return {
                     'success': True,
                     'vendor_performance': {
-                        'summary': {'total_jobs': 0},
+                        'summary': {
+                            'total_vendors': 0,
+                            'total_jobs': 0,
+                            'total_completed': 0,
+                            'overall_completion_rate': 0,
+                            'date_range': {
+                                'start_date': start_date.isoformat(),
+                                'end_date': end_date.isoformat()
+                            }
+                        },
                         'vendors': {}
                     }
                 }
