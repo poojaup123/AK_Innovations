@@ -415,20 +415,20 @@
                     </div>
                     
                     {% for suggestion in smart_suggestions %}
-                    <div class="card mb-3 border-{% if suggestion.feasibility == 'feasible' %}success{% else %}warning{% endif %}">
-                        <div class="card-header {% if suggestion.feasibility == 'feasible' %}bg-light-success{% else %}bg-light-warning{% endif %}">
+                    <div class="card mb-3 border-{% if suggestion.get('feasibility') == 'feasible' %}success{% else %}warning{% endif %}">
+                        <div class="card-header {% if suggestion.get('feasibility') == 'feasible' %}bg-light-success{% else %}bg-light-warning{% endif %}">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h6 class="mb-0">
-                                    <i class="fas fa-{% if suggestion.feasibility == 'feasible' %}check-circle text-success{% else %}exclamation-triangle text-warning{% endif %}"></i>
-                                    {{ suggestion.title }}
+                                    <i class="fas fa-{% if suggestion.get('feasibility') == 'feasible' %}check-circle text-success{% else %}exclamation-triangle text-warning{% endif %}"></i>
+                                    {{ suggestion.get('title', 'Manufacturing Suggestion') }}
                                 </h6>
-                                <span class="badge bg-{% if suggestion.priority == 'high' %}success{% else %}secondary{% endif %}">
-                                    {{ suggestion.priority.title() }} Priority
+                                <span class="badge bg-{% if suggestion.get('priority', 'medium') == 'high' %}success{% else %}secondary{% endif %}">
+                                    {{ (suggestion.get('priority', 'medium')|title) }} Priority
                                 </span>
                             </div>
                         </div>
                         <div class="card-body">
-                            <p class="text-muted mb-3">{{ suggestion.description }}</p>
+                            <p class="text-muted mb-3">{{ suggestion.get('description', 'Manufacturing recommendation based on BOM analysis') }}</p>
                             
                             <!-- Raw Materials Required -->
                             <div class="mb-3">
@@ -445,7 +445,7 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {% for material in suggestion.raw_materials_required %}
+                                            {% for material in suggestion.get('raw_materials_required', []) %}
                                             <tr class="{% if not material.sufficient %}table-warning{% endif %}">
                                                 <td>
                                                     <strong>{{ material.material_code }}</strong><br>
@@ -472,7 +472,7 @@
                             <div class="mb-3">
                                 <h6><i class="fas fa-tasks text-success"></i> Recommended Actions:</h6>
                                 <ol class="mb-0">
-                                    {% for step in suggestion.action_steps %}
+                                    {% for step in suggestion.get('action_steps', []) %}
                                     <li class="mb-1">{{ step }}</li>
                                     {% endfor %}
                                 </ol>
@@ -484,28 +484,28 @@
                                     <div class="text-center">
                                         <i class="fas fa-rupee-sign text-primary"></i>
                                         <strong>Est. Cost</strong><br>
-                                        <span class="h6 text-primary">₹{{ suggestion.estimated_cost|round(2) }}</span>
+                                        <span class="h6 text-primary">₹{{ suggestion.get('estimated_cost', 0)|round(2) }}</span>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="text-center">
                                         <i class="fas fa-clock text-info"></i>
                                         <strong>Est. Time</strong><br>
-                                        <span class="h6 text-info">{{ suggestion.estimated_time }}</span>
+                                        <span class="h6 text-info">{{ suggestion.get('estimated_time', 'TBD') }}</span>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="text-center">
                                         <i class="fas fa-file-alt text-secondary"></i>
                                         <strong>BOM Ref</strong><br>
-                                        <span class="h6 text-secondary">{{ suggestion.bom_reference }}</span>
+                                        <span class="h6 text-secondary">{{ suggestion.get('bom_reference', 'N/A') }}</span>
                                     </div>
                                 </div>
                             </div>
                             
-                            {% if suggestion.feasibility == 'feasible' %}
+                            {% if suggestion.get('feasibility') == 'feasible' %}
                             <div class="mt-3 text-center">
-                                <a href="{{ url_for('jobwork.add_job_work') }}?bom_ref={{ suggestion.bom_reference }}" 
+                                <a href="{{ url_for('jobwork.add_job_work') }}?bom_ref={{ suggestion.get('bom_reference', '') }}" 
                                    class="btn btn-success">
                                     <i class="fas fa-play"></i> Start Manufacturing Job Work
                                 </a>
