@@ -948,7 +948,7 @@ function populateBOMProcessSelection(processes, bomCode) {
                     <div class="text-end">
                         ${process.setup_time_minutes ? `<small class="text-info d-block">Setup: ${process.setup_time_minutes} min</small>` : ''}
                         ${process.run_time_minutes ? `<small class="text-info d-block">Runtime: ${process.run_time_minutes} min/unit</small>` : ''}
-                        ${process.labor_rate_per_hour ? `<small class="text-success d-block">Rate: ₹${process.labor_rate_per_hour}/hr</small>` : ''}
+                        ${process.cost_per_unit ? `<small class="text-success d-block">Cost: ₹${process.cost_per_unit}/unit</small>` : ''}
                     </div>
                 </div>
             </label>
@@ -1013,17 +1013,17 @@ function updateProcessRates() {
             const rateDiv = document.createElement('div');
             rateDiv.className = 'row mb-3';
             
-            const processRate = process.labor_rate_per_hour || 0;
+            const processRate = process.cost_per_unit || 0;
             
             rateDiv.innerHTML = `
                 <div class="col-md-6">
-                    <label class="form-label"><strong>${process.process_name}</strong> Rate per Hour</label>
+                    <label class="form-label"><strong>${process.process_name}</strong> Rate per Unit</label>
                     <div class="input-group">
                         <span class="input-group-text">₹</span>
                         <input type="number" class="form-control" id="rate_step_${stepNumber}" 
                                value="${processRate}" step="0.01" min="0"
-                               data-step="${stepNumber}" data-process="${process.process_name}">
-                        <span class="input-group-text">/hr</span>
+                               data-step="${stepNumber}" data-process="${process.process_name}" data-process-rate>
+                        <span class="input-group-text">/unit</span>
                     </div>
                 </div>
                 <div class="col-md-6">
@@ -1040,7 +1040,7 @@ function updateProcessRates() {
             ratesData.push({
                 step_number: stepNumber,
                 process_name: process.process_name,
-                rate_per_hour: processRate,
+                rate_per_unit: processRate,
                 setup_time_minutes: process.setup_time_minutes || 0,
                 run_time_minutes: process.run_time_minutes || 0
             });
@@ -1076,16 +1076,13 @@ function updateProcessRates() {
     });
 }
 
-function calculateProcessCost(process, ratePerHour) {
-    const setupHours = (process.setup_time_minutes || 0) / 60;
-    const runHours = (process.run_time_minutes || 0) / 60;
+function calculateProcessCost(process, ratePerUnit) {
     const quantity = parseFloat(document.getElementById('quantity_to_issue')?.value) || 1;
     
-    const setupCost = setupHours * ratePerHour;
-    const runCost = runHours * ratePerHour * quantity;
-    const totalCost = setupCost + runCost;
+    // For per-unit costs, simply multiply rate by quantity
+    const totalCost = ratePerUnit * quantity;
     
-    return `₹${totalCost.toFixed(2)} (Setup: ₹${setupCost.toFixed(2)} + Run: ₹${runCost.toFixed(2)})`;
+    return `₹${totalCost.toFixed(2)} (₹${ratePerUnit.toFixed(2)} × ${quantity} units)`;
 }
 
 function updateRatesData() {
@@ -1101,7 +1098,7 @@ function updateRatesData() {
         ratesData.push({
             step_number: stepNumber,
             process_name: processName,
-            rate_per_hour: rate,
+            rate_per_unit: rate,
             setup_time_minutes: process?.setup_time_minutes || 0,
             run_time_minutes: process?.run_time_minutes || 0
         });
