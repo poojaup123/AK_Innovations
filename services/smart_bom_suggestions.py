@@ -262,10 +262,22 @@ class SmartBOMSuggestionService:
             # Update suggestion with optimized materials
             optimized_suggestion = {
                 **suggestion,
+                'type': 'manufacturing_recommendation',
+                'title': f"Manufacture {suggestion['target_item_name']} from Raw Materials",
+                'description': f"Produce {suggestion['target_quantity']:.1f} units using available raw materials with smart optimization",
+                'raw_materials_required': optimized_raw_materials,  # Template expects this key
                 'raw_materials': optimized_raw_materials,
                 'can_manufacture': all_materials_sufficient,
                 'total_estimated_cost': total_cost,
                 'priority': 'high',  # Both suggestions are high priority
+                'feasibility': 'feasible' if all_materials_sufficient else 'limited_by_raw_materials',
+                'estimated_time': f"{suggestion.get('manufacturing_lead_time', 1)} days",
+                'bom_reference': suggestion.get('bom_code', 'N/A'),
+                'action_steps': SmartBOMSuggestionService._generate_action_steps({
+                    **suggestion,
+                    'raw_materials': optimized_raw_materials,
+                    'can_manufacture': all_materials_sufficient
+                }),
                 'optimization_notes': SmartBOMSuggestionService._generate_optimization_notes(
                     optimized_raw_materials, usage_info if 'usage_info' in locals() else None
                 )
