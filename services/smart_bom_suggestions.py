@@ -269,6 +269,7 @@ class SmartBOMSuggestionService:
                 'raw_materials': optimized_raw_materials,
                 'can_manufacture': all_materials_sufficient,
                 'total_estimated_cost': total_cost,
+                'estimated_cost': total_cost,  # Template compatibility
                 'priority': 'high',  # Both suggestions are high priority
                 'feasibility': 'feasible' if all_materials_sufficient else 'limited_by_raw_materials',
                 'estimated_time': f"{suggestion.get('manufacturing_lead_time', 1)} days",

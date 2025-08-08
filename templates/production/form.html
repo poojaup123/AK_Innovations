@@ -491,7 +491,7 @@
                                     <div class="text-center">
                                         <i class="fas fa-rupee-sign text-primary"></i>
                                         <strong>Est. Cost</strong><br>
-                                        <span class="h6 text-primary">₹{{ suggestion.estimated_cost|round(2) }}</span>
+                                        <span class="h6 text-primary">₹{{ (suggestion.estimated_cost or suggestion.total_estimated_cost or 0)|round(2) }}</span>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
