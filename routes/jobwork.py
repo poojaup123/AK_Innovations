@@ -2785,12 +2785,13 @@ def get_bom_details(bom_id):
         
         processes = []
         for process in bom_processes:
-            # Get unit from input or output product if available
-            unit_of_measure = 'unit'
-            if hasattr(process, 'input_product') and process.input_product:
-                unit_of_measure = process.input_product.unit_of_measure or 'unit'
-            elif hasattr(process, 'output_product') and process.output_product:
-                unit_of_measure = process.output_product.unit_of_measure or 'unit'
+            # Get unit from cost_unit field in BOMProcess
+            cost_unit = getattr(process, 'cost_unit', 'per_unit')
+            # Convert cost_unit to display format (per_kg -> kg, per_unit -> unit)
+            if cost_unit.startswith('per_'):
+                unit_of_measure = cost_unit[4:]  # Remove 'per_' prefix
+            else:
+                unit_of_measure = cost_unit or 'unit'
             
             processes.append({
                 'step_number': process.step_number,
@@ -2800,6 +2801,7 @@ def get_bom_details(bom_id):
                 'setup_time_minutes': process.setup_time_minutes,
                 'run_time_minutes': process.run_time_minutes,
                 'cost_per_unit': process.cost_per_unit or 0.0,
+                'cost_unit': cost_unit,
                 'unit_of_measure': unit_of_measure
             })
         
