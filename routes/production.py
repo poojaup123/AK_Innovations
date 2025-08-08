@@ -419,22 +419,22 @@ def add_production():
                                  bom_items=bom_items,
                                  selected_item=selected_item)
         
-        production = Production(
-            production_number=form.production_number.data,
-            item_id=form.item_id.data,
-            quantity_planned=form.quantity_planned.data,
-            planned_uom=form.planned_uom.data,
-            quantity_produced=form.quantity_produced.data or 0.0,
-            quantity_good=form.quantity_good.data or 0.0,
-            quantity_damaged=form.quantity_damaged.data or 0.0,
-            scrap_quantity=form.scrap_quantity.data or 0.0,
-            production_date=form.production_date.data,
-            status=form.status.data,
-            notes=form.notes.data,
-            bom_id=active_bom.id if active_bom else None,
-            batch_tracking_enabled=True,  # Enable batch tracking by default
-            created_by=current_user.id
-        )
+        # Create new Production instance
+        production = Production()
+        production.production_number = form.production_number.data
+        production.item_id = form.item_id.data
+        production.quantity_planned = form.quantity_planned.data
+        production.planned_uom = form.planned_uom.data
+        production.quantity_produced = form.quantity_produced.data or 0.0
+        production.quantity_good = form.quantity_good.data or 0.0
+        production.quantity_damaged = form.quantity_damaged.data or 0.0
+        production.scrap_quantity = form.scrap_quantity.data or 0.0
+        production.production_date = form.production_date.data
+        production.status = form.status.data
+        production.notes = form.notes.data
+        production.bom_id = active_bom.id if active_bom else None
+        production.batch_tracking_enabled = True  # Enable batch tracking by default
+        production.created_by = current_user.id
         db.session.add(production)
         db.session.commit()
         flash('Production order created successfully! All required materials are available.', 'success')
