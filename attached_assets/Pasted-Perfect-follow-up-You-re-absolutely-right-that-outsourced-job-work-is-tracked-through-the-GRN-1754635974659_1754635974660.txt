@@ -1,0 +1,173 @@
+Perfect follow-up. You're absolutely right that **outsourced job work** is tracked through the **GRN (Goods Receipt Note)** process — but the **in-house job work and production** follow a *different yet fully integrated tracking flow*.
+
+---
+
+### 🔍 Let's break it down:
+
+> 📌 **Key Comparison**
+> \|                         | **Outsourced Job Work**              | **In-House Job Work / Production**           |
+> \|-------------------------|--------------------------------------|----------------------------------------------|
+> \| Tracking Trigger        | GRN (Goods Receipt Note)             | Production Entry Form                        |
+> \| Receipts Managed via   | Vendor GRN (3-Step)                  | Process Completion Logs (per routing step)   |
+> \| Inventory Update       | On GRN Completion                     | On Production Entry                          |
+> \| Cost Entry             | Via Vendor Invoice                    | Via internal cost calculation (labor, scrap) |
+> \| Batch Tracking         | On Material Issue + GRN               | On Material Issue + Production Output        |
+> \| Scrap Capture          | On GRN                                | On Production Entry                          |
+> \| Accounting Integration | Payables via GRN                      | Internal job costing + consumption           |
+
+---
+
+## ✅ IN-HOUSE JOB WORK TRACKING FLOW
+
+Let’s take **Mounted Plate (in-house)** as the working example.
+
+```
+[ Production Order Created ]
+          ↓
+[ BOM Identifies "Mounted Plate" as In-House Job ]
+          ↓
+[ Job Work Card Generated for Mounted Plate ]
+          ↓
+[ Routing Assigned: Cutting → Notching → Plating ]
+          ↓
+[ RM Issued (Batch-wise) from Inventory ]
+          ↓
+[ Each Step Tracked via Production Entry Form ]
+          ↓
+[ At Completion of Final Step → Output Batch Created ]
+          ↓
+[ Inventory Updated + Cost Calculated ]
+```
+
+---
+
+### 🔨 HOW SYSTEM TRACKS IN-HOUSE JOB WORK
+
+#### ✅ 1. **Routing-Based Progress**
+
+Each in-house job follows **routing**:
+
+* Operator logs completion for each process (with qty, time, scrap)
+* Status is updated per process step
+* UI shows live job progress
+
+#### ✅ 2. **Production Entry Form**
+
+Instead of GRN, internal jobs use a **Production Entry** form:
+
+| Field                | Example       |
+| -------------------- | ------------- |
+| Job Work ID          | JW-2025-001   |
+| Component            | Mounted Plate |
+| Process              | Notching      |
+| Input Batch          | RAW-2025-0002 |
+| Output Quantity      | 98            |
+| Scrap                | 2             |
+| Output Batch Created | MP-2025-0001  |
+
+✅ Each entry updates:
+
+* Job work progress
+* Inventory (WIP → FG)
+* Batch register
+* Costing module
+
+#### ✅ 3. **Batch Tracking**
+
+* On **RM issue** → Input batch is recorded
+* On **production entry** → Output batch is created
+* Batches linked from RM → Sub-part → Final product
+
+#### ✅ 4. **Costing (No Invoice)**
+
+Since it’s internal:
+
+* No vendor invoice or GRN
+* System auto-calculates cost using:
+
+  * Material cost
+  * Labor (manual input or estimated)
+  * Machine hour rates (optional)
+  * Overheads
+  * Scrap loss
+
+✅ These costs are added to the parent production order.
+
+#### ✅ 5. **Inventory Update**
+
+Once final step is complete:
+
+* Output quantity is moved to **WIP or FG stock**
+* Linked to production order (e.g., Castor Wheel)
+* Available for next stage (assembly)
+
+---
+
+## 🔁 PRODUCTION TRACKING IN SYSTEM
+
+1. **Job Card** is the tracking entity (per part/process)
+2. **Routing Table** defines the steps
+3. **Production Logs** are entered step-by-step
+4. **Status auto-updates** as each step is marked completed
+5. **Final Completion** triggers:
+
+   * Batch creation
+   * Cost roll-up
+   * Inventory update
+
+---
+
+## 🖥️ Example: Flask UI Production Tracking Panel
+
+```html
+<h3>Mounted Plate - Job Card: JW-2025-001</h3>
+<table>
+  <tr><th>Step</th><th>Status</th><th>Input Batch</th><th>Output</th><th>Scrap</th></tr>
+  <tr>
+    <td>Cutting</td>
+    <td>✅ Completed</td>
+    <td>RAW-2025-0001</td>
+    <td>100</td>
+    <td>2</td>
+  </tr>
+  <tr>
+    <td>Notching</td>
+    <td>✅ Completed</td>
+    <td>MP-2025-0001</td>
+    <td>98</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>Zinc Plating</td>
+    <td>🕒 In Progress</td>
+    <td>MP-2025-0002</td>
+    <td>--</td>
+    <td>--</td>
+  </tr>
+</table>
+```
+
+---
+
+## ✅ SUMMARY: HOW IN-HOUSE JOB WORK IS TRACKED
+
+| Action                   | Tracking Mechanism            |
+| ------------------------ | ----------------------------- |
+| Routing Assigned         | Job Card + Routing Table      |
+| Progress Entry           | Production Log per Step       |
+| Quantity / Scrap Logging | In Production Entry Form      |
+| Inventory Update         | On Process Completion         |
+| Batch Tracking           | Input and Output Batches      |
+| Costing                  | Internal Calculation          |
+| Final Product Assembly   | Triggers when all parts ready |
+
+---
+
+Would you like:
+
+* ✅ **Production Entry Form UI (Flask/Jinja2)?**
+* ✅ **Routing + Job Card Schema?**
+* ✅ **Live Status Dashboard?**
+* ✅ **Batch Tracker Table with Linkage?**
+
+Let me know how you want to proceed — I’ll build the full code or schema for you step-by-step.
