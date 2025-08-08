@@ -600,11 +600,11 @@ def add_job_work():
                 print(f"Error finding component: {e}")
         
         if production_context['quantity']:
-            form.quantity.data = production_context['quantity']
+            form.quantity_to_issue.data = production_context['quantity']
             
-        # Add production reference to narration if available
+        # Add production reference to remarks if available
         if production_context['production_number']:
-            form.narration.data = f"Job work for Production Order: {production_context['production_number']}"
+            form.remarks.data = f"Job work for Production Order: {production_context['production_number']}"
         
         # Render single-page form by default, systematic form only if explicitly requested
         template_name = 'jobwork/form_systematic.html' if use_systematic else 'jobwork/form_single_page.html'
