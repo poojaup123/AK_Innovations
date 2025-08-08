@@ -414,6 +414,29 @@
                         You can manufacture the required materials using available raw materials.
                     </div>
                     
+                    <!-- Limiting Factor Analysis -->
+                    {% if shortage_analysis.limiting_factor_analysis and shortage_analysis.limiting_factor_analysis.has_limiting_factor %}
+                    <div class="alert alert-warning border-0 shadow-sm mb-4">
+                        <h6><i class="fas fa-exclamation-triangle text-warning me-2"></i><strong>Limiting Factor Analysis</strong></h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>Constraining Material:</strong> {{ shortage_analysis.limiting_factor_analysis.limiting_factor.material_name }}</p>
+                                <p class="mb-2"><strong>Available Quantity:</strong> {{ shortage_analysis.limiting_factor_analysis.limiting_factor.available }} {{ shortage_analysis.limiting_factor_analysis.limiting_factor.unit }}</p>
+                                <p class="mb-2"><strong>Needed Per Set:</strong> {{ shortage_analysis.limiting_factor_analysis.limiting_factor.needed_per_set }} {{ shortage_analysis.limiting_factor_analysis.limiting_factor.unit }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>Planned Quantity:</strong> {{ shortage_analysis.limiting_factor_analysis.planned_quantity }} Castors</p>
+                                <p class="mb-2"><strong>Maximum Possible:</strong> <span class="text-success fw-bold">{{ shortage_analysis.limiting_factor_analysis.max_finished_products }} Castors</span></p>
+                                <p class="mb-2"><strong>Production Efficiency:</strong> <span class="text-{% if shortage_analysis.limiting_factor_analysis.production_efficiency >= 80 %}success{% elif shortage_analysis.limiting_factor_analysis.production_efficiency >= 50 %}warning{% else %}danger{% endif %} fw-bold">{{ shortage_analysis.limiting_factor_analysis.production_efficiency|round(1) }}%</span></p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <h6><i class="fas fa-info-circle text-info me-2"></i>Impact Analysis:</h6>
+                            <p class="mb-0 text-muted">Both Mounted Plate and Base Plate require {{ shortage_analysis.limiting_factor_analysis.limiting_factor.material_code }}, creating a shared resource constraint. You can manufacture <strong>{{ shortage_analysis.limiting_factor_analysis.max_finished_products }} complete Castor sets</strong> with current inventory.</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     {% for suggestion in smart_suggestions %}
                     <div class="card mb-3 border-{% if suggestion.get('feasibility') == 'feasible' %}success{% else %}warning{% endif %}">
                         <div class="card-header {% if suggestion.get('feasibility') == 'feasible' %}bg-light-success{% else %}bg-light-warning{% endif %}">
