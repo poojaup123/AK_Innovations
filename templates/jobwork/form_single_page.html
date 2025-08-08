@@ -737,21 +737,54 @@ document.addEventListener('DOMContentLoaded', function() {
     let availableVendors = [];
     let selectedProcesses = [];
     
-    function initializeVendorRouting() {
-        // Load available vendors
-        loadAvailableVendors();
+    async function initializeVendorRouting() {
+        // Load available vendors first
+        await loadAvailableVendors();
         
         // Add event listener for adding vendor steps
         document.getElementById('addVendorStep').addEventListener('click', addVendorStep);
     }
     
-    function loadAvailableVendors() {
-        fetch('/jobwork/api/suppliers')
-            .then(response => response.json())
-            .then(data => {
-                availableVendors = data.suppliers.filter(s => s.partner_type === 'vendor' || s.partner_type === 'both');
-            })
-            .catch(error => console.error('Error loading vendors:', error));
+    async function loadAvailableVendors() {
+        console.log('Loading vendors...'); // DEBUG
+        try {
+            const response = await fetch('/jobwork/api/suppliers');
+            console.log('Vendors API response status:', response.status); // DEBUG
+            const data = await response.json();
+            console.log('Vendors API data:', data); // DEBUG
+            
+            if (data.suppliers) {
+                // More lenient filtering - include any suppliers that can act as vendors
+                availableVendors = data.suppliers.filter(s => 
+                    s.partner_type === 'vendor' || 
+                    s.partner_type === 'both' || 
+                    s.partner_type === 'supplier'
+                );
+                console.log('Filtered vendors:', availableVendors); // DEBUG
+                
+                // Refresh any existing vendor dropdowns
+                refreshVendorDropdowns();
+            } else {
+                console.error('No suppliers data in response');
+                availableVendors = [];
+            }
+        } catch (error) {
+            console.error('Error loading vendors:', error);
+            availableVendors = [];
+        }
+    }
+    
+    function refreshVendorDropdowns() {
+        const vendorSelects = document.querySelectorAll('.vendor-select');
+        vendorSelects.forEach(select => {
+            const currentValue = select.value;
+            const optionsHtml = `
+                <option value="">Select Vendor</option>
+                ${availableVendors.length > 0 ? availableVendors.map(v => `<option value="${v.id}">${v.name} (${v.partner_type})</option>`).join('') : '<option disabled>No vendors available</option>'}
+            `;
+            select.innerHTML = optionsHtml;
+            select.value = currentValue; // Restore selection if still valid
+        });
     }
     
     function addVendorStep() {
@@ -775,7 +808,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         <label class="form-label">Vendor</label>
                         <select class="form-select vendor-select" data-step="${vendorStepCounter}">
                             <option value="">Select Vendor</option>
-                            ${availableVendors.map(v => `<option value="${v.id}">${v.name}</option>`).join('')}
                         </select>
                     </div>
                     <div class="col-md-6 mb-3">
@@ -815,6 +847,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add event listeners
         addStepEventListeners(vendorStepCounter);
+        
+        // Populate vendor dropdown for this step
+        refreshVendorDropdowns();
         
         // Update vendor steps array
         vendorSteps.push({
