@@ -298,6 +298,20 @@
                         <input type="hidden" id="selectedProcesses" name="selected_processes" value="">
                     </div>
 
+                    <!-- Dynamic Rate Fields (populated based on selected processes) -->
+                    <div class="col-12 mb-3" id="processRatesSection" style="display: none;">
+                        <label class="form-label"><i class="fas fa-money-bill-wave"></i> Process Rates</label>
+                        <div class="card border-success">
+                            <div class="card-header bg-light">
+                                <small class="text-muted">Rates for selected processes (auto-populated from BOM)</small>
+                            </div>
+                            <div class="card-body" id="processRatesList">
+                                <!-- Rate fields will be populated here by JavaScript -->
+                            </div>
+                        </div>
+                        <input type="hidden" id="processRatesData" name="process_rates_data" value="">
+                    </div>
+
                     <!-- Multi-Vendor Routing -->
                     <div class="col-12 mb-3">
                         <label class="form-label">Multi-Vendor Sequential Routing</label>
@@ -817,10 +831,18 @@ function populateFormFromBOM(bomData) {
         console.log('No input materials found or input material select not found'); // DEBUG
     }
     
-    // 3. Populate process selection checkboxes
+    // 3. Set Expected Scrap % from BOM
+    const scrapField = document.getElementById('expected_scrap');
+    console.log('Scrap field element:', scrapField); // DEBUG
+    if (scrapField && bomData.estimated_scrap_percent !== undefined) {
+        console.log('Setting scrap percentage to:', bomData.estimated_scrap_percent); // DEBUG
+        scrapField.value = bomData.estimated_scrap_percent;
+    }
+    
+    // 4. Populate process selection checkboxes
     populateBOMProcessSelection(bomData.processes, bomData.bom_code);
     
-    // 4. Set job title with BOM code
+    // 5. Set job title with BOM code
     const jobTitleField = document.getElementById('job_title');
     if (jobTitleField && !jobTitleField.value) {
         const newTitle = `${bomData.bom_code} - Multi-Process Job`;
@@ -848,6 +870,9 @@ function populateBOMProcessSelection(processes, bomCode) {
         return;
     }
     
+    // Store processes globally for rate calculation
+    window.bomProcesses = processes;
+    
     // Clear existing process list
     processListDiv.innerHTML = '';
     
@@ -871,6 +896,7 @@ function populateBOMProcessSelection(processes, bomCode) {
                     <div class="text-end">
                         ${process.setup_time_minutes ? `<small class="text-info d-block">Setup: ${process.setup_time_minutes} min</small>` : ''}
                         ${process.run_time_minutes ? `<small class="text-info d-block">Runtime: ${process.run_time_minutes} min/unit</small>` : ''}
+                        ${process.labor_rate_per_hour ? `<small class="text-success d-block">Rate: ₹${process.labor_rate_per_hour}/hr</small>` : ''}
                     </div>
                 </div>
             </label>
@@ -886,8 +912,14 @@ function populateBOMProcessSelection(processes, bomCode) {
     updateSelectedProcesses();
     const checkboxes = processListDiv.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', updateSelectedProcesses);
+        checkbox.addEventListener('change', function() {
+            updateSelectedProcesses();
+            updateProcessRates();
+        });
     });
+    
+    // Initial population of process rates
+    updateProcessRates();
 }
 
 function updateSelectedProcesses() {
@@ -897,6 +929,136 @@ function updateSelectedProcesses() {
     if (hiddenField) {
         hiddenField.value = JSON.stringify(selectedValues);
         console.log('Selected processes updated:', selectedValues); // DEBUG
+    }
+}
+
+function updateProcessRates() {
+    const processRatesSection = document.getElementById('processRatesSection');
+    const processRatesList = document.getElementById('processRatesList');
+    
+    if (!processRatesSection || !processRatesList || !window.bomProcesses) {
+        return;
+    }
+    
+    // Get selected processes
+    const checkboxes = document.querySelectorAll('input[name="bom_processes"]:checked');
+    const selectedSteps = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (selectedSteps.length === 0) {
+        processRatesSection.style.display = 'none';
+        return;
+    }
+    
+    // Clear existing rates
+    processRatesList.innerHTML = '';
+    
+    const ratesData = [];
+    
+    // Create rate fields for selected processes
+    selectedSteps.forEach(stepNumber => {
+        const process = window.bomProcesses.find(p => (p.step_number || window.bomProcesses.indexOf(p)) == stepNumber);
+        if (process) {
+            const rateDiv = document.createElement('div');
+            rateDiv.className = 'row mb-3';
+            
+            const processRate = process.labor_rate_per_hour || 0;
+            
+            rateDiv.innerHTML = `
+                <div class="col-md-6">
+                    <label class="form-label"><strong>${process.process_name}</strong> Rate per Hour</label>
+                    <div class="input-group">
+                        <span class="input-group-text">₹</span>
+                        <input type="number" class="form-control" id="rate_step_${stepNumber}" 
+                               value="${processRate}" step="0.01" min="0"
+                               data-step="${stepNumber}" data-process="${process.process_name}">
+                        <span class="input-group-text">/hr</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Estimated Cost</label>
+                    <div class="form-control-plaintext bg-light rounded px-2" id="cost_step_${stepNumber}">
+                        ${calculateProcessCost(process, processRate)}
+                    </div>
+                </div>
+            `;
+            
+            processRatesList.appendChild(rateDiv);
+            
+            // Store rate data
+            ratesData.push({
+                step_number: stepNumber,
+                process_name: process.process_name,
+                rate_per_hour: processRate,
+                setup_time_minutes: process.setup_time_minutes || 0,
+                run_time_minutes: process.run_time_minutes || 0
+            });
+        }
+    });
+    
+    // Store rates data in hidden field
+    const hiddenRatesField = document.getElementById('processRatesData');
+    if (hiddenRatesField) {
+        hiddenRatesField.value = JSON.stringify(ratesData);
+    }
+    
+    // Show rates section
+    processRatesSection.style.display = 'block';
+    
+    // Add event listeners to rate inputs
+    const rateInputs = processRatesList.querySelectorAll('input[type="number"]');
+    rateInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            const stepNumber = this.dataset.step;
+            const process = window.bomProcesses.find(p => (p.step_number || window.bomProcesses.indexOf(p)) == stepNumber);
+            const newRate = parseFloat(this.value) || 0;
+            
+            // Update cost display
+            const costDisplay = document.getElementById(`cost_step_${stepNumber}`);
+            if (costDisplay) {
+                costDisplay.textContent = calculateProcessCost(process, newRate);
+            }
+            
+            // Update hidden rates data
+            updateRatesData();
+        });
+    });
+}
+
+function calculateProcessCost(process, ratePerHour) {
+    const setupHours = (process.setup_time_minutes || 0) / 60;
+    const runHours = (process.run_time_minutes || 0) / 60;
+    const quantity = parseFloat(document.getElementById('quantity_to_issue')?.value) || 1;
+    
+    const setupCost = setupHours * ratePerHour;
+    const runCost = runHours * ratePerHour * quantity;
+    const totalCost = setupCost + runCost;
+    
+    return `₹${totalCost.toFixed(2)} (Setup: ₹${setupCost.toFixed(2)} + Run: ₹${runCost.toFixed(2)})`;
+}
+
+function updateRatesData() {
+    const rateInputs = document.querySelectorAll('#processRatesList input[type="number"]');
+    const ratesData = [];
+    
+    rateInputs.forEach(input => {
+        const stepNumber = input.dataset.step;
+        const processName = input.dataset.process;
+        const rate = parseFloat(input.value) || 0;
+        const process = window.bomProcesses.find(p => (p.step_number || window.bomProcesses.indexOf(p)) == stepNumber);
+        
+        ratesData.push({
+            step_number: stepNumber,
+            process_name: processName,
+            rate_per_hour: rate,
+            setup_time_minutes: process?.setup_time_minutes || 0,
+            run_time_minutes: process?.run_time_minutes || 0
+        });
+    });
+    
+    const hiddenRatesField = document.getElementById('processRatesData');
+    if (hiddenRatesField) {
+        hiddenRatesField.value = JSON.stringify(ratesData);
+        console.log('Process rates data updated:', ratesData); // DEBUG
     }
 }
 
@@ -911,6 +1073,12 @@ function clearBOMFields() {
     const processSelectionDiv = document.getElementById('bomProcessSelection');
     if (processSelectionDiv) {
         processSelectionDiv.style.display = 'none';
+    }
+    
+    // Hide process rates section
+    const processRatesSection = document.getElementById('processRatesSection');
+    if (processRatesSection) {
+        processRatesSection.style.display = 'none';
     }
 }
 

@@ -2791,7 +2791,8 @@ def get_bom_details(bom_id):
                 'process_code': process.process_code,
                 'operation_description': process.operation_description,
                 'setup_time_minutes': process.setup_time_minutes,
-                'run_time_minutes': process.run_time_minutes
+                'run_time_minutes': process.run_time_minutes,
+                'labor_rate_per_hour': process.labor_rate_per_hour or 0.0
             })
         
         return jsonify({
@@ -2801,6 +2802,7 @@ def get_bom_details(bom_id):
                 'product_id': bom.product_id,
                 'product_name': bom.product.name if bom.product else 'Unknown',
                 'output_quantity': bom.output_quantity,
+                'estimated_scrap_percent': bom.estimated_scrap_percent or 0.0,
                 'input_materials': input_materials,
                 'processes': processes
             }
