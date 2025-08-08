@@ -1,0 +1,166 @@
+Alright — let’s get practical.
+Updating the **status** of **production orders** and **in-house jobs** boils down to having the right **status fields**, **triggers**, and **update rules** in your system.
+
+Here’s the complete breakdown for your case.
+
+---
+
+## 1️⃣ Status Fields You Need
+
+For **Production Orders** (final product):
+
+```text
+Pending → In Progress → Partially Completed → Completed → Closed
+```
+
+For **In-House Jobs** (per component/process):
+
+```text
+Pending → In Progress → On Hold → Completed → Closed
+```
+
+---
+
+## 2️⃣ How Status Updates Happen
+
+### **A. For In-House Jobs**
+
+Status changes based on **process completion** in the job card.
+
+| Action                                          | Status Change         |
+| ----------------------------------------------- | --------------------- |
+| Job card created but no RM issued               | `Pending`             |
+| RM issued but no process started                | `In Progress`         |
+| At least one process step completed but not all | `Partially Completed` |
+| All routing steps completed                     | `Completed`           |
+| QC passed & moved to next stage                 | `Closed`              |
+
+**Trigger:**
+Every time a production log is saved for a process step, the system:
+
+* Checks how many routing steps are done
+* Updates `status` field in the **job\_work** table accordingly
+
+---
+
+### **B. For Production Orders**
+
+Status changes based on **component readiness**.
+
+| Action                                     | Status Change         |
+| ------------------------------------------ | --------------------- |
+| Order created                              | `Pending`             |
+| Any component job started                  | `In Progress`         |
+| Some components ready but not all          | `Partially Completed` |
+| All components ready & final assembly done | `Completed`           |
+| QC passed & inventory updated              | `Closed`              |
+
+**Trigger:**
+Whenever a job card or outsourced GRN linked to this order is updated to `Completed`, the system:
+
+* Checks if all BOM components are ready
+* If yes → allows assembly
+* Once assembly done → marks production order as `Completed`
+
+---
+
+## 3️⃣ Database Example (Simplified)
+
+```sql
+-- Production Order Table
+production_order
+- id
+- product_id
+- quantity
+- status          -- Pending, In Progress, Completed
+- start_date
+- end_date
+
+-- Job Work Table (In-house + Outsourced)
+job_work
+- id
+- production_order_id
+- component_id
+- type            -- inhouse / outsourced
+- status          -- Pending, In Progress, Completed
+- current_process
+- batch_no
+```
+
+---
+
+## 4️⃣ Backend Logic (Flask + SQLAlchemy Example)
+
+```python
+def update_job_status(job_id):
+    job = JobWork.query.get(job_id)
+    total_steps = len(job.routing_steps)
+    completed_steps = sum(1 for step in job.routing_steps if step.status == "Completed")
+    
+    if completed_steps == 0:
+        job.status = "Pending"
+    elif completed_steps < total_steps:
+        job.status = "In Progress"
+    else:
+        job.status = "Completed"
+    
+    db.session.commit()
+    update_production_status(job.production_order_id)
+
+def update_production_status(production_id):
+    prod = ProductionOrder.query.get(production_id)
+    jobs = JobWork.query.filter_by(production_order_id=production_id).all()
+    
+    if all(job.status == "Completed" for job in jobs):
+        prod.status = "Completed"
+    elif any(job.status in ["In Progress", "Completed"] for job in jobs):
+        prod.status = "In Progress"
+    else:
+        prod.status = "Pending"
+    
+    db.session.commit()
+```
+
+---
+
+## 5️⃣ UI Side (Operator Workflow)
+
+* **Production Dashboard** shows:
+
+  * All active production orders
+  * Each component’s status (color-coded)
+* **Job Card Form** has a dropdown or button for each routing step:
+
+  * "Start Process" → sets `In Progress`
+  * "Complete Process" → moves to next step, updates status
+* Status updates **automatically** after process entry — no manual editing needed except admin overrides
+
+---
+
+## 6️⃣ Batch Tracking Linkage
+
+Every status update also:
+
+* Links **input batch** to process
+* Creates **output batch** when job completes
+* Updates **batch register** so you can track from RM → Component → Final Product
+
+---
+
+## 📊 Example Dashboard View
+
+| Production Order | Component     | Type       | Status      | Output Batch |
+| ---------------- | ------------- | ---------- | ----------- | ------------ |
+| PO-2025-001      | Mounted Plate | In-house   | Completed ✅ | MP-25-0001   |
+| PO-2025-001      | Base Plate    | Outsourced | Pending GRN | --           |
+| PO-2025-001      | Wheel         | Purchase   | Ready       | WHL-25-002   |
+
+---
+
+If you want, I can now prepare:
+
+1. **Full status-update database schema**
+2. **Flask route + UI form** so status updates auto when operator logs a step
+3. **Dashboard page** for real-time production status
+
+That way, both **in-house jobs** and **production orders** will be tracked like outsourced jobs with GRN — just using production entries instead of vendor receipts.
