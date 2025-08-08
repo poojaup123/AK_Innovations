@@ -337,7 +337,19 @@ def add_production():
     if not form.production_number.data:
         form.production_number.data = generate_production_number()
     
+    # Debug: check form validation
+    if request.method == 'POST':
+        if not form.validate():
+            print("Form validation failed:")
+            for field, errors in form.errors.items():
+                print(f"  {field}: {errors}")
+            # Also show validation errors to user
+            for field, errors in form.errors.items():
+                for error in errors:
+                    flash(f"Validation Error in {field}: {error}", 'danger')
+    
     if form.validate_on_submit():
+        print("Form validation passed, proceeding with production creation")
         # Check if production number already exists
         existing_production = Production.query.filter_by(production_number=form.production_number.data).first()
         if existing_production:
