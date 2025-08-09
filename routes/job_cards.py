@@ -344,6 +344,9 @@ def outsourcing_workflow(job_card_id, report_id=None):
     """Separate outsourcing workflow after progress report submission"""
     job_card = JobCard.query.get_or_404(job_card_id)
     
+    # Import required models
+    from models import Supplier, JobCardDailyStatus
+    
     # Get specific report if report_id provided
     selected_report = None
     if report_id:
@@ -353,7 +356,6 @@ def outsourcing_workflow(job_card_id, report_id=None):
         ).first()
     
     # Get available vendors
-    from models import Supplier
     vendors = Supplier.query.filter(
         Supplier.partner_type.in_(['vendor', 'both'])
     ).filter_by(is_active=True).all()
@@ -367,9 +369,8 @@ def outsourcing_workflow(job_card_id, report_id=None):
         ).order_by(BOMProcess.step_number).all()
     
     # Get latest daily report to check available quantities
-    from models import JobCardDailyStatus
     latest_report = JobCardDailyStatus.get_today_report(job_card_id)
-    available_quantity = latest_report.qty_good_today if latest_report else 0
+    available_quantity = selected_report.qty_good_today if selected_report else (latest_report.qty_good_today if latest_report else 0)
     
     from forms_outsourcing import OutsourcingWorkflowForm
     form = OutsourcingWorkflowForm()
@@ -423,8 +424,11 @@ def outsourcing_workflow(job_card_id, report_id=None):
     return render_template('job_cards/outsourcing_workflow.html',
                          form=form,
                          job_card=job_card,
+                         vendors=vendors,
+                         bom_processes=bom_processes,
                          latest_report=latest_report,
-                         available_quantity=available_quantity)
+                         available_quantity=available_quantity,
+                         selected_report=selected_report)
 
 @job_cards_bp.route('/view/<int:id>')
 @login_required
