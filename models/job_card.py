@@ -32,6 +32,7 @@ class JobCard(db.Model):
     
     # Quantities
     planned_quantity = db.Column(db.Float, nullable=False, default=0)
+    quantity_planned = db.Column(db.Float, default=0)  # Alternative name for compatibility
     completed_quantity = db.Column(db.Float, default=0)
     good_quantity = db.Column(db.Float, default=0)
     defective_quantity = db.Column(db.Float, default=0)
@@ -90,6 +91,9 @@ class JobCard(db.Model):
     # Note: job_work_order_id removed due to missing job_work_orders table
     gate_pass_number = db.Column(db.String(50))
     expected_return_date = db.Column(db.Date)
+    outsource_notes = db.Column(db.Text)
+    outsource_quantity = db.Column(db.Float, default=0)
+    created_from_report_id = db.Column(db.String(50))  # Links to JobCardDailyStatus.report_number
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
