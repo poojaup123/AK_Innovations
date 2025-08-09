@@ -125,6 +125,36 @@ class JobCardDailyUpdateForm(FlaskForm):
                                    ],
                                    default='none')
 
+class BulkJobCardForm(FlaskForm):
+    """Form for bulk job card creation from BOM"""
+    production_id = HiddenField('Production ID', validators=[DataRequired()])
+    bom_id = HiddenField('BOM ID', validators=[DataRequired()])
+    
+    # Scheduling options
+    buffer_days = IntegerField('Buffer Days Between Processes', 
+                              validators=[Optional(), NumberRange(min=0)], 
+                              default=1)
+    
+    default_priority = SelectField('Default Priority',
+                                 choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High')],
+                                 default='medium')
+    
+    # Worker assignment options
+    auto_assign_workers = BooleanField('Auto-assign Available Workers', default=False)
+    default_department = StringField('Default Department', validators=[Optional()])
+    
+    # Cost and timing
+    default_labor_rate = FloatField('Default Labor Rate (per hour)', 
+                                  validators=[Optional(), NumberRange(min=0)], 
+                                  default=25.0)
+    
+    # Process options
+    create_process_cards = BooleanField('Create Process-based Job Cards', default=True)
+    create_component_cards = BooleanField('Create Component-based Job Cards', default=False)
+    
+    # Notes
+    bulk_notes = TextAreaField('Bulk Creation Notes', validators=[Optional()])
+
 class JobCardApprovalForm(FlaskForm):
     """Form for supervisor approval workflow"""
     job_card_id = HiddenField('Job Card ID', validators=[DataRequired()])

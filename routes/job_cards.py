@@ -2,12 +2,32 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from models import db, Production, Item, BOM, BOMItem, Employee, Supplier
 from models.job_card import JobCard, JobCardDailyStatus, JobCardMaterial
-from forms_job_card import JobCardForm, JobCardDailyUpdateForm
+from forms_job_card import JobCardForm, JobCardDailyUpdateForm, BulkJobCardForm
 from datetime import datetime, date, timedelta
 from utils import generate_production_number
 from sqlalchemy import func, or_
 
 job_cards_bp = Blueprint('job_cards', __name__)
+
+def _generate_process_name_for_component(bom_item):
+    """Generate intelligent process name based on component type"""
+    item_name = bom_item.item.name.lower() if bom_item.item else "component"
+    
+    # Define process mapping based on component names
+    if any(keyword in item_name for keyword in ['plate', 'sheet', 'mounting']):
+        return "Cutting & Forming"
+    elif any(keyword in item_name for keyword in ['base', 'frame', 'support']):
+        return "Base Assembly"
+    elif any(keyword in item_name for keyword in ['wheel', 'caster', 'castor']):
+        return "Wheel Assembly"
+    elif any(keyword in item_name for keyword in ['bolt', 'screw', 'fastener', 'nut']):
+        return "Fastening & Assembly"
+    elif any(keyword in item_name for keyword in ['pipe', 'tube', 'rod']):
+        return "Machining & Threading"
+    elif any(keyword in item_name for keyword in ['bearing', 'bushing']):
+        return "Precision Assembly"
+    else:
+        return f"Processing - {bom_item.item.name}"
 
 @job_cards_bp.route('/dashboard')
 @login_required
@@ -151,28 +171,55 @@ def bulk_create_from_bom(production_id):
             created_count = 0
             current_date = date.today()
             
-            # Create job cards for each BOM item
-            for sequence, bom_item in enumerate(production.bom.items, 1):
-                # Calculate target completion date
-                target_date = current_date + timedelta(days=form.buffer_days.data * sequence)
+            # First check if BOM has defined processes
+            bom_processes = production.bom.processes if hasattr(production.bom, 'processes') else []
+            
+            if bom_processes:
+                # Create job cards based on BOM processes
+                for sequence, bom_process in enumerate(bom_processes, 1):
+                    target_date = current_date + timedelta(days=form.buffer_days.data * sequence)
+                    job_card_number = JobCard.generate_job_card_number(production.production_number, sequence)
+                    
+                    job_card = JobCard(
+                        job_card_number=job_card_number,
+                        production_id=production_id,
+                        item_id=production.item_id,  # Use production item for process-based cards
+                        process_name=bom_process.process_name,
+                        process_sequence=bom_process.step_number,
+                        operation_description=bom_process.operation_description or f"Process: {bom_process.process_name}",
+                        planned_quantity=production.quantity_planned,
+                        setup_time_minutes=bom_process.setup_time_minutes or 0,
+                        run_time_minutes=bom_process.run_time_minutes or 0,
+                        target_completion_date=target_date,
+                        priority=form.default_priority.data,
+                        created_by_id=current_user.id
+                    )
+                    db.session.add(job_card)
+                    created_count += 1
+            else:
+                # Create job cards for each BOM item with intelligent process names
+                for sequence, bom_item in enumerate(production.bom.items, 1):
+                    target_date = current_date + timedelta(days=form.buffer_days.data * sequence)
+                    job_card_number = JobCard.generate_job_card_number(production.production_number, sequence)
+                    
+                    # Generate intelligent process name based on component type
+                    process_name = _generate_process_name_for_component(bom_item)
+                    
+                    job_card = JobCard(
+                        job_card_number=job_card_number,
+                        production_id=production_id,
+                        item_id=bom_item.item_id,
+                        process_name=process_name,
+                        process_sequence=sequence,
+                        operation_description=f"Manufacturing and assembly of {bom_item.item.name}",
+                        planned_quantity=bom_item.quantity_required * production.quantity_planned,
+                        target_completion_date=target_date,
+                        priority=form.default_priority.data,
+                        created_by_id=current_user.id
+                    )
                 
-                job_card_number = JobCard.generate_job_card_number(production.production_number, sequence)
-                
-                job_card = JobCard(
-                    job_card_number=job_card_number,
-                    production_id=production_id,
-                    item_id=bom_item.item_id,
-                    process_name=f"Process {bom_item.item.name}",
-                    process_sequence=sequence,
-                    operation_description=f"Manufacturing process for {bom_item.item.name}",
-                    planned_quantity=bom_item.quantity_required * production.quantity_planned,
-                    target_completion_date=target_date,
-                    priority=form.default_priority.data,
-                    created_by_id=current_user.id
-                )
-                
-                db.session.add(job_card)
-                created_count += 1
+                    db.session.add(job_card)
+                    created_count += 1
             
             db.session.commit()
             flash(f'Successfully created {created_count} job cards from BOM', 'success')
