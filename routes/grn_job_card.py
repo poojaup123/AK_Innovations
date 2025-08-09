@@ -10,6 +10,73 @@ import logging
 
 grn_job_card_bp = Blueprint('grn_job_card', __name__, url_prefix='/grn-job-card')
 
+@grn_job_card_bp.route('/quick-receive/<int:job_card_id>', methods=['GET', 'POST'])
+@login_required
+def quick_receive_job_card(job_card_id):
+    """Quick receive for outsourced job card - create GRN and receive in one step"""
+    job_card = JobCard.query.get_or_404(job_card_id)
+    
+    # Check if job card is eligible for quick receive
+    if job_card.grn_id:
+        flash('This job card already has a GRN created.', 'warning')
+        return redirect(url_for('grn.dashboard'))
+    
+    if not job_card.outsource_quantity or job_card.outsource_quantity <= 0:
+        flash('Invalid outsource quantity for quick receive.', 'error')
+        return redirect(url_for('grn.dashboard'))
+    
+    try:
+        # Generate GRN number
+        latest_grn = GRN.query.order_by(GRN.id.desc()).first()
+        next_number = 1 if not latest_grn else int(latest_grn.grn_number.split('-')[-1]) + 1
+        grn_number = f"GRN-JC-{date.today().year}-{str(next_number).zfill(4)}"
+        
+        # Create GRN automatically
+        grn = GRN(
+            grn_number=grn_number,
+            job_card_id=job_card_id,
+            received_date=date.today(),
+            received_by=current_user.id,
+            delivery_note=f"Quick receive for {job_card.job_card_number}",
+            inspection_required=False,  # Quick receive bypasses detailed inspection
+            status='received',
+            remarks=f"Quick received from {job_card.assigned_vendor.name if job_card.assigned_vendor else 'vendor'}"
+        )
+        
+        db.session.add(grn)
+        db.session.flush()  # Get the GRN ID
+        
+        # Create GRN line item automatically (assuming the job card item)
+        if job_card.item:
+            line_item = GRNLineItem(
+                grn_id=grn.id,
+                item_id=job_card.item_id,
+                quantity_ordered=job_card.outsource_quantity,
+                quantity_received=job_card.outsource_quantity,  # Quick receive assumes full quantity
+                quantity_rejected=0,
+                unit_of_measure='PCS',
+                inspection_status='passed',  # Quick receive auto-passes inspection
+                remarks=f"Quick received for outsourced work"
+            )
+            db.session.add(line_item)
+        
+        # Update job card with GRN reference
+        job_card.grn_id = grn.id
+        job_card.grn_received_quantity = job_card.outsource_quantity
+        job_card.grn_received_date = date.today()
+        job_card.status = 'received'
+        
+        db.session.commit()
+        
+        flash(f'Quick receive completed successfully! GRN {grn.grn_number} created and materials received.', 'success')
+        return redirect(url_for('grn.dashboard'))
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f'Error during quick receive for job card {job_card_id}: {str(e)}')
+        flash(f'Error during quick receive: {str(e)}', 'error')
+        return redirect(url_for('grn.dashboard'))
+
 @grn_job_card_bp.route('/create/<int:job_card_id>', methods=['GET', 'POST'])
 @login_required
 def create_grn_for_job_card(job_card_id):

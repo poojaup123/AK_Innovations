@@ -486,8 +486,13 @@
                                         </button>
                                         <ul class="dropdown-menu">
                                             <li>
+                                                <a class="dropdown-item" href="{{ url_for('grn_job_card.quick_receive_job_card', job_card_id=job_card.id) }}">
+                                                    <i class="fas fa-bolt me-2"></i>Quick Receive
+                                                </a>
+                                            </li>
+                                            <li>
                                                 <a class="dropdown-item" href="{{ url_for('grn_job_card.create_grn_for_job_card', job_card_id=job_card.id) }}">
-                                                    <i class="fas fa-plus me-2"></i>Create GRN
+                                                    <i class="fas fa-plus me-2"></i>Create Full GRN
                                                 </a>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
