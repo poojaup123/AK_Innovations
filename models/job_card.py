@@ -87,7 +87,7 @@ class JobCard(db.Model):
     special_instructions = db.Column(db.Text)
     
     # Outsourcing Integration
-    job_work_order_id = db.Column(db.Integer, db.ForeignKey('job_work_orders.id'), nullable=True)
+    # Note: job_work_order_id removed due to missing job_work_orders table
     gate_pass_number = db.Column(db.String(50))
     expected_return_date = db.Column(db.Date)
     

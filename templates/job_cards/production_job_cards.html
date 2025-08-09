@@ -251,23 +251,17 @@
             <i class="fas fa-tasks fa-4x text-muted mb-3"></i>
             <h4 class="text-muted">No Job Cards Generated</h4>
             <p class="text-muted">Job cards will be automatically generated when you create a production order with a BOM.</p>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#generateJobCardsModal">
-                <i class="fas fa-magic me-2"></i>Generate Job Cards Now
-            </button>
+            <form method="POST" action="{{ url_for('job_card_management.generate_job_cards', production_id=production.id) }}" style="display: inline;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-magic me-2"></i>Generate Job Cards Now
+                </button>
+            </form>
         </div>
     </div>
     {% endif %}
 </div>
 
-<!-- Generate Job Cards Modal -->
-<div class="modal fade" id="generateJobCardsModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Generate Job Cards</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
+<!-- No modal needed anymore -->
                 <p>This will generate job cards based on the BOM for this production order.</p>
                 <div class="alert alert-warning">
                     <i class="fas fa-exclamation-triangle me-2"></i>
@@ -327,42 +321,25 @@
 </style>
 
 <script>
-// Job Cards Page JavaScript
+// Simple job cards page script - no JSON parsing
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Job cards page loaded successfully');
+    console.log('Job cards page loaded');
+    
+    // Remove any problematic event listeners that might cause JSON parsing
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            console.log('Form submission detected');
+        });
+    });
 });
 
-{% if job_cards %}
+// Simple gate pass function without JSON parsing
 function createGatePass(jobCardId) {
-    // Implementation for creating gate pass
-    if (confirm('Create gate pass for this job card?')) {
-        fetch('/job-cards/create-gate-pass/' + jobCardId, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            } else {
-                throw new Error('Server error: ' + response.status);
-            }
-        })
-        .then(data => {
-            if (data && data.success) {
-                alert('Gate pass created successfully!');
-                location.reload();
-            } else {
-                alert('Error creating gate pass: ' + (data ? data.message : 'Unknown error'));
-            }
-        })
-        .catch(error => {
-            console.error('Gate pass creation error:', error);
-            alert('Error creating gate pass. Please check the console for details.');
-        });
+    if (confirm('Create gate pass for job card #' + jobCardId + '?')) {
+        // Use a simple form submission instead of fetch/JSON
+        window.location.href = '/job-cards/create-gate-pass/' + jobCardId;
     }
 }
-{% endif %}
 </script>
 {% endblock %}

@@ -185,7 +185,9 @@ class JobCardGenerator:
         job_card.status = 'planned'
         material = getattr(bom_item, 'material', None) or getattr(bom_item, 'item', None)
         material_name = material.name if material else "Unknown Material"
-        job_card.operation_description = f"Process {material_name} for {production.item.name}"
+        production_item = Item.query.get(production.item_id) if production.item_id else None
+        production_item_name = production_item.name if production_item else "Unknown Product"
+        job_card.operation_description = f"Process {material_name} for {production_item_name}"
         job_card.process_routing = json.dumps(process_routing)
         job_card.special_instructions = getattr(bom_item, 'notes', "") or getattr(bom_item, 'remarks', "") or ""
         job_card.estimated_cost = self._estimate_job_cost(bom_item, required_quantity)
@@ -207,11 +209,13 @@ class JobCardGenerator:
         # Check if item has specific outsourcing requirements
         # This could be based on item type, supplier preferences, or BOM notes
         
-        if bom_item.notes and 'outsource' in bom_item.notes.lower():
+        notes = getattr(bom_item, 'notes', None) or getattr(bom_item, 'remarks', None) or ""
+        if notes and 'outsource' in notes.lower():
             return 'outsourced'
         
         # Check item category or type
-        if bom_item.item.category and 'outsourced' in bom_item.item.category.lower():
+        item = getattr(bom_item, 'item', None) or getattr(bom_item, 'material', None)
+        if item and hasattr(item, 'category') and item.category and 'outsourced' in item.category.lower():
             return 'outsourced'
         
         # Default to in-house
