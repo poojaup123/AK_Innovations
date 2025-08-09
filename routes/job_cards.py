@@ -408,7 +408,6 @@ def outsourcing_workflow(job_card_id, report_id=None):
                     item_id=job_card.item_id,
                     batch_number=f"OUTSOURCE-{job_card.job_card_number}-{vendor.name.upper()[:3]}",
                     qty_wip=outsource_quantity,
-                    batch_type='outsourced',
                     notes=f"Sent to {vendor.name} for processing"
                 )
                 db.session.add(outsource_batch)
