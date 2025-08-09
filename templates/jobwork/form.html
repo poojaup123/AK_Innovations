@@ -256,7 +256,12 @@
             </div>
             <div class="card-body">
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> Define the manufacturing processes and output products for this job work.
+                    <i class="fas fa-info-circle"></i> Define the manufacturing processes for this job work. 
+                    <br><strong>Two Workflow Types:</strong>
+                    <ul class="mb-0 mt-1">
+                        <li><strong>Sequential Operations:</strong> Ms Sheet → Cutting → Zinc Plating → Final Product (leave Output Product blank)</li>
+                        <li><strong>Multi-Stage Production:</strong> Raw Material → Process 1 → Intermediate Product → Process 2 → Final Product (specify Output Product)</li>
+                    </ul>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-bordered" id="processTable">
@@ -264,7 +269,7 @@
                             <tr>
                                 <th style="width: 8%;">Seq</th>
                                 <th style="width: 20%;">Process Name</th>
-                                <th style="width: 22%;">Output Product</th>
+                                <th style="width: 22%;">Output Product <small class="text-muted">(Optional)</small></th>
                                 <th style="width: 12%;">Quantity</th>
                                 <th style="width: 12%;">Rate/Unit</th>
                                 <th style="width: 10%;">Scrap %</th>
@@ -1690,8 +1695,8 @@ function addProcessRow() {
             </select>
         </td>
         <td>
-            <select class="form-select form-select-sm" required>
-                <option value="">Select Output Product...</option>
+            <select class="form-select form-select-sm">
+                <option value="">Optional - Leave blank for sequential operations</option>
             </select>
         </td>
         <td><input type="number" class="form-control form-control-sm" placeholder="Qty" min="1" required></td>
