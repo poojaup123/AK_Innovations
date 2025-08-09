@@ -45,19 +45,29 @@
                                 <h6 class="text-primary mb-3"><i class="fas fa-cogs me-2"></i>Production Details</h6>
                                 
                                 <div class="mb-3">
-                                    {{ form.report_date.label(class="form-label") }}
-                                    {{ form.report_date(class="form-control") }}
-                                </div>
-                                
-                                <div class="mb-3">
-                                    {{ form.actual_quantity.label(class="form-label") }}
-                                    {{ form.actual_quantity(class="form-control") }}
+                                    {{ form.qty_completed_today.label(class="form-label") }}
+                                    {{ form.qty_completed_today(class="form-control") }}
                                     <div class="form-text">Target: {{ "%.1f"|format(job_card.planned_quantity) }}</div>
                                 </div>
                                 
                                 <div class="mb-3">
-                                    {{ form.batch_number.label(class="form-label") }}
-                                    {{ form.batch_number(class="form-control") }}
+                                    {{ form.qty_good_today.label(class="form-label") }}
+                                    {{ form.qty_good_today(class="form-control") }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.qty_defective_today.label(class="form-label") }}
+                                    {{ form.qty_defective_today(class="form-control") }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.qty_scrap_today.label(class="form-label") }}
+                                    {{ form.qty_scrap_today(class="form-control") }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.input_batch_numbers.label(class="form-label") }}
+                                    {{ form.input_batch_numbers(class="form-control") }}
                                 </div>
                                 
                                 <div class="mb-3">
@@ -71,26 +81,25 @@
                                 <h6 class="text-primary mb-3"><i class="fas fa-clock me-2"></i>Time Tracking</h6>
                                 
                                 <div class="mb-3">
-                                    {{ form.hours_worked.label(class="form-label") }}
-                                    {{ form.hours_worked(class="form-control", step="0.1") }}
+                                    {{ form.machine_hours_used.label(class="form-label") }}
+                                    {{ form.machine_hours_used(class="form-control", step="0.1") }}
                                 </div>
                                 
                                 <div class="mb-3">
-                                    {{ form.setup_time_actual.label(class="form-label") }}
-                                    {{ form.setup_time_actual(class="form-control") }}
-                                    <div class="form-text">Minutes</div>
+                                    {{ form.overtime_hours.label(class="form-label") }}
+                                    {{ form.overtime_hours(class="form-control", step="0.1") }}
                                 </div>
                                 
                                 <div class="mb-3">
-                                    {{ form.run_time_actual.label(class="form-label") }}
-                                    {{ form.run_time_actual(class="form-control") }}
-                                    <div class="form-text">Minutes</div>
+                                    {{ form.efficiency_rate.label(class="form-label") }}
+                                    {{ form.efficiency_rate(class="form-control") }}
+                                    <div class="form-text">Percentage (0-100)</div>
                                 </div>
                                 
                                 <div class="mb-3">
-                                    {{ form.downtime_minutes.label(class="form-label") }}
-                                    {{ form.downtime_minutes(class="form-control") }}
-                                    <div class="form-text">Unplanned downtime in minutes</div>
+                                    {{ form.material_consumed_cost.label(class="form-label") }}
+                                    {{ form.material_consumed_cost(class="form-control") }}
+                                    <div class="form-text">Cost in currency</div>
                                 </div>
                             </div>
                         </div>
@@ -114,20 +123,37 @@
                             
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.material_issues.label(class="form-label") }}
-                                    {{ form.material_issues(class="form-control", rows="3") }}
+                                    {{ form.delay_reason.label(class="form-label") }}
+                                    {{ form.delay_reason(class="form-control", rows="3") }}
                                 </div>
                                 
                                 <div class="mb-3">
-                                    {{ form.machine_issues.label(class="form-label") }}
-                                    {{ form.machine_issues(class="form-control", rows="3") }}
+                                    {{ form.supervisor_notes.label(class="form-label") }}
+                                    {{ form.supervisor_notes(class="form-control", rows="3") }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.labor_cost_today.label(class="form-label") }}
+                                    {{ form.labor_cost_today(class="form-control") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.status_after_entry.label(class="form-label") }}
+                                    {{ form.status_after_entry(class="form-select") }}
                                 </div>
                             </div>
                         </div>
                         
                         <div class="mb-3">
-                            {{ form.operator_notes.label(class="form-label") }}
-                            {{ form.operator_notes(class="form-control", rows="3") }}
+                            <div class="form-check">
+                                {{ form.create_new_batch() }}
+                                {{ form.create_new_batch.label(class="form-check-label") }}
+                            </div>
                         </div>
                         
                         <!-- Submit Buttons -->
@@ -231,24 +257,24 @@
 
 <script>
 // Auto-calculate efficiency based on actual vs planned quantities
-document.getElementById('actual_quantity').addEventListener('input', function() {
+document.getElementById('qty_completed_today').addEventListener('input', function() {
     const actualQty = parseFloat(this.value) || 0;
     const plannedQty = {{ job_card.planned_quantity }};
     const efficiency = plannedQty > 0 ? (actualQty / plannedQty * 100).toFixed(1) : 0;
     
-    // Update efficiency display if element exists
-    const efficiencyDisplay = document.getElementById('efficiency-display');
-    if (efficiencyDisplay) {
-        efficiencyDisplay.textContent = efficiency + '%';
+    // Update efficiency rate field
+    const efficiencyField = document.getElementById('efficiency_rate');
+    if (efficiencyField) {
+        efficiencyField.value = efficiency;
     }
 });
 
-// Set default date to today if not already set
-document.addEventListener('DOMContentLoaded', function() {
-    const dateField = document.getElementById('report_date');
-    if (dateField && !dateField.value) {
-        const today = new Date().toISOString().split('T')[0];
-        dateField.value = today;
+// Auto-populate good quantity when completed quantity changes
+document.getElementById('qty_completed_today').addEventListener('input', function() {
+    const completedQty = parseFloat(this.value) || 0;
+    const goodQtyField = document.getElementById('qty_good_today');
+    if (goodQtyField && !goodQtyField.value) {
+        goodQtyField.value = completedQty;
     }
 });
 </script>
