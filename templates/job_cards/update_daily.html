@@ -67,10 +67,23 @@
                                 
                                 <!-- Batch Management - Automatic -->
                                 <div class="mb-3">
-                                    <label class="form-label">Input Batch Management</label>
-                                    <div class="alert alert-info p-2">
-                                        <i class="fas fa-magic me-1"></i>
-                                        <small>Batch numbers are automatically determined from job card material requirements</small>
+                                    <label class="form-label">Input Batch Numbers</label>
+                                    <div class="border p-2 bg-light">
+                                        {% set material_batches = [] %}
+                                        {% if job_card.bom_item %}
+                                            {% for bom_item in job_card.bom_item.bom.items %}
+                                                {% set batches = bom_item.item.batches %}
+                                                {% if batches %}
+                                                    {% for batch in batches[:1] %}
+                                                        <span class="badge bg-secondary me-1 mb-1">{{ batch.batch_number }}</span>
+                                                        {% if material_batches.append(batch.batch_number) %}{% endif %}
+                                                    {% endfor %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                        {% if not material_batches %}
+                                            <small class="text-muted">BATCH-AUTO-{{ job_card.id }}-{{ job_card.created_at.strftime('%Y%m%d') if job_card.created_at else 'TODAY' }}</small>
+                                        {% endif %}
                                     </div>
                                 </div>
                                 
