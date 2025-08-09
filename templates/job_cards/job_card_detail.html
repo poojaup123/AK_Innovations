@@ -468,29 +468,25 @@
 function markStepComplete(stepName) {
     const notes = prompt('Add notes for completing this step (optional):');
     
-    fetch(`{{ url_for('job_cards.quick_update') }}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify({
-            step_name: stepName,
-            notes: notes || ''
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-            location.reload();
-        } else {
-            alert('Error: ' + data.message);
-        }
-    })
-    .catch(error => {
-        alert('Error: ' + error.message);
-    });
+    // Use form submission instead of fetch to avoid CSRF and JSON parsing issues
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("job_cards.update_daily_status", job_card_id=job_card.id) }}';
+    
+    const stepInput = document.createElement('input');
+    stepInput.type = 'hidden';
+    stepInput.name = 'step_name';
+    stepInput.value = stepName;
+    form.appendChild(stepInput);
+    
+    const notesInput = document.createElement('input');
+    notesInput.type = 'hidden';
+    notesInput.name = 'notes';
+    notesInput.value = notes || '';
+    form.appendChild(notesInput);
+    
+    document.body.appendChild(form);
+    form.submit();
 }
 
 // Initialize tooltips
