@@ -171,7 +171,7 @@ class SmartBOMSuggestionService:
         steps = []
         
         if manufacturing_suggestion['can_manufacture']:
-            steps.append(f"Create job work order using BOM: {manufacturing_suggestion['bom_code']}")
+            steps.append(f"Create job card using BOM: {manufacturing_suggestion['bom_code']}")
             
             # Build materials list without nested f-strings
             materials_list = []
@@ -305,7 +305,7 @@ class SmartBOMSuggestionService:
                     'estimated_time': f"{suggestion.get('manufacturing_lead_time', 1)} days",
                     'bom_reference': suggestion.get('bom_code', 'N/A'),
                     'action_steps': [
-                        f"Create job work order for {max_producible:.1f} units using BOM: {suggestion.get('bom_code', 'N/A')}",
+                        f"Create job card for {max_producible:.1f} units using BOM: {suggestion.get('bom_code', 'N/A')}",
                         f"Issue available raw materials (partial quantities)",
                         f"Complete partial production: {max_producible:.1f} units",
                         f"Remaining needed: {(suggestion['target_quantity'] - max_producible):.1f} units"

@@ -135,7 +135,7 @@
                                         {% if suggestion.type == 'partial_manufacturing_recommendation' or suggestion.type == 'manufacturing' %}
                                             <a href="{{ url_for('jobwork.add_job_work') }}?from_suggestion=1&production_id={{ production.id }}&bom_id={{ suggestion.get('bom_id', '') }}&target_item_id={{ suggestion.get('target_item_id', '') }}&quantity={{ suggestion.get('target_quantity', 0) }}" 
                                                class="btn btn-success btn-sm">
-                                                <i class="fas fa-cogs me-2"></i>Create Job Work Order
+                                                <i class="fas fa-cogs me-2"></i>Create Job Card
                                             </a>
                                         {% endif %}
                                         
