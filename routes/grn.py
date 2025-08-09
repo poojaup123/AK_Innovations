@@ -341,6 +341,126 @@ def approve_inspection_and_move_to_inventory(batch_id, inspection_result='passed
 
 grn_bp = Blueprint('grn', __name__)
 
+@grn_bp.route('/add', methods=['GET', 'POST'])
+@login_required
+def add_grn():
+    """Add a new GRN"""
+    form = GRNForm()
+    
+    if form.validate_on_submit():
+        try:
+            grn = GRN(
+                grn_number=form.grn_number.data or GRN.generate_grn_number(),
+                job_work_id=form.job_work_id.data if form.job_work_id.data else None,
+                purchase_order_id=form.purchase_order_id.data if form.purchase_order_id.data else None,
+                received_date=form.received_date.data,
+                received_by=current_user.id,
+                delivery_note=form.delivery_note.data,
+                inspection_required=form.inspection_required.data,
+                status='received',
+                remarks=form.remarks.data
+            )
+            db.session.add(grn)
+            db.session.commit()
+            
+            flash(f'GRN {grn.grn_number} created successfully!', 'success')
+            return redirect(url_for('grn.view_grn', id=grn.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error creating GRN: {str(e)}', 'error')
+            
+    return render_template('grn/add_grn.html', form=form, title='Add New GRN')
+
+@grn_bp.route('/view/<int:id>')
+@login_required 
+def view_grn(id):
+    """View GRN details"""
+    grn = GRN.query.get_or_404(id)
+    return render_template('grn/view_grn.html', grn=grn, title=f'GRN {grn.grn_number}')
+
+@grn_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_grn(id):
+    """Edit GRN details"""
+    grn = GRN.query.get_or_404(id)
+    form = GRNForm(obj=grn)
+    
+    if form.validate_on_submit():
+        try:
+            form.populate_obj(grn)
+            db.session.commit()
+            flash(f'GRN {grn.grn_number} updated successfully!', 'success')
+            return redirect(url_for('grn.view_grn', id=grn.id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating GRN: {str(e)}', 'error')
+            
+    return render_template('grn/edit_grn.html', form=form, grn=grn, title=f'Edit GRN {grn.grn_number}')
+
+@grn_bp.route('/pending')
+@login_required
+def pending_grns():
+    """List pending GRNs"""
+    pending_grns = GRN.query.filter_by(status='received').all()
+    return render_template('grn/pending_grns.html', grns=pending_grns, title='Pending GRNs')
+
+@grn_bp.route('/completed')
+@login_required 
+def completed_grns():
+    """List completed GRNs"""
+    completed_grns = GRN.query.filter_by(status='completed').all()
+    return render_template('grn/completed_grns.html', grns=completed_grns, title='Completed GRNs')
+
+@grn_bp.route('/reports')
+@login_required
+def reports():
+    """GRN reports"""
+    # Get report statistics
+    total_grns = GRN.query.count()
+    pending_grns = GRN.query.filter_by(status='received').count()
+    completed_grns = GRN.query.filter_by(status='completed').count()
+    this_month_grns = GRN.query.filter(
+        func.extract('month', GRN.received_date) == datetime.now().month,
+        func.extract('year', GRN.received_date) == datetime.now().year
+    ).count()
+    
+    return render_template('grn/reports.html', 
+                         title='GRN Reports',
+                         total_grns=total_grns,
+                         pending_grns=pending_grns,
+                         completed_grns=completed_grns,
+                         this_month_grns=this_month_grns)
+
+@grn_bp.route('/list')
+@login_required
+def list_grns():
+    """List all GRNs with optional filtering"""
+    status = request.args.get('status')
+    
+    # Base query
+    query = GRN.query
+    
+    # Apply status filter if provided
+    if status:
+        query = query.filter_by(status=status)
+    
+    # Order by date descending
+    grns = query.order_by(GRN.received_date.desc()).all()
+    
+    # Determine title based on filter
+    if status == 'received':
+        title = 'Pending GRNs'
+        template = 'grn/pending_grns.html'
+    elif status == 'completed':
+        title = 'Completed GRNs'
+        template = 'grn/completed_grns.html'
+    else:
+        title = 'All GRNs'
+        template = 'grn/list_grns.html'
+    
+    return render_template(template, grns=grns, title=title)
+
 @grn_bp.route('/grn/<int:grn_id>/batches')
 @login_required 
 def view_grn_batches(grn_id):
@@ -1047,43 +1167,7 @@ def quick_receive_po(purchase_order_id, item_id):
                          po_item=po_item)
 
 
-@grn_bp.route('/list')
-@login_required
-def list_grns():
-    """List all GRNs with filtering"""
-    form = GRNSearchForm()
-    
-    # Build query - Use outerjoin to include GRNs without job work (e.g., from Purchase Orders)
-    query = GRN.query.outerjoin(JobWork).outerjoin(PurchaseOrder)
-    
-    # Apply filters
-    if request.args.get('search'):
-        search_term = request.args.get('search')
-        query = query.filter(
-            or_(
-                GRN.grn_number.ilike(f'%{search_term}%'),
-                JobWork.job_number.ilike(f'%{search_term}%'),
-                JobWork.customer_name.ilike(f'%{search_term}%'),
-                PurchaseOrder.po_number.ilike(f'%{search_term}%')
-            )
-        )
-    
-    if request.args.get('status'):
-        query = query.filter(GRN.status == request.args.get('status'))
-    
-    if request.args.get('inspection_status'):
-        query = query.filter(GRN.inspection_status == request.args.get('inspection_status'))
-    
-    # Pagination
-    page = request.args.get('page', 1, type=int)
-    grns = query.order_by(GRN.received_date.desc()).paginate(
-        page=page, per_page=20, error_out=False
-    )
-    
-    return render_template('grn/list.html',
-                         title='All GRNs',
-                         grns=grns,
-                         form=form)
+
 
 
 @grn_bp.route('/detail/<int:grn_id>')

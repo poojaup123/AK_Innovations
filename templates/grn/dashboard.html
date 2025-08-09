@@ -11,10 +11,10 @@
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
                 <h2><i class="fas fa-receipt me-2"></i>GRN Dashboard</h2>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <a href="{{ url_for('grn_workflow.dashboard') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-1"></i>GRN Workflow
+                    <a href="{{ url_for('grn.add_grn') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Create New GRN
                     </a>
-                    <a href="{{ url_for('grn.list_grns') }}?status=received" class="btn btn-warning">
+                    <a href="{{ url_for('grn.pending_grns') }}" class="btn btn-warning">
                         <i class="fas fa-clock me-1"></i>Pending GRNs
                     </a>
                     <a href="{{ url_for('grn.list_grns') }}" class="btn btn-outline-secondary">
@@ -160,23 +160,23 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3">
-                            <a href="{{ url_for('grn_workflow.dashboard') }}" class="btn btn-outline-primary w-100 mb-2">
+                            <a href="{{ url_for('grn.add_grn') }}" class="btn btn-outline-primary w-100 mb-2">
                                 <i class="fas fa-plus-circle me-2"></i>New GRN
                             </a>
                         </div>
                         <div class="col-md-3">
-                            <a href="{{ url_for('grn.list_grns') }}?status=received" class="btn btn-outline-warning w-100 mb-2">
+                            <a href="{{ url_for('grn.pending_grns') }}" class="btn btn-outline-warning w-100 mb-2">
                                 <i class="fas fa-clock me-2"></i>Pending Inspection
                             </a>
                         </div>
                         <div class="col-md-3">
-                            <a href="{{ url_for('grn.list_grns') }}?status=completed" class="btn btn-outline-success w-100 mb-2">
+                            <a href="{{ url_for('grn.completed_grns') }}" class="btn btn-outline-success w-100 mb-2">
                                 <i class="fas fa-check-circle me-2"></i>Completed GRNs
                             </a>
                         </div>
                         <div class="col-md-3">
-                            <a href="{{ url_for('grn.list_grns') }}" class="btn btn-outline-info w-100 mb-2">
-                                <i class="fas fa-chart-bar me-2"></i>All GRNs
+                            <a href="{{ url_for('grn.reports') }}" class="btn btn-outline-info w-100 mb-2">
+                                <i class="fas fa-chart-bar me-2"></i>GRN Reports
                             </a>
                         </div>
                     </div>
@@ -255,7 +255,14 @@
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <span class="badge bg-info">{{ grn.grn_number }}</span>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('grn.view_grn', id=grn.id) }}" class="btn btn-outline-primary btn-sm" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('grn.edit_grn', id=grn.id) }}" class="btn btn-outline-secondary btn-sm" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -267,7 +274,7 @@
                             <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                             <h5 class="text-muted">No GRNs Found</h5>
                             <p class="text-muted">Create your first GRN to start tracking material receipts.</p>
-                            <a href="{{ url_for('grn_workflow.dashboard') }}" class="btn btn-primary mt-3">
+                            <a href="{{ url_for('grn.add_grn') }}" class="btn btn-primary mt-3">
                                 <i class="fas fa-plus me-2"></i>Create New GRN
                             </a>
                         </div>

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-clock me-2"></i>{{ title }}</h2>
+                <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-hourglass-half me-2"></i>Pending GRNs ({{ grns|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if grns %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>GRN Number</th>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Reference</th>
+                                    <th>Inspection Required</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for grn in grns %}
+                                <tr>
+                                    <td><strong>{{ grn.grn_number }}</strong></td>
+                                    <td>{{ grn.received_date.strftime('%d/%m/%Y') if grn.received_date else 'N/A' }}</td>
+                                    <td>
+                                        {% if grn.job_work %}
+                                            <span class="badge bg-info">Job Work</span>
+                                        {% elif grn.purchase_order %}
+                                            <span class="badge bg-primary">Purchase</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Direct</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if grn.job_work %}
+                                            {{ grn.job_work.job_number }}
+                                        {% elif grn.purchase_order %}
+                                            {{ grn.purchase_order.po_number }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if grn.inspection_required %}
+                                            <span class="badge bg-warning">Required</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Not Required</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('grn.view_grn', id=grn.id) }}" class="btn btn-outline-primary btn-sm" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('grn.edit_grn', id=grn.id) }}" class="btn btn-outline-secondary btn-sm" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <h5 class="text-muted">No Pending GRNs</h5>
+                        <p class="text-muted">All GRNs have been processed.</p>
+                        <a href="{{ url_for('grn.add_grn') }}" class="btn btn-primary mt-3">
+                            <i class="fas fa-plus me-2"></i>Create New GRN
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
