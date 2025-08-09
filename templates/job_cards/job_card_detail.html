@@ -619,20 +619,21 @@ function markStepComplete(stepName) {
     form.submit();
 }
 
-// Initialize tooltips
-var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl)
-})
-
 // Parent-Child Table Toggle - Enhanced with debugging
 console.log('Page loaded, setting up toggle functionality...');
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, finding toggle buttons...');
     
+    // Skip tooltips for now to avoid Bootstrap dependency issues
+    console.log('Skipping tooltip initialization to focus on table expansion');
+    
     const toggleButtons = document.querySelectorAll('.toggle-children');
     console.log(`Found ${toggleButtons.length} toggle buttons`);
+    
+    // Also check if child rows exist in the DOM
+    const allChildRows = document.querySelectorAll('tr.child-row');
+    console.log(`Found ${allChildRows.length} total child rows in DOM`);
     
     toggleButtons.forEach((button, index) => {
         const reportId = button.getAttribute('data-report-id');
