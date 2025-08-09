@@ -261,8 +261,7 @@ function generateJobCards(productionId) {
         fetch(`/job-cards/generate/${productionId}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
+                'Content-Type': 'application/json'
             }
         })
         .then(response => response.json())

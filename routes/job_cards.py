@@ -297,7 +297,7 @@ def production_job_cards(production_id):
     production = Production.query.get_or_404(production_id)
     job_cards = JobCard.query.filter_by(production_id=production_id).order_by(JobCard.process_sequence).all()
     
-    return render_template('job_cards/production_job_cards.html',
+    return render_template('job_cards/production_cards.html',
                          production=production,
                          job_cards=job_cards)
 
