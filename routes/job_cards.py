@@ -3,9 +3,11 @@ from flask_login import login_required, current_user
 from models import db, Production, Item, BOM, BOMItem, Employee, Supplier
 from models.job_card import JobCard, JobCardDailyStatus, JobCardMaterial
 from forms_job_card import JobCardForm, JobCardDailyUpdateForm, BulkJobCardForm
+from services.bom_inventory_flow import BOMInventoryFlow
 from datetime import datetime, date, timedelta
 from utils import generate_production_number
 from sqlalchemy import func, or_
+import logging
 
 job_cards_bp = Blueprint('job_cards', __name__)
 
@@ -322,8 +324,30 @@ def update_daily_status(job_card_id):
                 reported_by_id=current_user.id
             )
             
-            # Always return to job card detail page to show the progress report
-            flash(f'Daily status updated for job card {job_card.job_card_number}', 'success')
+            # Update job card completed quantity
+            job_card.completed_quantity = cumulative_good
+            
+            # Check if job card should be marked as completed
+            # (when good quantity meets or exceeds planned quantity)
+            if cumulative_good >= job_card.planned_quantity:
+                try:
+                    # Process BOM inventory flow for completed job card
+                    inventory_success, inventory_message = BOMInventoryFlow.update_inventory_on_job_card_completion(
+                        job_card_id, cumulative_good
+                    )
+                    
+                    if inventory_success:
+                        flash(f'Job card {job_card.job_card_number} completed! Daily status updated and inventory processed. {inventory_message}', 'success')
+                    else:
+                        flash(f'Job card {job_card.job_card_number} completed! Daily status updated but inventory processing had issues: {inventory_message}', 'warning')
+                        
+                except Exception as e:
+                    logging.error(f'Error processing inventory for completed job card {job_card_id}: {str(e)}')
+                    flash(f'Job card {job_card.job_card_number} completed! Daily status updated but inventory processing failed: {str(e)}', 'warning')
+            else:
+                # Job card not yet complete
+                flash(f'Daily status updated for job card {job_card.job_card_number}', 'success')
+            
             return redirect(url_for('job_cards.view_job_card', id=job_card_id))
             
         except Exception as e:

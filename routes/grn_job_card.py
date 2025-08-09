@@ -6,6 +6,7 @@ from models import Item, Supplier
 from models.grn import GRN, GRNLineItem, GRNWorkflowStatus
 from models.job_card import JobCard
 from forms_grn import GRNForm
+from services.bom_inventory_flow import BOMInventoryFlow
 import logging
 
 grn_job_card_bp = Blueprint('grn_job_card', __name__, url_prefix='/grn-job-card')
@@ -69,7 +70,21 @@ def quick_receive_job_card(job_card_id):
         
         db.session.commit()
         
-        flash(f'Quick receive completed successfully! GRN {grn.grn_number} created and materials received.', 'success')
+        # Process BOM inventory flow updates
+        try:
+            inventory_success, inventory_message = BOMInventoryFlow.handle_outsourced_grn_receipt(
+                job_card.id, job_card.outsource_quantity
+            )
+            
+            if inventory_success:
+                flash(f'Quick receive completed successfully! GRN {grn.grn_number} created and inventory updated. {inventory_message}', 'success')
+            else:
+                flash(f'GRN {grn.grn_number} created successfully, but inventory update had issues: {inventory_message}', 'warning')
+                
+        except Exception as e:
+            logging.error(f'Error updating inventory for job card {job_card.id}: {str(e)}')
+            flash(f'GRN {grn.grn_number} created successfully, but inventory update failed: {str(e)}', 'warning')
+        
         return redirect(url_for('grn.dashboard'))
         
     except Exception as e:
