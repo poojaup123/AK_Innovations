@@ -48,17 +48,28 @@ def quick_receive_job_card(job_card_id):
         db.session.add(grn)
         db.session.flush()  # Get the GRN ID
         
-        # Create GRN line item automatically (assuming the job card item)
-        if job_card.item:
+        # Create GRN line item for the specific BOM component, not the master product
+        component_item_id = job_card.item_id  # Default to job card item
+        component_item = job_card.item
+        
+        # If this job card has BOM item reference, use the actual component
+        if job_card.bom_item_id:
+            from models import BOMItem
+            bom_item = BOMItem.query.get(job_card.bom_item_id)
+            if bom_item and bom_item.item:
+                component_item_id = bom_item.item_id
+                component_item = bom_item.item
+        
+        if component_item:
             line_item = GRNLineItem(
                 grn_id=grn.id,
-                item_id=job_card.item_id,
+                item_id=component_item_id,  # Use the specific component, not master product
                 quantity_received=job_card.outsource_quantity,  # Quick receive assumes full quantity
                 quantity_passed=job_card.outsource_quantity,   # All passed for quick receive
                 quantity_rejected=0,
-                unit_of_measure=job_card.item.unit_of_measure if job_card.item else 'PCS',
+                unit_of_measure=component_item.unit_of_measure if component_item else 'PCS',
                 inspection_status='passed',  # Quick receive auto-passes inspection
-                remarks=f"Quick received for outsourced work - Job Card: {job_card.job_card_number}"
+                remarks=f"Quick received for outsourced {component_item.name} - Job Card: {job_card.job_card_number}"
             )
             db.session.add(line_item)
         
@@ -140,20 +151,32 @@ def create_grn_for_job_card(job_card_id):
             db.session.add(grn)
             db.session.flush()  # Get GRN ID
             
+            # Create GRN line item for the specific BOM component, not the master product
+            component_item_id = job_card.item_id  # Default to job card item
+            component_item = job_card.item
+            
+            # If this job card has BOM item reference, use the actual component
+            if job_card.bom_item_id:
+                from models import BOMItem
+                bom_item = BOMItem.query.get(job_card.bom_item_id)
+                if bom_item and bom_item.item:
+                    component_item_id = bom_item.item_id
+                    component_item = bom_item.item
+            
             # Create GRN line item for the outsourced work
             grn_line_item = GRNLineItem(
                 grn_id=grn.id,
-                item_id=job_card.item_id,
+                item_id=component_item_id,  # Use the specific component, not master product
                 quantity_received=form.quantity_received.data,
                 quantity_passed=form.quantity_received.data,  # Assume all passed initially
                 quantity_rejected=0.0,
-                unit_of_measure=job_card.item.unit_of_measure if job_card.item else 'PCS',
+                unit_of_measure=component_item.unit_of_measure if component_item else 'PCS',
                 inspection_status='passed',
                 process_name=job_card.process_name,
                 process_stage='completed',
                 material_classification='semi_finished',  # Outsourced work is typically semi-finished
                 batch_number=f"BATCH-JC-{job_card.job_card_number}",
-                remarks=f"Received from {job_card.assigned_vendor.name if job_card.assigned_vendor else 'Vendor'}"
+                remarks=f"Received {component_item.name if component_item else 'component'} from {job_card.assigned_vendor.name if job_card.assigned_vendor else 'Vendor'}"
             )
             db.session.add(grn_line_item)
             
