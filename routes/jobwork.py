@@ -188,6 +188,34 @@ def api_inventory_stock(item_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@jobwork_bp.route('/api/boms')
+@login_required
+def api_get_boms():
+    """API endpoint to get all available BOMs"""
+    try:
+        from models import BOM
+        boms = BOM.query.filter_by(is_active=True).order_by(BOM.bom_code).all()
+        boms_data = []
+        for bom in boms:
+            boms_data.append({
+                'id': bom.id,
+                'bom_code': bom.bom_code,
+                'product_name': bom.product.name if bom.product else 'Unknown Product',
+                'product_id': bom.product_id,
+                'version': bom.version,
+                'status': bom.status
+            })
+        
+        return jsonify({
+            'success': True,
+            'boms': boms_data
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @jobwork_bp.route('/api/items')
 @login_required
 def api_get_items():

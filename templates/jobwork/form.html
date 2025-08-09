@@ -401,16 +401,23 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Job Work auto-populated from Smart BOM suggestion');
     {% endif %}
     
-    // Job work type change handler
+    // Job work type change handler  
     if (jobWorkType) {
         jobWorkType.addEventListener('change', function() {
+            console.log('Job work type changed to:', this.value);
             const bomRow = document.getElementById('bom_row');
-            if (this.value === 'bom_based') {
-                bomRow.style.display = 'table-row';
-                loadBOMs();
+            if (bomRow) {
+                if (this.value === 'bom_based') {
+                    console.log('Showing BOM row and loading BOMs...');
+                    bomRow.style.display = 'table-row';
+                    loadBOMs();
+                } else {
+                    console.log('Hiding BOM row');
+                    bomRow.style.display = 'none';
+                    clearBOMData();
+                }
             } else {
-                bomRow.style.display = 'none';
-                clearBOMData();
+                console.error('BOM row not found!');
             }
         });
     }
@@ -473,9 +480,14 @@ function loadItems() {
 
 // Load BOMs for BOM-based job work
 function loadBOMs() {
+    console.log('Loading BOMs from API...');
     return fetch('/jobwork/api/boms')
-        .then(response => response.json())
+        .then(response => {
+            console.log('BOM API response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('BOM API data received:', data);
             const select = document.getElementById('bom_select');
             if (select && data.boms) {
                 select.innerHTML = '<option value="">Select BOM...</option>';
@@ -485,9 +497,15 @@ function loadBOMs() {
                     option.textContent = `${bom.bom_code} - ${bom.product_name}`;
                     select.appendChild(option);
                 });
+                console.log(`Loaded ${data.boms.length} BOMs successfully`);
+            } else {
+                console.warn('BOM select element not found or no BOMs in data');
             }
         })
-        .catch(error => console.error('Error loading BOMs:', error));
+        .catch(error => {
+            console.error('Error loading BOMs:', error);
+            alert('Error loading BOMs. Please check if BOMs are available.');
+        });
 }
 
 // Load BOM data and populate form completely
