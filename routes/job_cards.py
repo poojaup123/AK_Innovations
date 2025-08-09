@@ -303,17 +303,24 @@ def update_daily_status(job_card_id):
             # Handle outsourcing workflow
             if form.outsource_process.data and request.form.get('outsource_vendor_id'):
                 vendor_id = request.form.get('outsource_vendor_id')
+                outsource_quantity = form.outsource_quantity.data or 0
                 outsource_notes = form.outsource_notes.data
                 
-                # Update job card status for outsourcing
-                job_card.status = 'outsourced'
-                job_card.assigned_vendor_id = vendor_id
-                job_card.outsource_notes = outsource_notes
+                # Find vendor for notes
+                vendor = Supplier.query.get(vendor_id)
+                vendor_name = vendor.name if vendor else f"Vendor ID: {vendor_id}"
                 
-                if process_notes:
-                    process_notes += f" | Outsourced to Vendor ID: {vendor_id}"
-                else:
-                    process_notes = f"Outsourced to Vendor ID: {vendor_id}"
+                # Update job card status for partial outsourcing
+                if outsource_quantity > 0:
+                    job_card.status = 'partially_outsourced'
+                    job_card.assigned_vendor_id = vendor_id
+                    job_card.outsource_notes = outsource_notes
+                    job_card.outsourced_quantity = outsource_quantity
+                    
+                    if process_notes:
+                        process_notes += f" | Outsourced {outsource_quantity} pcs to {vendor_name}"
+                    else:
+                        process_notes = f"Outsourced {outsource_quantity} pcs to {vendor_name}"
                 
             # Update daily status report
             updated_report = JobCardDailyStatus.create_or_update_today(
