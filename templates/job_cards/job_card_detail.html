@@ -270,6 +270,7 @@
                             <table class="table table-hover">
                                 <thead class="table-dark">
                                     <tr>
+                                        <th>Report ID</th>
                                         <th>Date</th>
                                         <th>Completed</th>
                                         <th>Good</th>
@@ -284,6 +285,11 @@
                                 <tbody>
                                     {% for status in daily_statuses %}
                                     <tr>
+                                        <td>
+                                            <span class="badge bg-primary">
+                                                {{ status.report_number or 'RPT-JC-' + status.id|string }}
+                                            </span>
+                                        </td>
                                         <td>{{ status.report_date.strftime('%Y-%m-%d') }}</td>
                                         <td>{{ "%.1f"|format(status.qty_completed_today) }}</td>
                                         <td class="text-success">{{ "%.1f"|format(status.qty_good_today) }}</td>

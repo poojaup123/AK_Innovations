@@ -264,6 +264,9 @@ class JobCardDailyStatus(db.Model):
     job_card_id = db.Column(db.Integer, db.ForeignKey('job_cards.id'), nullable=False)
     job_card = db.relationship('JobCard', backref='daily_status_reports')
     
+    # Report Identifier - Unique report number
+    report_number = db.Column(db.String(50), unique=True)
+    
     report_date = db.Column(db.Date, nullable=False, default=date.today)
     
     # Daily Production Quantities
@@ -328,6 +331,30 @@ class JobCardDailyStatus(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     reported_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     reported_by = db.relationship('User', foreign_keys=[reported_by_id], backref='job_card_reports')
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.report_number:
+            self.report_number = self.generate_report_number()
+    
+    @staticmethod
+    def generate_report_number():
+        """Generate unique report number like RPT-JC-001, RPT-JC-002, etc."""
+        from sqlalchemy import func
+        last_report = JobCardDailyStatus.query.order_by(
+            JobCardDailyStatus.id.desc()
+        ).first()
+        
+        if last_report and last_report.report_number and last_report.report_number.startswith('RPT-JC-'):
+            try:
+                last_num = int(last_report.report_number.split('-')[-1])
+                next_num = last_num + 1
+            except (ValueError, IndexError):
+                next_num = 1
+        else:
+            next_num = 1
+        
+        return f"RPT-JC-{next_num:03d}"
     
     __table_args__ = (db.UniqueConstraint('job_card_id', 'report_date'),)
     
