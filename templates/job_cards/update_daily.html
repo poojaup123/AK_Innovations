@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Update Daily Status - {{ job_card.job_card_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-clipboard-check text-primary"></i> Update Daily Status</h2>
+                    <p class="text-muted">Job Card: {{ job_card.job_card_number }} | {{ job_card.item.name if job_card.item else 'Unknown Item' }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Job Card
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Daily Status Form -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-day me-2"></i>Daily Progress Report
+                        {% if today_report %}
+                            <span class="badge bg-info ms-2">Updating Today's Report</span>
+                        {% else %}
+                            <span class="badge bg-success ms-2">New Report</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <!-- Production Details -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3"><i class="fas fa-cogs me-2"></i>Production Details</h6>
+                                
+                                <div class="mb-3">
+                                    {{ form.report_date.label(class="form-label") }}
+                                    {{ form.report_date(class="form-control") }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.actual_quantity.label(class="form-label") }}
+                                    {{ form.actual_quantity(class="form-control") }}
+                                    <div class="form-text">Target: {{ "%.1f"|format(job_card.planned_quantity) }}</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.batch_number.label(class="form-label") }}
+                                    {{ form.batch_number(class="form-control") }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.daily_status.label(class="form-label") }}
+                                    {{ form.daily_status(class="form-select") }}
+                                </div>
+                            </div>
+                            
+                            <!-- Time Tracking -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3"><i class="fas fa-clock me-2"></i>Time Tracking</h6>
+                                
+                                <div class="mb-3">
+                                    {{ form.hours_worked.label(class="form-label") }}
+                                    {{ form.hours_worked(class="form-control", step="0.1") }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.setup_time_actual.label(class="form-label") }}
+                                    {{ form.setup_time_actual(class="form-control") }}
+                                    <div class="form-text">Minutes</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.run_time_actual.label(class="form-label") }}
+                                    {{ form.run_time_actual(class="form-control") }}
+                                    <div class="form-text">Minutes</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.downtime_minutes.label(class="form-label") }}
+                                    {{ form.downtime_minutes(class="form-control") }}
+                                    <div class="form-text">Unplanned downtime in minutes</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Issues and Notes -->
+                        <hr>
+                        <h6 class="text-primary mb-3"><i class="fas fa-exclamation-triangle me-2"></i>Issues & Notes</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.quality_issues.label(class="form-label") }}
+                                    {{ form.quality_issues(class="form-control", rows="3") }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.production_issues.label(class="form-label") }}
+                                    {{ form.production_issues(class="form-control", rows="3") }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.material_issues.label(class="form-label") }}
+                                    {{ form.material_issues(class="form-control", rows="3") }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.machine_issues.label(class="form-label") }}
+                                    {{ form.machine_issues(class="form-control", rows="3") }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.operator_notes.label(class="form-label") }}
+                            {{ form.operator_notes(class="form-control", rows="3") }}
+                        </div>
+                        
+                        <!-- Submit Buttons -->
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>
+                                {% if today_report %}Update Report{% else %}Save Report{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Job Card Summary -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Job Card Summary</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Job Card:</strong></td>
+                            <td>{{ job_card.job_card_number }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Item:</strong></td>
+                            <td>{{ job_card.item.name if job_card.item else 'Unknown' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Process:</strong></td>
+                            <td>{{ job_card.process_name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                <span class="badge 
+                                    {% if job_card.status == 'completed' %}bg-success
+                                    {% elif job_card.status == 'in_progress' %}bg-warning
+                                    {% elif job_card.status == 'planned' %}bg-info
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ job_card.status.title() }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Planned Qty:</strong></td>
+                            <td>{{ "%.1f"|format(job_card.planned_quantity) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Completed:</strong></td>
+                            <td>{{ "%.1f"|format(job_card.completed_quantity) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Progress:</strong></td>
+                            <td>{{ "%.1f"|format(job_card.completion_rate) }}%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Target Date:</strong></td>
+                            <td>
+                                {{ job_card.target_completion_date.strftime('%Y-%m-%d') }}
+                                {% if job_card.is_overdue %}
+                                    <span class="badge bg-danger ms-1">Overdue</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            {% if job_card.assigned_worker or job_card.assigned_vendor %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-user-tie me-2"></i>Assignment</h6>
+                </div>
+                <div class="card-body">
+                    {% if job_card.assigned_worker %}
+                        <div class="mb-2">
+                            <strong>Worker:</strong><br>
+                            <i class="fas fa-user me-1 text-primary"></i>{{ job_card.assigned_worker.name }}
+                        </div>
+                    {% endif %}
+                    
+                    {% if job_card.assigned_vendor %}
+                        <div class="mb-2">
+                            <strong>Vendor:</strong><br>
+                            <i class="fas fa-building me-1 text-info"></i>{{ job_card.assigned_vendor.name }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-calculate efficiency based on actual vs planned quantities
+document.getElementById('actual_quantity').addEventListener('input', function() {
+    const actualQty = parseFloat(this.value) || 0;
+    const plannedQty = {{ job_card.planned_quantity }};
+    const efficiency = plannedQty > 0 ? (actualQty / plannedQty * 100).toFixed(1) : 0;
+    
+    // Update efficiency display if element exists
+    const efficiencyDisplay = document.getElementById('efficiency-display');
+    if (efficiencyDisplay) {
+        efficiencyDisplay.textContent = efficiency + '%';
+    }
+});
+
+// Set default date to today if not already set
+document.addEventListener('DOMContentLoaded', function() {
+    const dateField = document.getElementById('report_date');
+    if (dateField && !dateField.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateField.value = today;
+    }
+});
+</script>
+{% endblock %}
