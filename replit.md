@@ -73,7 +73,10 @@ Core features include:
 
 ## Recent Changes (August 2025)
 - **Job Card System Implementation:** Created a complete job card-based production tracking system with automatic generation from production orders, BOM integration, process routing, material tracking, and comprehensive approval workflows
+- **Critical Transaction Fix:** Resolved production order creation rollback issues by separating production creation from job card generation, ensuring production orders save successfully without dependency failures
 - **Database Schema Enhancement:** Updated job_card_daily_status and job_cards tables with all required columns for forms integration, workflow control, and approval processes
 - **Production Integration:** Added automatic job card generation when creating production orders and integrated job card access from production list view with dedicated job card buttons
+- **JavaScript Error Resolution:** Fixed template syntax conflicts causing JSON parsing errors, improved error handling in frontend scripts, and resolved URL routing issues in job card management
 - **Comprehensive Forms:** Implemented detailed forms for daily status updates, supervisor approvals, QC workflows, and batch management with automatic quantity calculations
 - **Template System:** Created responsive job card templates with process routing visualization, material requirements tracking, daily progress monitoring, and workflow status indicators
+- **Smart Suggestions Enhancement:** Updated terminology from "job work" to "job card" throughout the system for consistency and clarity
