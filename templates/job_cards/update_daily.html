@@ -127,6 +127,39 @@
                                     {{ form.process_notes(class="form-control", rows="3", placeholder="Process-specific notes and observations") }}
                                 </div>
                                 
+                                <!-- Outsourcing Options -->
+                                <div class="card border-info mt-3">
+                                    <div class="card-header bg-info text-white">
+                                        <h6 class="mb-0"><i class="fas fa-external-link-alt me-2"></i>Outsourcing Options</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check mb-3">
+                                            {{ form.outsource_process(class="form-check-input", id="outsource_toggle") }}
+                                            <label class="form-check-label" for="outsource_toggle">
+                                                <strong>Outsource Selected Process(es)</strong>
+                                                <br><small class="text-muted">Send selected processes to external vendor</small>
+                                            </label>
+                                        </div>
+                                        
+                                        <div id="outsourcing_details" style="display: none;">
+                                            <div class="mb-3">
+                                                <label class="form-label">Select Vendor</label>
+                                                <select class="form-select" name="outsource_vendor_id">
+                                                    <option value="">Choose vendor...</option>
+                                                    {% for vendor in vendors %}
+                                                    <option value="{{ vendor.id }}">{{ vendor.name }} - {{ vendor.contact_person }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                {{ form.outsource_notes.label(class="form-label") }}
+                                                {{ form.outsource_notes(class="form-control", rows="2", placeholder="Special instructions for vendor") }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <div class="form-check mb-3">
                                     {{ form.process_completed(class="form-check-input") }}
                                     {{ form.process_completed.label(class="form-check-label") }}
@@ -344,6 +377,26 @@ document.getElementById('qty_completed_today').addEventListener('input', functio
     const goodQtyField = document.getElementById('qty_good_today');
     if (goodQtyField && !goodQtyField.value) {
         goodQtyField.value = completedQty;
+    }
+});
+
+// Toggle outsourcing details visibility
+function toggleOutsourcingDetails() {
+    const checkbox = document.getElementById('outsource_toggle');
+    const details = document.getElementById('outsourcing_details');
+    
+    if (checkbox && details) {
+        details.style.display = checkbox.checked ? 'block' : 'none';
+    }
+}
+
+// Initialize outsourcing functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const outsourceToggle = document.getElementById('outsource_toggle');
+    if (outsourceToggle) {
+        outsourceToggle.addEventListener('change', toggleOutsourcingDetails);
+        // Initialize visibility
+        toggleOutsourcingDetails();
     }
 });
 </script>

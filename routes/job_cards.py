@@ -259,6 +259,12 @@ def update_daily_status(job_card_id):
             bom_id=job_card.bom_item.bom_id if job_card.bom_item else None
         ).order_by(BOMProcess.step_number).all()
     
+    # Get available vendors for outsourcing
+    from models import Supplier
+    vendors = Supplier.query.filter(
+        Supplier.partner_type.in_(['vendor', 'both'])
+    ).filter_by(is_active=True).all()
+    
     # Get today's report if exists
     today_report = JobCardDailyStatus.get_today_report(job_card_id)
     
@@ -293,6 +299,21 @@ def update_daily_status(job_card_id):
                         process_names.append(f"Step {process.step_number}: {process.process_name}")
                 
                 process_notes = f"Processes worked: {', '.join(process_names)}"
+            
+            # Handle outsourcing workflow
+            if form.outsource_process.data and request.form.get('outsource_vendor_id'):
+                vendor_id = request.form.get('outsource_vendor_id')
+                outsource_notes = form.outsource_notes.data
+                
+                # Update job card status for outsourcing
+                job_card.status = 'outsourced'
+                job_card.assigned_vendor_id = vendor_id
+                job_card.outsource_notes = outsource_notes
+                
+                if process_notes:
+                    process_notes += f" | Outsourced to Vendor ID: {vendor_id}"
+                else:
+                    process_notes = f"Outsourced to Vendor ID: {vendor_id}"
                 
             # Update daily status report
             updated_report = JobCardDailyStatus.create_or_update_today(
@@ -329,7 +350,8 @@ def update_daily_status(job_card_id):
                          form=form,
                          job_card=job_card,
                          today_report=today_report,
-                         bom_processes=bom_processes)
+                         bom_processes=bom_processes,
+                         vendors=vendors)
 
 @job_cards_bp.route('/view/<int:id>')
 @login_required
