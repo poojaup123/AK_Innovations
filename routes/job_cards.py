@@ -308,7 +308,16 @@ def update_daily_status(job_card_id):
 @login_required
 def view_job_card(id):
     """View job card details"""
-    job_card = JobCard.query.get_or_404(id)
+    job_card = JobCard.query.get(id)
+    if not job_card:
+        # If job card doesn't exist, redirect to the first available one
+        first_available = JobCard.query.order_by(JobCard.id.desc()).first()
+        if first_available:
+            flash(f'Job card {id} not found. Redirecting to latest job card.', 'info')
+            return redirect(url_for('job_cards.view_job_card', id=first_available.id))
+        else:
+            flash('No job cards found in the system.', 'warning')
+            return redirect(url_for('job_cards.dashboard'))
     
     # Get recent daily reports
     daily_reports = JobCardDailyStatus.query.filter_by(
