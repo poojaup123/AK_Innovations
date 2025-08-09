@@ -332,11 +332,11 @@ class JobWorkForm(FlaskForm):
         # Populate assigned to choices (suppliers/vendors + departments)
         assigned_choices = [('', 'Select Assignment')]
         try:
-            # Add suppliers/vendors for outsourced work - use actual vendor name as value for easier rate lookup
+            # Add suppliers/vendors for outsourced work - use supplier_id format for consistency
             suppliers = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
             for supplier in suppliers:
-                # Use actual supplier name as value (this will be used for rate lookup)
-                assigned_choices.append((supplier.name, f"🏢 {supplier.name}"))
+                # Use supplier_id format for proper validation and lookup
+                assigned_choices.append((f"supplier_{supplier.id}", f"🏢 {supplier.name}"))
             
             # Add departments for in-house work
             try:

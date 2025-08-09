@@ -446,6 +446,9 @@ document.addEventListener('DOMContentLoaded', function() {
     loadItems();
     loadAssignmentOptions();
     addProcessRow(); // Add first process row
+    
+    // Initialize enhanced output quantity handler
+    handleOutputQuantityChange();
 });
 
 // Load items for input material dropdown
@@ -487,42 +490,232 @@ function loadBOMs() {
         .catch(error => console.error('Error loading BOMs:', error));
 }
 
-// Load BOM data and populate form
+// Load BOM data and populate form completely
 function loadBOMData(bomId) {
     if (!bomId) return;
     
-    console.log('Loading BOM data for ID:', bomId);
+    console.log('Loading comprehensive BOM data for ID:', bomId);
     
     fetch(`/jobwork/api/bom/${bomId}/details`)
         .then(response => response.json())
         .then(data => {
             console.log('BOM API Response:', data);
             
-            if (data.error) {
+            if (!data.success || data.error) {
                 console.error('BOM API Error:', data.error);
-                alert('Error loading BOM data: ' + data.error);
+                alert('Error loading BOM data: ' + (data.error || 'Unknown error'));
                 return;
             }
             
-            // Debug: Check data structure
-            console.log('Materials received:', data.materials);
-            console.log('Processes received:', data.processes);
+            // Store BOM data globally for calculations
+            window.currentBOMData = data;
             
-            // Populate Job Work Title from BOM
+            // [1] Populate Job Work Title from BOM
             populateJobWorkTitle(data);
             
-            // Store BOM transformation ratios for auto-calculation
-            window.bomTransformationRatios = {};
+            // [2] Auto-populate Input Material (first material from BOM)
+            if (data.materials && data.materials.length > 0) {
+                populateInputMaterial(data.materials[0]);
+                
+                // Show material requirements summary
+                displayBOMMaterialRequirements(data.materials);
+            }
             
-            // Method 1: Use process transformation data if available
+            // [3] Auto-populate Processes with rates and output products
             if (data.processes && data.processes.length > 0) {
-                data.processes.forEach(process => {
-                    if (process.input_product_id && process.output_product_id && process.input_quantity && process.output_quantity) {
-                        const inputQty = parseFloat(process.input_quantity) || 1;
-                        const outputQty = parseFloat(process.output_quantity) || 1;
-                        const ratio = outputQty / inputQty;
-                        window.bomTransformationRatios[process.input_product_id] = {
-                            output_product_id: process.output_product_id,
+                populateProcessesFromBOM(data.processes);
+            }
+            
+            // [4] Set default output quantity to 1 and calculate requirements
+            const outputQtyField = document.getElementById('output_quantity');
+            if (outputQtyField && !outputQtyField.value) {
+                outputQtyField.value = 1;
+                calculateBOMRequirements(1); // Calculate for 1 unit
+            }
+            
+            console.log('BOM integration completed successfully');
+        })
+        .catch(error => {
+            console.error('Error loading BOM data:', error);
+            alert('Error loading BOM data. Please try again.');
+        });
+}
+
+// Populate input material dropdown and select first material
+function populateInputMaterial(primaryMaterial) {
+    const inputMaterialSelect = document.getElementById('input_material');
+    if (!inputMaterialSelect || !primaryMaterial) return;
+    
+    // Select the primary material
+    inputMaterialSelect.value = primaryMaterial.id;
+    
+    // Update material unit display
+    updateMaterialUnit();
+    
+    console.log('Selected input material:', primaryMaterial.name);
+}
+
+// Display BOM material requirements in a summary
+function displayBOMMaterialRequirements(materials) {
+    // Create or update material requirements display
+    let requirementsDiv = document.getElementById('bom-material-requirements');
+    if (!requirementsDiv) {
+        requirementsDiv = document.createElement('div');
+        requirementsDiv.id = 'bom-material-requirements';
+        requirementsDiv.className = 'alert alert-info mt-2';
+        
+        // Insert after the input material field
+        const inputMaterialRow = document.querySelector('#input_material').closest('tr');
+        if (inputMaterialRow) {
+            const newRow = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = 3;
+            td.appendChild(requirementsDiv);
+            newRow.appendChild(td);
+            inputMaterialRow.parentNode.insertBefore(newRow, inputMaterialRow.nextSibling);
+        }
+    }
+    
+    let html = '<strong>📋 BOM Material Requirements:</strong><ul class="mb-0 mt-1">';
+    materials.forEach(material => {
+        const stockStatus = material.current_stock >= material.qty_required ? 
+            `<span class="text-success">✓ Available (${material.current_stock} ${material.uom})</span>` :
+            `<span class="text-warning">⚠ Short (${material.current_stock} ${material.uom})</span>`;
+        
+        html += `<li><strong>${material.name}</strong>: ${material.qty_required} ${material.uom} - ${stockStatus}</li>`;
+    });
+    html += '</ul>';
+    
+    requirementsDiv.innerHTML = html;
+}
+
+// Auto-populate processes from BOM with rates and output products
+function populateProcessesFromBOM(bomProcesses) {
+    // Clear existing processes
+    document.getElementById('processTableBody').innerHTML = '';
+    
+    bomProcesses.forEach((process, index) => {
+        addProcessRow();
+        
+        const processRows = document.querySelectorAll('#processTableBody tr');
+        const currentRow = processRows[processRows.length - 1];
+        
+        if (currentRow) {
+            // Populate process fields
+            const processNameInput = currentRow.querySelector('input[name$="_name"]');
+            const outputProductSelect = currentRow.querySelector('select[name$="_output_product"]');
+            const quantityInput = currentRow.querySelector('input[name$="_quantity"]');
+            const rateInput = currentRow.querySelector('input[name$="_rate"]');
+            const scrapInput = currentRow.querySelector('input[name$="_scrap"]');
+            
+            if (processNameInput) processNameInput.value = process.name || '';
+            if (outputProductSelect) outputProductSelect.value = process.output_product_id || '';
+            if (quantityInput) quantityInput.value = process.output_quantity || 1;
+            if (rateInput) rateInput.value = process.rate_per_unit || 0;
+            if (scrapInput) scrapInput.value = process.scrap_percent || 0;
+            
+            console.log(`Populated process ${index + 1}: ${process.name}`);
+        }
+    });
+    
+    console.log('All BOM processes populated successfully');
+}
+
+// Calculate material requirements for given output quantity
+function calculateBOMRequirements(outputQuantity) {
+    if (!window.currentBOMData || !outputQuantity) return;
+    
+    const bomId = window.currentBOMData.bom.id;
+    
+    fetch(`/jobwork/api/bom/${bomId}/calculate_requirements/${outputQuantity}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update quantity to issue based on requirements
+                const primaryMaterial = data.material_requirements[0];
+                if (primaryMaterial) {
+                    const quantityToIssueInput = document.getElementById('quantity_to_issue');
+                    if (quantityToIssueInput) {
+                        quantityToIssueInput.value = primaryMaterial.required_qty;
+                        console.log(`Quantity to issue updated: ${primaryMaterial.required_qty} ${primaryMaterial.uom}`);
+                    }
+                }
+                
+                // Update costs display
+                updateCostSummary(data.costs);
+            }
+        })
+        .catch(error => {
+            console.error('Error calculating BOM requirements:', error);
+        });
+}
+
+// Update cost summary display
+function updateCostSummary(costs) {
+    let costDiv = document.getElementById('bom-cost-summary');
+    if (!costDiv) {
+        costDiv = document.createElement('div');
+        costDiv.id = 'bom-cost-summary';
+        costDiv.className = 'alert alert-secondary mt-2';
+        
+        // Insert in process section
+        const processSection = document.querySelector('.card:last-of-type .card-body');
+        if (processSection) {
+            processSection.appendChild(costDiv);
+        }
+    }
+    
+    costDiv.innerHTML = `
+        <strong>💰 BOM Cost Breakdown:</strong>
+        <div class="row mt-2">
+            <div class="col-md-3"><small>Material: ₹${costs.total_material_cost}</small></div>
+            <div class="col-md-3"><small>Labor: ₹${costs.labor_cost}</small></div>
+            <div class="col-md-3"><small>Overhead: ₹${costs.overhead_cost}</small></div>
+            <div class="col-md-3"><strong>Total: ₹${costs.total_cost}</strong></div>
+        </div>
+    `;
+}
+
+// Enhanced output quantity change handler
+function handleOutputQuantityChange() {
+    const outputQuantityInput = document.getElementById('output_quantity');
+    if (outputQuantityInput && window.currentBOMData) {
+        outputQuantityInput.addEventListener('input', function() {
+            const outputQty = parseFloat(this.value) || 0;
+            if (outputQty > 0) {
+                calculateBOMRequirements(outputQty);
+            }
+        });
+    }
+}
+
+// Populate Job Work Title from BOM data
+function populateJobWorkTitle(data) {
+    const jobTitleInput = document.getElementById('job_title');
+    if (jobTitleInput && data.bom) {
+        const title = `${data.bom.code} - ${data.bom.product_name} Production`;
+        jobTitleInput.value = title;
+        console.log('Job title populated:', title);
+    }
+}
+
+// Clear BOM data when switching to manual mode
+function clearBOMData() {
+    // Clear stored BOM data
+    window.currentBOMData = null;
+    
+    // Remove dynamic displays
+    const requirementsDiv = document.getElementById('bom-material-requirements');
+    const costDiv = document.getElementById('bom-cost-summary');
+    if (requirementsDiv) requirementsDiv.remove();
+    if (costDiv) costDiv.remove();
+    
+    // Clear form fields
+    const jobTitleInput = document.getElementById('job_title');
+    if (jobTitleInput) jobTitleInput.value = '';
+    
+    console.log('BOM data cleared');
+}
                             output_product_name: process.output_product_name || 'Output Product',
                             ratio: ratio,
                             input_name: process.input_product_name || 'Input Material'
