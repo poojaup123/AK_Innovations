@@ -56,7 +56,7 @@ class ProductionService:
                     job_card_number=job_card_number,
                     production_id=production_id,
                     item_id=component_item.id,  # Component being manufactured
-                    bom_item_id=bom_component.id,  # Link to BOM component
+                    bom_item_id=bom_component.id,  # Link to parent BOM component
                     process_name=f"Manufacture {component_item.name}",
                     process_sequence=sequence,
                     operation_description=f"Manufacture {component_quantity} units of {component_item.name} ({component_item.code}) for {production.production_number}",

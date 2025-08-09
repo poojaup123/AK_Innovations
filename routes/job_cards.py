@@ -522,21 +522,25 @@ def view_job_card(id):
             return redirect(url_for('job_cards.dashboard'))
     
     # Get BOM processes for this job card
+    # Need to get processes from the COMPONENT's own BOM, not the parent BOM
     routing_steps = []
-    if job_card.bom_item_id:
-        from models import BOMProcess
-        bom_processes = BOMProcess.query.filter_by(
-            bom_id=job_card.bom_item.bom_id if job_card.bom_item else None
-        ).order_by(BOMProcess.step_number).all()
-        
-        routing_steps = [{
-            'step': process.step_number,
-            'process': process.process_name,
-            'description': process.operation_description,
-            'est_time': (process.setup_time_minutes or 0) + (process.run_time_minutes or 0),
-            'status': 'pending',  # Default status
-            'process_id': process.id
-        } for process in bom_processes]
+    if job_card.item_id:
+        from models import BOMProcess, BOM
+        # Find the BOM that has this component as its product
+        component_bom = BOM.query.filter_by(product_id=job_card.item_id).first()
+        if component_bom:
+            bom_processes = BOMProcess.query.filter_by(
+                bom_id=component_bom.id
+            ).order_by(BOMProcess.step_number).all()
+            
+            routing_steps = [{
+                'step': process.step_number,
+                'process': process.process_name,
+                'description': process.operation_description,
+                'est_time': (process.setup_time_minutes or 0) + (process.run_time_minutes or 0),
+                'status': 'pending',  # Default status
+                'process_id': process.id
+            } for process in bom_processes]
     
     # Get recent daily reports
     daily_reports = JobCardDailyStatus.query.filter_by(
