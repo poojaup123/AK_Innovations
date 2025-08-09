@@ -116,10 +116,12 @@ class JobCardGenerator:
         
         for bom_item in bom_items:
             # Calculate required quantity
-            required_quantity = bom_item.quantity * parent_quantity
+            quantity_per_unit = getattr(bom_item, 'qty_required', getattr(bom_item, 'quantity_required', 1.0))
+            required_quantity = quantity_per_unit * parent_quantity
             
             # Determine if this is a purchased item or manufactured item
-            child_bom = BOM.query.filter_by(product_id=bom_item.item_id, is_active=True).first()
+            item_id = getattr(bom_item, 'material_id', getattr(bom_item, 'item_id', None))
+            child_bom = BOM.query.filter_by(product_id=item_id, is_active=True).first() if item_id else None
             
             if child_bom:
                 # This item has its own BOM - create job card and recurse
@@ -142,7 +144,8 @@ class JobCardGenerator:
             else:
                 # This is a raw material or purchased component
                 # Check if it needs processing (based on item type or custom logic)
-                if self._item_needs_processing(bom_item.item):
+                material = getattr(bom_item, 'material', None) or getattr(bom_item, 'item', None)
+                if self._item_needs_processing(material):
                     job_card = self._create_job_card_for_bom_item(
                         production=production,
                         bom_item=bom_item,
@@ -168,7 +171,7 @@ class JobCardGenerator:
         job_card = JobCard()
         job_card.job_card_number = job_card_number
         job_card.production_id = production.id
-        job_card.item_id = bom_item.item_id
+        job_card.item_id = getattr(bom_item, 'material_id', getattr(bom_item, 'item_id', None))
         job_card.bom_item_id = bom_item.id
         job_card.component_level = level
         job_card.parent_job_card_id = parent_job_card.id if parent_job_card else None
@@ -180,7 +183,9 @@ class JobCardGenerator:
         job_card.target_completion_date = end_date if end_date else production.created_at.date()
         job_card.job_type = job_type
         job_card.status = 'planned'
-        job_card.operation_description = f"Process {bom_item.item.name} for {production.item.name}"
+        material = getattr(bom_item, 'material', None) or getattr(bom_item, 'item', None)
+        material_name = material.name if material else "Unknown Material"
+        job_card.operation_description = f"Process {material_name} for {production.item.name}"
         job_card.process_routing = json.dumps(process_routing)
         job_card.special_instructions = bom_item.notes or ""
         job_card.estimated_cost = self._estimate_job_cost(bom_item, required_quantity)
@@ -279,7 +284,7 @@ class JobCardGenerator:
             {
                 "step": 2,
                 "process": "Manufacturing",
-                "description": f"Manufacture {bom_item.item.name}",
+                "description": f"Manufacture {material_name}",
                 "estimated_time": 240
             },
             {
@@ -294,8 +299,8 @@ class JobCardGenerator:
         """Calculate start and end dates for job card based on level and type"""
         
         # Base dates from production order
-        production_start = production.start_date
-        production_end = production.target_date
+        production_start = getattr(production, 'start_date', None) or production.created_at.date()
+        production_end = getattr(production, 'target_date', None) or (production.created_at + timedelta(days=7)).date()
         
         # Calculate backwards from production end date based on level
         if job_type == 'outsourced':
@@ -316,7 +321,8 @@ class JobCardGenerator:
     
     def _get_primary_process_name(self, bom_item):
         """Get the primary process name for the BOM item"""
-        item_name = bom_item.item.name.lower()
+        material = getattr(bom_item, 'material', None) or getattr(bom_item, 'item', None)
+        item_name = material.name.lower() if material else "unknown"
         
         if 'plate' in item_name or 'sheet' in item_name:
             return "Cutting & Machining"
@@ -338,7 +344,8 @@ class JobCardGenerator:
     def _estimate_job_cost(self, bom_item, quantity):
         """Estimate cost for the job card"""
         # Basic cost estimation - can be enhanced with more sophisticated logic
-        base_cost = getattr(bom_item.item, 'unit_price', 0) or 0
+        material = getattr(bom_item, 'material', None) or getattr(bom_item, 'item', None)
+        base_cost = getattr(material, 'unit_price', 0) or 0 if material else 0
         return base_cost * quantity * 1.2  # Add 20% for processing overhead
     
     def _determine_department(self, bom_item, job_type):
@@ -346,7 +353,8 @@ class JobCardGenerator:
         if job_type == 'outsourced':
             return "Outsourcing"
         
-        item_name = bom_item.item.name.lower()
+        material = getattr(bom_item, 'material', None) or getattr(bom_item, 'item', None)
+        item_name = material.name.lower() if material else "unknown"
         
         if 'weld' in item_name:
             return "Welding"
