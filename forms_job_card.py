@@ -35,10 +35,12 @@ class JobCardForm(FlaskForm):
     
     # Scheduling
     planned_start_date = DateField('Planned Start Date', validators=[Optional()], default=date.today)
+    planned_end_date = DateField('Planned End Date', validators=[Optional()])
     target_completion_date = DateField('Target Completion Date', validators=[DataRequired()])
     
     # Cost Estimation
     estimated_cost = FloatField('Estimated Cost', validators=[Optional()], default=0)
+    setup_time_minutes = IntegerField('Setup Time (minutes)', validators=[Optional()], default=0)
     run_time_minutes = IntegerField('Estimated Runtime (minutes)', validators=[Optional()], default=0)
     
     # Instructions

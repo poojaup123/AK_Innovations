@@ -33,10 +33,10 @@ class SmartJobCardSuggestions:
             suggestions = {
                 'production_info': {
                     'production_number': production.production_number,
-                    'item_name': production.item.name,
+                    'item_name': production.produced_item.name,
                     'planned_quantity': production.planned_quantity,
-                    'target_completion': production.target_completion_date,
-                    'priority': production.priority
+                    'target_completion': getattr(production, 'target_completion_date', None),
+                    'priority': getattr(production, 'priority', 'medium')
                 },
                 'bom_analysis': SmartJobCardSuggestions._analyze_bom_structure(main_bom),
                 'material_requirements': SmartJobCardSuggestions._calculate_material_requirements(main_bom, production.planned_quantity),
@@ -392,21 +392,21 @@ class SmartJobCardSuggestions:
         return {
             'production_info': {
                 'production_number': production.production_number,
-                'item_name': production.item.name,
+                'item_name': production.produced_item.name,
                 'planned_quantity': production.planned_quantity,
-                'target_completion': production.target_completion_date,
-                'priority': production.priority
+                'target_completion': getattr(production, 'target_completion_date', None),
+                'priority': getattr(production, 'priority', 'medium')
             },
             'simple_job_card': {
-                'process_name': f"Production - {production.item.name}",
+                'process_name': f"Production - {production.produced_item.name}",
                 'estimated_time_hours': production.planned_quantity * 0.5,  # Basic estimate
                 'skill_required': 'Standard',
                 'quality_check': 'Visual inspection required'
             },
             'material_requirements': [{
-                'item_name': production.item.name,
+                'item_name': production.produced_item.name,
                 'quantity_required': production.planned_quantity,
-                'unit_cost': production.item.unit_cost or 0
+                'unit_cost': getattr(production.produced_item, 'unit_cost', 0) or 0
             }]
         }
     

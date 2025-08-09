@@ -732,7 +732,7 @@ class AccountingAutomation:
                 voucher_type_id=voucher_type.id,
                 transaction_date=production.production_date or date.today(),
                 reference_number=production.production_number,
-                narration=f"Production of {production.item.name}",
+                narration=f"Production of {production.produced_item.name}",
                 total_amount=production.total_cost or 0,
                 created_by=production.created_by
             )
@@ -762,7 +762,7 @@ class AccountingAutomation:
                         account_id=wip_account.id,
                         entry_type='debit',
                         amount=total_material_cost,
-                        narration=f"Material consumption for {production.item.name}",
+                        narration=f"Material consumption for {production.produced_item.name}",
                         transaction_date=voucher.transaction_date,
                         reference_type='production',
                         reference_id=production.id
@@ -790,7 +790,7 @@ class AccountingAutomation:
                     account_id=fg_account.id,
                     entry_type='debit',
                     amount=production.total_cost,
-                    narration=f"Completed production of {production.item.name}",
+                    narration=f"Completed production of {production.produced_item.name}",
                     transaction_date=voucher.transaction_date,
                     reference_type='production',
                     reference_id=production.id

@@ -87,7 +87,7 @@ class JobCardGenerator:
         job_card.job_type = 'in_house'
         job_card.status = 'planned'
         job_card.component_level = 1
-        job_card.operation_description = f"Complete manufacturing of {production.item.name}"
+        job_card.operation_description = f"Complete manufacturing of {production.produced_item.name}"
         job_card.process_routing = json.dumps([{
             "step": 1,
             "process": "Manufacturing", 
