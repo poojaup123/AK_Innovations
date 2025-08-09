@@ -1,0 +1,183 @@
+Alright — let’s go deep into **how Job Cards will work in production** in your system.
+Think of a **Job Card** as the “passport” for a part or process — it travels with the job from start to finish, carrying all its tracking info.
+
+---
+
+## 📌 **Definition**
+
+A **Job Card** in production is a document/record that:
+
+* Is **generated from the production order**
+* Represents **one specific part or process** from the BOM
+* Holds **all details required for execution**
+* Tracks progress until the part is ready for the next stage
+
+---
+
+## 🔄 **How Job Cards Work in Your System**
+
+### **1. Creation**
+
+When you create a **Production Order**:
+
+1. System explodes the **multi-level BOM**
+2. For each sub-part and process, it generates **Job Cards**
+3. Job Cards are tagged:
+
+   * **Type**: In-house / Outsourced
+   * **Process Routing**
+   * **Batch linkage**
+   * **Target quantity & dates**
+
+Example for Castor Wheel:
+
+| Job Card ID | Component     | Type       | Process Steps                |
+| ----------- | ------------- | ---------- | ---------------------------- |
+| JC-001      | Mounted Plate | In-house   | Cutting → Notching → Plating |
+| JC-002      | Base Plate    | Outsourced | Cutting → Plating            |
+
+---
+
+### **2. Contents of a Job Card**
+
+A Job Card has:
+
+* **Header**
+
+  * Job Card ID
+  * Production Order ID
+  * Component name & code
+  * Department / Vendor
+  * Planned start & end date
+  * Target qty
+  * Batch numbers (input/output)
+* **Routing Table**
+
+  * Process sequence
+  * Machine/worker assignments
+  * Time estimates
+* **Material Issue**
+
+  * RM list with batch numbers
+  * Qty issued
+* **Daily Progress Logs**
+
+  * Qty done
+  * Scrap/rework qty
+  * Operator name
+* **Cost Tracking**
+
+  * Labor time cost
+  * Machine cost
+  * Material cost
+* **Status**
+
+  * Pending / In Progress / Completed
+
+---
+
+### **3. Tracking in Production**
+
+**In-House:**
+
+* Supervisor opens the job card daily
+* Logs process completions (per routing step)
+* Logs scrap/rework immediately
+* When all steps are done → Job Card status changes to **Completed**
+* Output batch is created and moved to inventory
+
+**Outsourced:**
+
+* Job Card is linked to a **Job Work Order** + Gate Pass
+* RM is issued batch-wise
+* Status is “Pending GRN” until goods return
+* GRN completion updates Job Card to “Completed”
+
+---
+
+### **4. Why Job Cards Are Important**
+
+* **Central tracking point** for each part
+* **Connects**:
+
+  * BOM → Process routing → Material issue → Production log → Batch → Costing
+* **Allows partial progress updates**
+* **Simplifies reporting** (e.g., WIP status, delays, cost per part)
+* **Supports parallel work** (multiple cards active at the same time for different parts)
+
+---
+
+### **5. Job Card Lifecycle**
+
+```
+[ Production Order Created ]
+        ↓
+[ BOM Exploded → Job Cards Generated ]
+        ↓
+[ Material Issued to Job Card (Batch Linked) ]
+        ↓
+[ Daily Process Updates Logged ]
+        ↓
+[ Scrap/Rework Recorded ]
+        ↓
+[ All Processes Completed → Output Batch Created ]
+        ↓
+[ Job Card Status: Completed ]
+        ↓
+[ Part Available for Next Stage (Assembly or Dispatch) ]
+```
+
+---
+
+### **6. Real-World Example**
+
+**Mounted Plate – JC-001**
+
+* **Day 1:** Cutting done, 2 sheets scrapped → logged in job card
+* **Day 2:** Notching done → progress updated to 70% complete
+* **Day 3:** Plating done → job card marked as completed
+* Output batch MP-2025-0001 generated
+* Costing calculated: RM cost + labor + machine + scrap loss
+
+---
+
+### **7. UI Example – Job Card Screen (Flask/Jinja2)**
+
+```html
+<h3>Job Card: JC-001</h3>
+<p>Component: Mounted Plate | Type: In-House | Qty Target: 100</p>
+<p>Status: In Progress</p>
+
+<h4>Routing</h4>
+<table>
+  <tr><th>Step</th><th>Machine</th><th>Status</th><th>Qty Done</th><th>Scrap</th></tr>
+  <tr><td>Cutting</td><td>Laser-01</td><td>✅ Completed</td><td>100</td><td>2</td></tr>
+  <tr><td>Notching</td><td>Press-02</td><td>✅ Completed</td><td>98</td><td>0</td></tr>
+  <tr><td>Plating</td><td>ZP-Tank-01</td><td>🕒 In Progress</td><td>50</td><td>0</td></tr>
+</table>
+
+<h4>Material Issued</h4>
+<ul>
+  <li>CR Sheet – Batch: RAW-2025-0002 – Qty: 10 Sheets</li>
+</ul>
+```
+
+---
+
+## 🔑 **Key Benefits in Production**
+
+* **Full traceability** (batch → job → output → cost)
+* **Parallel tracking** for multiple jobs
+* **Supports partial completion**
+* **Links costing & accounting automatically**
+* **Single source of truth** for production status
+
+---
+
+If you want, I can now prepare:
+
+1. **Database schema** for job cards with routing & batch linkage
+2. **Flask backend** to generate job cards from a production order automatically
+3. **Live dashboard** showing all active job cards and their progress
+
+Do you want me to make the **schema + generation logic** first so job cards start auto-generating from production orders? That’s the base for everything else.

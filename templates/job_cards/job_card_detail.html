@@ -1,0 +1,502 @@
+{% extends "base.html" %}
+
+{% block title %}{{ job_card.job_card_number }} - Job Card Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-id-card text-primary"></i> {{ job_card.job_card_number }}</h2>
+                    <p class="text-muted">{{ job_card.item.name if job_card.item else 'Unknown Item' }} | Production: {{ job_card.production.production_number }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('job_card_management.view_production_job_cards', production_id=job_card.production_id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Job Cards
+                    </a>
+                    {% if job_card.status != 'completed' %}
+                    <a href="{{ url_for('job_card_management.update_daily_status', job_card_id=job_card.id) }}" class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i>Update Progress
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Job Card Information -->
+        <div class="col-lg-8">
+            <!-- Job Card Header Information -->
+            <div class="card mb-4">
+                <div class="card-header 
+                    {% if job_card.status == 'completed' %}bg-success text-white
+                    {% elif job_card.status == 'in_progress' %}bg-warning text-dark
+                    {% elif job_card.status == 'planned' %}bg-info text-white
+                    {% else %}bg-secondary text-white{% endif %}">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Job Card Information
+                        {% if job_card.job_type == 'outsourced' %}
+                            <span class="badge bg-light text-dark ms-2">
+                                <i class="fas fa-external-link-alt me-1"></i>Outsourced
+                            </span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Job Card Number:</strong></td>
+                                    <td>{{ job_card.job_card_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Production Order:</strong></td>
+                                    <td>{{ job_card.production.production_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Component:</strong></td>
+                                    <td>{{ job_card.item.name if job_card.item else 'Unknown' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>BOM Level:</strong></td>
+                                    <td>{{ job_card.component_level }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Process:</strong></td>
+                                    <td>{{ job_card.process_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Department:</strong></td>
+                                    <td>{{ job_card.department or 'Not Assigned' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if job_card.status == 'completed' %}bg-success
+                                            {% elif job_card.status == 'in_progress' %}bg-warning
+                                            {% elif job_card.status == 'planned' %}bg-info
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ job_card.status.title() }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Priority:</strong></td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if job_card.priority == 'high' %}bg-danger
+                                            {% elif job_card.priority == 'medium' %}bg-warning
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ job_card.priority.title() }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Target Date:</strong></td>
+                                    <td>
+                                        {{ job_card.target_completion_date.strftime('%Y-%m-%d') }}
+                                        {% if job_card.is_overdue %}
+                                            <span class="badge bg-danger ms-2">Overdue</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Planned Quantity:</strong></td>
+                                    <td>{{ "%.1f"|format(job_card.planned_quantity) }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Completed:</strong></td>
+                                    <td>{{ "%.1f"|format(job_card.completed_quantity) }} ({{ "%.1f"|format(job_card.completion_rate) }}%)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Output Batch:</strong></td>
+                                    <td>{{ job_card.output_batch_number or 'Not Generated' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Process Routing -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-route me-2"></i>Process Routing</h5>
+                </div>
+                <div class="card-body">
+                    {% if routing_steps %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Step</th>
+                                        <th>Process</th>
+                                        <th>Description</th>
+                                        <th>Est. Time (min)</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for step in routing_steps %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-primary rounded-pill">{{ step.step }}</span>
+                                        </td>
+                                        <td><strong>{{ step.process }}</strong></td>
+                                        <td>{{ step.description }}</td>
+                                        <td>{{ step.estimated_time }}</td>
+                                        <td>
+                                            {% if job_card.current_process_step == step.process %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-play me-1"></i>Current
+                                                </span>
+                                            {% elif step.process in (job_card.processes_completed or '') %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>Completed
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="fas fa-clock me-1"></i>Pending
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if job_card.current_process_step == step.process and job_card.status != 'completed' %}
+                                                <button type="button" class="btn btn-sm btn-success" 
+                                                        onclick="markStepComplete('{{ step.process }}')">
+                                                    <i class="fas fa-check me-1"></i>Complete
+                                                </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No process routing defined for this job card.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Material Requirements -->
+            {% if material_requirements %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Material Requirements</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Required Qty</th>
+                                    <th>Unit</th>
+                                    <th>Batch Number</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for material in material_requirements %}
+                                <tr>
+                                    <td>{{ material.name }}</td>
+                                    <td>{{ material.quantity }}</td>
+                                    <td>{{ material.unit }}</td>
+                                    <td>
+                                        {% if material.batch_number %}
+                                            <span class="badge bg-info">{{ material.batch_number }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Not Issued</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if material.issued %}
+                                            <span class="badge bg-success">Issued</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Pending Issue</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Daily Progress History -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Daily Progress History</h5>
+                </div>
+                <div class="card-body">
+                    {% if daily_statuses %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Completed</th>
+                                        <th>Good</th>
+                                        <th>Defective</th>
+                                        <th>Scrap</th>
+                                        <th>Efficiency</th>
+                                        <th>Status</th>
+                                        <th>Batch</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for status in daily_statuses %}
+                                    <tr>
+                                        <td>{{ status.report_date.strftime('%Y-%m-%d') }}</td>
+                                        <td>{{ "%.1f"|format(status.qty_completed_today) }}</td>
+                                        <td class="text-success">{{ "%.1f"|format(status.qty_good_today) }}</td>
+                                        <td class="text-warning">{{ "%.1f"|format(status.qty_defective_today) }}</td>
+                                        <td class="text-danger">{{ "%.1f"|format(status.qty_scrap_today) }}</td>
+                                        <td>{{ "%.1f"|format(status.efficiency_rate) }}%</td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if status.daily_status == 'completed' %}bg-success
+                                                {% elif status.daily_status == 'active' %}bg-warning
+                                                {% elif status.daily_status == 'delayed' %}bg-danger
+                                                {% else %}bg-secondary{% endif %}">
+                                                {{ status.daily_status.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if status.batch_number %}
+                                                <span class="badge bg-info">{{ status.batch_number }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if status.supervisor_notes %}
+                                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                                        data-bs-toggle="tooltip" title="{{ status.supervisor_notes }}">
+                                                    <i class="fas fa-sticky-note"></i>
+                                                </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No daily progress reports yet.</p>
+                        <a href="{{ url_for('job_card_management.update_daily_status', job_card_id=job_card.id) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add First Progress Report
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Assignment & Schedule -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-user-tie me-2"></i>Assignment & Schedule</h6>
+                </div>
+                <div class="card-body">
+                    {% if job_card.assigned_worker %}
+                        <div class="mb-3">
+                            <strong>Assigned Worker:</strong>
+                            <br>
+                            <i class="fas fa-user me-1 text-primary"></i>{{ job_card.assigned_worker.name }}
+                        </div>
+                    {% endif %}
+                    
+                    {% if job_card.assigned_vendor %}
+                        <div class="mb-3">
+                            <strong>Assigned Vendor:</strong>
+                            <br>
+                            <i class="fas fa-building me-1 text-info"></i>{{ job_card.assigned_vendor.name }}
+                        </div>
+                    {% endif %}
+                    
+                    {% if job_card.machine_workstation %}
+                        <div class="mb-3">
+                            <strong>Machine/Workstation:</strong>
+                            <br>{{ job_card.machine_workstation }}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <strong>Planned Start:</strong>
+                        <br>{{ job_card.planned_start_date.strftime('%Y-%m-%d') if job_card.planned_start_date else 'Not Set' }}
+                    </div>
+                    
+                    {% if job_card.actual_start_date %}
+                        <div class="mb-3">
+                            <strong>Actual Start:</strong>
+                            <br>{{ job_card.actual_start_date.strftime('%Y-%m-%d') }}
+                        </div>
+                    {% endif %}
+                    
+                    {% if job_card.actual_end_date %}
+                        <div class="mb-3">
+                            <strong>Completed On:</strong>
+                            <br>{{ job_card.actual_end_date.strftime('%Y-%m-%d') }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Cost Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-rupee-sign me-2"></i>Cost Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <span>Estimated Cost:</span>
+                        <strong>₹{{ "%.2f"|format(job_card.estimated_cost) }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Actual Cost:</span>
+                        <strong>₹{{ "%.2f"|format(job_card.actual_cost) }}</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span>Material:</span>
+                        <span>₹{{ "%.2f"|format(job_card.material_cost) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Labor:</span>
+                        <span>₹{{ "%.2f"|format(job_card.labor_cost) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Overhead:</span>
+                        <span>₹{{ "%.2f"|format(job_card.overhead_cost) }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quality Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-award me-2"></i>Quality Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <h4 class="text-primary">{{ "%.1f"|format(job_card.efficiency_rate) }}%</h4>
+                        <small class="text-muted">Overall Efficiency</small>
+                    </div>
+                    
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h6 class="text-success">{{ "%.1f"|format(job_card.good_quantity) }}</h6>
+                            <small class="text-muted">Good</small>
+                        </div>
+                        <div class="col-4">
+                            <h6 class="text-warning">{{ "%.1f"|format(job_card.defective_quantity) }}</h6>
+                            <small class="text-muted">Defective</small>
+                        </div>
+                        <div class="col-4">
+                            <h6 class="text-danger">{{ "%.1f"|format(job_card.scrap_quantity) }}</h6>
+                            <small class="text-muted">Scrap</small>
+                        </div>
+                    </div>
+                    
+                    {% if job_card.quality_check_status %}
+                    <hr>
+                    <div class="text-center">
+                        <strong>QC Status:</strong>
+                        <br>
+                        <span class="badge 
+                            {% if job_card.quality_check_status == 'passed' %}bg-success
+                            {% elif job_card.quality_check_status == 'failed' %}bg-danger
+                            {% else %}bg-warning{% endif %}">
+                            {{ job_card.quality_check_status.title() }}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Instructions & Notes -->
+            {% if job_card.work_instructions or job_card.special_instructions or job_card.notes %}
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Instructions & Notes</h6>
+                </div>
+                <div class="card-body">
+                    {% if job_card.work_instructions %}
+                        <div class="mb-3">
+                            <strong>Work Instructions:</strong>
+                            <p class="text-muted small">{{ job_card.work_instructions }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if job_card.special_instructions %}
+                        <div class="mb-3">
+                            <strong>Special Instructions:</strong>
+                            <p class="text-muted small">{{ job_card.special_instructions }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if job_card.notes %}
+                        <div class="mb-3">
+                            <strong>Notes:</strong>
+                            <p class="text-muted small">{{ job_card.notes }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function markStepComplete(stepName) {
+    const notes = prompt('Add notes for completing this step (optional):');
+    
+    fetch(`{{ url_for('job_card_management.mark_process_complete', job_card_id=job_card.id) }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            step_name: stepName,
+            notes: notes || ''
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+    });
+}
+
+// Initialize tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+})
+</script>
+{% endblock %}

@@ -16,6 +16,7 @@ from utils import generate_production_number
 from utils.batch_tracking import BatchTracker
 from datetime import datetime, timedelta, date
 import json
+from services.job_card_generator import generate_job_cards_for_production
 from forms_daily_production import DailyProductionUpdateForm, QuickStatusUpdateForm
 
 production_bp = Blueprint('production', __name__)
@@ -682,18 +683,42 @@ def add_production():
             
             print(f"About to save production: {production.production_number}")
             db.session.add(production)
-            db.session.commit()
-            print("Production saved successfully")
+            db.session.flush()  # Flush to get the production ID
+            print("Production flushed successfully")
+            
+            # Auto-generate job cards from BOM
+            job_card_count = 0
+            try:
+                print("Attempting to generate job cards")
+                generated_job_cards = generate_job_cards_for_production(production.id)
+                job_card_count = len(generated_job_cards)
+                print(f"Generated {job_card_count} job cards")
+                
+                db.session.commit()
+                print("Production and job cards saved successfully")
+                
+            except Exception as e:
+                print(f"Job card generation failed (non-critical): {e}")
+                # Still commit the production order
+                db.session.commit()
+                print("Production saved without job cards")
             
             # Add smart suggestions info to flash message if available
             flash_message = 'Production order created successfully!'
+            if job_card_count > 0:
+                flash_message += f' Generated {job_card_count} job cards automatically.'
             if material_shortages:
                 flash_message += f' Note: {len(material_shortages)} materials need procurement.'
             if smart_suggestions:
                 flash_message += f' {len(smart_suggestions)} smart suggestions available.'
             
             flash(flash_message, 'success')
-            return redirect(url_for('production.list_productions'))
+            
+            # Redirect to job cards view if any were generated, otherwise to production list
+            if job_card_count > 0:
+                return redirect(url_for('job_card_management.view_production_job_cards', production_id=production.id))
+            else:
+                return redirect(url_for('production.list_productions'))
         except Exception as e:
             print(f"Error saving production: {str(e)}")
             db.session.rollback()

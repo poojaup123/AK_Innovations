@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from models import db, Production, Item, BOM, BOMItem, Employee, Supplier
 from models.job_card import JobCard, JobCardDailyStatus, JobCardMaterial
-from forms_job_card import JobCardForm, JobCardDailyUpdateForm, QuickJobCardUpdateForm, BulkJobCardForm
+from forms_job_card import JobCardForm, JobCardDailyUpdateForm
 from datetime import datetime, date, timedelta
 from utils import generate_production_number
 from sqlalchemy import func, or_

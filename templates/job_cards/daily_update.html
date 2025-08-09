@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% block title %}Update Daily Status - {{ job_card.job_card_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-edit text-primary"></i> Update Daily Status</h2>
+                    <p class="text-muted">{{ job_card.job_card_number }} - {{ job_card.item.name if job_card.item else 'Unknown Item' }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('job_card_management.view_job_card', job_card_id=job_card.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Job Card
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Form -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Daily Progress Update</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Quantity Updates -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary"><i class="fas fa-calculator me-2"></i>Production Quantities</h6>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.qty_completed_today.label(class="form-label") }}
+                                {{ form.qty_completed_today(class="form-control") }}
+                                {% if form.qty_completed_today.errors %}
+                                    <div class="text-danger small">{{ form.qty_completed_today.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.qty_good_today.label(class="form-label") }}
+                                {{ form.qty_good_today(class="form-control") }}
+                                {% if form.qty_good_today.errors %}
+                                    <div class="text-danger small">{{ form.qty_good_today.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.qty_defective_today.label(class="form-label") }}
+                                {{ form.qty_defective_today(class="form-control") }}
+                                {% if form.qty_defective_today.errors %}
+                                    <div class="text-danger small">{{ form.qty_defective_today.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.qty_scrap_today.label(class="form-label") }}
+                                {{ form.qty_scrap_today(class="form-control") }}
+                                {% if form.qty_scrap_today.errors %}
+                                    <div class="text-danger small">{{ form.qty_scrap_today.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Status and Efficiency -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary"><i class="fas fa-chart-line me-2"></i>Status & Performance</h6>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.daily_status.label(class="form-label") }}
+                                {{ form.daily_status(class="form-select") }}
+                                {% if form.daily_status.errors %}
+                                    <div class="text-danger small">{{ form.daily_status.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.efficiency_rate.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.efficiency_rate(class="form-control") }}
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                {% if form.efficiency_rate.errors %}
+                                    <div class="text-danger small">{{ form.efficiency_rate.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Resource Usage -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary"><i class="fas fa-cogs me-2"></i>Resource Usage</h6>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.machine_hours_used.label(class="form-label") }}
+                                {{ form.machine_hours_used(class="form-control") }}
+                                {% if form.machine_hours_used.errors %}
+                                    <div class="text-danger small">{{ form.machine_hours_used.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.overtime_hours.label(class="form-label") }}
+                                {{ form.overtime_hours(class="form-control") }}
+                                {% if form.overtime_hours.errors %}
+                                    <div class="text-danger small">{{ form.overtime_hours.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Cost Tracking -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary"><i class="fas fa-rupee-sign me-2"></i>Cost Tracking</h6>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.material_consumed_cost.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.material_consumed_cost(class="form-control") }}
+                                </div>
+                                {% if form.material_consumed_cost.errors %}
+                                    <div class="text-danger small">{{ form.material_consumed_cost.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.labor_cost_today.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.labor_cost_today(class="form-control") }}
+                                </div>
+                                {% if form.labor_cost_today.errors %}
+                                    <div class="text-danger small">{{ form.labor_cost_today.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Batch Management -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary"><i class="fas fa-barcode me-2"></i>Batch Management</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.create_new_batch(class="form-check-input") }}
+                                    {{ form.create_new_batch.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Check this if good quantity should create a new output batch</small>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.input_batch_numbers.label(class="form-label") }}
+                                {{ form.input_batch_numbers(class="form-control", placeholder="e.g., BATCH001, BATCH002") }}
+                                {% if form.input_batch_numbers.errors %}
+                                    <div class="text-danger small">{{ form.input_batch_numbers.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Issues and Notes -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary"><i class="fas fa-exclamation-triangle me-2"></i>Issues & Notes</h6>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.production_issues.label(class="form-label") }}
+                                {{ form.production_issues(class="form-control", rows="3") }}
+                                {% if form.production_issues.errors %}
+                                    <div class="text-danger small">{{ form.production_issues.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.quality_issues.label(class="form-label") }}
+                                {{ form.quality_issues(class="form-control", rows="3") }}
+                                {% if form.quality_issues.errors %}
+                                    <div class="text-danger small">{{ form.quality_issues.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.delay_reason.label(class="form-label") }}
+                                {{ form.delay_reason(class="form-control", rows="3") }}
+                                {% if form.delay_reason.errors %}
+                                    <div class="text-danger small">{{ form.delay_reason.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.supervisor_notes.label(class="form-label") }}
+                                {{ form.supervisor_notes(class="form-control", rows="3") }}
+                                {% if form.supervisor_notes.errors %}
+                                    <div class="text-danger small">{{ form.supervisor_notes.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Workflow Control -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary"><i class="fas fa-workflow me-2"></i>Workflow Action</h6>
+                            </div>
+                            <div class="col-md-8">
+                                {{ form.status_after_entry.label(class="form-label") }}
+                                {{ form.status_after_entry(class="form-select") }}
+                                {% if form.status_after_entry.errors %}
+                                    <div class="text-danger small">{{ form.status_after_entry.errors[0] }}</div>
+                                {% endif %}
+                                <small class="text-muted">Choose what happens after saving this update</small>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('job_card_management.view_job_card', job_card_id=job_card.id) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Update Status
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Information -->
+        <div class="col-lg-4">
+            <!-- Job Card Summary -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Job Card Summary</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Job Card:</strong></td>
+                            <td>{{ job_card.job_card_number }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Component:</strong></td>
+                            <td>{{ job_card.item.name if job_card.item else 'Unknown' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Process:</strong></td>
+                            <td>{{ job_card.process_name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Planned Qty:</strong></td>
+                            <td>{{ "%.1f"|format(job_card.planned_quantity) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Completed:</strong></td>
+                            <td>{{ "%.1f"|format(job_card.completed_quantity) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Remaining:</strong></td>
+                            <td>{{ "%.1f"|format(job_card.planned_quantity - job_card.completed_quantity) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Progress:</strong></td>
+                            <td>{{ "%.1f"|format(job_card.completion_rate) }}%</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Today's Update Summary -->
+            {% if daily_status %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-calendar-day me-2"></i>Previous Update ({{ daily_status.report_date.strftime('%Y-%m-%d') }})</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Completed:</strong></td>
+                            <td>{{ "%.1f"|format(daily_status.qty_completed_today) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Good:</strong></td>
+                            <td class="text-success">{{ "%.1f"|format(daily_status.qty_good_today) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Defective:</strong></td>
+                            <td class="text-warning">{{ "%.1f"|format(daily_status.qty_defective_today) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Scrap:</strong></td>
+                            <td class="text-danger">{{ "%.1f"|format(daily_status.qty_scrap_today) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Efficiency:</strong></td>
+                            <td>{{ "%.1f"|format(daily_status.efficiency_rate) }}%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                <span class="badge 
+                                    {% if daily_status.daily_status == 'completed' %}bg-success
+                                    {% elif daily_status.daily_status == 'active' %}bg-warning
+                                    {% elif daily_status.daily_status == 'delayed' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ daily_status.daily_status.title() }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Tips -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Quick Tips</h6>
+                </div>
+                <div class="card-body">
+                    <div class="small">
+                        <p><strong>Quantity Tracking:</strong> Enter actual quantities produced today, not cumulative totals.</p>
+                        
+                        <p><strong>Quality Classification:</strong></p>
+                        <ul class="mb-2">
+                            <li><strong>Good:</strong> Meets all quality standards</li>
+                            <li><strong>Defective:</strong> Can be reworked</li>
+                            <li><strong>Scrap:</strong> Cannot be salvaged</li>
+                        </ul>
+                        
+                        <p><strong>Workflow Actions:</strong></p>
+                        <ul class="mb-0">
+                            <li><strong>Save Only:</strong> Just record the update</li>
+                            <li><strong>Submit for Approval:</strong> Send to supervisor</li>
+                            <li><strong>Submit to QC:</strong> Send for quality check</li>
+                            <li><strong>Complete:</strong> Mark job card as finished</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-calculate good quantity when completed quantity changes
+document.getElementById('qty_completed_today').addEventListener('input', function() {
+    const completed = parseFloat(this.value) || 0;
+    const defective = parseFloat(document.getElementById('qty_defective_today').value) || 0;
+    const scrap = parseFloat(document.getElementById('qty_scrap_today').value) || 0;
+    const good = Math.max(0, completed - defective - scrap);
+    document.getElementById('qty_good_today').value = good.toFixed(1);
+});
+
+// Auto-calculate good quantity when defective or scrap changes
+document.getElementById('qty_defective_today').addEventListener('input', function() {
+    const completed = parseFloat(document.getElementById('qty_completed_today').value) || 0;
+    const defective = parseFloat(this.value) || 0;
+    const scrap = parseFloat(document.getElementById('qty_scrap_today').value) || 0;
+    const good = Math.max(0, completed - defective - scrap);
+    document.getElementById('qty_good_today').value = good.toFixed(1);
+});
+
+document.getElementById('qty_scrap_today').addEventListener('input', function() {
+    const completed = parseFloat(document.getElementById('qty_completed_today').value) || 0;
+    const defective = parseFloat(document.getElementById('qty_defective_today').value) || 0;
+    const scrap = parseFloat(this.value) || 0;
+    const good = Math.max(0, completed - defective - scrap);
+    document.getElementById('qty_good_today').value = good.toFixed(1);
+});
+
+// Show/hide batch creation based on checkbox
+document.getElementById('create_new_batch').addEventListener('change', function() {
+    const batchSection = document.querySelector('.batch-section');
+    if (batchSection) {
+        batchSection.style.display = this.checked ? 'block' : 'none';
+    }
+});
+</script>
+{% endblock %}

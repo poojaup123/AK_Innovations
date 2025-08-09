@@ -16,10 +16,19 @@ class JobCard(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     item = db.relationship('Item', backref='job_cards')
     
+    # BOM Integration
+    bom_item_id = db.Column(db.Integer, db.ForeignKey('bom_items.id'), nullable=True)
+    bom_item = db.relationship('BOMItem', backref='job_cards')
+    component_level = db.Column(db.Integer, default=1)  # BOM hierarchy level
+    parent_job_card_id = db.Column(db.Integer, db.ForeignKey('job_cards.id'), nullable=True)
+    
     # Process Information
     process_name = db.Column(db.String(200), nullable=False)
     process_sequence = db.Column(db.Integer, default=1)  # Order of operations
     operation_description = db.Column(db.Text)
+    process_routing = db.Column(db.Text)  # JSON string of process steps
+    job_type = db.Column(db.String(20), default='in_house')  # in_house, outsourced
+    department = db.Column(db.String(100))
     
     # Quantities
     planned_quantity = db.Column(db.Float, nullable=False, default=0)
@@ -62,12 +71,36 @@ class JobCard(db.Model):
     quality_notes = db.Column(db.Text)
     production_notes = db.Column(db.Text)
     delay_reason = db.Column(db.Text)
+    current_process_step = db.Column(db.String(100))
+    processes_completed = db.Column(db.Text)  # JSON array of completed steps
+    
+    # Material and Batch Tracking
+    material_issued = db.Column(db.Text)  # JSON string of materials issued
+    input_batch_numbers = db.Column(db.Text)  # JSON string of input batches
+    output_batch_number = db.Column(db.String(50))
+    
+    # Quality and Documentation
+    quality_requirements = db.Column(db.Text)
+    quality_check_status = db.Column(db.String(20), default='pending')
+    work_instructions = db.Column(db.Text)
+    safety_notes = db.Column(db.Text)
+    special_instructions = db.Column(db.Text)
+    
+    # Outsourcing Integration
+    job_work_order_id = db.Column(db.Integer, db.ForeignKey('job_work_orders.id'), nullable=True)
+    gate_pass_number = db.Column(db.String(50))
+    expected_return_date = db.Column(db.Date)
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_by = db.relationship('User', backref='created_job_cards')
+    
+    # Self-referential relationship for parent-child job cards
+    parent_job_card = db.relationship('JobCard', remote_side=[id], backref='child_job_cards')
+    
+    # Additional relationships will be added when JobWorkOrder model is available
     
     def __repr__(self):
         return f'<JobCard {self.job_card_number}>'
@@ -122,6 +155,106 @@ class JobCard(db.Model):
             self.status = 'in_progress'
             if not self.actual_start_date:
                 self.actual_start_date = date.today()
+    
+    @property
+    def is_outsourced(self):
+        """Check if job card is for outsourced work"""
+        return self.job_type == 'outsourced'
+    
+    @property
+    def current_routing_step(self):
+        """Get current process routing step"""
+        if self.current_process_step:
+            return self.current_process_step
+        elif self.process_routing:
+            import json
+            try:
+                routing = json.loads(self.process_routing)
+                if routing and len(routing) > 0:
+                    return routing[0].get('process', 'Not Started')
+            except:
+                pass
+        return 'Not Started'
+    
+    def get_material_requirements(self):
+        """Get material requirements from BOM if linked"""
+        if self.bom_item:
+            # Calculate material requirements based on planned quantity
+            materials = []
+            if hasattr(self.bom_item, 'get_material_requirements'):
+                materials = self.bom_item.get_material_requirements(self.planned_quantity)
+            return materials
+        return []
+    
+    def get_process_routing_steps(self):
+        """Get process routing steps as list"""
+        if self.process_routing:
+            import json
+            try:
+                return json.loads(self.process_routing)
+            except:
+                pass
+        return []
+    
+    def mark_process_step_complete(self, step_name, notes=None):
+        """Mark a process routing step as complete"""
+        import json
+        steps = self.get_process_routing_steps()
+        completed_steps = []
+        
+        if self.processes_completed:
+            try:
+                completed_steps = json.loads(self.processes_completed)
+            except:
+                completed_steps = []
+        
+        # Add step to completed list if not already there
+        step_entry = {
+            'step': step_name,
+            'completed_at': datetime.utcnow().isoformat(),
+            'notes': notes
+        }
+        
+        # Check if step already completed
+        if not any(s.get('step') == step_name for s in completed_steps):
+            completed_steps.append(step_entry)
+            self.processes_completed = json.dumps(completed_steps)
+            
+            # Update current step to next incomplete step
+            for step in steps:
+                if not any(s.get('step') == step.get('process') for s in completed_steps):
+                    self.current_process_step = step.get('process')
+                    break
+            else:
+                self.current_process_step = 'Completed'
+    
+    def generate_output_batch(self):
+        """Generate output batch number for completed goods"""
+        if not self.output_batch_number and self.good_quantity > 0:
+            date_str = datetime.utcnow().strftime('%Y%m%d')
+            self.output_batch_number = f"JC-{self.job_card_number}-{date_str}"
+        return self.output_batch_number
+    
+    def calculate_efficiency(self):
+        """Calculate overall efficiency including time and quality"""
+        efficiency_factors = []
+        
+        # Quantity efficiency
+        if self.planned_quantity > 0:
+            qty_efficiency = (self.completed_quantity / self.planned_quantity) * 100
+            efficiency_factors.append(qty_efficiency)
+        
+        # Quality efficiency
+        if self.completed_quantity > 0:
+            quality_efficiency = (self.good_quantity / self.completed_quantity) * 100
+            efficiency_factors.append(quality_efficiency)
+        
+        # Time efficiency (if applicable)
+        if self.run_time_minutes > 0 and self.actual_time_minutes > 0:
+            time_efficiency = (self.run_time_minutes / self.actual_time_minutes) * 100
+            efficiency_factors.append(min(100, time_efficiency))
+        
+        return sum(efficiency_factors) / len(efficiency_factors) if efficiency_factors else 0
 
 
 class JobCardDailyStatus(db.Model):
