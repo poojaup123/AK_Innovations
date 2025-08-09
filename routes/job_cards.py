@@ -338,10 +338,19 @@ def update_daily_status(job_card_id):
 
 
 @job_cards_bp.route('/outsourcing-workflow/<int:job_card_id>', methods=['GET', 'POST'])
+@job_cards_bp.route('/outsourcing-workflow/<int:job_card_id>/<report_id>', methods=['GET', 'POST'])
 @login_required
-def outsourcing_workflow(job_card_id):
+def outsourcing_workflow(job_card_id, report_id=None):
     """Separate outsourcing workflow after progress report submission"""
     job_card = JobCard.query.get_or_404(job_card_id)
+    
+    # Get specific report if report_id provided
+    selected_report = None
+    if report_id:
+        selected_report = JobCardDailyStatus.query.filter_by(
+            job_card_id=job_card_id, 
+            report_number=report_id
+        ).first()
     
     # Get available vendors
     from models import Supplier

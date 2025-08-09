@@ -280,6 +280,7 @@
                                         <th>Status</th>
                                         <th>Batch</th>
                                         <th>Notes</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -318,6 +319,16 @@
                                                         data-bs-toggle="tooltip" title="{{ status.supervisor_notes }}">
                                                     <i class="fas fa-sticky-note"></i>
                                                 </button>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if status.qty_good_today > 0 %}
+                                                <a href="{{ url_for('job_cards.outsourcing_workflow', job_card_id=job_card.id, report_id=status.report_number) }}" 
+                                                   class="btn btn-sm btn-info">
+                                                    <i class="fas fa-external-link-alt me-1"></i>Outsource
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
                                             {% endif %}
                                         </td>
                                     </tr>

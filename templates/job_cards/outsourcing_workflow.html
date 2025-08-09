@@ -32,13 +32,24 @@
                             <div class="col-md-4">
                                 <strong>Job Card:</strong> {{ job_card.job_card_number }}<br>
                                 <strong>Item:</strong> {{ job_card.item.name if job_card.item else 'Unknown' }}
+                                {% if selected_report %}
+                                <br><strong>From Report:</strong> 
+                                <span class="badge bg-primary">{{ selected_report.report_number }}</span>
+                                {% endif %}
                             </div>
                             <div class="col-md-4">
-                                <strong>Available Quantity:</strong> {{ available_quantity }} pcs<br>
+                                <strong>Available Quantity:</strong> {{ selected_report.qty_good_today if selected_report else available_quantity }} pcs<br>
                                 <strong>Status:</strong> Ready for Outsourcing
+                                {% if selected_report %}
+                                <br><strong>Date:</strong> {{ selected_report.report_date.strftime('%Y-%m-%d') }}
+                                {% endif %}
                             </div>
                             <div class="col-md-4">
-                                {% if latest_report %}
+                                {% if selected_report %}
+                                <strong>Report Details:</strong><br>
+                                Good: {{ selected_report.qty_good_today }}, 
+                                Defective: {{ selected_report.qty_defective_today }}
+                                {% elif latest_report %}
                                 <strong>Today's Progress:</strong><br>
                                 Good: {{ latest_report.qty_good_today }}, 
                                 Defective: {{ latest_report.qty_defective_today }}
