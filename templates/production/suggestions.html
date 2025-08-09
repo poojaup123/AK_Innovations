@@ -39,8 +39,8 @@
                             <div class="card border-{{ 'success' if suggestion.type == 'manufacturing' else 'info' }}">
                                 <div class="card-header bg-{{ 'success' if suggestion.type == 'manufacturing' else 'info' }} text-white">
                                     <h6 class="mb-0">
-                                        <i class="fas fa-{{ 'cogs' if suggestion.type == 'manufacturing' else 'shopping-cart' }} me-2"></i>
-                                        {{ suggestion.type.title() }} Suggestion
+                                        <i class="fas fa-{{ 'cogs' if suggestion.type == 'manufacturing' or 'manufacturing' in suggestion.type else 'shopping-cart' }} me-2"></i>
+                                        {{ suggestion.title if suggestion.title else suggestion.type.title() + ' Suggestion' }}
                                         <span class="badge bg-light text-dark ms-2">{{ suggestion.priority }}</span>
                                     </h6>
                                 </div>
