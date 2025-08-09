@@ -347,34 +347,38 @@
                                     </tr>
                                     
                                     <!-- Child Rows: Outsourced Jobs from this Report -->
+                                    <!-- Debug: Show outsourced jobs info -->
                                     {% if status.outsourced_jobs %}
+                                        <!-- Debug comment: Found {{ status.outsourced_jobs|length }} outsourced jobs for {{ status.report_number }} -->
                                         {% for outsourced_job in status.outsourced_jobs %}
-                                        <tr class="child-row d-none" data-parent="{{ status.report_number }}">
+                                        <!-- Debug comment: Rendering outsourced job {{ outsourced_job.job_card_number }} -->
+                                        <tr class="child-row d-none table-warning" data-parent="{{ status.report_number }}" 
+                                            style="background-color: #fff3cd;">
                                             <td class="ps-4">
-                                                <i class="fas fa-arrow-turn-down text-muted"></i>
+                                                <i class="fas fa-arrow-turn-down text-info"></i>
                                             </td>
                                             <td>
                                                 <span class="badge bg-info">
                                                     {{ outsourced_job.job_card_number }}
                                                 </span>
-                                                <small class="text-muted d-block">Outsourced</small>
+                                                <small class="text-muted d-block">Outsourced to {{ outsourced_job.assigned_vendor.name if outsourced_job.assigned_vendor else 'Vendor' }}</small>
                                             </td>
-                                            <td>{{ outsourced_job.created_at.strftime('%Y-%m-%d') }}</td>
-                                            <td>{{ "%.1f"|format(outsourced_job.outsource_quantity or 0) }}</td>
+                                            <td>{{ outsourced_job.created_at.strftime('%Y-%m-%d') if outsourced_job.created_at else 'N/A' }}</td>
+                                            <td><strong>{{ "%.1f"|format(outsourced_job.outsource_quantity or 0) }}</strong></td>
                                             <td>
-                                                {% if outsourced_job.grn_received_quantity %}
-                                                    <span class="text-success">{{ "%.1f"|format(outsourced_job.grn_received_quantity) }}</span>
+                                                {% if outsourced_job.grn_id %}
+                                                    <span class="text-success fw-bold">{{ "%.1f"|format(outsourced_job.outsource_quantity or 0) }}</span>
                                                 {% else %}
-                                                    <span class="text-muted">Pending</span>
+                                                    <span class="text-warning">Pending Receipt</span>
                                                 {% endif %}
                                             </td>
                                             <td><span class="text-muted">-</span></td>
                                             <td><span class="text-muted">-</span></td>
                                             <td>
                                                 {% if outsourced_job.grn_id %}
-                                                    <span class="text-success">{{ "%.1f"|format((outsourced_job.grn_received_quantity / outsourced_job.outsource_quantity) * 100 if outsourced_job.outsource_quantity > 0 else 0) }}%</span>
+                                                    <span class="text-success fw-bold">100.0%</span>
                                                 {% else %}
-                                                    <span class="text-muted">Pending</span>
+                                                    <span class="text-warning">0.0%</span>
                                                 {% endif %}
                                             </td>
                                             <td>
@@ -387,12 +391,12 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <small class="text-muted">
+                                                <small class="text-info fw-bold">
                                                     {{ outsourced_job.assigned_vendor.name if outsourced_job.assigned_vendor else 'No Vendor' }}
                                                 </small>
                                             </td>
                                             <td>
-                                                <small class="text-muted">{{ outsourced_job.outsource_notes or '-' }}</small>
+                                                <small class="text-muted">{{ outsourced_job.outsource_notes or 'Auto-generated from RPT' }}</small>
                                             </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
@@ -415,6 +419,8 @@
                                             </td>
                                         </tr>
                                         {% endfor %}
+                                    {% else %}
+                                        <!-- Debug comment: No outsourced jobs found for {{ status.report_number }} -->
                                     {% endif %}
                                     {% endfor %}
                                 </tbody>
@@ -620,33 +626,51 @@ var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
 })
 
 // Parent-Child Table Toggle - Enhanced with debugging
-document.querySelectorAll('.toggle-children').forEach(button => {
-    button.addEventListener('click', function() {
-        const reportId = this.getAttribute('data-report-id');
-        const childRows = document.querySelectorAll(`tr.child-row[data-parent="${reportId}"]`);
-        const icon = this.querySelector('i');
+console.log('Page loaded, setting up toggle functionality...');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, finding toggle buttons...');
+    
+    const toggleButtons = document.querySelectorAll('.toggle-children');
+    console.log(`Found ${toggleButtons.length} toggle buttons`);
+    
+    toggleButtons.forEach((button, index) => {
+        const reportId = button.getAttribute('data-report-id');
+        console.log(`Setting up button ${index}: report ${reportId}`);
         
-        console.log(`Toggle clicked for report: ${reportId}, found ${childRows.length} child rows`);
-        
-        let isExpanded = false;
-        childRows.forEach(row => {
-            if (row.classList.contains('d-none')) {
-                row.classList.remove('d-none');
-                isExpanded = true;
+        button.addEventListener('click', function() {
+            const reportId = this.getAttribute('data-report-id');
+            const childRows = document.querySelectorAll(`tr.child-row[data-parent="${reportId}"]`);
+            const icon = this.querySelector('i');
+            
+            console.log(`Toggle clicked for report: ${reportId}, found ${childRows.length} child rows`);
+            childRows.forEach((row, i) => {
+                console.log(`Child row ${i}:`, row);
+            });
+            
+            let isExpanded = false;
+            childRows.forEach(row => {
+                if (row.classList.contains('d-none')) {
+                    row.classList.remove('d-none');
+                    row.style.display = 'table-row'; // Force display
+                    isExpanded = true;
+                    console.log('Expanding row:', row);
+                } else {
+                    row.classList.add('d-none');
+                    isExpanded = false;
+                    console.log('Hiding row:', row);
+                }
+            });
+            
+            // Update icon based on expanded state
+            if (isExpanded) {
+                icon.classList.remove('fa-plus');
+                icon.classList.add('fa-minus');
             } else {
-                row.classList.add('d-none');
-                isExpanded = false;
+                icon.classList.remove('fa-minus');
+                icon.classList.add('fa-plus');
             }
         });
-        
-        // Update icon based on expanded state
-        if (isExpanded) {
-            icon.classList.remove('fa-plus');
-            icon.classList.add('fa-minus');
-        } else {
-            icon.classList.remove('fa-minus');
-            icon.classList.add('fa-plus');
-        }
     });
 });
 </script>
