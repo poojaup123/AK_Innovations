@@ -1,4 +1,4 @@
-from models import db, Production, JobCard, BOMProcess
+from models import db, Production, JobCard, BOMProcess, BOMItem, BOM, Item
 from flask_login import current_user
 from datetime import date, timedelta
 import logging
@@ -9,7 +9,7 @@ class ProductionService:
     @staticmethod
     def auto_generate_job_cards_from_bom(production_id):
         """
-        Automatically generate job cards from BOM processes for a production order
+        Generate job cards from BOM components that need manufacturing (sub-assemblies)
         Returns number of job cards created
         """
         try:
@@ -17,19 +17,27 @@ class ProductionService:
             if not production or not production.bom_id:
                 return 0
             
-            # Get BOM processes
-            bom_processes = BOMProcess.query.filter_by(
-                bom_id=production.bom_id
-            ).order_by(BOMProcess.step_number).all()
-            
-            if not bom_processes:
-                logging.info(f"No BOM processes found for production {production.production_number}")
+            # Get BOM components that need manufacturing
+            bom_components = BOMItem.query.filter_by(bom_id=production.bom_id).all()
+            if not bom_components:
+                logging.info(f"No BOM components found for production {production.production_number}")
                 return 0
             
             created_count = 0
             current_date = date.today()
             
-            for sequence, bom_process in enumerate(bom_processes, 1):
+            for sequence, bom_component in enumerate(bom_components, 1):
+                # Skip components without items
+                component_item = bom_component.item
+                if not component_item:
+                    continue
+                
+                # Check if this component has its own BOM (indicates manufacturing needed)
+                component_bom = BOM.query.filter_by(product_id=component_item.id).first()
+                if not component_bom:
+                    logging.info(f"Skipping {component_item.name} - no BOM found (likely purchased item)")
+                    continue
+                
                 # Calculate target date with buffer
                 buffer_days = sequence  # Stagger job cards by 1 day each
                 target_date = current_date + timedelta(days=buffer_days)
@@ -40,29 +48,28 @@ class ProductionService:
                     sequence
                 )
                 
-                # Determine if process should be outsourced based on process name
-                should_outsource = ProductionService._should_outsource_process(bom_process.process_name)
+                # Calculate component quantity needed
+                component_quantity = production.quantity_planned * bom_component.quantity_required
                 
-                # Create job card
+                # Create job card for manufacturing this component
                 job_card = JobCard(
                     job_card_number=job_card_number,
                     production_id=production_id,
-                    item_id=production.item_id,
-                    process_name=bom_process.process_name,
-                    process_sequence=bom_process.step_number,
-                    operation_description=bom_process.operation_description or f"Process: {bom_process.process_name}",
-                    planned_quantity=production.quantity_planned,
-                    setup_time_minutes=bom_process.setup_time_minutes or 30,
-                    run_time_minutes=bom_process.run_time_minutes or 60,
+                    item_id=component_item.id,  # Component being manufactured
+                    bom_item_id=bom_component.id,  # Link to BOM component
+                    process_name=f"Manufacture {component_item.name}",
+                    process_sequence=sequence,
+                    operation_description=f"Manufacture {component_quantity} units of {component_item.name} ({component_item.code}) for {production.production_number}",
+                    planned_quantity=component_quantity,
                     target_completion_date=target_date,
-                    priority='medium',  # Default priority
-                    production_notes=f"Auto-generated from BOM process: {bom_process.process_name}",
+                    priority='medium',
+                    production_notes=f"Auto-generated from BOM component: {component_item.name} (BOM: {component_bom.bom_code})",
                     created_by_id=current_user.id if current_user and current_user.is_authenticated else 1
                 )
                 
                 db.session.add(job_card)
                 created_count += 1
-                logging.info(f"Created job card: {job_card_number} for process: {bom_process.process_name}")
+                logging.info(f"Created job card: {job_card_number} for component: {component_item.name}")
             
             db.session.commit()
             logging.info(f"Successfully created {created_count} job cards for production {production.production_number}")
