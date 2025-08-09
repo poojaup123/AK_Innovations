@@ -4,13 +4,39 @@
 
 {% block extra_css %}
 <style>
-/* Side-by-side layout for desktop */
-@media (max-width: 768px) {
-    .d-flex.gap-4 {
-        flex-direction: column !important;
+/* CSS Grid Layout for side-by-side display */
+.layout-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.form-section {
+    min-width: 0; /* Prevents overflow */
+}
+
+.summary-section {
+    min-width: 300px;
+    max-width: 400px;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 992px) {
+    .layout-grid {
+        grid-template-columns: 1fr;
+        grid-template-areas: 
+            "form"
+            "summary";
     }
-    .d-flex.gap-4 > div[style*="flex: 1"] {
-        min-width: 100% !important;
+    
+    .form-section {
+        grid-area: form;
+    }
+    
+    .summary-section {
+        grid-area: summary;
+        max-width: none;
     }
 }
 </style>
@@ -35,10 +61,10 @@
         </div>
     </div>
 
-    <!-- Main Content with Side-by-Side Layout -->
-    <div class="d-flex gap-4">
+    <!-- Main Content with Grid Layout -->
+    <div class="layout-grid">
         <!-- Left Column: Form -->
-        <div style="flex: 2; min-width: 0;">
+        <div class="form-section">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
@@ -256,7 +282,7 @@
         </div>
         
         <!-- Right Column: Job Card Summary -->
-        <div style="flex: 1; min-width: 300px; max-width: 400px;">
+        <div class="summary-section">
             <div class="card shadow-sm" style="position: sticky; top: 20px;">
                 <div class="card-header bg-primary text-white">
                     <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Job Card Summary</h6>
