@@ -42,9 +42,9 @@ def dashboard():
         for prod in completed_prods:
             if prod.bom:
                 # Calculate unit costs from BOM
-                bom_material_cost = sum(item.item.purchase_price * item.quantity_required for item in prod.bom.items if item.item.purchase_price) or 0
-                bom_labor_cost = prod.bom.labor_cost_per_unit or 0
-                scrap_percent = prod.bom.scrap_percent or 0
+                bom_material_cost = sum(item.item.unit_price * item.quantity_required for item in prod.bom.items if item.item.unit_price) or 0
+                bom_labor_cost = getattr(prod.bom, 'labor_cost_per_unit', 0) or 0
+                scrap_percent = getattr(prod.bom, 'estimated_scrap_percent', 0) or 0
                 
                 units = prod.quantity_produced or 1
                 total_cost += (bom_material_cost + bom_labor_cost) * units
