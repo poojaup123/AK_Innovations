@@ -564,11 +564,28 @@ def view_job_card(id):
     # Get materials for this job card
     materials = JobCardMaterial.query.filter_by(job_card_id=id).all()
     
+    # Get BOM material requirements for this job card
+    material_requirements = []
+    if job_card.production and job_card.production.bom:
+        from models import BOMItem
+        bom_items = BOMItem.query.filter_by(bom_id=job_card.production.bom.id).all()
+        for bom_item in bom_items:
+            # Calculate material requirement for this job card quantity
+            required_qty = bom_item.quantity_required * job_card.planned_quantity
+            material_requirements.append({
+                'item_name': bom_item.item.name,
+                'item_code': bom_item.item.code,
+                'quantity_required': required_qty,
+                'unit': getattr(bom_item.item, 'unit', 'Units'),
+                'specification': bom_item.specification or 'As per BOM'
+            })
+    
     return render_template('job_cards/job_card_detail.html',
                          job_card=job_card,
                          daily_reports=daily_reports,
                          daily_statuses=daily_reports,  # Template compatibility
                          materials=materials,
+                         material_requirements=material_requirements,
                          routing_steps=routing_steps)
 
 @job_cards_bp.route('/list')
