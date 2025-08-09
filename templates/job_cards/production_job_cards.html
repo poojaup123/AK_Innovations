@@ -327,14 +327,19 @@
 </style>
 
 <script>
+// Job Cards Page JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Job cards page loaded successfully');
+});
+
+{% if job_cards %}
 function createGatePass(jobCardId) {
     // Implementation for creating gate pass
     if (confirm('Create gate pass for this job card?')) {
-        fetch(`/job-cards/create-gate-pass/${jobCardId}`, {
+        fetch('/job-cards/create-gate-pass/' + jobCardId, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''
+                'Content-Type': 'application/json'
             }
         })
         .then(response => {
@@ -358,5 +363,6 @@ function createGatePass(jobCardId) {
         });
     }
 }
+{% endif %}
 </script>
 {% endblock %}
