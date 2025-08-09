@@ -577,7 +577,7 @@ def view_job_card(id):
                 'item_code': bom_item.item.code,
                 'quantity_required': required_qty,
                 'unit': getattr(bom_item.item, 'unit', 'Units'),
-                'specification': bom_item.specification or 'As per BOM'
+                'specification': getattr(bom_item, 'specification', None) or getattr(bom_item, 'notes', None) or 'As per BOM'
             })
     
     return render_template('job_cards/job_card_detail.html',
