@@ -274,8 +274,8 @@
                                     <tr>
                                         <td>{{ production.created_at.strftime('%d-%m-%Y') if production.created_at else 'N/A' }}</td>
                                         <td>{{ production.production_number or 'N/A' }}</td>
-                                        <td>{{ production.item.name if production.item else 'Unknown' }}</td>
-                                        <td>{{ production.quantity or 0 }}</td>
+                                        <td>{{ production.produced_item.name if production.produced_item else 'Unknown' }}</td>
+                                        <td>{{ production.quantity_planned or 0 }}</td>
                                         <td>
                                             <span class="badge bg-{{ 'success' if production.status == 'completed' else 'warning' if production.status == 'in_progress' else 'secondary' }}">
                                                 {{ production.status.title() if production.status else 'Unknown' }}
