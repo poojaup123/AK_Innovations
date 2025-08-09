@@ -436,6 +436,13 @@ def add_job_work():
     """New redesigned job work form with BOM/Manual selection and process routing"""
     form = JobWorkForm()
     
+    # Check if coming from production suggestion
+    from_suggestion = request.args.get('from_suggestion')
+    production_id = request.args.get('production_id')
+    suggested_bom_id = request.args.get('bom_id')
+    suggested_target_item_id = request.args.get('target_item_id')
+    suggested_quantity = request.args.get('quantity')
+    
     # Debug form submission
     if request.method == 'POST':
         print(f"Form validation result: {form.validate_on_submit()}")

@@ -98,6 +98,34 @@
                                             <strong>Total Estimated Cost:</strong> ₹{{ "%.2f"|format(suggestion.estimated_cost) }}
                                         </div>
                                     {% endif %}
+                                    
+                                    <!-- Action Buttons -->
+                                    <div class="mt-3">
+                                        {% if suggestion.type == 'partial_manufacturing_recommendation' or suggestion.type == 'manufacturing' %}
+                                            <a href="{{ url_for('jobwork.add_jobwork') }}?from_suggestion=1&production_id={{ production.id }}&bom_id={{ suggestion.get('bom_id', '') }}&target_item_id={{ suggestion.get('target_item_id', '') }}&quantity={{ suggestion.get('target_quantity', 0) }}" 
+                                               class="btn btn-success btn-sm">
+                                                <i class="fas fa-cogs me-2"></i>Create Job Work Order
+                                            </a>
+                                        {% endif %}
+                                        
+                                        {% if suggestion.type == 'purchase_order_recommendation' %}
+                                            <a href="{{ url_for('purchase_orders.add_purchase_order') }}?from_suggestion=1&item_id={{ suggestion.get('item_details', {}).get('item_id', '') }}&quantity={{ suggestion.get('item_details', {}).get('shortage_qty', 0) }}&production_id={{ production.id }}" 
+                                               class="btn btn-primary btn-sm">
+                                                <i class="fas fa-shopping-cart me-2"></i>Create Purchase Order
+                                            </a>
+                                        {% endif %}
+                                        
+                                        {% if suggestion.get('raw_materials_required') %}
+                                            <!-- Create PO for insufficient raw materials -->
+                                            {% set insufficient_materials = suggestion.raw_materials_required | selectattr('sufficient', 'equalto', false) | list %}
+                                            {% if insufficient_materials %}
+                                                <a href="{{ url_for('purchase_orders.add_purchase_order') }}?from_suggestion=1&production_id={{ production.id }}&materials={{ insufficient_materials | map(attribute='material_id') | join(',') }}" 
+                                                   class="btn btn-warning btn-sm">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>Purchase Missing Materials
+                                                </a>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                         </div>

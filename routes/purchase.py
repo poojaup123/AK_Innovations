@@ -166,6 +166,13 @@ def add_purchase_order():
     form = PurchaseOrderForm()
     form.supplier_id.choices = [(s.id, s.name) for s in Supplier.query.all()]
     
+    # Check if coming from production suggestion
+    from_suggestion = request.args.get('from_suggestion')
+    production_id = request.args.get('production_id')
+    suggested_item_id = request.args.get('item_id')
+    suggested_quantity = request.args.get('quantity')
+    suggested_materials = request.args.get('materials')  # Comma-separated material IDs
+    
     # Auto-generate PO number if not provided
     if not form.po_number.data:
         form.po_number.data = generate_po_number()
