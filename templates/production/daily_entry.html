@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .production-header {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    .stats-card {
+        background: linear-gradient(135deg, #28a745, #1e7e34);
+        color: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 10px;
+    }
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .daily-entries-table {
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    .quality-badge {
+        font-size: 0.8em;
+        padding: 4px 8px;
+        border-radius: 15px;
+    }
+    .efficiency-excellent { background-color: #28a745; color: white; }
+    .efficiency-good { background-color: #20c997; color: white; }
+    .efficiency-acceptable { background-color: #ffc107; color: black; }
+    .efficiency-poor { background-color: #dc3545; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Production Header -->
+    <div class="production-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-clipboard-list me-2"></i>{{ title }}</h2>
+                <p class="mb-2"><strong>Product:</strong> {{ production.item.name if production.item else 'Unknown Item' }}</p>
+                <p class="mb-0"><strong>Planned Quantity:</strong> {{ production.quantity_planned }} units</p>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <h6><i class="fas fa-chart-line me-2"></i>Progress</h6>
+                    {% set progress = ((production.quantity_produced or 0) / production.quantity_planned * 100) if production.quantity_planned > 0 else 0 %}
+                    <h4>{{ "%.1f"|format(progress) }}%</h4>
+                    <small>{{ production.quantity_produced or 0 }} / {{ production.quantity_planned }} produced</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Daily Entry Form -->
+        <div class="col-lg-8">
+            <div class="form-section">
+                <h4><i class="fas fa-plus-circle me-2 text-primary"></i>Record Today's Production</h4>
+                
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Production Info (Read-only) -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.production_number.label(class="form-label") }}
+                            {{ form.production_number(class="form-control-plaintext", readonly=true) }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.item_name.label(class="form-label") }}
+                            {{ form.item_name(class="form-control-plaintext", readonly=true) }}
+                        </div>
+                    </div>
+
+                    <!-- Date and Shift -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.production_date.label(class="form-label") }}
+                            {{ form.production_date(class="form-control") }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.production_shift.label(class="form-label") }}
+                            {{ form.production_shift(class="form-select") }}
+                        </div>
+                    </div>
+
+                    <!-- Production Quantities -->
+                    <h6 class="text-secondary mb-3"><i class="fas fa-industry me-2"></i>Production Quantities</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.target_quantity_today.label(class="form-label") }}
+                            {{ form.target_quantity_today(class="form-control") }}
+                            <small class="form-text text-muted">Planned quantity for today</small>
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.quantity_produced_today.label(class="form-label") }}
+                            {{ form.quantity_produced_today(class="form-control", required=true) }}
+                            <small class="form-text text-muted">Actually produced today</small>
+                        </div>
+                    </div>
+
+                    <!-- Quality Breakdown -->
+                    <h6 class="text-secondary mb-3"><i class="fas fa-quality me-2"></i>Quality Breakdown</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            {{ form.quantity_good_today.label(class="form-label") }}
+                            {{ form.quantity_good_today(class="form-control") }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ form.quantity_defective_today.label(class="form-label") }}
+                            {{ form.quantity_defective_today(class="form-control") }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ form.quantity_scrap_today.label(class="form-label") }}
+                            {{ form.quantity_scrap_today(class="form-control") }}
+                        </div>
+                    </div>
+
+                    <!-- Weight and Quality Status -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.weight_produced_today.label(class="form-label") }}
+                            {{ form.weight_produced_today(class="form-control") }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.quality_control_passed.label(class="form-label") }}
+                            {{ form.quality_control_passed(class="form-select") }}
+                        </div>
+                    </div>
+
+                    <!-- Notes Section -->
+                    <h6 class="text-secondary mb-3"><i class="fas fa-sticky-note me-2"></i>Notes & Comments</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.quality_notes.label(class="form-label") }}
+                            {{ form.quality_notes(class="form-control") }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.production_notes.label(class="form-label") }}
+                            {{ form.production_notes(class="form-control") }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            {{ form.material_consumption_notes.label(class="form-label") }}
+                            {{ form.material_consumption_notes(class="form-control") }}
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="text-end">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                        <a href="{{ url_for('production.view_production', id=production.id) }}" class="btn btn-outline-secondary btn-lg ms-2">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Summary and Recent Entries -->
+        <div class="col-lg-4">
+            <!-- Daily Summary -->
+            {% if entry_summary %}
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Production Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h5 class="text-primary">{{ entry_summary.total_produced }}</h5>
+                            <small>Total Produced</small>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-success">{{ "%.1f"|format(entry_summary.avg_quality_rate) }}%</h5>
+                            <small>Quality Rate</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <strong class="text-success">{{ entry_summary.total_good }}</strong>
+                            <br><small>Good</small>
+                        </div>
+                        <div class="col-4">
+                            <strong class="text-warning">{{ entry_summary.total_defective }}</strong>
+                            <br><small>Defective</small>
+                        </div>
+                        <div class="col-4">
+                            <strong class="text-danger">{{ entry_summary.total_scrap }}</strong>
+                            <br><small>Scrap</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Recent Daily Entries -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="fas fa-history me-2"></i>Recent Daily Entries</h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if daily_entries %}
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Produced</th>
+                                    <th>Quality</th>
+                                    <th>Shift</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in daily_entries[:10] %}
+                                <tr>
+                                    <td>{{ entry.entry_date.strftime('%m/%d') }}</td>
+                                    <td>
+                                        <strong>{{ entry.actual_quantity }}</strong>
+                                        {% if entry.target_quantity > 0 %}
+                                        <br><small class="text-muted">Target: {{ entry.target_quantity }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="quality-badge efficiency-{{ entry.efficiency_status }}">
+                                            {{ "%.0f"|format(entry.quality_rate) }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ entry.shift.title() }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3 text-muted">
+                        <i class="fas fa-info-circle me-2"></i>No daily entries recorded yet
+                    </div>
+                    {% endif %}
+                </div>
+                {% if daily_entries|length > 10 %}
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('production.daily_production_summary', production_id=production.id) }}" class="btn btn-sm btn-outline-secondary">
+                        View All Entries
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-calculate good quantity if only produced quantity is entered
+document.getElementById('quantity_produced_today').addEventListener('input', function() {
+    const produced = parseFloat(this.value) || 0;
+    const good = parseFloat(document.getElementById('quantity_good_today').value) || 0;
+    const defective = parseFloat(document.getElementById('quantity_defective_today').value) || 0;
+    const scrap = parseFloat(document.getElementById('quantity_scrap_today').value) || 0;
+    
+    // If only produced is filled, auto-fill good quantity
+    if (produced > 0 && good === 0 && defective === 0 && scrap === 0) {
+        document.getElementById('quantity_good_today').value = produced;
+    }
+});
+
+// Validate that total breakdown equals produced quantity
+function validateQuantities() {
+    const produced = parseFloat(document.getElementById('quantity_produced_today').value) || 0;
+    const good = parseFloat(document.getElementById('quantity_good_today').value) || 0;
+    const defective = parseFloat(document.getElementById('quantity_defective_today').value) || 0;
+    const scrap = parseFloat(document.getElementById('quantity_scrap_today').value) || 0;
+    
+    const total = good + defective + scrap;
+    
+    if (Math.abs(total - produced) > 0.01 && produced > 0) {
+        alert(`Warning: Quality breakdown (${total}) doesn't match produced quantity (${produced})`);
+        return false;
+    }
+    return true;
+}
+
+// Add validation to form submit
+document.querySelector('form').addEventListener('submit', function(e) {
+    if (!validateQuantities()) {
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}

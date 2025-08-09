@@ -69,6 +69,14 @@
                                         <a href="{{ url_for('production.view_smart_suggestions', production_id=production.id) }}" class="btn btn-outline-info btn-sm">
                                             <i class="fas fa-lightbulb"></i>
                                         </a>
+                                        <!-- Daily Production Entry Button -->
+                                        {% if production.status != 'completed' %}
+                                        <a href="{{ url_for('production.daily_production_entry', production_id=production.id) }}" 
+                                           class="btn btn-success btn-sm" title="Record Daily Production">
+                                            <i class="fas fa-plus-circle"></i> Daily Entry
+                                        </a>
+                                        {% endif %}
+                                        
                                         {% if production.status != 'completed' %}
                                         <div class="btn-group btn-group-sm">
                                             <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
