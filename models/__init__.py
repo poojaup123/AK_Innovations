@@ -22,6 +22,7 @@ from .notifications import NotificationRecipient, NotificationLog
 
 # Import daily production tracking models
 from .daily_production import DailyProductionStatus, ProductionShiftLog, DailyProductionSummary
+from .job_card import JobCard, JobCardDailyStatus, JobCardMaterial
 
 class CompanySettings(db.Model):
     __tablename__ = 'company_settings'

@@ -136,6 +136,65 @@
         </div>
     </div>
 
+    <!-- Job Card Status Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card border-primary">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Active Job Cards</h6>
+                            <h4 class="text-primary">{{ stats.job_cards_active_today }}</h4>
+                        </div>
+                        <i class="fas fa-clipboard-list stats-icon text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stats-card border-success">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Completed Cards</h6>
+                            <h4 class="text-success">{{ stats.job_cards_completed_today }}</h4>
+                        </div>
+                        <i class="fas fa-check-double stats-icon text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stats-card border-danger">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Delayed Cards</h6>
+                            <h4 class="text-danger">{{ stats.job_cards_delayed_today }}</h4>
+                        </div>
+                        <i class="fas fa-exclamation-circle stats-icon text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stats-card border-info">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Total Job Cards</h6>
+                            <h4 class="text-info">{{ stats.total_job_cards_today }}</h4>
+                        </div>
+                        <i class="fas fa-tasks stats-icon text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Overall Production Summary Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
@@ -413,6 +472,11 @@
                                 <i class="fas fa-check-circle text-primary me-2"></i>Completed Today ({{ status_groups.completed|length }})
                             </button>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="job-cards-tab" data-bs-toggle="tab" data-bs-target="#job-cards" type="button" role="tab">
+                                <i class="fas fa-clipboard-list text-info me-2"></i>Job Cards ({{ active_job_cards|length }})
+                            </button>
+                        </li>
                     </ul>
 
                     <div class="tab-content" id="dailyStatusTabContent">
@@ -625,6 +689,90 @@
                                 <div class="text-center py-4">
                                     <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
                                     <p class="text-muted">No productions completed today yet</p>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Job Cards Tab -->
+                        <div class="tab-pane fade" id="job-cards" role="tabpanel">
+                            {% if active_job_cards %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Job Card #</th>
+                                                <th>Process</th>
+                                                <th>Item</th>
+                                                <th>Assigned</th>
+                                                <th>Progress</th>
+                                                <th>Target Date</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for job_card in active_job_cards %}
+                                            <tr>
+                                                <td><strong>{{ job_card.job_card_number }}</strong></td>
+                                                <td>{{ job_card.process_name }}</td>
+                                                <td>
+                                                    {% set item = job_card.item %}
+                                                    {{ item.code if item else 'N/A' }} - {{ item.name if item else 'Unknown Item' }}
+                                                </td>
+                                                <td>
+                                                    {% if job_card.assigned_worker %}
+                                                        <i class="fas fa-user me-1"></i>{{ job_card.assigned_worker.name }}
+                                                    {% elif job_card.assigned_vendor %}
+                                                        <i class="fas fa-building me-1"></i>{{ job_card.assigned_vendor.name }}
+                                                    {% else %}
+                                                        <span class="text-muted">Unassigned</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <div class="progress" style="height: 20px;">
+                                                        <div class="progress-bar bg-{{ 'success' if job_card.completion_rate >= 100 else 'warning' if job_card.completion_rate >= 50 else 'danger' }}" 
+                                                             role="progressbar" style="width: {{ job_card.completion_rate }}%">
+                                                            {{ "%.0f"|format(job_card.completion_rate) }}%
+                                                        </div>
+                                                    </div>
+                                                    <small>{{ "%.1f"|format(job_card.completed_quantity) }} / {{ "%.1f"|format(job_card.planned_quantity) }}</small>
+                                                </td>
+                                                <td>
+                                                    {{ job_card.target_completion_date.strftime('%Y-%m-%d') }}
+                                                    {% if job_card.is_overdue %}
+                                                        <span class="badge bg-danger ms-1">Overdue</span>
+                                                    {% elif job_card.days_remaining <= 1 %}
+                                                        <span class="badge bg-warning ms-1">Due Soon</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-{{ 'success' if job_card.status == 'completed' else 'primary' if job_card.status == 'in_progress' else 'secondary' }}">
+                                                        {{ job_card.status|title }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <a href="{{ url_for('job_cards.update_daily_status', job_card_id=job_card.id) }}" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-edit"></i> Update
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-3">
+                                    <a href="{{ url_for('job_cards.dashboard') }}" class="btn btn-primary">
+                                        <i class="fas fa-external-link-alt me-2"></i>View All Job Cards
+                                    </a>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">No active job cards today</p>
+                                    <a href="{{ url_for('job_cards.create_job_card') }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-plus me-2"></i>Create Job Card
+                                    </a>
                                 </div>
                             {% endif %}
                         </div>

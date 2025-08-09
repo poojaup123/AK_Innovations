@@ -4,6 +4,7 @@ from flask_wtf import FlaskForm
 from forms import ProductionForm, BOMForm, BOMItemForm, BOMProcessForm
 from models import Production, Item, BOM, BOMItem, BOMProcess, Supplier, ItemBatch, ProductionBatch
 from models.daily_production import DailyProductionStatus, DailyProductionSummary
+from models.job_card import JobCard, JobCardDailyStatus, JobCardMaterial
 from services.process_integration import ProcessIntegrationService
 from services.authentic_accounting_integration import AuthenticAccountingIntegration
 from services.smart_bom_suggestions import SmartBOMSuggestionService
@@ -61,6 +62,19 @@ def dashboard():
         if prod.id not in reported_production_ids
     ]
     
+    # Job Card Integration - get today's job card status
+    today_job_card_reports = JobCardDailyStatus.query.filter_by(report_date=today).all()
+    active_job_cards = JobCard.query.filter(
+        JobCard.status.in_(['planned', 'in_progress']),
+        JobCard.target_completion_date >= today
+    ).limit(10).all()
+    
+    # Job card metrics
+    total_job_cards_today = len(today_job_card_reports)
+    job_cards_completed_today = len([r for r in today_job_card_reports if r.daily_status == 'completed'])
+    job_cards_delayed_today = len([r for r in today_job_card_reports if r.daily_status == 'delayed'])
+    job_cards_active_today = len([r for r in today_job_card_reports if r.daily_status == 'active'])
+    
     # Calculate cost metrics from completed productions
     completed_prods = Production.query.filter_by(status='completed').all()
     avg_cost_per_unit = 0
@@ -79,9 +93,13 @@ def dashboard():
         for prod in completed_prods:
             if prod.bom:
                 # Calculate unit costs from BOM
-                bom_material_cost = sum(item.item.cost_price * item.quantity_required for item in prod.bom.items if item.item and item.item.cost_price) or 0
-                bom_labor_cost = prod.bom.labor_cost_per_unit or 0
-                scrap_percent = prod.bom.scrap_percent or 0
+                bom_material_cost = sum(
+                    (getattr(item.item, 'cost_price', None) or getattr(item.item, 'purchase_price', 0)) * item.quantity_required 
+                    for item in prod.bom.items 
+                    if item.item and (getattr(item.item, 'cost_price', None) or getattr(item.item, 'purchase_price', None))
+                ) or 0
+                bom_labor_cost = getattr(prod.bom, 'labor_cost_per_unit', 0) or 0
+                scrap_percent = getattr(prod.bom, 'scrap_percent', 0) or 0
                 
                 units = prod.quantity_produced or 1
                 total_cost += (bom_material_cost + bom_labor_cost) * units
@@ -114,7 +132,12 @@ def dashboard():
         'total_completed_today': total_completed_today,
         'total_good_today': total_good_today,
         'total_defective_today': total_defective_today,
-        'efficiency_rate_today': efficiency_rate
+        'efficiency_rate_today': efficiency_rate,
+        # Job card metrics
+        'total_job_cards_today': total_job_cards_today,
+        'job_cards_completed_today': job_cards_completed_today,
+        'job_cards_delayed_today': job_cards_delayed_today,
+        'job_cards_active_today': job_cards_active_today
     }
     
     # Recent productions
@@ -137,7 +160,10 @@ def dashboard():
                          today_reports=today_reports,
                          daily_summary=daily_summary,
                          status_groups=status_groups,
-                         productions_without_reports=productions_without_reports)
+                         productions_without_reports=productions_without_reports,
+                         # Job card data
+                         today_job_card_reports=today_job_card_reports,
+                         active_job_cards=active_job_cards)
 
 @production_bp.route('/update-daily-status/<int:production_id>', methods=['GET', 'POST'])
 @login_required

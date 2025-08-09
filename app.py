@@ -126,6 +126,10 @@ def create_app():
     
     from routes.daily_production import daily_production_bp
     app.register_blueprint(daily_production_bp)
+    
+    # Register job cards blueprint
+    from routes.job_cards import job_cards_bp
+    app.register_blueprint(job_cards_bp, url_prefix='/job-cards')
     app.register_blueprint(live_status_bp)
     from routes.backup import backup_bp
     app.register_blueprint(backup_bp, url_prefix='/backup')
