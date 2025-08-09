@@ -4,39 +4,37 @@
 
 {% block extra_css %}
 <style>
-/* CSS Grid Layout for side-by-side display */
-.layout-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 1.5rem;
-    align-items: start;
+/* Force Job Card Summary to right side */
+.main-container {
+    position: relative;
 }
 
 .form-section {
-    min-width: 0; /* Prevents overflow */
+    margin-right: 420px; /* Leave space for summary */
 }
 
 .summary-section {
-    min-width: 300px;
-    max-width: 400px;
+    position: fixed;
+    top: 120px;
+    right: 20px;
+    width: 380px;
+    z-index: 1000;
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
 }
 
 /* Mobile responsiveness */
-@media (max-width: 992px) {
-    .layout-grid {
-        grid-template-columns: 1fr;
-        grid-template-areas: 
-            "form"
-            "summary";
-    }
-    
+@media (max-width: 1200px) {
     .form-section {
-        grid-area: form;
+        margin-right: 0;
     }
     
     .summary-section {
-        grid-area: summary;
-        max-width: none;
+        position: static;
+        width: 100%;
+        max-height: none;
+        overflow-y: visible;
+        margin-top: 20px;
     }
 }
 </style>
@@ -61,9 +59,9 @@
         </div>
     </div>
 
-    <!-- Main Content with Grid Layout -->
-    <div class="layout-grid">
-        <!-- Left Column: Form -->
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Form Section -->
         <div class="form-section">
             <div class="card">
                 <div class="card-header">
@@ -281,9 +279,9 @@
             </div>
         </div>
         
-        <!-- Right Column: Job Card Summary -->
+        <!-- Job Card Summary - Fixed Right Position -->
         <div class="summary-section">
-            <div class="card shadow-sm" style="position: sticky; top: 20px;">
+            <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white">
                     <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Job Card Summary</h6>
                 </div>
