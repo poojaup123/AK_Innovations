@@ -112,7 +112,7 @@ def dashboard():
 @job_cards_bp.route('/create')
 @login_required
 def create_job_card(production_id=None):
-    """Create a new job card"""
+    """Create a new job card with smart suggestions"""
     form = JobCardForm()
     
     # Populate dropdown choices
@@ -121,13 +121,49 @@ def create_job_card(production_id=None):
     form.assigned_vendor_id.choices = [(0, 'Select Vendor')] + [(s.id, s.name) for s in Supplier.query.filter_by(partner_type='vendor').all()]
     
     production = None
+    smart_suggestions = None
+    
     if production_id:
         production = Production.query.get_or_404(production_id)
         form.production_id.data = production_id
         
-        # Auto-generate job card number
+        # Generate smart suggestions from production order and BOM
+        from services.smart_job_card_suggestions import SmartJobCardSuggestions
+        smart_suggestions = SmartJobCardSuggestions.generate_comprehensive_suggestions(production_id)
+        
+        # Auto-populate form with intelligent suggestions
         next_sequence = JobCard.query.filter_by(production_id=production_id).count() + 1
         form.job_card_number.data = JobCard.generate_job_card_number(production.production_number, next_sequence)
+        
+        # Smart population based on BOM analysis
+        if not smart_suggestions.get('error'):
+            # Pre-fill item details
+            form.item_id.data = production.item_id
+            form.planned_quantity.data = production.planned_quantity
+            form.target_completion_date.data = production.target_completion_date
+            form.priority.data = production.priority
+            
+            # Smart process suggestions
+            if smart_suggestions.get('process_suggestions'):
+                first_process = smart_suggestions['process_suggestions'][0]
+                form.process_name.data = first_process['process_name']
+                form.operation_description.data = first_process['operation_description']
+                form.setup_time_minutes.data = first_process.get('estimated_time', 30)
+                
+                # Suggest worker based on skill requirements
+                if smart_suggestions.get('resource_assignments'):
+                    first_assignment = smart_suggestions['resource_assignments'][0]
+                    suggested_workers = first_assignment.get('suggested_workers', [])
+                    if suggested_workers:
+                        form.assigned_worker_id.data = suggested_workers[0]['worker_id']
+            
+            # Cost estimation
+            if smart_suggestions.get('cost_estimates'):
+                form.estimated_cost.data = smart_suggestions['cost_estimates']['total_estimated_cost']
+            
+            # Generate comprehensive production notes with all suggestions
+            production_notes = SmartJobCardSuggestions._generate_production_notes(smart_suggestions)
+            form.production_notes.data = production_notes
     
     if form.validate_on_submit():
         try:
@@ -163,7 +199,10 @@ def create_job_card(production_id=None):
             db.session.rollback()
             flash(f'Error creating job card: {str(e)}', 'danger')
     
-    return render_template('job_cards/create.html', form=form, production=production)
+    return render_template('job_cards/create.html', 
+                         form=form, 
+                         production=production, 
+                         smart_suggestions=smart_suggestions)
 
 @job_cards_bp.route('/bulk-create/<int:production_id>')
 @login_required

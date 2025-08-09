@@ -5,11 +5,130 @@
 {% block content %}
 <div class="container-fluid">
     <div class="row">
-        <div class="col-md-8">
+        {% if smart_suggestions and not smart_suggestions.get('error') %}
+        <!-- Smart Suggestions Panel -->
+        <div class="col-lg-4">
+            <div class="card border-info mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Smart Suggestions
+                        <small class="float-end">AI-Powered</small>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Production Overview -->
+                    {% if smart_suggestions.production_info %}
+                    <div class="mb-3">
+                        <h6 class="text-info"><i class="fas fa-info-circle me-1"></i>Production Overview</h6>
+                        <small class="text-muted">
+                            <strong>{{ smart_suggestions.production_info.item_name }}</strong><br>
+                            Quantity: {{ smart_suggestions.production_info.planned_quantity }}<br>
+                            Priority: <span class="badge bg-{{ 'danger' if smart_suggestions.production_info.priority == 'high' else 'warning' if smart_suggestions.production_info.priority == 'medium' else 'success' }}">
+                                {{ smart_suggestions.production_info.priority|title }}
+                            </span>
+                        </small>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- BOM Analysis -->
+                    {% if smart_suggestions.bom_analysis %}
+                    <div class="mb-3">
+                        <h6 class="text-success"><i class="fas fa-sitemap me-1"></i>BOM Analysis</h6>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="bg-light rounded p-2">
+                                    <strong class="text-primary">{{ smart_suggestions.bom_analysis.total_components }}</strong><br>
+                                    <small>Components</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="bg-light rounded p-2">
+                                    <strong class="text-warning">{{ smart_suggestions.bom_analysis.total_processes }}</strong><br>
+                                    <small>Processes</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span class="badge bg-{{ 'danger' if smart_suggestions.bom_analysis.complexity_level == 'High' else 'warning' if smart_suggestions.bom_analysis.complexity_level == 'Medium' else 'success' }}">
+                                {{ smart_suggestions.bom_analysis.complexity_level }} Complexity
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Material Requirements Summary -->
+                    {% if smart_suggestions.material_requirements %}
+                    <div class="mb-3">
+                        <h6 class="text-warning"><i class="fas fa-boxes me-1"></i>Material Requirements</h6>
+                        {% set total_materials = smart_suggestions.material_requirements|length %}
+                        {% set shortages = smart_suggestions.material_requirements|selectattr('need_procurement')|list|length %}
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="bg-light rounded p-2">
+                                    <strong class="text-info">{{ total_materials }}</strong><br>
+                                    <small>Materials</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="bg-light rounded p-2">
+                                    <strong class="text-{{ 'danger' if shortages > 0 else 'success' }}">{{ shortages }}</strong><br>
+                                    <small>Shortages</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Cost Estimation -->
+                    {% if smart_suggestions.cost_estimates %}
+                    <div class="mb-3">
+                        <h6 class="text-success"><i class="fas fa-rupee-sign me-1"></i>Cost Estimation</h6>
+                        <div class="bg-light rounded p-2">
+                            <strong class="text-success">₹{{ "%.2f"|format(smart_suggestions.cost_estimates.total_estimated_cost) }}</strong><br>
+                            <small>Total Cost (₹{{ "%.2f"|format(smart_suggestions.cost_estimates.cost_per_unit) }}/unit)</small>
+                        </div>
+                        <div class="mt-2 small">
+                            Material: ₹{{ "%.0f"|format(smart_suggestions.cost_estimates.material_cost) }} | 
+                            Labor: ₹{{ "%.0f"|format(smart_suggestions.cost_estimates.labor_cost) }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Process Recommendations -->
+                    {% if smart_suggestions.process_suggestions %}
+                    <div class="mb-3">
+                        <h6 class="text-secondary"><i class="fas fa-cogs me-1"></i>Process Recommendations</h6>
+                        {% for process in smart_suggestions.process_suggestions[:3] %}
+                        <div class="border rounded p-2 mb-2">
+                            <strong class="small">{{ process.step_number }}. {{ process.process_name }}</strong><br>
+                            <span class="badge bg-{{ 'info' if process.suggested_job_type == 'outsourced' else 'primary' }} me-1">
+                                {{ 'Outsource' if process.suggested_job_type == 'outsourced' else 'In-House' }}
+                            </span>
+                            <span class="badge bg-secondary">{{ process.skill_level }}</span>
+                        </div>
+                        {% endfor %}
+                        {% if smart_suggestions.process_suggestions|length > 3 %}
+                        <small class="text-muted">... and {{ smart_suggestions.process_suggestions|length - 3 }} more processes</small>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Job Card Form -->
+        <div class="col-lg-{{ '8' if smart_suggestions and not smart_suggestions.get('error') else '12' }}">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
                         <i class="fas fa-plus me-2"></i>Create New Job Card
+                        {% if production %}
+                            <small class="text-muted">for {{ production.production_number }}</small>
+                        {% endif %}
+                        {% if smart_suggestions and not smart_suggestions.get('error') %}
+                            <span class="badge bg-success ms-2"><i class="fas fa-magic me-1"></i>AI Enhanced</span>
+                        {% endif %}
                     </h5>
                 </div>
                 <div class="card-body">
@@ -228,9 +347,108 @@
             </div>
         </div>
 
-        <!-- Production Info Sidebar -->
+        <!-- Smart Suggestions & Production Info Sidebar -->
         {% if production %}
         <div class="col-md-4">
+            {% if smart_suggestions and not smart_suggestions.get('error') %}
+            <!-- Smart Suggestions Panel -->
+            <div class="card border-info mb-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Smart Suggestions
+                        <small class="float-end">AI-Powered</small>
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <!-- BOM Analysis -->
+                    {% if smart_suggestions.bom_analysis %}
+                    <div class="mb-3">
+                        <strong class="text-success">BOM Analysis</strong>
+                        <div class="row text-center mt-2">
+                            <div class="col-6">
+                                <div class="bg-light rounded p-2">
+                                    <strong class="text-primary">{{ smart_suggestions.bom_analysis.total_components }}</strong><br>
+                                    <small>Components</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="bg-light rounded p-2">
+                                    <strong class="text-warning">{{ smart_suggestions.bom_analysis.total_processes }}</strong><br>
+                                    <small>Processes</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-center">
+                            <span class="badge bg-{{ 'danger' if smart_suggestions.bom_analysis.complexity_level == 'High' else 'warning' if smart_suggestions.bom_analysis.complexity_level == 'Medium' else 'success' }}">
+                                {{ smart_suggestions.bom_analysis.complexity_level }} Complexity
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Material Requirements -->
+                    {% if smart_suggestions.material_requirements %}
+                    <div class="mb-3">
+                        <strong class="text-warning">Material Status</strong>
+                        {% set shortages = smart_suggestions.material_requirements|selectattr('need_procurement')|list|length %}
+                        <div class="mt-2">
+                            <div class="d-flex justify-content-between">
+                                <span>Total Materials:</span>
+                                <strong>{{ smart_suggestions.material_requirements|length }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>Need Procurement:</span>
+                                <strong class="text-{{ 'danger' if shortages > 0 else 'success' }}">{{ shortages }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Cost Estimation -->
+                    {% if smart_suggestions.cost_estimates %}
+                    <div class="mb-3">
+                        <strong class="text-success">Cost Estimation</strong>
+                        <div class="bg-light rounded p-2 mt-2">
+                            <div class="text-center">
+                                <strong class="text-success">₹{{ "%.0f"|format(smart_suggestions.cost_estimates.total_estimated_cost) }}</strong><br>
+                                <small>Total Cost</small>
+                            </div>
+                            <hr class="my-2">
+                            <div class="row text-center small">
+                                <div class="col-6">
+                                    <strong>₹{{ "%.0f"|format(smart_suggestions.cost_estimates.material_cost) }}</strong><br>
+                                    <small>Material</small>
+                                </div>
+                                <div class="col-6">
+                                    <strong>₹{{ "%.0f"|format(smart_suggestions.cost_estimates.labor_cost) }}</strong><br>
+                                    <small>Labor</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Timeline -->
+                    {% if smart_suggestions.timeline_suggestions %}
+                    <div class="mb-3">
+                        <strong class="text-primary">Timeline</strong>
+                        <div class="bg-light rounded p-2 mt-2 text-center">
+                            <strong class="text-primary">{{ "%.1f"|format(smart_suggestions.timeline_suggestions.estimated_days) }} Days</strong><br>
+                            <small>{{ "%.0f"|format(smart_suggestions.timeline_suggestions.total_estimated_minutes / 60) }} Hours Total</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="text-center">
+                        <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#suggestionsModal">
+                            <i class="fas fa-eye me-1"></i>View Details
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Production Information -->
             <div class="card">
                 <div class="card-header">
                     <h6 class="mb-0">
@@ -262,4 +480,190 @@
         {% endif %}
     </div>
 </div>
+
+{% if smart_suggestions and not smart_suggestions.get('error') %}
+<!-- Smart Suggestions Details Modal -->
+<div class="modal fade" id="suggestionsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-brain me-2"></i>Detailed Smart Suggestions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Material Requirements Details -->
+                {% if smart_suggestions.material_requirements %}
+                <div class="mb-4">
+                    <h6 class="text-primary border-bottom pb-2"><i class="fas fa-boxes me-1"></i>Material Requirements</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Required</th>
+                                    <th>Available</th>
+                                    <th>Status</th>
+                                    <th>Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for material in smart_suggestions.material_requirements %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ material.item_name }}</strong><br>
+                                        <small class="text-muted">{{ material.item_code }}</small>
+                                    </td>
+                                    <td>{{ "%.1f"|format(material.total_required) }} {{ material.uom }}</td>
+                                    <td>{{ "%.1f"|format(material.available_inventory) }}</td>
+                                    <td>
+                                        {% if material.need_procurement %}
+                                            <span class="badge bg-warning">Need {{ "%.1f"|format(material.shortage) }}</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Available</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>₹{{ "%.2f"|format(material.total_cost) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Process Details -->
+                {% if smart_suggestions.process_suggestions %}
+                <div class="mb-4">
+                    <h6 class="text-info border-bottom pb-2"><i class="fas fa-cogs me-1"></i>Process Recommendations</h6>
+                    {% for process in smart_suggestions.process_suggestions %}
+                    <div class="card mb-2 border-left-primary">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>Step {{ process.step_number }}: {{ process.process_name }}</strong>
+                                    <p class="mb-2 text-muted">{{ process.operation_description }}</p>
+                                    <div>
+                                        <span class="badge bg-{{ 'info' if process.suggested_job_type == 'outsourced' else 'primary' }} me-1">
+                                            {{ 'Outsource' if process.suggested_job_type == 'outsourced' else 'In-House' }}
+                                        </span>
+                                        <span class="badge bg-secondary me-1">{{ process.skill_level }}</span>
+                                        {% if process.outsource_reason %}
+                                        <small class="text-muted d-block mt-1">{{ process.outsource_reason }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="text-primary"><strong>{{ process.estimated_time }} min</strong></div>
+                                    {% if process.suggested_vendor %}
+                                    <small class="text-success">Vendor Available</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Resource Assignments -->
+                {% if smart_suggestions.resource_assignments %}
+                <div class="mb-4">
+                    <h6 class="text-warning border-bottom pb-2"><i class="fas fa-users me-1"></i>Suggested Workers</h6>
+                    {% for assignment in smart_suggestions.resource_assignments %}
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <strong>{{ assignment.process_name }}</strong>
+                            <span class="badge bg-light text-dark ms-2">{{ assignment.workstation_suggestion }}</span>
+                        </div>
+                        <div class="row">
+                            {% for worker in assignment.suggested_workers[:3] %}
+                            <div class="col-md-4">
+                                <div class="border rounded p-2 text-center">
+                                    <strong class="small">{{ worker.worker_name }}</strong><br>
+                                    <span class="badge bg-info">{{ worker.skill_level }}</span><br>
+                                    <div class="progress progress-sm mt-1">
+                                        <div class="progress-bar bg-success" style="width: {{ worker.availability_score }}%"></div>
+                                    </div>
+                                    <small class="text-success">{{ worker.availability_score }}% Available</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Production Notes Preview -->
+                {% if smart_suggestions.get('production_notes_preview') %}
+                <div class="mb-4">
+                    <h6 class="text-success border-bottom pb-2"><i class="fas fa-sticky-note me-1"></i>Generated Production Notes</h6>
+                    <div class="bg-light rounded p-3">
+                        <pre class="mb-0 text-wrap">{{ smart_suggestions.production_notes_preview }}</pre>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="applySelectedSuggestions()">
+                    <i class="fas fa-magic me-1"></i>Apply to Form
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function applySelectedSuggestions() {
+    // Apply first process suggestion if available
+    {% if smart_suggestions.process_suggestions %}
+    const firstProcess = {{ smart_suggestions.process_suggestions[0]|tojson }};
+    if (firstProcess) {
+        const processName = document.querySelector('input[name="process_name"]');
+        const operationDesc = document.querySelector('textarea[name="operation_description"]');
+        const setupTime = document.querySelector('input[name="setup_time_minutes"]');
+        
+        if (processName) processName.value = firstProcess.process_name;
+        if (operationDesc) operationDesc.value = firstProcess.operation_description;
+        if (setupTime) setupTime.value = firstProcess.estimated_time;
+        
+        // Highlight vendor selection if outsourcing is suggested
+        if (firstProcess.suggested_job_type === 'outsourced') {
+            const vendorSelect = document.querySelector('select[name="assigned_vendor_id"]');
+            if (vendorSelect) {
+                vendorSelect.focus();
+                vendorSelect.classList.add('border-warning');
+            }
+        }
+    }
+    {% endif %}
+    
+    // Apply worker suggestion
+    {% if smart_suggestions.resource_assignments and smart_suggestions.resource_assignments[0].suggested_workers %}
+    const firstWorker = {{ smart_suggestions.resource_assignments[0].suggested_workers[0]|tojson }};
+    if (firstWorker) {
+        const workerSelect = document.querySelector('select[name="assigned_worker_id"]');
+        if (workerSelect) {
+            workerSelect.value = firstWorker.worker_id;
+        }
+    }
+    {% endif %}
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('suggestionsModal'));
+    modal.hide();
+    
+    // Show success message
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+    alertDiv.innerHTML = `
+        <i class="fas fa-check me-1"></i>Smart suggestions applied to form! Review and adjust as needed.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.querySelector('.card-body form').prepend(alertDiv);
+}
+</script>
+{% endif %}
+
 {% endblock %}
