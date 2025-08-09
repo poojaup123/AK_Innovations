@@ -82,8 +82,8 @@ class JobCardGenerator:
         job_card.process_name = "Assembly/Manufacturing"
         job_card.process_sequence = 1
         job_card.planned_quantity = production.quantity_planned
-        job_card.planned_start_date = production.start_date
-        job_card.target_completion_date = production.target_date
+        job_card.planned_start_date = production.start_date if hasattr(production, 'start_date') and production.start_date else production.created_at.date()
+        job_card.target_completion_date = production.target_date if hasattr(production, 'target_date') and production.target_date else production.created_at.date()
         job_card.job_type = 'in_house'
         job_card.status = 'planned'
         job_card.component_level = 1
@@ -175,9 +175,9 @@ class JobCardGenerator:
         job_card.process_name = self._get_primary_process_name(bom_item)
         job_card.process_sequence = 1  # Use sequential numbering
         job_card.planned_quantity = required_quantity
-        job_card.planned_start_date = start_date
+        job_card.planned_start_date = start_date if start_date else production.created_at.date()
         job_card.planned_end_date = end_date
-        job_card.target_completion_date = end_date
+        job_card.target_completion_date = end_date if end_date else production.created_at.date()
         job_card.job_type = job_type
         job_card.status = 'planned'
         job_card.operation_description = f"Process {bom_item.item.name} for {production.item.name}"
