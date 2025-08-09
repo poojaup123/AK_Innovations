@@ -260,7 +260,7 @@ def view_job_card(id):
     # Get materials for this job card
     materials = JobCardMaterial.query.filter_by(job_card_id=id).all()
     
-    return render_template('job_cards/view.html',
+    return render_template('job_cards/job_card_detail.html',
                          job_card=job_card,
                          daily_reports=daily_reports,
                          materials=materials)
