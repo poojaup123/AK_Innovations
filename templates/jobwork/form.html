@@ -32,9 +32,8 @@
                     <table class="table table-bordered">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 20%;">Field</th>
-                                <th style="width: 30%;">Input Type</th>
-                                <th style="width: 50%;">Example / Note</th>
+                                <th style="width: 30%;">Field</th>
+                                <th style="width: 70%;">Input</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -46,7 +45,6 @@
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>🔘 BOM-Based  🔘 Manual</td>
                             </tr>
                             <tr id="bom_row" style="display: none;">
                                 <td><strong>Select BOM (if any)</strong></td>
@@ -56,7 +54,6 @@
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>"Mounted Plate BOM - V1"</td>
                             </tr>
                             <tr>
                                 <td><strong>Job Work Title</strong></td>
@@ -66,7 +63,6 @@
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>"JW-008 – Base Plate Work" <span class="text-info small">(Auto-generated for Manual jobs)</span></td>
                             </tr>
                             <tr>
                                 <td><strong>Work Type</strong></td>
@@ -76,7 +72,6 @@
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>🔘 In-House  🔘 Outsourced</td>
                             </tr>
                             <tr>
                                 <td><strong>Assigned To</strong></td>
@@ -86,7 +81,6 @@
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>Department / Vendor Selection</td>
                             </tr>
                         </tbody>
                     </table>
@@ -104,9 +98,8 @@
                     <table class="table table-bordered">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 20%;">Field</th>
-                                <th style="width: 30%;">Input Type</th>
-                                <th style="width: 50%;">Example / Note</th>
+                                <th style="width: 30%;">Field</th>
+                                <th style="width: 70%;">Input</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -118,7 +111,6 @@
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>"Ms sheet - 1mm - 4x8 feet"</td>
                             </tr>
                             <tr id="batch_tracking_row">
                                 <td><strong>Enable Batch Tracking</strong></td>
@@ -130,7 +122,6 @@
                                         </label>
                                     </div>
                                 </td>
-                                <td>Enable for complete traceability</td>
                             </tr>
                             <tr id="batch_selection_row" style="display: none;">
                                 <td><strong>Batch Allocation</strong></td>
@@ -180,7 +171,6 @@
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>Automatic FIFO-based batch selection eliminates manual selection and ensures optimal inventory rotation</td>
                             </tr>
                             <tr id="output_quantity_row">
                                 <td><strong>Output Quantity</strong></td>
@@ -194,7 +184,6 @@
                                     </div>
                                     <small class="text-muted">Number of final products you want to produce</small>
                                 </td>
-                                <td>Final product quantity target</td>
                             </tr>
                             <tr>
                                 <td><strong>Quantity to Issue</strong></td>
@@ -213,7 +202,6 @@
                                     <div id="stock_status" class="mt-1"></div>
                                     <div id="calculation_display" class="mt-2"></div>
                                 </td>
-                                <td>Auto-calculated material requirement</td>
                             </tr>
                             <tr id="output_batch_row" style="display: none;">
                                 <td><strong>Create Output Batch</strong></td>
@@ -226,7 +214,6 @@
                                     </div>
                                     {{ form.output_batch_prefix(class="form-control mt-2", placeholder="Auto-generated") }}
                                 </td>
-                                <td>Creates finished goods batch automatically</td>
                             </tr>
                             <tr>
                                 <td><strong>Store Location</strong></td>
@@ -236,7 +223,6 @@
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>🔘 Raw Store  🔘 Finished Store</td>
                             </tr>
                             <tr>
                                 <td><strong>Send Date</strong></td>
@@ -246,7 +232,6 @@
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>Today's Date</td>
                             </tr>
                             <tr>
                                 <td><strong>Expected Return</strong></td>
@@ -256,7 +241,6 @@
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
                                 </td>
-                                <td>Target Completion Date</td>
                             </tr>
                         </tbody>
                     </table>
