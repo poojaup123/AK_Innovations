@@ -283,8 +283,8 @@ class JobCardGenerator:
             },
             {
                 "step": 2,
-                "process": "Manufacturing",
-                "description": f"Manufacture {material_name}",
+                "process": "Manufacturing", 
+                "description": f"Manufacture component",
                 "estimated_time": 240
             },
             {
