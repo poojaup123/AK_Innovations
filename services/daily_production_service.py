@@ -44,32 +44,35 @@ class DailyProductionService:
         material_shortages = []
         availability_warnings = []
         
-        for bom_item in bom.bom_items:
-            if bom_item.item_type != 'input':  # Only check input materials
+        bom_items = BOMItem.query.filter_by(bom_id=bom.id).all()
+        for bom_item in bom_items:
+            # Check available inventory (use material relationship)
+            material = bom_item.material or bom_item.item
+            if not material:
                 continue
                 
-            # Calculate required quantity for today's production
-            required_qty = (bom_item.quantity_required / bom.batch_size) * planned_production_qty
+            # Calculate required quantity for today's production  
+            required_qty = (bom_item.qty_required or bom_item.quantity_required or 0) * planned_production_qty
             
             # Check available inventory (raw material state)
-            available_qty = bom_item.item.qty_raw_material or 0
+            available_qty = material.qty_raw or 0
             
             if available_qty < required_qty:
                 shortage = required_qty - available_qty
                 material_shortages.append({
-                    'item_name': bom_item.item.name,
+                    'item_name': material.name,
                     'required': required_qty,
                     'available': available_qty,
                     'shortage': shortage,
-                    'unit': bom_item.unit_of_measure
+                    'unit': bom_item.unit or 'pcs'
                 })
             elif available_qty < (required_qty * 1.1):  # Less than 10% buffer
                 availability_warnings.append({
-                    'item_name': bom_item.item.name,
+                    'item_name': material.name,
                     'required': required_qty,
                     'available': available_qty,
-                    'unit': bom_item.unit_of_measure,
-                    'message': f'Low stock warning: Only {available_qty:.2f} {bom_item.unit_of_measure} available'
+                    'unit': bom_item.unit or 'pcs',
+                    'message': f'Low stock warning: Only {available_qty:.2f} {bom_item.unit or "pcs"} available'
                 })
         
         if material_shortages:
