@@ -593,6 +593,22 @@ def dashboard():
             'grns': jw_grns
         })
     
+    # Get pending material receipts (POs and Job Works needing GRNs)
+    pending_purchase_orders = []
+    pending_job_works = []
+    
+    # Find POs that need GRNs (not fully fulfilled)
+    for po in purchase_orders:
+        if po.status in ['sent', 'partial'] and len(GRN.query.filter_by(purchase_order_id=po.id).all()) == 0:
+            pending_purchase_orders.append(po)
+        elif po.status == 'partial':
+            pending_purchase_orders.append(po)
+    
+    # Find Job Works that need GRNs
+    for jw in job_works:
+        if jw.status in ['sent', 'partial_received'] and len(GRN.query.filter_by(job_work_id=jw.id).all()) == 0:
+            pending_job_works.append(jw)
+    
     # Enhanced statistics
     stats.update({
         'total_purchase_orders': len(purchase_orders),
@@ -604,7 +620,9 @@ def dashboard():
                          stats=stats,
                          recent_grns=recent_grns,
                          monthly_grns=monthly_grns,
-                         parent_child_data=parent_child_data)
+                         parent_child_data=parent_child_data,
+                         pending_purchase_orders=pending_purchase_orders,
+                         pending_job_works=pending_job_works)
 
 
 @grn_bp.route('/create/job_work/<int:job_work_id>')

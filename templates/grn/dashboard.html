@@ -443,17 +443,42 @@
                 <div class="card-body">
                     {% if pending_job_works or pending_purchase_orders %}
                         <div class="list-group list-group-flush">
+                            <!-- Purchase Orders -->
+                            {% for po in pending_purchase_orders %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <span class="badge bg-primary me-2">Purchase Order</span>
+                                        <h6 class="mb-1">{{ po.po_number }}</h6>
+                                        <p class="mb-1 text-muted small">{{ po.supplier.name if po.supplier else 'No Supplier' }}</p>
+                                        <p class="mb-1 small">
+                                            <span class="text-muted">Items:</span> 
+                                            <strong>{{ po.items|length }} items</strong>
+                                        </p>
+                                        <span class="badge bg-{{ 'warning' if po.status == 'partial' else 'info' }}">
+                                            {{ po.status.title() }}
+                                        </span>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <a href="{{ url_for('grn.create_grn_for_po', purchase_order_id=po.id) }}" class="btn btn-outline-success btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Create GRN
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
                             <!-- Job Works -->
                             {% for job in pending_job_works %}
                             <div class="list-group-item px-0">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div class="flex-grow-1">
                                         <span class="badge bg-info me-2">Job Work</span>
-                                        <h6 class="mb-1">{{ job.job_number }}</h6>
-                                        <p class="mb-1 text-muted small">{{ job.item.name }}</p>
+                                        <h6 class="mb-1">{{ getattr(job, 'job_number', 'JW-' + job.id|string) }}</h6>
+                                        <p class="mb-1 text-muted small">{{ getattr(job, 'customer_name', 'N/A') }}</p>
                                         <p class="mb-1 small">
-                                            <span class="text-muted">Pending Receipt:</span> 
-                                            <strong>{{ job.pending_receipt_display }}</strong>
+                                            <span class="text-muted">Status:</span> 
+                                            <strong>{{ job.status.replace('_', ' ').title() }}</strong>
                                         </p>
                                         <span class="badge bg-{{ 'warning' if job.status == 'partial_received' else 'primary' }}">
                                             {{ job.status.replace('_', ' ').title() }}
