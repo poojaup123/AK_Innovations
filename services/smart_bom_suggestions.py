@@ -287,12 +287,16 @@ class SmartBOMSuggestionService:
             # Generate suggestions for both partial production and material procurement
             suggestions_to_add = []
             
-            # Partial production suggestion (if any amount can be produced)
+            # Production suggestion (based on what can be produced)
             if max_producible > 0:
+                # Determine if this is full or partial production
+                is_full_production = max_producible >= suggestion['target_quantity']
+                production_type = "Full Production" if is_full_production else "Partial Production"
+                
                 partial_suggestion = {
                     **suggestion,
-                    'type': 'partial_manufacturing_recommendation',
-                    'title': f"Manufacture {max_producible:.1f} units of {suggestion['target_item_name']} (Partial Production)",
+                    'type': 'manufacturing_recommendation' if is_full_production else 'partial_manufacturing_recommendation',
+                    'title': f"Manufacture {max_producible:.1f} units of {suggestion['target_item_name']} ({production_type})",
                     'description': f"Produce {max_producible:.1f} out of {suggestion['target_quantity']:.1f} units using available materials",
                     'producible_quantity': max_producible,
                     'target_quantity': suggestion['target_quantity'],
@@ -306,10 +310,9 @@ class SmartBOMSuggestionService:
                     'bom_reference': suggestion.get('bom_code', 'N/A'),
                     'action_steps': [
                         f"Create job card for {max_producible:.1f} units using BOM: {suggestion.get('bom_code', 'N/A')}",
-                        f"Issue available raw materials (partial quantities)",
-                        f"Complete partial production: {max_producible:.1f} units",
-                        f"Remaining needed: {(suggestion['target_quantity'] - max_producible):.1f} units"
-                    ]
+                        f"Issue available raw materials",
+                        f"Complete production: {max_producible:.1f} units",
+                    ] + ([] if is_full_production else [f"Remaining needed: {(suggestion['target_quantity'] - max_producible):.1f} units"])
                 }
                 suggestions_to_add.append(partial_suggestion)
             
