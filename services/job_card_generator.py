@@ -38,7 +38,7 @@ class JobCardGenerator:
             self._clear_existing_job_cards(production_id)
             
             # Get the main BOM for the production item
-            main_bom = BOM.query.filter_by(item_id=production.item_id, is_active=True).first()
+            main_bom = BOM.query.filter_by(product_id=production.item_id, is_active=True).first()
             if not main_bom:
                 # Create a simple job card for items without BOM
                 return self._create_simple_job_card(production)
@@ -85,7 +85,7 @@ class JobCardGenerator:
             planned_start_date=production.start_date,
             target_completion_date=production.target_date,
             job_type='in_house',
-            status='pending',
+            status='planned',
             component_level=1,
             operation_description=f"Complete manufacturing of {production.item.name}",
             process_routing=json.dumps([{
@@ -120,7 +120,7 @@ class JobCardGenerator:
             required_quantity = bom_item.quantity * parent_quantity
             
             # Determine if this is a purchased item or manufactured item
-            child_bom = BOM.query.filter_by(item_id=bom_item.item_id, is_active=True).first()
+            child_bom = BOM.query.filter_by(product_id=bom_item.item_id, is_active=True).first()
             
             if child_bom:
                 # This item has its own BOM - create job card and recurse
@@ -180,7 +180,7 @@ class JobCardGenerator:
             planned_end_date=end_date,
             target_completion_date=end_date,
             job_type=job_type,
-            status='pending',
+            status='planned',
             operation_description=f"Process {bom_item.item.name} for {production.item.name}",
             process_routing=json.dumps(process_routing),
             special_instructions=bom_item.notes or "",
