@@ -94,12 +94,15 @@
                                         {% endif %}
                                         
                                         {% if production.status in ['planned', 'cancelled'] %}
-                                        <form method="POST" action="{{ url_for('production.delete_production', id=production.id) }}" style="display: inline;">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Production" onclick="return confirm('Are you sure you want to delete this production order? This action cannot be undone and will remove all related job cards and data.')">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" title="Delete Production" onclick="if(confirm('Are you sure you want to delete this production order? This action cannot be undone and will remove all related job cards and data.')) { 
+                                            var form = document.createElement('form'); 
+                                            form.method = 'POST'; 
+                                            form.action = '{{ url_for('production.delete_production', id=production.id) }}'; 
+                                            document.body.appendChild(form); 
+                                            form.submit(); 
+                                        }">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                         {% endif %}
                                     </div>
                                 </td>
