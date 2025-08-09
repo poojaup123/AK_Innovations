@@ -70,8 +70,8 @@ class SmartJobCardSuggestions:
                     'item_name': item.item.name,
                     'item_code': item.item.code,
                     'quantity_required': item.quantity_required,
-                    'unit_cost': item.item.unit_cost or 0,
-                    'total_cost': (item.quantity_required * (item.item.unit_cost or 0)),
+                    'unit_cost': getattr(item.item, 'unit_cost', None) or getattr(item.item, 'cost_per_unit', None) or 0,
+                    'total_cost': (item.quantity_required * (getattr(item.item, 'unit_cost', None) or getattr(item.item, 'cost_per_unit', None) or 0)),
                     'category': item.item.category or 'General'
                 }
                 for item in bom_items
@@ -406,7 +406,7 @@ class SmartJobCardSuggestions:
             'material_requirements': [{
                 'item_name': production.produced_item.name,
                 'quantity_required': production.quantity_planned,
-                'unit_cost': getattr(production.produced_item, 'unit_cost', 0) or 0
+                'unit_cost': getattr(production.produced_item, 'unit_cost', None) or getattr(production.produced_item, 'cost_per_unit', None) or 0
             }]
         }
     

@@ -139,9 +139,9 @@ def create_job_card(production_id=None):
         if not smart_suggestions.get('error'):
             # Pre-fill item details
             form.item_id.data = production.item_id
-            form.planned_quantity.data = production.planned_quantity
-            form.target_completion_date.data = production.target_completion_date
-            form.priority.data = production.priority
+            form.planned_quantity.data = production.quantity_planned
+            form.target_completion_date.data = getattr(production, 'target_completion_date', None) or (datetime.now().date() + timedelta(days=7))
+            form.priority.data = getattr(production, 'priority', 'medium')
             
             # Smart process suggestions
             if smart_suggestions.get('process_suggestions'):
