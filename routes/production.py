@@ -428,26 +428,9 @@ def add_production():
                         'unit': bom_item.item.unit_of_measure
                     })
         
-        # If there are material shortages, analyze with smart BOM suggestions
+        # Simple production creation - skip complex analysis for user convenience
         print(f"BOM processing complete. Material shortages: {len(material_shortages)}")
-        if material_shortages:
-            print("Processing material shortages with smart BOM suggestions")
-            # Get smart BOM-based suggestions
-            smart_analysis = SmartBOMSuggestionService.analyze_material_shortages_with_suggestions(
-                active_bom, form.quantity_planned.data
-            )
-            
-            # Smart suggestions are now included in the analysis result
-            smart_suggestions = smart_analysis.get('suggestions', [])
-            
-            return render_template('production/form.html', 
-                                 form=form, 
-                                 title='Add Production',
-                                 material_shortages=material_shortages,
-                                 smart_suggestions=smart_suggestions,
-                                 shortage_analysis=smart_analysis,
-                                 bom_items=bom_items,
-                                 selected_item=selected_item)
+        print("Creating production order directly (simple mode)")
         
         print("Entering try block for production creation")
         try:
