@@ -549,6 +549,9 @@ function loadBOMData(bomId) {
             // [3] Auto-populate Processes with rates and output products
             if (data.processes && data.processes.length > 0) {
                 populateProcessesFromBOM(data.processes);
+                
+                // Update workflow info based on BOM analysis
+                updateBOMWorkflowInfo(data);
             }
             
             // [4] Set default output quantity to 1 and calculate requirements
@@ -807,6 +810,43 @@ function showSuccessMessage(message) {
 function updateOutputSummary() {
     // Update output summary logic if needed
     console.log('Output summary updated');
+}
+
+// Update BOM workflow information display
+function updateBOMWorkflowInfo(data) {
+    const workflowInfo = document.getElementById('bom-workflow-info');
+    if (!workflowInfo) return;
+    
+    const hasOutputProducts = data.processes && data.processes.some(p => p.output_product_id);
+    const finalOutput = data.bom ? data.bom.product_name : 'Final Product';
+    
+    if (hasOutputProducts) {
+        workflowInfo.innerHTML = `<strong>Multi-Stage Production:</strong> This BOM defines intermediate products for each process → Final Output: <strong>${finalOutput}</strong>`;
+        workflowInfo.className = 'text-primary';
+    } else {
+        workflowInfo.innerHTML = `<strong>Sequential Operations:</strong> All processes work on the same material → Final Output: <strong>${finalOutput}</strong>`;
+        workflowInfo.className = 'text-success';
+    }
+    
+    // Update the output summary with BOM's final product
+    updateFinalOutputDisplay(data);
+}
+
+// Update final output display with BOM product information
+function updateFinalOutputDisplay(data) {
+    const finalOutputProduct = document.getElementById('final_output_product');
+    const finalOutputQuantity = document.getElementById('final_output_quantity');
+    
+    if (finalOutputProduct && data.bom) {
+        finalOutputProduct.textContent = data.bom.product_name;
+        console.log('Final output product set to BOM product:', data.bom.product_name);
+    }
+    
+    if (finalOutputQuantity && data.bom) {
+        const outputQty = data.bom.output_quantity || 1;
+        finalOutputQuantity.textContent = outputQty;
+        console.log('Final output quantity set:', outputQty);
+    }
 }
 
 // Populate input materials from BOM
