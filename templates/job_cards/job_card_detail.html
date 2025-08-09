@@ -270,6 +270,7 @@
                             <table class="table table-hover">
                                 <thead class="table-dark">
                                     <tr>
+                                        <th></th> <!-- Expand/Collapse column -->
                                         <th>Report ID</th>
                                         <th>Date</th>
                                         <th>Completed</th>
@@ -285,7 +286,16 @@
                                 </thead>
                                 <tbody>
                                     {% for status in daily_statuses %}
-                                    <tr>
+                                    <!-- Parent Row: Original Progress Report -->
+                                    <tr class="parent-row" data-report-id="{{ status.report_number }}">
+                                        <td>
+                                            {% if status.outsourced_jobs %}
+                                            <button class="btn btn-sm btn-outline-secondary toggle-children" 
+                                                    data-report-id="{{ status.report_number }}">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                            {% endif %}
+                                        </td>
                                         <td>
                                             <span class="badge bg-primary">
                                                 {{ status.report_number or 'RPT-JC-' + status.id|string }}
@@ -332,6 +342,46 @@
                                             {% endif %}
                                         </td>
                                     </tr>
+                                    
+                                    <!-- Child Rows: Outsourced Jobs from this Report -->
+                                    {% if status.outsourced_jobs %}
+                                        {% for outsourced_job in status.outsourced_jobs %}
+                                        <tr class="child-row d-none" data-parent="{{ status.report_number }}">
+                                            <td class="ps-4">
+                                                <i class="fas fa-arrow-turn-down text-muted"></i>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">
+                                                    {{ outsourced_job.job_card_number }}
+                                                </span>
+                                                <small class="text-muted d-block">Outsourced</small>
+                                            </td>
+                                            <td>{{ outsourced_job.created_at.strftime('%Y-%m-%d') }}</td>
+                                            <td>{{ "%.1f"|format(outsourced_job.outsource_quantity or 0) }}</td>
+                                            <td><span class="text-muted">-</span></td>
+                                            <td><span class="text-muted">-</span></td>
+                                            <td><span class="text-muted">-</span></td>
+                                            <td><span class="text-muted">-</span></td>
+                                            <td>
+                                                <span class="badge bg-warning">{{ outsourced_job.status|title }}</span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">
+                                                    {{ outsourced_job.assigned_vendor.name if outsourced_job.assigned_vendor else 'No Vendor' }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">{{ outsourced_job.outsource_notes or '-' }}</small>
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('job_cards.view_job_card', id=outsourced_job.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye me-1"></i>View
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% endif %}
                                     {% endfor %}
                                 </tbody>
                             </table>
@@ -534,5 +584,26 @@ var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggl
 var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
     return new bootstrap.Tooltip(tooltipTriggerEl)
 })
+
+// Parent-Child Table Toggle
+document.querySelectorAll('.toggle-children').forEach(button => {
+    button.addEventListener('click', function() {
+        const reportId = this.getAttribute('data-report-id');
+        const childRows = document.querySelectorAll(`tr.child-row[data-parent="${reportId}"]`);
+        const icon = this.querySelector('i');
+        
+        childRows.forEach(row => {
+            if (row.classList.contains('d-none')) {
+                row.classList.remove('d-none');
+                icon.classList.remove('fa-plus');
+                icon.classList.add('fa-minus');
+            } else {
+                row.classList.add('d-none');
+                icon.classList.remove('fa-minus');
+                icon.classList.add('fa-plus');
+            }
+        });
+    });
+});
 </script>
 {% endblock %}

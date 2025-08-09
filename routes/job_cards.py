@@ -396,10 +396,21 @@ def outsourcing_workflow(job_card_id, report_id=None):
             vendor = Supplier.query.get(vendor_id)
             outsource_quantity = form.outsource_quantity.data
             
-            # Update job card
-            job_card.status = 'partially_outsourced'
-            job_card.assigned_vendor_id = vendor_id
-            job_card.outsource_notes = form.outsource_notes.data
+            # Create new job card for outsourced work instead of updating existing one
+            outsourced_job_card = JobCard(
+                job_card_number=f"OUTSOURCE-{job_card.job_card_number}-{len(JobCard.query.filter(JobCard.parent_job_card_id == job_card_id).all()) + 1}",
+                item_id=job_card.item_id,
+                bom_item_id=job_card.bom_item_id,
+                quantity_planned=outsource_quantity,
+                outsource_quantity=outsource_quantity,
+                assigned_vendor_id=vendor_id,
+                outsource_notes=form.outsource_notes.data,
+                status='outsourced',
+                parent_job_card_id=job_card_id,
+                created_from_report_id=selected_report.report_number if selected_report else None,
+                process_name=form.selected_processes.data
+            )
+            db.session.add(outsourced_job_card)
             
             # Create tracking batch if requested
             if form.create_tracking_batch.data:
@@ -413,7 +424,7 @@ def outsourcing_workflow(job_card_id, report_id=None):
                 db.session.add(outsource_batch)
             
             db.session.commit()
-            flash(f'Successfully sent {outsource_quantity} pieces to {vendor.name} for outsourcing', 'success')
+            flash(f'Successfully created outsourced job card {outsourced_job_card.job_card_number} - {outsource_quantity} pieces sent to {vendor.name}', 'success')
             return redirect(url_for('job_cards.view_job_card', id=job_card_id))
             
         except Exception as e:
@@ -465,6 +476,13 @@ def view_job_card(id):
     daily_reports = JobCardDailyStatus.query.filter_by(
         job_card_id=id
     ).order_by(JobCardDailyStatus.report_date.desc()).limit(7).all()
+    
+    # Get outsourced job cards created from this job card
+    for report in daily_reports:
+        report.outsourced_jobs = JobCard.query.filter(
+            JobCard.parent_job_card_id == id,
+            JobCard.created_from_report_id == report.report_number
+        ).all()
     
     # Get materials for this job card
     materials = JobCardMaterial.query.filter_by(job_card_id=id).all()
