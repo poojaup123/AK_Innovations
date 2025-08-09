@@ -167,6 +167,13 @@ def create_app():
     except ImportError as e:
         print(f"GRN Workflow blueprint import error: {e}")
     
+    # Register GRN Job Card Integration blueprint
+    try:
+        from routes.grn_job_card import grn_job_card_bp
+        app.register_blueprint(grn_job_card_bp, url_prefix='/grn-job-card')
+    except ImportError as e:
+        print(f"GRN Job Card blueprint import error: {e}")
+    
     # Register Multi-Process Job Work blueprint
     from routes.multi_process_jobwork import multi_process_jobwork_bp
     app.register_blueprint(multi_process_jobwork_bp)

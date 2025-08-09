@@ -1,0 +1,324 @@
+{% extends 'base.html' %}
+
+{% block title %}GRN Details - {{ grn.grn_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-receipt me-2"></i>{{ grn.grn_number }}</h2>
+                    <p class="text-muted">Outsourced Job Card GRN Details</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-secondary">
+                        <i class="fas fa-clipboard me-1"></i>View Job Card
+                    </a>
+                    {% if grn.status == 'received' and grn.inspection_status == 'pending' %}
+                        <button class="btn btn-warning" id="updateInspectionBtn" data-bs-toggle="modal" data-bs-target="#inspectionModal">
+                            <i class="fas fa-check-circle me-1"></i>Update Inspection
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- GRN Status Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <h5>GRN Status</h5>
+                            <h3>{{ grn.status|title }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h5>Inspection</h5>
+                            <h3>{{ grn.inspection_status|title }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h5>Received Qty</h5>
+                            <h3>{{ job_card.grn_received_quantity or 0 }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <h5>Acceptance Rate</h5>
+                            <h3>
+                                {% if grn.line_items and grn.line_items[0].quantity_received > 0 %}
+                                    {{ "%.1f"|format((grn.line_items[0].quantity_passed / grn.line_items[0].quantity_received) * 100) }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GRN Details -->
+            <div class="row">
+                <!-- Job Card Information -->
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-clipboard me-2"></i>Job Card Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Job Card Number:</strong></td>
+                                    <td>{{ job_card.job_card_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Item:</strong></td>
+                                    <td>{{ job_card.item.name if job_card.item else 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Process:</strong></td>
+                                    <td>{{ job_card.process_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Outsourced Qty:</strong></td>
+                                    <td>{{ "%.2f"|format(job_card.outsource_quantity or 0) }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Vendor:</strong></td>
+                                    <td>{{ job_card.assigned_vendor.name if job_card.assigned_vendor else 'N/A' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GRN Information -->
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>GRN Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>GRN Number:</strong></td>
+                                    <td>{{ grn.grn_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Received Date:</strong></td>
+                                    <td>{{ grn.received_date.strftime('%Y-%m-%d') }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Received By:</strong></td>
+                                    <td>{{ grn.receiver.full_name if grn.receiver else 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Delivery Note:</strong></td>
+                                    <td>{{ grn.delivery_note or '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Vehicle:</strong></td>
+                                    <td>{{ grn.vehicle_number or '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Transporter:</strong></td>
+                                    <td>{{ grn.transporter_name or '-' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GRN Line Items -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Received Items</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Process</th>
+                                    <th>Batch Number</th>
+                                    <th>Qty Received</th>
+                                    <th>Qty Passed</th>
+                                    <th>Qty Rejected</th>
+                                    <th>Inspection Status</th>
+                                    <th>Quality Grade</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for line_item in grn.line_items %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ line_item.item.name if line_item.item else 'N/A' }}</strong><br>
+                                        <small class="text-muted">{{ line_item.item.code if line_item.item else 'N/A' }}</small>
+                                    </td>
+                                    <td>{{ line_item.process_name or '-' }}</td>
+                                    <td>{{ line_item.batch_number }}</td>
+                                    <td>{{ "%.2f"|format(line_item.quantity_received) }}</td>
+                                    <td>
+                                        <span class="text-success">{{ "%.2f"|format(line_item.quantity_passed) }}</span>
+                                    </td>
+                                    <td>
+                                        {% if line_item.quantity_rejected > 0 %}
+                                            <span class="text-danger">{{ "%.2f"|format(line_item.quantity_rejected) }}</span>
+                                        {% else %}
+                                            <span class="text-muted">0.00</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if line_item.inspection_status == 'passed' %}
+                                            <span class="badge bg-success">Passed</span>
+                                        {% elif line_item.inspection_status == 'rejected' %}
+                                            <span class="badge bg-danger">Rejected</span>
+                                        {% elif line_item.inspection_status == 'partial' %}
+                                            <span class="badge bg-warning">Partial</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if line_item.quality_grade %}
+                                            <span class="badge bg-info">{{ line_item.quality_grade }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Remarks -->
+            {% if grn.remarks %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Remarks</h5>
+                </div>
+                <div class="card-body">
+                    <p>{{ grn.remarks }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Inspection Update Modal -->
+<div class="modal fade" id="inspectionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Quality Inspection</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="inspectionForm">
+                    <div class="mb-3">
+                        <label class="form-label">Quantity Passed</label>
+                        <input type="number" class="form-control" id="quantityPassed" 
+                               step="0.01" min="0" max="{{ grn.line_items[0].quantity_received if grn.line_items else 0 }}"
+                               value="{{ grn.line_items[0].quantity_received if grn.line_items else 0 }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quantity Rejected</label>
+                        <input type="number" class="form-control" id="quantityRejected" 
+                               step="0.01" min="0" value="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quality Grade</label>
+                        <select class="form-select" id="qualityGrade">
+                            <option value="">Select Grade</option>
+                            <option value="A">Grade A</option>
+                            <option value="B">Grade B</option>
+                            <option value="C">Grade C</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rejection Reason (if any)</label>
+                        <textarea class="form-control" id="rejectionReason" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="saveInspection">
+                    <i class="fas fa-save me-1"></i>Update Inspection
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const saveBtn = document.getElementById('saveInspection');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', function() {
+            const passed = parseFloat(document.getElementById('quantityPassed').value) || 0;
+            const rejected = parseFloat(document.getElementById('quantityRejected').value) || 0;
+            const grade = document.getElementById('qualityGrade').value;
+            const reason = document.getElementById('rejectionReason').value;
+            
+            const data = {
+                quantity_passed: passed,
+                quantity_rejected: rejected,
+                inspection_status: 'completed',
+                quality_grade: grade,
+                rejection_reason: reason
+            };
+            
+            fetch(`/grn-job-card/update-inspection/{{ job_card.id }}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating inspection');
+            });
+        });
+    }
+    
+    // Auto-calculate rejection quantity
+    const passedInput = document.getElementById('quantityPassed');
+    const rejectedInput = document.getElementById('quantityRejected');
+    const totalReceived = {{ grn.line_items[0].quantity_received if grn.line_items else 0 }};
+    
+    if (passedInput && rejectedInput) {
+        passedInput.addEventListener('input', function() {
+            const passed = parseFloat(this.value) || 0;
+            const rejected = Math.max(0, totalReceived - passed);
+            rejectedInput.value = rejected.toFixed(2);
+        });
+    }
+});
+</script>
+{% endblock %}

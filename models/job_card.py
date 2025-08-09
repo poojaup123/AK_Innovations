@@ -95,6 +95,12 @@ class JobCard(db.Model):
     outsource_quantity = db.Column(db.Float, default=0)
     created_from_report_id = db.Column(db.String(50))  # Links to JobCardDailyStatus.report_number
     
+    # GRN Integration for Outsourced Work
+    grn_id = db.Column(db.Integer, db.ForeignKey('grn.id'))  # Links to GRN when work returns
+    grn = db.relationship('GRN', backref='outsourced_job_cards')
+    grn_received_quantity = db.Column(db.Float, default=0)  # Quantity actually received back
+    grn_received_date = db.Column(db.Date)  # When outsourced work was received back
+    
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -360,12 +360,30 @@
                                             </td>
                                             <td>{{ outsourced_job.created_at.strftime('%Y-%m-%d') }}</td>
                                             <td>{{ "%.1f"|format(outsourced_job.outsource_quantity or 0) }}</td>
-                                            <td><span class="text-muted">-</span></td>
-                                            <td><span class="text-muted">-</span></td>
+                                            <td>
+                                                {% if outsourced_job.grn_received_quantity %}
+                                                    <span class="text-success">{{ "%.1f"|format(outsourced_job.grn_received_quantity) }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">Pending</span>
+                                                {% endif %}
+                                            </td>
                                             <td><span class="text-muted">-</span></td>
                                             <td><span class="text-muted">-</span></td>
                                             <td>
-                                                <span class="badge bg-warning">{{ outsourced_job.status|title }}</span>
+                                                {% if outsourced_job.grn_id %}
+                                                    <span class="text-success">{{ "%.1f"|format((outsourced_job.grn_received_quantity / outsourced_job.outsource_quantity) * 100 if outsourced_job.outsource_quantity > 0 else 0) }}%</span>
+                                                {% else %}
+                                                    <span class="text-muted">Pending</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if outsourced_job.grn_id %}
+                                                    <span class="badge bg-success">Received</span>
+                                                {% elif outsourced_job.status == 'outsourced' %}
+                                                    <span class="badge bg-warning">In Process</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ outsourced_job.status|title }}</span>
+                                                {% endif %}
                                             </td>
                                             <td>
                                                 <small class="text-muted">
@@ -376,10 +394,23 @@
                                                 <small class="text-muted">{{ outsourced_job.outsource_notes or '-' }}</small>
                                             </td>
                                             <td>
-                                                <a href="{{ url_for('job_cards.view_job_card', id=outsourced_job.id) }}" 
-                                                   class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-eye me-1"></i>View
-                                                </a>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{{ url_for('job_cards.view_job_card', id=outsourced_job.id) }}" 
+                                                       class="btn btn-outline-primary">
+                                                        <i class="fas fa-eye me-1"></i>View
+                                                    </a>
+                                                    {% if not outsourced_job.grn_id %}
+                                                        <a href="{{ url_for('grn_job_card.create_grn_for_job_card', job_card_id=outsourced_job.id) }}" 
+                                                           class="btn btn-outline-success">
+                                                            <i class="fas fa-truck-loading me-1"></i>Create GRN
+                                                        </a>
+                                                    {% else %}
+                                                        <a href="{{ url_for('grn_job_card.view_grn_for_job_card', job_card_id=outsourced_job.id) }}" 
+                                                           class="btn btn-outline-info">
+                                                            <i class="fas fa-receipt me-1"></i>View GRN
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
                                             </td>
                                         </tr>
                                         {% endfor %}
