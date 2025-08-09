@@ -1857,7 +1857,7 @@ def daily_production_entry(production_id):
             'material_consumption_notes': form.material_consumption_notes.data
         }
         
-        # Record daily production
+        # Record daily production (includes automatic material validation)
         result = DailyProductionService.record_daily_production(
             production_id, form_data, current_user.id
         )
@@ -2018,3 +2018,6 @@ def update_status(id, status):
         flash(f'Error updating status: {str(e)}', 'error')
     
     return redirect(url_for('production.list_productions'))
+
+
+

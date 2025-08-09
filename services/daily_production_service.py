@@ -12,9 +12,92 @@ class DailyProductionService:
     """Service for handling daily production entry and updates"""
     
     @staticmethod
+    def validate_material_availability(production, planned_production_qty):
+        """
+        Validate if sufficient materials are available for production
+        
+        Args:
+            production: Production object
+            planned_production_qty: Quantity planned to produce today
+            
+        Returns:
+            dict: Validation result with availability status and details
+        """
+        from models.bom import BOM, BOMItem
+        
+        # Check if production has BOM
+        if not production.bom_id:
+            return {
+                'success': True, 
+                'message': 'No BOM found for this production. Manual validation required.',
+                'warnings': ['No BOM attached - material consumption cannot be tracked automatically']
+            }
+        
+        bom = BOM.query.get(production.bom_id)
+        if not bom:
+            return {
+                'success': False,
+                'message': 'BOM not found for this production order'
+            }
+        
+        # Check material availability for each BOM item
+        material_shortages = []
+        availability_warnings = []
+        
+        for bom_item in bom.bom_items:
+            if bom_item.item_type != 'input':  # Only check input materials
+                continue
+                
+            # Calculate required quantity for today's production
+            required_qty = (bom_item.quantity_required / bom.batch_size) * planned_production_qty
+            
+            # Check available inventory (raw material state)
+            available_qty = bom_item.item.qty_raw_material or 0
+            
+            if available_qty < required_qty:
+                shortage = required_qty - available_qty
+                material_shortages.append({
+                    'item_name': bom_item.item.name,
+                    'required': required_qty,
+                    'available': available_qty,
+                    'shortage': shortage,
+                    'unit': bom_item.unit_of_measure
+                })
+            elif available_qty < (required_qty * 1.1):  # Less than 10% buffer
+                availability_warnings.append({
+                    'item_name': bom_item.item.name,
+                    'required': required_qty,
+                    'available': available_qty,
+                    'unit': bom_item.unit_of_measure,
+                    'message': f'Low stock warning: Only {available_qty:.2f} {bom_item.unit_of_measure} available'
+                })
+        
+        if material_shortages:
+            shortage_details = []
+            for shortage in material_shortages:
+                shortage_details.append(
+                    f"• {shortage['item_name']}: Need {shortage['required']:.2f} {shortage['unit']}, "
+                    f"Available {shortage['available']:.2f} {shortage['unit']}, "
+                    f"Short by {shortage['shortage']:.2f} {shortage['unit']}"
+                )
+            
+            return {
+                'success': False,
+                'message': f'Material shortage detected for {planned_production_qty} units production:',
+                'shortages': material_shortages,
+                'details': shortage_details
+            }
+        
+        return {
+            'success': True,
+            'message': 'All materials available for production',
+            'warnings': [w['message'] for w in availability_warnings]
+        }
+
+    @staticmethod
     def record_daily_production(production_id, form_data, user_id):
         """
-        Record daily production entry and update production totals
+        Record daily production entry and update production totals with material validation
         
         Args:
             production_id: ID of the production order
@@ -29,6 +112,22 @@ class DailyProductionService:
             production = Production.query.get(production_id)
             if not production:
                 return {'success': False, 'message': 'Production order not found'}
+            
+            planned_qty = form_data.get('quantity_produced_today', 0)
+            if planned_qty <= 0:
+                return {'success': False, 'message': 'Production quantity must be greater than 0'}
+            
+            # Validate material availability
+            validation_result = DailyProductionService.validate_material_availability(
+                production, planned_qty
+            )
+            
+            if not validation_result['success']:
+                error_msg = validation_result['message']
+                if 'details' in validation_result:
+                    error_msg += "\n\n" + "\n".join(validation_result['details'])
+                error_msg += "\n\nPlease check inventory and ensure sufficient materials are available before recording production."
+                return {'success': False, 'message': error_msg}
             
             # Create daily production entry
             daily_entry = DailyProductionEntry(

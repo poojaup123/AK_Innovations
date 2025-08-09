@@ -106,8 +106,9 @@
                         </div>
                         <div class="col-md-6">
                             {{ form.quantity_produced_today.label(class="form-label") }}
-                            {{ form.quantity_produced_today(class="form-control", required=true) }}
+                            {{ form.quantity_produced_today(class="form-control", required=true, id="quantity_produced_today", onchange="checkMaterialAvailability()") }}
                             <small class="form-text text-muted">Actually produced today</small>
+                            <div id="material_availability_alert" class="mt-2" style="display: none;"></div>
                         </div>
                     </div>
 
@@ -266,6 +267,66 @@
 </div>
 
 <script>
+// Material availability check function
+function checkMaterialAvailability() {
+    const quantity = document.getElementById('quantity_produced_today').value;
+    const productionId = {{ production.id }};
+    const alertDiv = document.getElementById('material_availability_alert');
+    
+    if (!quantity || quantity <= 0) {
+        alertDiv.style.display = 'none';
+        return;
+    }
+    
+    // Show loading
+    alertDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Checking material availability...</div>';
+    alertDiv.style.display = 'block';
+    
+    // Check material availability via API
+    fetch(`/production/check-material-availability/${productionId}/${parseInt(quantity)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.warnings && data.warnings.length > 0) {
+                    // Show warnings
+                    let warningHtml = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> <strong>Warnings:</strong><ul class="mb-0">';
+                    data.warnings.forEach(warning => {
+                        warningHtml += `<li>${warning}</li>`;
+                    });
+                    warningHtml += '</ul></div>';
+                    alertDiv.innerHTML = warningHtml;
+                } else {
+                    // All materials available
+                    alertDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> All materials available for production</div>';
+                }
+            } else {
+                // Material shortage
+                let errorHtml = '<div class="alert alert-danger"><i class="fas fa-times-circle"></i> <strong>Material Shortage Detected!</strong><br>';
+                errorHtml += data.message;
+                if (data.details && data.details.length > 0) {
+                    errorHtml += '<ul class="mt-2 mb-0">';
+                    data.details.forEach(detail => {
+                        errorHtml += `<li>${detail}</li>`;
+                    });
+                    errorHtml += '</ul>';
+                }
+                errorHtml += '</div>';
+                alertDiv.innerHTML = errorHtml;
+                
+                // Disable submit button to prevent false entries
+                const submitBtn = document.querySelector('input[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.title = 'Cannot submit - material shortage detected';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error checking material availability:', error);
+            alertDiv.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> Unable to verify material availability. Please check manually.</div>';
+        });
+}
+
 // Auto-calculate good quantity if only produced quantity is entered
 document.getElementById('quantity_produced_today').addEventListener('input', function() {
     const produced = parseFloat(this.value) || 0;
@@ -277,6 +338,16 @@ document.getElementById('quantity_produced_today').addEventListener('input', fun
     if (produced > 0 && good === 0 && defective === 0 && scrap === 0) {
         document.getElementById('quantity_good_today').value = produced;
     }
+    
+    // Re-enable submit button when quantity changes
+    const submitBtn = document.querySelector('input[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.title = '';
+    }
+    
+    // Check material availability
+    checkMaterialAvailability();
 });
 
 // Validate that total breakdown equals produced quantity
