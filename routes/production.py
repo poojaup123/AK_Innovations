@@ -1832,7 +1832,7 @@ def daily_production_entry(production_id):
         # Pre-populate form with production details
         form.production_id.data = production.id
         form.production_number.data = production.production_number
-        form.item_name.data = production.item.name if production.item else 'Unknown Item'
+        form.item_name.data = production.produced_item.name if production.produced_item else 'Unknown Item'
         
         # Calculate suggested target based on remaining quantity and time
         remaining_qty = production.quantity_planned - (production.quantity_produced or 0)
@@ -1864,7 +1864,7 @@ def daily_production_entry(production_id):
         
         if result['success']:
             flash(result['message'], 'success')
-            return redirect(url_for('production.view_production', id=production_id))
+            return redirect(url_for('production.list_productions'))
         else:
             flash(result['message'], 'error')
     
@@ -1934,7 +1934,7 @@ def daily_production_summary(production_id):
     
     if not summary_result['success']:
         flash(summary_result['message'], 'error')
-        return redirect(url_for('production.view_production', id=production_id))
+        return redirect(url_for('production.list_productions'))
     
     return render_template('production/daily_summary.html',
                          production=production,
@@ -1961,7 +1961,7 @@ def production_dashboard_data():
             today_entries_data.append({
                 'id': entry.id,
                 'production_number': entry.production.production_number,
-                'item_name': entry.production.item.name if entry.production.item else 'Unknown',
+                'item_name': entry.production.produced_item.name if entry.production.produced_item else 'Unknown',
                 'actual_quantity': entry.actual_quantity,
                 'good_quantity': entry.good_quantity,
                 'defective_quantity': entry.defective_quantity,
@@ -1979,7 +1979,7 @@ def production_dashboard_data():
             active_productions_data.append({
                 'id': prod.id,
                 'production_number': prod.production_number,
-                'item_name': prod.item.name if prod.item else 'Unknown',
+                'item_name': prod.produced_item.name if prod.produced_item else 'Unknown',
                 'quantity_planned': prod.quantity_planned,
                 'quantity_produced': prod.quantity_produced or 0,
                 'progress_percentage': progress_percentage,
@@ -1995,3 +1995,26 @@ def production_dashboard_data():
         return jsonify({'success': True, 'data': response_data})
     
     return jsonify(result)
+
+
+@production_bp.route('/update_status/<int:id>/<status>')
+@login_required
+def update_status(id, status):
+    """Update production order status"""
+    production = Production.query.get_or_404(id)
+    
+    # Validate status
+    valid_statuses = ['planned', 'in_progress', 'completed', 'on_hold', 'cancelled']
+    if status not in valid_statuses:
+        flash('Invalid status', 'error')
+        return redirect(url_for('production.list_productions'))
+    
+    try:
+        production.status = status
+        db.session.commit()
+        flash(f'Production {production.production_number} status updated to {status.replace("_", " ").title()}', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating status: {str(e)}', 'error')
+    
+    return redirect(url_for('production.list_productions'))
