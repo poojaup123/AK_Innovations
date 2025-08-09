@@ -187,7 +187,7 @@ class JobCardGenerator:
         material_name = material.name if material else "Unknown Material"
         job_card.operation_description = f"Process {material_name} for {production.item.name}"
         job_card.process_routing = json.dumps(process_routing)
-        job_card.special_instructions = bom_item.notes or ""
+        job_card.special_instructions = getattr(bom_item, 'notes', "") or getattr(bom_item, 'remarks', "") or ""
         job_card.estimated_cost = self._estimate_job_cost(bom_item, required_quantity)
         job_card.department = self._determine_department(bom_item, job_type)
         
