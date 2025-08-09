@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Production Update{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Production Information Sidebar -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Production Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Production Number:</strong>
+                        <br><span class="text-primary">{{ production.production_number }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Item:</strong>
+                        <br>{{ item.code if item else 'N/A' }} - {{ item.name if item else 'Unknown Item' }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Planned Quantity:</strong>
+                        <br>{{ "%.1f"|format(production.quantity_planned or 0) }} {{ item.unit_of_measure if item else 'units' }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Status:</strong>
+                        <br><span class="badge bg-{{ 'success' if production.status == 'completed' else 'primary' if production.status == 'in_progress' else 'secondary' }}">
+                            {{ production.status|title }}
+                        </span>
+                    </div>
+                    {% if today_report %}
+                    <div class="mt-3 pt-3 border-top">
+                        <h6 class="text-muted">Today's Progress</h6>
+                        <small>
+                            <strong>Completed:</strong> {{ "%.1f"|format(today_report.cumulative_completed) }}<br>
+                            <strong>Good:</strong> {{ "%.1f"|format(today_report.cumulative_good) }}<br>
+                            <strong>Defective:</strong> {{ "%.1f"|format(today_report.cumulative_defective) }}<br>
+                            <strong>Progress:</strong> {{ "%.1f"|format(today_report.progress_percentage) }}%
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Update Form -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Daily Production Update - {{ today.strftime('%B %d, %Y') if today else 'Today' }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+
+                        <div class="row">
+                            <!-- Quantity Updates -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-chart-line me-2"></i>Quantity Updates
+                                </h6>
+
+                                <div class="mb-3">
+                                    {{ form.qty_completed_today.label(class="form-label") }}
+                                    {{ form.qty_completed_today(class="form-control") }}
+                                    {% for error in form.qty_completed_today.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.qty_good_today.label(class="form-label") }}
+                                    {{ form.qty_good_today(class="form-control") }}
+                                    {% for error in form.qty_good_today.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            {{ form.qty_defective_today.label(class="form-label") }}
+                                            {{ form.qty_defective_today(class="form-control") }}
+                                            {% for error in form.qty_defective_today.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            {{ form.qty_scrap_today.label(class="form-label") }}
+                                            {{ form.qty_scrap_today(class="form-control") }}
+                                            {% for error in form.qty_scrap_today.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.daily_status.label(class="form-label") }}
+                                    {{ form.daily_status(class="form-select") }}
+                                    {% for error in form.daily_status.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Resource & Time Tracking -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-users me-2"></i>Resource & Time Tracking
+                                </h6>
+
+                                <div class="mb-3">
+                                    {{ form.workers_assigned.label(class="form-label") }}
+                                    {{ form.workers_assigned(class="form-control") }}
+                                    {% for error in form.workers_assigned.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            {{ form.machine_hours_used.label(class="form-label") }}
+                                            {{ form.machine_hours_used(class="form-control") }}
+                                            {% for error in form.machine_hours_used.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            {{ form.overtime_hours.label(class="form-label") }}
+                                            {{ form.overtime_hours(class="form-control") }}
+                                            {% for error in form.overtime_hours.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            {{ form.shift_start_time.label(class="form-label") }}
+                                            {{ form.shift_start_time(class="form-control") }}
+                                            {% for error in form.shift_start_time.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            {{ form.shift_end_time.label(class="form-label") }}
+                                            {{ form.shift_end_time(class="form-control") }}
+                                            {% for error in form.shift_end_time.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cost Tracking -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-dollar-sign me-2"></i>Cost Tracking
+                                </h6>
+                                
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            {{ form.material_consumed_cost.label(class="form-label") }}
+                                            {{ form.material_consumed_cost(class="form-control") }}
+                                            {% for error in form.material_consumed_cost.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            {{ form.labor_cost_today.label(class="form-label") }}
+                                            {{ form.labor_cost_today(class="form-control") }}
+                                            {% for error in form.labor_cost_today.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Issues & Notes -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Issues & Notes
+                                </h6>
+
+                                <div class="mb-3">
+                                    {{ form.production_issues.label(class="form-label") }}
+                                    {{ form.production_issues(class="form-control", rows="3") }}
+                                    {% for error in form.production_issues.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.quality_issues.label(class="form-label") }}
+                                    {{ form.quality_issues(class="form-control", rows="2") }}
+                                    {% for error in form.quality_issues.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Fields -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.delay_reason.label(class="form-label") }}
+                                    {{ form.delay_reason(class="form-control", rows="2") }}
+                                    {% for error in form.delay_reason.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.supervisor_notes.label(class="form-label") }}
+                                    {{ form.supervisor_notes(class="form-control", rows="2") }}
+                                    {% for error in form.supervisor_notes.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('production.dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Update Daily Status
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

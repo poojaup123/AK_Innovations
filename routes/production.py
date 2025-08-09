@@ -2,9 +2,11 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from forms import ProductionForm, BOMForm, BOMItemForm, BOMProcessForm
+from forms_daily_production import DailyProductionUpdateForm
 from models import Production, Item, BOM, BOMItem, BOMProcess, Supplier, ItemBatch, ProductionBatch
 from models.daily_production import DailyProductionStatus, DailyProductionSummary
 from models.job_card import JobCard, JobCardDailyStatus, JobCardMaterial
+from datetime import date
 from services.process_integration import ProcessIntegrationService
 from services.authentic_accounting_integration import AuthenticAccountingIntegration
 from services.smart_bom_suggestions import SmartBOMSuggestionService
@@ -243,11 +245,12 @@ def update_daily_status(production_id):
     # Get production item for display
     item = Item.query.get(production.item_id) if production.item_id else None
     
-    return render_template('daily_production/update_form.html',
+    return render_template('production/update_daily_status.html',
                          form=form,
                          production=production,
                          item=item,
                          today_report=today_report,
+                         today=date.today(),
                          title=f'Update Daily Status - {production.production_number}')
 
 @production_bp.route('/quick-daily-update', methods=['POST'])
