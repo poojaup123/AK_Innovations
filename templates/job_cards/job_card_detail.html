@@ -207,24 +207,29 @@
                                     <th>Material</th>
                                     <th>Required Qty</th>
                                     <th>Unit</th>
-                                    <th>Specification</th>
+                                    <th>Batch Number</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for material in material_requirements %}
                                 <tr>
-                                    <td>
-                                        <strong>{{ material.item_name }}</strong>
-                                        <br><small class="text-muted">{{ material.item_code }}</small>
-                                    </td>
-                                    <td>{{ "%.2f"|format(material.quantity_required) }}</td>
+                                    <td>{{ material.name }}</td>
+                                    <td>{{ material.quantity }}</td>
                                     <td>{{ material.unit }}</td>
                                     <td>
-                                        <span class="text-muted">{{ material.specification }}</span>
+                                        {% if material.batch_number %}
+                                            <span class="badge bg-info">{{ material.batch_number }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Not Issued</span>
+                                        {% endif %}
                                     </td>
                                     <td>
-                                        <span class="badge bg-warning">Pending Issue</span>
+                                        {% if material.issued %}
+                                            <span class="badge bg-success">Issued</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Pending Issue</span>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}

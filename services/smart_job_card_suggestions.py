@@ -72,7 +72,7 @@ class SmartJobCardSuggestions:
                     'quantity_required': item.quantity_required,
                     'unit_cost': getattr(item.item, 'unit_cost', None) or getattr(item.item, 'cost_per_unit', None) or 0,
                     'total_cost': (item.quantity_required * (getattr(item.item, 'unit_cost', None) or getattr(item.item, 'cost_per_unit', None) or 0)),
-                    'category': getattr(item.item, 'category', None) or getattr(item.item, 'item_category', None) or 'General'
+                    'category': item.item.category or 'General'
                 }
                 for item in bom_items
             ],
