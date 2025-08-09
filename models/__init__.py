@@ -1983,7 +1983,7 @@ class Production(db.Model):
     total_weight_planned = db.Column(db.Float, default=0.0)  # Total planned weight
     total_weight_produced = db.Column(db.Float, default=0.0)  # Total produced weight
     production_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date())
-    status = db.Column(db.String(20), default='planned')  # planned, in_progress, completed
+    status = db.Column(db.String(20), default='planned')  # planned, in_progress, completed, cancelled
     notes = db.Column(db.Text)
     
     # Batch Tracking Fields

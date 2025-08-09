@@ -812,12 +812,83 @@ def edit_production(id):
 @login_required
 def update_status(id, status):
     production = Production.query.get_or_404(id)
-    if status in ['planned', 'in_progress', 'completed']:
+    if status in ['planned', 'in_progress', 'completed', 'cancelled']:
         production.status = status
         db.session.commit()
         flash(f'Production status updated to {status}', 'success')
     else:
         flash('Invalid status', 'danger')
+    
+    return redirect(url_for('production.list_productions'))
+
+@production_bp.route('/cancel/<int:id>')
+@login_required
+def cancel_production(id):
+    """Cancel a production order"""
+    try:
+        production = Production.query.get_or_404(id)
+        
+        # Only allow cancellation if production is not completed
+        if production.status == 'completed':
+            flash('Cannot cancel a completed production order', 'danger')
+            return redirect(url_for('production.list_productions'))
+        
+        # Update status to cancelled
+        production.status = 'cancelled'
+        
+        # Add cancellation note with timestamp
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        cancellation_note = f"\n[CANCELLED on {current_time} by {current_user.username}]"
+        production.notes = (production.notes or '') + cancellation_note
+        
+        db.session.commit()
+        flash(f'Production order {production.production_number} has been cancelled successfully', 'warning')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error cancelling production: {str(e)}', 'danger')
+    
+    return redirect(url_for('production.list_productions'))
+
+@production_bp.route('/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_production(id):
+    """Delete a production order and all related data"""
+    try:
+        production = Production.query.get_or_404(id)
+        production_number = production.production_number
+        
+        # Only allow deletion if production is planned or cancelled
+        if production.status in ['in_progress', 'completed']:
+            flash('Cannot delete a production order that is in progress or completed', 'danger')
+            return redirect(url_for('production.list_productions'))
+        
+        # Delete related job cards and their daily status records
+        job_cards = JobCard.query.filter_by(production_id=id).all()
+        for job_card in job_cards:
+            # Delete daily status records
+            JobCardDailyStatus.query.filter_by(job_card_id=job_card.id).delete()
+            # Delete job card materials
+            JobCardMaterial.query.filter_by(job_card_id=job_card.id).delete()
+        
+        # Delete job cards
+        JobCard.query.filter_by(production_id=id).delete()
+        
+        # Delete daily production status records
+        DailyProductionStatus.query.filter_by(production_id=id).delete()
+        
+        # Delete production batches
+        ProductionBatch.query.filter_by(production_id=id).delete()
+        
+        # Delete the production order itself
+        db.session.delete(production)
+        db.session.commit()
+        
+        flash(f'Production order {production_number} and all related data deleted successfully', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting production: {str(e)}', 'danger')
     
     return redirect(url_for('production.list_productions'))
 
