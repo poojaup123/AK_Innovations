@@ -1312,54 +1312,25 @@ def get_item_details(item_id):
         'item_type': item.item_type
     }
 
-@production_bp.route('/check_material_availability', methods=['POST'])
+@production_bp.route('/check-material-availability/<int:production_id>/<int:quantity>')
 @login_required
-def check_material_availability():
-    """API endpoint to check material availability for production planning"""
-    item_id = request.json.get('item_id')
-    quantity = float(request.json.get('quantity', 1))
-    
-    if not item_id:
-        return jsonify({'error': 'Item ID required'}), 400
-    
-    # Get BOM for the item
-    active_bom = BOM.query.filter_by(product_id=item_id, is_active=True).first()
-    
-    if not active_bom:
+def check_material_availability_api(production_id, quantity):
+    """API endpoint to check material availability for production quantity"""
+    try:
+        production = Production.query.get_or_404(production_id)
+        
+        # Validate material availability using the service
+        validation_result = DailyProductionService.validate_material_availability(
+            production, quantity
+        )
+        
+        return jsonify(validation_result)
+        
+    except Exception as e:
         return jsonify({
-            'has_bom': False,
-            'message': 'No BOM found for this item'
-        })
-    
-    # Check material availability
-    bom_items = BOMItem.query.filter_by(bom_id=active_bom.id).all()
-    material_data = []
-    has_shortages = False
-    
-    for bom_item in bom_items:
-        required_qty = bom_item.quantity_required * quantity
-        available_qty = bom_item.item.current_stock or 0
-        is_sufficient = available_qty >= required_qty
-        
-        if not is_sufficient:
-            has_shortages = True
-        
-        material_data.append({
-            'item_code': bom_item.item.code,
-            'item_name': bom_item.item.name,
-            'quantity_required': bom_item.quantity_required,
-            'total_required': required_qty,
-            'available_qty': available_qty,
-            'is_sufficient': is_sufficient,
-            'shortage_qty': max(0, required_qty - available_qty),
-            'unit': bom_item.item.unit_of_measure
-        })
-    
-    return jsonify({
-        'has_bom': True,
-        'has_shortages': has_shortages,
-        'materials': material_data
-    })
+            'success': False,
+            'message': f'Error checking material availability: {str(e)}'
+        }), 500
 
 # Process Integration Routes
 @production_bp.route('/bom/<int:id>/sync_from_processes', methods=['POST'])
