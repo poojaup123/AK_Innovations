@@ -72,7 +72,12 @@ class SmartBOMSuggestionService:
             s for s in shortages if not s.get('can_manufacture', False)
         ])
         
-        all_suggestions = optimized_suggestions + purchase_suggestions
+        # Consolidate purchase suggestions for shared raw materials across manufacturing suggestions
+        consolidated_purchase_suggestions = SmartBOMSuggestionService._consolidate_shared_material_purchases(
+            optimized_suggestions, purchase_suggestions
+        )
+        
+        all_suggestions = optimized_suggestions + consolidated_purchase_suggestions
         
         return {
             'has_shortages': len(shortages) > 0,
@@ -394,3 +399,99 @@ class SmartBOMSuggestionService:
                 notes.append(f"    Recommended: Purchase additional {material['material_name']} sheets")
         
         return notes
+    
+    @staticmethod
+    def _consolidate_shared_material_purchases(manufacturing_suggestions: List[Dict], purchase_suggestions: List[Dict]) -> List[Dict]:
+        """
+        Consolidate purchase suggestions when multiple manufacturing suggestions require the same raw materials
+        Create a single consolidated purchase order for shared materials
+        """
+        # Track material requirements across all manufacturing suggestions
+        consolidated_materials = {}
+        
+        # Process manufacturing suggestions to extract raw material requirements
+        for suggestion in manufacturing_suggestions:
+            if suggestion.get('raw_materials_required'):
+                for material in suggestion['raw_materials_required']:
+                    if not material.get('sufficient', True):  # Only insufficient materials
+                        material_id = material['material_id']
+                        shortage_qty = material.get('shortage_qty', 0)
+                        
+                        if shortage_qty > 0:
+                            if material_id not in consolidated_materials:
+                                consolidated_materials[material_id] = {
+                                    'material_id': material_id,
+                                    'material_name': material['material_name'],
+                                    'unit': material['unit'],
+                                    'total_shortage_qty': 0,
+                                    'used_by_products': [],
+                                    'estimated_cost': 0,
+                                    'unit_cost': material.get('unit_cost', 0)
+                                }
+                            
+                            consolidated_materials[material_id]['total_shortage_qty'] += shortage_qty
+                            consolidated_materials[material_id]['used_by_products'].append({
+                                'product_name': suggestion.get('target_item_name', 'Unknown'),
+                                'quantity_needed': shortage_qty
+                            })
+                            consolidated_materials[material_id]['estimated_cost'] += shortage_qty * material.get('unit_cost', 0)
+        
+        # Create consolidated purchase suggestions
+        consolidated_suggestions = []
+        
+        for material_id, material_info in consolidated_materials.items():
+            if len(material_info['used_by_products']) > 1:  # Only consolidate if used by multiple products
+                # Create consolidated purchase suggestion
+                product_list = [f"{prod['product_name']} ({prod['quantity_needed']:.1f} {material_info['unit']})" 
+                              for prod in material_info['used_by_products']]
+                
+                consolidated_suggestion = {
+                    'type': 'consolidated_purchase_recommendation',
+                    'priority': 'high',
+                    'title': f'Consolidated Purchase: {material_info["material_name"]}',
+                    'description': f'Purchase {material_info["total_shortage_qty"]:.1f} {material_info["unit"]} of {material_info["material_name"]} for multiple products',
+                    'action_steps': [
+                        f'Create consolidated Purchase Order for {material_info["total_shortage_qty"]:.1f} {material_info["unit"]} of {material_info["material_name"]}',
+                        f'This material is needed for: {", ".join([prod["product_name"] for prod in material_info["used_by_products"]])}',
+                        'Material breakdown by product:',
+                        *[f'  • {prod_desc}' for prod_desc in product_list],
+                        'Contact supplier for bulk pricing discount',
+                        'Schedule delivery to support all manufacturing timelines'
+                    ],
+                    'estimated_cost': material_info['estimated_cost'],
+                    'estimated_time': '3-7 days (supplier dependent)',
+                    'feasibility': 'requires_supplier_contact',
+                    'consolidation_benefit': f'Consolidated {len(material_info["used_by_products"])} separate purchases into one order',
+                    'raw_materials_required': [{
+                        'material_id': material_id,
+                        'material_name': material_info['material_name'],
+                        'needed_qty': material_info['total_shortage_qty'],
+                        'shortage_qty': material_info['total_shortage_qty'],
+                        'unit': material_info['unit'],
+                        'sufficient': False,
+                        'unit_cost': material_info['unit_cost'],
+                        'consolidated': True,
+                        'used_by': material_info['used_by_products']
+                    }],
+                    'item_details': {
+                        'item_id': material_id,
+                        'item_code': f'CONSOLIDATED-{material_id}',
+                        'item_name': material_info['material_name'],
+                        'shortage_qty': material_info['total_shortage_qty'],
+                        'recommended_qty': material_info['total_shortage_qty'] * 1.1,  # Add 10% safety stock
+                        'unit': material_info['unit']
+                    }
+                }
+                
+                consolidated_suggestions.append(consolidated_suggestion)
+        
+        # Add remaining non-consolidated purchase suggestions
+        remaining_purchase_suggestions = []
+        consolidated_material_ids = set(consolidated_materials.keys())
+        
+        for suggestion in purchase_suggestions:
+            item_details = suggestion.get('item_details', {})
+            if item_details.get('item_id') not in consolidated_material_ids:
+                remaining_purchase_suggestions.append(suggestion)
+        
+        return consolidated_suggestions + remaining_purchase_suggestions

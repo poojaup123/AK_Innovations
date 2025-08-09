@@ -115,6 +115,20 @@
                                             </a>
                                         {% endif %}
                                         
+                                        {% if suggestion.type == 'consolidated_purchase_recommendation' %}
+                                            <a href="{{ url_for('purchase.add_purchase_order') }}?from_suggestion=1&item_id={{ suggestion.get('item_details', {}).get('item_id', '') }}&quantity={{ suggestion.get('item_details', {}).get('shortage_qty', 0) }}&production_id={{ production.id }}" 
+                                               class="btn btn-warning btn-sm">
+                                                <i class="fas fa-boxes me-2"></i>Create Consolidated Purchase Order
+                                            </a>
+                                            {% if suggestion.get('consolidation_benefit') %}
+                                                <div class="mt-2">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-info-circle me-1"></i>{{ suggestion.consolidation_benefit }}
+                                                    </small>
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
+                                        
                                         {% if suggestion.get('raw_materials_required') %}
                                             <!-- Create PO for insufficient raw materials -->
                                             {% set insufficient_materials = suggestion.raw_materials_required | selectattr('sufficient', 'equalto', false) | list %}
