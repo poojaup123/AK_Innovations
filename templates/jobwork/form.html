@@ -182,13 +182,28 @@
                                 </td>
                                 <td>Automatic FIFO-based batch selection eliminates manual selection and ensures optimal inventory rotation</td>
                             </tr>
+                            <tr id="output_quantity_row">
+                                <td><strong>Output Quantity</strong></td>
+                                <td>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="output_quantity_input" 
+                                               placeholder="How many final products?" 
+                                               min="1" step="1" value="1" 
+                                               onchange="calculateMaterialRequirements()">
+                                        <span class="input-group-text" id="output_unit">Units</span>
+                                    </div>
+                                    <small class="text-muted">Number of final products you want to produce</small>
+                                </td>
+                                <td>Final product quantity target</td>
+                            </tr>
                             <tr>
                                 <td><strong>Quantity to Issue</strong></td>
                                 <td>
                                     <div class="input-group">
-                                        {{ form.quantity_to_issue(class="form-control", id="quantity_to_issue") }}
+                                        {{ form.quantity_to_issue(class="form-control", id="quantity_to_issue", readonly="readonly") }}
                                         <span class="input-group-text" id="input_material_unit">Units</span>
                                     </div>
+                                    <small class="text-success">Auto-calculated from BOM conversion ratio</small>
                                     {% for error in form.quantity_to_issue.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
@@ -198,7 +213,7 @@
                                     <div id="stock_status" class="mt-1"></div>
                                     <div id="calculation_display" class="mt-2"></div>
                                 </td>
-                                <td>5 Pieces / Kg</td>
+                                <td>Auto-calculated material requirement</td>
                             </tr>
                             <tr id="output_batch_row" style="display: none;">
                                 <td><strong>Create Output Batch</strong></td>
@@ -554,12 +569,16 @@ function loadBOMData(bomId) {
                 updateBOMWorkflowInfo(data);
             }
             
-            // [4] Set default output quantity to 1 and calculate requirements
-            const outputQtyField = document.getElementById('output_quantity');
-            if (outputQtyField && !outputQtyField.value) {
-                outputQtyField.value = 1;
-                calculateBOMRequirements(1); // Calculate for 1 unit
+            // [4] Initialize output quantity and calculate material requirements
+            const outputQtyInput = document.getElementById('output_quantity_input');
+            if (outputQtyInput && !outputQtyInput.value) {
+                outputQtyInput.value = 1;
             }
+            
+            // Trigger initial calculation
+            setTimeout(() => {
+                calculateMaterialRequirements();
+            }, 500); // Small delay to ensure all DOM elements are ready
             
             console.log('BOM integration completed successfully');
         })
@@ -846,6 +865,53 @@ function updateFinalOutputDisplay(data) {
         const outputQty = data.bom.output_quantity || 1;
         finalOutputQuantity.textContent = outputQty;
         console.log('Final output quantity set:', outputQty);
+    }
+}
+
+// Calculate material requirements based on output quantity
+function calculateMaterialRequirements() {
+    const outputQtyInput = document.getElementById('output_quantity_input');
+    const quantityToIssueInput = document.getElementById('quantity_to_issue');
+    
+    if (!outputQtyInput || !quantityToIssueInput || !window.currentBOMData) {
+        return;
+    }
+    
+    const requestedOutputQty = parseFloat(outputQtyInput.value) || 1;
+    const bomData = window.currentBOMData;
+    
+    if (bomData.materials && bomData.materials.length > 0) {
+        const primaryMaterial = bomData.materials[0];
+        const bomOutputQty = bomData.bom.output_quantity || 1;
+        
+        // Calculate conversion ratio: if BOM produces X units from Y material, 
+        // then for Z units we need (Y * Z) / X material
+        const materialRequired = (primaryMaterial.qty_required * requestedOutputQty) / bomOutputQty;
+        
+        quantityToIssueInput.value = materialRequired.toFixed(3);
+        
+        // Update calculation display
+        const calculationDisplay = document.getElementById('calculation_display');
+        if (calculationDisplay) {
+            calculationDisplay.innerHTML = `
+                <div class="alert alert-info alert-sm">
+                    <strong>BOM Calculation:</strong><br>
+                    ${requestedOutputQty} units × ${(primaryMaterial.qty_required / bomOutputQty).toFixed(3)} ${primaryMaterial.uom}/unit = 
+                    <strong>${materialRequired.toFixed(3)} ${primaryMaterial.uom}</strong>
+                </div>
+            `;
+        }
+        
+        // Update batch allocation if enabled
+        const requiredQtyDisplay = document.getElementById('required_quantity_display');
+        if (requiredQtyDisplay) {
+            requiredQtyDisplay.textContent = materialRequired.toFixed(3);
+        }
+        
+        console.log(`Material calculation: ${requestedOutputQty} units requires ${materialRequired.toFixed(3)} ${primaryMaterial.uom}`);
+        
+        // Auto-check stock after calculation
+        checkStock();
     }
 }
 
