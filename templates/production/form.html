@@ -585,13 +585,13 @@
                             
                             {% if (suggestion.feasibility == 'feasible' and suggestion.type == 'manufacturing_recommendation') or suggestion.type == 'partial_manufacturing_recommendation' %}
                             <div class="mt-3 text-center">
-                                <a href="{{ url_for('jobwork.add_job_work') }}?bom_ref={{ suggestion.bom_reference }}" 
+                                <a href="/job-cards/create?bom_ref={{ suggestion.bom_reference }}" 
                                    class="btn btn-success">
                                     <i class="fas fa-cogs"></i> 
                                     {% if suggestion.type == 'partial_manufacturing_recommendation' %}
-                                        Start Partial Manufacturing Job Work
+                                        Start Partial Manufacturing Job Card
                                     {% else %}
-                                        Start Manufacturing Job Work
+                                        Start Manufacturing Job Card
                                     {% endif %}
                                 </a>
                             </div>
