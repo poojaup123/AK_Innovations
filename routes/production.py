@@ -350,36 +350,51 @@ def add_production():
     
     if form.validate_on_submit():
         print("Form validation passed, proceeding with production creation")
+        print(f"Form data: production_number={form.production_number.data}, item_id={form.item_id.data}, quantity={form.quantity_planned.data}")
+        print(f"Current user: {current_user}, User ID: {current_user.id if current_user and current_user.is_authenticated else 'Not authenticated'}")
         # Check if production number already exists
         existing_production = Production.query.filter_by(production_number=form.production_number.data).first()
+        print(f"Existing production check: {existing_production}")
         if existing_production:
             flash('Production number already exists', 'danger')
             return render_template('production/form.html', form=form, title='Add Production')
         
         # Get the BOM for the selected item
+        print(f"Getting BOM for item ID: {form.item_id.data}")
         selected_item = Item.query.get(form.item_id.data)
+        print(f"Selected item: {selected_item}")
         active_bom = BOM.query.filter_by(product_id=form.item_id.data, is_active=True).first()
+        print(f"Active BOM: {active_bom}")
         
         material_shortages = []
         bom_items = []
         
         if active_bom:
+            print(f"Processing BOM items for BOM ID: {active_bom.id}")
             bom_items = BOMItem.query.filter_by(bom_id=active_bom.id).all()
+            print(f"Found {len(bom_items)} BOM items")
             
             # Link the BOM to production order
             production_bom_id = active_bom.id
             
             # Check material availability for each BOM item using multi-state inventory
-            for bom_item in bom_items:
+            print("Starting BOM item availability check")
+            for i, bom_item in enumerate(bom_items):
+                print(f"Processing BOM item {i+1}/{len(bom_items)}: {bom_item}")
                 # Calculate material requirement based on BOM output quantity
                 # BOM shows: 1 Ms sheet → 400 Mounted Plates
                 # If producing 10,000 plates, need: 10,000 ÷ 400 = 25 Ms sheets
-                
-                material_qty_per_output = bom_item.quantity_required or bom_item.qty_required
-                bom_output_qty = active_bom.output_quantity or 1.0  # Default to 1 if not set
-                
-                # Calculate actual material needed: (planned_qty / bom_output_qty) * material_qty_per_output
-                required_qty = (form.quantity_planned.data / bom_output_qty) * material_qty_per_output
+                try:
+                    print(f"  Calculating requirements for BOM item")
+                    material_qty_per_output = bom_item.quantity_required or bom_item.qty_required
+                    bom_output_qty = active_bom.output_quantity or 1.0  # Default to 1 if not set
+                    
+                    # Calculate actual material needed: (planned_qty / bom_output_qty) * material_qty_per_output
+                    required_qty = (form.quantity_planned.data / bom_output_qty) * material_qty_per_output
+                    print(f"  Required qty: {required_qty}, Material qty per output: {material_qty_per_output}, BOM output qty: {bom_output_qty}")
+                except Exception as e:
+                    print(f"  Error calculating requirements: {e}")
+                    continue
                 
                 # Check available quantity from multi-state inventory (Raw + Finished for materials)
                 item = bom_item.item
@@ -400,6 +415,7 @@ def add_production():
                 
                 # Use the higher of the two (item-level or batch-level)
                 available_qty = max(available_qty, batch_qty)
+                print(f"  Available qty: {available_qty}, Required qty: {required_qty}")
                 
                 if available_qty < required_qty:
                     shortage_qty = required_qty - available_qty
@@ -413,7 +429,9 @@ def add_production():
                     })
         
         # If there are material shortages, analyze with smart BOM suggestions
+        print(f"BOM processing complete. Material shortages: {len(material_shortages)}")
         if material_shortages:
+            print("Processing material shortages with smart BOM suggestions")
             # Get smart BOM-based suggestions
             smart_analysis = SmartBOMSuggestionService.analyze_material_shortages_with_suggestions(
                 active_bom, form.quantity_planned.data
@@ -431,8 +449,10 @@ def add_production():
                                  bom_items=bom_items,
                                  selected_item=selected_item)
         
+        print("Entering try block for production creation")
         try:
             # Create new Production instance
+            print("Creating Production instance")
             production = Production()
             production.production_number = form.production_number.data
             production.item_id = form.item_id.data
