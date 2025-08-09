@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Production Review{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-chart-line"></i> 
+                        Daily Production Review - {{ today.strftime('%B %d, %Y') }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Production Summary -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">Total Reports</h6>
+                                            <h3>{{ summary.total_reports }}</h3>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-clipboard-list fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">Approved Reports</h6>
+                                            <h3>{{ summary.approved_reports }}</h3>
+                                            <small>{{ "%.1f"|format(summary.approval_rate) }}% approval rate</small>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-check-circle fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">Total Completed</h6>
+                                            <h3>{{ summary.total_qty_completed }}</h3>
+                                            <small>units produced today</small>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-cogs fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="card-title">Quality Efficiency</h6>
+                                            <h3>{{ "%.1f"|format(summary.total_efficiency) }}%</h3>
+                                            <small>{{ summary.total_qty_good }} good units</small>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-medal fa-2x"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Pending Actions -->
+                    {% if summary.pending_approvals > 0 %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Pending Actions:</strong> {{ summary.pending_approvals }} reports awaiting supervisor approval.
+                        <a href="{{ url_for('job_card_workflow.supervisor_dashboard') }}" class="btn btn-warning btn-sm ms-2">Review Now</a>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Daily Review Form -->
+                    <div class="row">
+                        <div class="col-12">
+                            <form method="POST">
+                                {{ form.hidden_tag() }}
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.overall_notes.label(class="form-label") }}
+                                    {{ form.overall_notes(class="form-control", rows="3") }}
+                                    <small class="form-text text-muted">Overall observations for today's production</small>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.action_items.label(class="form-label") }}
+                                    {{ form.action_items(class="form-control", rows="3") }}
+                                    <small class="form-text text-muted">Actions required for tomorrow</small>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            {{ form.reviewed_by.label(class="form-label") }}
+                                            {{ form.reviewed_by(class="form-control") }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            {{ form.review_date.label(class="form-label") }}
+                                            {{ form.review_date(class="form-control", value=today) }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ url_for('production.dashboard') }}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Complete Review
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
