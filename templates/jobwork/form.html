@@ -23,109 +23,85 @@
         {{ form.hidden_tag() }}
         
         <!-- [1] Job Work Type & Basic Info -->
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Job Work Type & Basic Info</h5>
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white py-2">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Job Work Type & Basic Info</h6>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width: 30%;">Field</th>
-                                <th style="width: 70%;">Input</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>Job Work Type</strong></td>
-                                <td>
-                                    {{ form.job_work_type(class="form-select", id="job_work_type") }}
-                                    {% for error in form.job_work_type.errors %}
-                                        <div class="text-danger small">{{ error }}</div>
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                            <tr id="bom_row" style="display: none;">
-                                <td><strong>Select BOM (if any)</strong></td>
-                                <td>
-                                    {{ form.bom_id(class="form-select", id="bom_select") }}
-                                    {% for error in form.bom_id.errors %}
-                                        <div class="text-danger small">{{ error }}</div>
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Job Work Title</strong></td>
-                                <td>
-                                    {{ form.job_title(class="form-control") }}
-                                    {% for error in form.job_title.errors %}
-                                        <div class="text-danger small">{{ error }}</div>
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Work Type</strong></td>
-                                <td>
-                                    {{ form.work_type(class="form-select", id="work_type") }}
-                                    {% for error in form.work_type.errors %}
-                                        <div class="text-danger small">{{ error }}</div>
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Assigned To</strong></td>
-                                <td>
-                                    {{ form.assigned_to(class="form-select", id="assigned_to") }}
-                                    {% for error in form.assigned_to.errors %}
-                                        <div class="text-danger small">{{ error }}</div>
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <div class="card-body py-3">
+                <div class="row g-3">
+                    <!-- Row 1: Job Work Type and BOM Selection -->
+                    <div class="col-md-6">
+                        <label for="job_work_type" class="form-label fw-bold">Job Work Type</label>
+                        {{ form.job_work_type(class="form-select form-select-sm", id="job_work_type") }}
+                        {% for error in form.job_work_type.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-6" id="bom_row" style="display: none;">
+                        <label for="bom_select" class="form-label fw-bold">Select BOM</label>
+                        {{ form.bom_id(class="form-select form-select-sm", id="bom_select") }}
+                        {% for error in form.bom_id.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Row 2: Job Title (full width) -->
+                    <div class="col-12">
+                        <label for="job_title" class="form-label fw-bold">Job Work Title</label>
+                        {{ form.job_title(class="form-control form-control-sm", id="job_title") }}
+                        {% for error in form.job_title.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Row 3: Work Type and Assigned To -->
+                    <div class="col-md-6">
+                        <label for="work_type" class="form-label fw-bold">Work Type</label>
+                        {{ form.work_type(class="form-select form-select-sm", id="work_type") }}
+                        {% for error in form.work_type.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="assigned_to" class="form-label fw-bold">Assigned To</label>
+                        {{ form.assigned_to(class="form-select form-select-sm", id="assigned_to") }}
+                        {% for error in form.assigned_to.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- [2] Input Material & Issuance Details -->
-        <div class="card mb-4">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="fas fa-box me-2"></i>Input Material & Issuance Details</h5>
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white py-2">
+                <h6 class="mb-0"><i class="fas fa-box me-2"></i>Input Material & Issuance Details</h6>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width: 30%;">Field</th>
-                                <th style="width: 70%;">Input</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>Input Material</strong></td>
-                                <td>
-                                    {{ form.input_material_id(class="form-select", id="input_material") }}
-                                    {% for error in form.input_material_id.errors %}
-                                        <div class="text-danger small">{{ error }}</div>
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                            <tr id="batch_tracking_row">
-                                <td><strong>Enable Batch Tracking</strong></td>
-                                <td>
-                                    <div class="form-check">
-                                        {{ form.enable_batch_tracking(class="form-check-input", id="enable_batch_tracking") }}
-                                        <label class="form-check-label" for="enable_batch_tracking">
-                                            Track material by batch
-                                        </label>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr id="batch_selection_row" style="display: none;">
-                                <td><strong>Batch Allocation</strong></td>
-                                <td>
+            <div class="card-body py-3">
+                <div class="row g-3">
+                    <!-- Row 1: Input Material and Batch Tracking -->
+                    <div class="col-md-8">
+                        <label for="input_material" class="form-label fw-bold">Input Material</label>
+                        {{ form.input_material_id(class="form-select form-select-sm", id="input_material") }}
+                        {% for error in form.input_material_id.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-4" id="batch_tracking_row">
+                        <label class="form-label fw-bold">Batch Tracking</label>
+                        <div class="form-check mt-2">
+                            {{ form.enable_batch_tracking(class="form-check-input", id="enable_batch_tracking") }}
+                            <label class="form-check-label" for="enable_batch_tracking">
+                                Enable batch tracking
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Row 2: Batch Selection (hidden by default, full width when visible) -->
+                    <div class="col-12" id="batch_selection_row" style="display: none;">
+                        <div class="border rounded p-3 bg-light">
+                            <label class="form-label fw-bold">Batch Allocation</label>
                                     <div class="alert alert-info mb-3">
                                         <i class="fas fa-cogs"></i> <strong>Auto-Allocation Enabled:</strong> Batches will be automatically selected using FIFO (First In, First Out) logic based on manufacturing dates.
                                     </div>
@@ -164,94 +140,87 @@
                                         <div id="allocation_status_indicator" class="mt-1"></div>
                                     </div>
                                     
-                                    <!-- Hidden inputs to store batch selections -->
-                                    <div id="hidden_batch_inputs"></div>
-                                    {{ form.batch_id(style="display: none;", id="hidden_batch_input") }}
-                                    {% for error in form.batch_id.errors %}
-                                        <div class="text-danger small">{{ error }}</div>
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                            <tr id="output_quantity_row">
-                                <td><strong>Output Quantity</strong></td>
-                                <td>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" id="output_quantity_input" 
-                                               placeholder="How many final products?" 
-                                               min="1" step="1" value="1" 
-                                               onchange="calculateMaterialRequirements()">
-                                        <span class="input-group-text" id="output_unit">Units</span>
-                                    </div>
-                                    <small class="text-muted">Number of final products you want to produce</small>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Quantity to Issue</strong></td>
-                                <td>
-                                    <div class="input-group">
-                                        {{ form.quantity_to_issue(class="form-control", id="quantity_to_issue", readonly="readonly") }}
-                                        <span class="input-group-text" id="input_material_unit">Units</span>
-                                    </div>
-                                    <small class="text-success">Auto-calculated from BOM conversion ratio</small>
-                                    {% for error in form.quantity_to_issue.errors %}
-                                        <div class="text-danger small">{{ error }}</div>
-                                    {% endfor %}
-                                    <button type="button" class="btn btn-sm btn-outline-primary mt-1" onclick="checkStock()">
-                                        <i class="fas fa-search"></i> Check Stock
-                                    </button>
-                                    <div id="stock_status" class="mt-1"></div>
-                                    <div id="calculation_display" class="mt-2"></div>
-                                </td>
-                            </tr>
-                            <tr id="output_batch_row" style="display: none;">
-                                <td><strong>Create Output Batch</strong></td>
-                                <td>
-                                    <div class="form-check">
-                                        {{ form.create_output_batch(class="form-check-input", id="create_output_batch") }}
-                                        <label class="form-check-label" for="create_output_batch">
-                                            Auto-create output batch
-                                        </label>
-                                    </div>
-                                    {{ form.output_batch_prefix(class="form-control mt-2", placeholder="Auto-generated") }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Store Location</strong></td>
-                                <td>
-                                    {{ form.store_location(class="form-select") }}
-                                    {% for error in form.store_location.errors %}
-                                        <div class="text-danger small">{{ error }}</div>
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Send Date</strong></td>
-                                <td>
-                                    {{ form.send_date(class="form-control", type="date") }}
-                                    {% for error in form.send_date.errors %}
-                                        <div class="text-danger small">{{ error }}</div>
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Expected Return</strong></td>
-                                <td>
-                                    {{ form.expected_return(class="form-control", type="date") }}
-                                    {% for error in form.expected_return.errors %}
-                                        <div class="text-danger small">{{ error }}</div>
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                            <!-- Hidden inputs to store batch selections -->
+                            <div id="hidden_batch_inputs"></div>
+                            {{ form.batch_id(style="display: none;", id="hidden_batch_input") }}
+                            {% for error in form.batch_id.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Row 3: Quantity Inputs -->
+                    <div class="col-md-6" id="output_quantity_row">
+                        <label for="output_quantity_input" class="form-label fw-bold">Output Quantity</label>
+                        <div class="input-group input-group-sm">
+                            <input type="number" class="form-control" id="output_quantity_input" 
+                                   placeholder="How many final products?" 
+                                   min="1" step="1" value="1" 
+                                   onchange="calculateMaterialRequirements()">
+                            <span class="input-group-text" id="output_unit">Units</span>
+                        </div>
+                        <small class="text-muted">Number of final products you want to produce</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="quantity_to_issue" class="form-label fw-bold">Quantity to Issue</label>
+                        <div class="input-group input-group-sm">
+                            {{ form.quantity_to_issue(class="form-control form-control-sm", id="quantity_to_issue", readonly="readonly") }}
+                            <span class="input-group-text" id="input_material_unit">Units</span>
+                        </div>
+                        <small class="text-success">Auto-calculated from BOM conversion ratio</small>
+                        {% for error in form.quantity_to_issue.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="checkStock()">
+                            <i class="fas fa-search"></i> Check Stock
+                        </button>
+                        <div id="stock_status" class="mt-1"></div>
+                        <div id="calculation_display" class="mt-2"></div>
+                    </div>
+                    
+                    <!-- Row 4: Output Batch (hidden by default) -->
+                    <div class="col-12" id="output_batch_row" style="display: none;">
+                        <div class="border rounded p-2 bg-light">
+                            <div class="form-check">
+                                {{ form.create_output_batch(class="form-check-input", id="create_output_batch") }}
+                                <label class="form-check-label fw-bold" for="create_output_batch">
+                                    Auto-create output batch
+                                </label>
+                            </div>
+                            {{ form.output_batch_prefix(class="form-control form-control-sm mt-2", placeholder="Auto-generated") }}
+                        </div>
+                    </div>
+                    
+                    <!-- Row 5: Store Location and Dates -->
+                    <div class="col-md-4">
+                        <label for="store_location" class="form-label fw-bold">Store Location</label>
+                        {{ form.store_location(class="form-select form-select-sm") }}
+                        {% for error in form.store_location.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="send_date" class="form-label fw-bold">Send Date</label>
+                        {{ form.send_date(class="form-control form-control-sm", type="date") }}
+                        {% for error in form.send_date.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="expected_return" class="form-label fw-bold">Expected Return</label>
+                        {{ form.expected_return(class="form-control form-control-sm", type="date") }}
+                        {% for error in form.expected_return.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- [3] Process Routing (Dynamic Table) -->
-        <div class="card mb-4">
-            <div class="card-header bg-warning text-white">
-                <h5 class="mb-0"><i class="fas fa-route me-2"></i>Process Routing Table</h5>
+        <div class="card mb-3">
+            <div class="card-header bg-warning text-white py-2">
+                <h6 class="mb-0"><i class="fas fa-route me-2"></i>Process Routing Table</h6>
             </div>
             <div class="card-body">
                 <div class="alert alert-info">
@@ -316,31 +285,19 @@
         </div>
 
         <!-- [5] Notes & Attachments -->
-        <div class="card mb-4">
-            <div class="card-header bg-secondary text-white">
-                <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes & Attachments</h5>
+        <div class="card mb-3">
+            <div class="card-header bg-secondary text-white py-2">
+                <h6 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes & Attachments</h6>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width: 20%;">Field</th>
-                                <th style="width: 80%;">Input</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>Remarks</strong></td>
-                                <td>
-                                    {{ form.remarks(class="form-control", rows="3", placeholder="Additional notes or special instructions...") }}
-                                    {% for error in form.remarks.errors %}
-                                        <div class="text-danger small">{{ error }}</div>
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <div class="card-body py-3">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="remarks" class="form-label fw-bold">Remarks</label>
+                        {{ form.remarks(class="form-control form-control-sm", rows="2", placeholder="Additional notes or special instructions...") }}
+                        {% for error in form.remarks.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>
