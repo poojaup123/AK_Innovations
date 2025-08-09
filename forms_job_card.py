@@ -98,6 +98,9 @@ class JobCardDailyUpdateForm(FlaskForm):
                                default=100)
     
     # Resource Usage
+    hours_worked = FloatField('Hours Worked Today', 
+                            validators=[Optional(), NumberRange(min=0)], 
+                            default=0)
     machine_hours_used = FloatField('Machine Hours Used', 
                                   validators=[Optional(), NumberRange(min=0)], 
                                   default=0)
@@ -116,8 +119,22 @@ class JobCardDailyUpdateForm(FlaskForm):
     # Issues and Notes
     production_issues = TextAreaField('Production Issues', validators=[Optional()])
     quality_issues = TextAreaField('Quality Issues', validators=[Optional()])
+    material_issues = TextAreaField('Material Issues', validators=[Optional()])
+    machine_issues = TextAreaField('Machine Issues', validators=[Optional()])
     delay_reason = TextAreaField('Delay Reason (if applicable)', validators=[Optional()])
     supervisor_notes = TextAreaField('Supervisor Notes', validators=[Optional()])
+    operator_notes = TextAreaField('Operator Notes', validators=[Optional()])
+    
+    # Time Tracking
+    setup_time_actual = FloatField('Actual Setup Time (minutes)', 
+                                 validators=[Optional(), NumberRange(min=0)], 
+                                 default=0)
+    run_time_actual = FloatField('Actual Run Time (minutes)', 
+                               validators=[Optional(), NumberRange(min=0)], 
+                               default=0)
+    downtime_minutes = FloatField('Downtime Minutes', 
+                                validators=[Optional(), NumberRange(min=0)], 
+                                default=0)
     
     # Batch Management - Automated
     create_new_batch = BooleanField('Create New Output Batch', default=False)
