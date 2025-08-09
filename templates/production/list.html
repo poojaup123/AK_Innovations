@@ -63,10 +63,13 @@
                                 <td>{{ production.creator.username }}</td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{{ url_for('production.edit_production', id=production.id) }}" class="btn btn-outline-primary btn-sm">
+                                        <a href="{{ url_for('production.edit_production', id=production.id) }}" class="btn btn-outline-primary btn-sm" title="Edit Production">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <a href="{{ url_for('production.view_smart_suggestions', production_id=production.id) }}" class="btn btn-outline-info btn-sm">
+                                        <a href="{{ url_for('job_card_management.view_production_job_cards', production_id=production.id) }}" class="btn btn-outline-success btn-sm" title="View Job Cards">
+                                            <i class="fas fa-tasks"></i>
+                                        </a>
+                                        <a href="{{ url_for('production.view_smart_suggestions', production_id=production.id) }}" class="btn btn-outline-info btn-sm" title="Smart Suggestions">
                                             <i class="fas fa-lightbulb"></i>
                                         </a>
                                         {% if production.status != 'completed' %}

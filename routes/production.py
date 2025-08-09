@@ -13,6 +13,7 @@ from services.smart_bom_suggestions import SmartBOMSuggestionService
 from app import db
 from sqlalchemy import func, or_
 from utils import generate_production_number
+from services.job_card_generator import generate_job_cards_for_production
 from utils.batch_tracking import BatchTracker
 from datetime import datetime, timedelta, date
 import json
