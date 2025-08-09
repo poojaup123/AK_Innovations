@@ -484,10 +484,13 @@ def view_job_card(id):
     for report in daily_reports:
         report.outsourced_jobs = []
         if hasattr(report, 'report_number') and report.report_number:
-            report.outsourced_jobs = JobCard.query.filter(
+            # Debug: Check for outsourced jobs
+            outsourced_jobs = JobCard.query.filter(
                 JobCard.parent_job_card_id == id,
                 JobCard.created_from_report_id == report.report_number
             ).all()
+            print(f"Debug: Found {len(outsourced_jobs)} outsourced jobs for report {report.report_number}")
+            report.outsourced_jobs = outsourced_jobs
     
     # Get materials for this job card
     materials = JobCardMaterial.query.filter_by(job_card_id=id).all()

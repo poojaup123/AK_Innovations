@@ -289,11 +289,13 @@
                                     <!-- Parent Row: Original Progress Report -->
                                     <tr class="parent-row" data-report-id="{{ status.report_number }}">
                                         <td>
-                                            {% if status.outsourced_jobs %}
+                                            {% if status.outsourced_jobs and status.outsourced_jobs|length > 0 %}
                                             <button class="btn btn-sm btn-outline-secondary toggle-children" 
                                                     data-report-id="{{ status.report_number }}">
                                                 <i class="fas fa-plus"></i>
                                             </button>
+                                            {% else %}
+                                            <span class="text-muted">{{ status.outsourced_jobs|length if status.outsourced_jobs else 0 }}</span>
                                             {% endif %}
                                         </td>
                                         <td>
