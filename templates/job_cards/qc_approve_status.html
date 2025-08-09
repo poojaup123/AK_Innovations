@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}QC Inspection{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-microscope me-2"></i>QC Inspection & Approval
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+
+                        <!-- QC Decision -->
+                        <div class="mb-3">
+                            {{ form.qc_decision.label(class="form-label") }}
+                            {{ form.qc_decision(class="form-select") }}
+                            {% for error in form.qc_decision.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- QC Notes -->
+                        <div class="mb-3">
+                            {{ form.qc_notes.label(class="form-label") }}
+                            {{ form.qc_notes(class="form-control", rows="4", placeholder="Detailed QC inspection findings...") }}
+                            {% for error in form.qc_notes.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Batch Actions -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.create_good_batch(class="form-check-input") }}
+                                    {{ form.create_good_batch.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.create_scrap_batch(class="form-check-input") }}
+                                    {{ form.create_scrap_batch.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('job_card_workflow.qc_approval_dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to QC Dashboard
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check me-2"></i>Submit QC Decision
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Card Details Sidebar -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Inspection Details
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Job Card:</strong>
+                        <br><span class="text-primary">{{ daily_status.job_card.job_card_number }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Item:</strong>
+                        <br>{{ daily_status.job_card.item.name if daily_status.job_card.item else 'Unknown Item' }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Process:</strong>
+                        <br>{{ daily_status.job_card.process_name }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Worker/Vendor:</strong>
+                        <br>
+                        {% if daily_status.job_card.assigned_worker %}
+                            <i class="fas fa-user me-1 text-primary"></i>{{ daily_status.job_card.assigned_worker.name }}
+                        {% elif daily_status.job_card.assigned_vendor %}
+                            <i class="fas fa-building me-1 text-info"></i>{{ daily_status.job_card.assigned_vendor.name }}
+                        {% else %}
+                            <span class="text-muted">Unassigned</span>
+                        {% endif %}
+                    </div>
+                    <hr>
+                    <div class="mb-2">
+                        <strong>Report Date:</strong>
+                        <br>{{ daily_status.report_date.strftime('%Y-%m-%d') }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Supervisor Approved:</strong>
+                        <br>
+                        {% if daily_status.supervisor_approved %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check me-1"></i>
+                                {{ daily_status.supervisor_approved_at.strftime('%Y-%m-%d %H:%M') if daily_status.supervisor_approved_at }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning">Pending</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Production Quality Summary -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Quality Summary
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h5 class="text-primary">{{ "%.1f"|format(daily_status.qty_completed_today) }}</h5>
+                            <small class="text-muted">Total Completed</small>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-success">{{ "%.1f"|format(daily_status.qty_good_today) }}</h5>
+                            <small class="text-muted">Reported Good</small>
+                        </div>
+                    </div>
+                    <div class="row text-center mt-3">
+                        <div class="col-6">
+                            <h5 class="text-warning">{{ "%.1f"|format(daily_status.qty_defective_today) }}</h5>
+                            <small class="text-muted">Reported Defective</small>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-danger">{{ "%.1f"|format(daily_status.qty_scrap_today) }}</h5>
+                            <small class="text-muted">Reported Scrap</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span>Reported Efficiency:</span>
+                        <strong>{{ "%.1f"|format(daily_status.efficiency_rate) }}%</strong>
+                    </div>
+                    <div class="progress mt-2">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ daily_status.efficiency_rate }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quality Issues -->
+            {% if daily_status.quality_issues or daily_status.production_issues %}
+            <div class="card mt-3">
+                <div class="card-header bg-warning">
+                    <h6 class="mb-0 text-dark">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Reported Issues
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if daily_status.quality_issues %}
+                        <div class="mb-2">
+                            <strong>Quality Issues:</strong>
+                            <p class="text-muted small">{{ daily_status.quality_issues }}</p>
+                        </div>
+                    {% endif %}
+                    {% if daily_status.production_issues %}
+                        <div class="mb-2">
+                            <strong>Production Issues:</strong>
+                            <p class="text-muted small">{{ daily_status.production_issues }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Supervisor Notes -->
+            {% if daily_status.supervisor_notes %}
+            <div class="card mt-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-sticky-note me-2"></i>Supervisor Notes
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="small">{{ daily_status.supervisor_notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

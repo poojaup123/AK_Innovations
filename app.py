@@ -130,6 +130,10 @@ def create_app():
     # Register job cards blueprint
     from routes.job_cards import job_cards_bp
     app.register_blueprint(job_cards_bp, url_prefix='/job-cards')
+    
+    # Job Card Workflow Management
+    from routes.job_card_workflow import job_card_workflow_bp
+    app.register_blueprint(job_card_workflow_bp)
     app.register_blueprint(live_status_bp)
     from routes.backup import backup_bp
     app.register_blueprint(backup_bp, url_prefix='/backup')

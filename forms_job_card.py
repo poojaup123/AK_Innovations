@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, FloatField, SelectField, DateField, IntegerField, HiddenField
+from wtforms import StringField, TextAreaField, FloatField, SelectField, DateField, IntegerField, HiddenField, BooleanField, SubmitField
 from wtforms.validators import DataRequired, Optional, NumberRange
 from datetime import date
 
@@ -59,13 +59,33 @@ class JobCardDailyUpdateForm(FlaskForm):
     run_time_actual = FloatField('Actual Run Time (minutes)', default=0)
     downtime_minutes = FloatField('Downtime (minutes)', default=0)
     
-    # Status
+    # Status Workflow
     daily_status = SelectField('Daily Status', choices=[
         ('active', 'Active'), 
         ('completed', 'Completed'),
         ('delayed', 'Delayed'),
         ('on_hold', 'On Hold')
     ], default='active')
+    
+    status_after_entry = SelectField('Status After Entry', choices=[
+        ('', 'Select Status'),
+        ('planned', 'Planned'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('pending_approval', 'Pending Approval')
+    ], validators=[Optional()])
+    
+    # Batch Integration
+    batch_number = StringField('Batch Number', validators=[Optional()])
+    create_new_batch = BooleanField('Create New Batch for Good Quantity')
+    
+    # Process Step
+    process_step = StringField('Process Step', validators=[Optional()])
+    
+    # Workflow Flags
+    requires_supervisor_approval = BooleanField('Requires Supervisor Approval', default=True)
+    requires_qc_approval = BooleanField('Requires QC Approval')
+    is_outsourced_work = BooleanField('Outsourced Work (Auto-create GRN)')
     
     # Issues and Notes
     quality_issues = TextAreaField('Quality Issues')

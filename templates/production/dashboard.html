@@ -73,6 +73,22 @@
                         <span class="badge bg-secondary fs-6">{{ productions_without_reports|length }} Need Update</span>
                     </div>
                 </div>
+                <div class="mt-3">
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('job_card_workflow.supervisor_approval_dashboard') }}" class="btn btn-outline-warning btn-sm">
+                            <i class="fas fa-user-check me-1"></i>Supervisor Approval
+                        </a>
+                        <a href="{{ url_for('job_card_workflow.qc_approval_dashboard') }}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-microscope me-1"></i>QC Approval
+                        </a>
+                        <a href="{{ url_for('job_card_workflow.daily_production_review') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-clipboard-check me-1"></i>Daily Review
+                        </a>
+                        <a href="{{ url_for('job_cards.list_job_cards') }}" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-tasks me-1"></i>Job Cards
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

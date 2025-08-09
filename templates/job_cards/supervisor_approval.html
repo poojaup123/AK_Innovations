@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}Supervisor Approval Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-user-check text-success"></i> Supervisor Approval Dashboard</h2>
+                <div>
+                    <a href="{{ url_for('job_card_workflow.daily_production_review') }}" class="btn btn-info">
+                        <i class="fas fa-clipboard-check me-2"></i>Daily Review
+                    </a>
+                    <a href="{{ url_for('production.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Production
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card border-warning">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Pending Approval</h6>
+                            <h4 class="text-warning">{{ stats.pending_count }}</h4>
+                        </div>
+                        <i class="fas fa-clock stats-icon text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-success">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Approved Today</h6>
+                            <h4 class="text-success">{{ stats.approved_count }}</h4>
+                        </div>
+                        <i class="fas fa-check stats-icon text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-danger">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Rejected Today</h6>
+                            <h4 class="text-danger">{{ stats.rejected_count }}</h4>
+                        </div>
+                        <i class="fas fa-times stats-icon text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-primary">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Total Reports</h6>
+                            <h4 class="text-primary">{{ stats.total_reports }}</h4>
+                        </div>
+                        <i class="fas fa-list stats-icon text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Approvals -->
+    {% if pending_approvals %}
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Pending Supervisor Approval ({{ stats.pending_count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('job_card_workflow.bulk_approve') }}">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <button type="button" id="selectAll" class="btn btn-sm btn-outline-secondary">Select All</button>
+                                <button type="button" id="clearAll" class="btn btn-sm btn-outline-secondary">Clear All</button>
+                            </div>
+                            <div>
+                                <select name="bulk_action" class="form-select form-select-sm d-inline" style="width: auto;">
+                                    <option value="approve_all">Approve All Selected</option>
+                                    <option value="reject_all">Reject All Selected</option>
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-primary">Apply Bulk Action</button>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th><input type="checkbox" id="masterCheck"></th>
+                                        <th>Job Card</th>
+                                        <th>Item</th>
+                                        <th>Worker/Vendor</th>
+                                        <th>Completed Today</th>
+                                        <th>Good/Defective</th>
+                                        <th>Hours Worked</th>
+                                        <th>Issues</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for status in pending_approvals %}
+                                    <tr>
+                                        <td><input type="checkbox" name="selected_reports" value="{{ status.id }}" class="item-check"></td>
+                                        <td><strong>{{ status.job_card.job_card_number }}</strong></td>
+                                        <td>{{ status.job_card.item.name if status.job_card.item else 'Unknown Item' }}</td>
+                                        <td>
+                                            {% if status.job_card.assigned_worker %}
+                                                <i class="fas fa-user me-1 text-primary"></i>{{ status.job_card.assigned_worker.name }}
+                                            {% elif status.job_card.assigned_vendor %}
+                                                <i class="fas fa-building me-1 text-info"></i>{{ status.job_card.assigned_vendor.name }}
+                                            {% else %}
+                                                <span class="text-muted">Unassigned</span>
+                                            {% endif %}
+                                        </td>
+                                        <td><span class="badge bg-info">{{ "%.1f"|format(status.qty_completed_today) }}</span></td>
+                                        <td>
+                                            <span class="text-success">{{ "%.1f"|format(status.qty_good_today) }}</span> / 
+                                            <span class="text-warning">{{ "%.1f"|format(status.qty_defective_today) }}</span>
+                                        </td>
+                                        <td>{{ "%.1f"|format(status.hours_worked) }}h</td>
+                                        <td>
+                                            {% if status.production_issues or status.quality_issues %}
+                                                <span class="badge bg-warning">Issues Reported</span>
+                                            {% else %}
+                                                <span class="text-muted">No Issues</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('job_card_workflow.approve_status', status_id=status.id) }}" 
+                                                   class="btn btn-sm btn-success" title="Approve">
+                                                    <i class="fas fa-check"></i>
+                                                </a>
+                                                <a href="{{ url_for('job_card_workflow.approve_status', status_id=status.id) }}" 
+                                                   class="btn btn-sm btn-danger" title="Reject">
+                                                    <i class="fas fa-times"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                                        data-bs-toggle="modal" data-bs-target="#detailsModal{{ status.id }}" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Approved and Rejected Sections -->
+    <div class="row">
+        <!-- Approved Today -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-check-circle me-2"></i>Approved Today ({{ stats.approved_count }})
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if approved_today %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Job Card</th>
+                                        <th>Completed</th>
+                                        <th>Approved By</th>
+                                        <th>Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for status in approved_today %}
+                                    <tr>
+                                        <td>{{ status.job_card.job_card_number }}</td>
+                                        <td>{{ "%.1f"|format(status.qty_completed_today) }}</td>
+                                        <td>{{ status.supervisor_approved_by.username if status.supervisor_approved_by else 'System' }}</td>
+                                        <td>{{ status.supervisor_approved_at.strftime('%H:%M') if status.supervisor_approved_at else 'N/A' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No approvals yet today</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Rejected Today -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-times-circle me-2"></i>Rejected Today ({{ stats.rejected_count }})
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if rejected_today %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Job Card</th>
+                                        <th>Reason</th>
+                                        <th>Rejected By</th>
+                                        <th>Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for status in rejected_today %}
+                                    <tr>
+                                        <td>{{ status.job_card.job_card_number }}</td>
+                                        <td>{{ status.supervisor_notes or 'No reason specified' }}</td>
+                                        <td>{{ status.supervisor_approved_by.username if status.supervisor_approved_by else 'System' }}</td>
+                                        <td>{{ status.supervisor_approved_at.strftime('%H:%M') if status.supervisor_approved_at else 'N/A' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No rejections today</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stats-card {
+    transition: transform 0.2s;
+    border-width: 2px;
+}
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+.stats-icon {
+    font-size: 2rem;
+    opacity: 0.7;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Bulk selection functionality
+    const masterCheck = document.getElementById('masterCheck');
+    const itemChecks = document.querySelectorAll('.item-check');
+    const selectAllBtn = document.getElementById('selectAll');
+    const clearAllBtn = document.getElementById('clearAll');
+
+    if (masterCheck) {
+        masterCheck.addEventListener('change', function() {
+            itemChecks.forEach(check => check.checked = this.checked);
+        });
+    }
+
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function() {
+            itemChecks.forEach(check => check.checked = true);
+            if (masterCheck) masterCheck.checked = true;
+        });
+    }
+
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', function() {
+            itemChecks.forEach(check => check.checked = false);
+            if (masterCheck) masterCheck.checked = false;
+        });
+    }
+});
+</script>
+{% endblock %}

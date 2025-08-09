@@ -151,8 +151,37 @@ class JobCardDailyStatus(db.Model):
     run_time_actual = db.Column(db.Float, default=0)
     downtime_minutes = db.Column(db.Float, default=0)
     
-    # Status
+    # Status Workflow
     daily_status = db.Column(db.String(50), default='active')  # active, completed, delayed, on_hold
+    status_after_entry = db.Column(db.String(50))  # planned, in_progress, completed, pending_approval
+    
+    # Process Reference (for future multi-process job cards)
+    process_step = db.Column(db.String(100))  # Simple text field for now
+    
+    # Batch Integration (simplified for now)
+    batch_number = db.Column(db.String(50))  # Simple batch reference
+    
+    # QC Integration
+    qc_approved = db.Column(db.Boolean, default=False)
+    qc_rejected = db.Column(db.Boolean, default=False)
+    qc_notes = db.Column(db.Text)
+    qc_approved_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    qc_approved_by = db.relationship('User', foreign_keys=[qc_approved_by_id], backref='qc_approvals')
+    qc_approved_at = db.Column(db.DateTime)
+    
+    # Supervisor Approval Workflow
+    supervisor_approved = db.Column(db.Boolean, default=False)
+    supervisor_rejected = db.Column(db.Boolean, default=False)
+    supervisor_notes = db.Column(db.Text)
+    supervisor_approved_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    supervisor_approved_by = db.relationship('User', foreign_keys=[supervisor_approved_by_id], backref='supervisor_approvals')
+    supervisor_approved_at = db.Column(db.DateTime)
+    
+    # Outsourced Work Integration
+    grn_required = db.Column(db.Boolean, default=False)
+    grn_id = db.Column(db.Integer, db.ForeignKey('grn.id'))
+    grn = db.relationship('GRN', backref='job_card_reports')
+    grn_auto_created = db.Column(db.Boolean, default=False)
     
     # Issues and Notes
     quality_issues = db.Column(db.Text)
@@ -165,7 +194,7 @@ class JobCardDailyStatus(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     reported_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    reported_by = db.relationship('User', backref='job_card_reports')
+    reported_by = db.relationship('User', foreign_keys=[reported_by_id], backref='job_card_reports')
     
     __table_args__ = (db.UniqueConstraint('job_card_id', 'report_date'),)
     
@@ -218,6 +247,109 @@ class JobCardDailyStatus(db.Model):
         
         db.session.commit()
         return today_report
+    
+    def approve_by_supervisor(self, supervisor_id, notes=None):
+        """Approve daily status by supervisor"""
+        self.supervisor_approved = True
+        self.supervisor_rejected = False
+        self.supervisor_approved_by_id = supervisor_id
+        self.supervisor_approved_at = datetime.utcnow()
+        if notes:
+            self.supervisor_notes = notes
+        
+        # Update status after approval
+        if self.daily_status == 'completed':
+            self.status_after_entry = 'completed'
+        else:
+            self.status_after_entry = 'in_progress'
+        
+        # Auto-create GRN for outsourced work if needed
+        if self.job_card.assigned_vendor_id and self.qty_completed_today > 0:
+            self.grn_required = True
+            self._auto_create_grn()
+        
+        db.session.commit()
+    
+    def reject_by_supervisor(self, supervisor_id, notes):
+        """Reject daily status by supervisor"""
+        self.supervisor_approved = False
+        self.supervisor_rejected = True
+        self.supervisor_approved_by_id = supervisor_id
+        self.supervisor_approved_at = datetime.utcnow()
+        self.supervisor_notes = notes
+        self.status_after_entry = 'pending_approval'
+        db.session.commit()
+    
+    def approve_by_qc(self, qc_inspector_id, notes=None):
+        """Approve daily status by QC"""
+        self.qc_approved = True
+        self.qc_rejected = False
+        self.qc_approved_by_id = qc_inspector_id
+        self.qc_approved_at = datetime.utcnow()
+        if notes:
+            self.qc_notes = notes
+        
+        # Auto-create good quantity batch if approved
+        if self.qty_good_today > 0:
+            self._create_good_batch()
+        
+        db.session.commit()
+    
+    def reject_by_qc(self, qc_inspector_id, notes):
+        """Reject daily status by QC"""
+        self.qc_approved = False
+        self.qc_rejected = True
+        self.qc_approved_by_id = qc_inspector_id
+        self.qc_approved_at = datetime.utcnow()
+        self.qc_notes = notes
+        
+        # Auto-create scrap batch for rejected quantities
+        if self.qty_completed_today > 0:
+            self._create_scrap_batch()
+        
+        db.session.commit()
+    
+    def _auto_create_grn(self):
+        """Auto-create GRN for outsourced work"""
+        from models.grn import GRN, GRNLineItem
+        
+        if not self.grn_auto_created and self.job_card.assigned_vendor_id:
+            # Create GRN for outsourced work receipt
+            grn = GRN(
+                grn_number=GRN.generate_grn_number(),
+                supplier_id=self.job_card.assigned_vendor_id,
+                grn_type='job_work',
+                status='pending',
+                remarks=f'Auto-created for Job Card {self.job_card.job_card_number}',
+                created_by_id=self.reported_by_id
+            )
+            db.session.add(grn)
+            db.session.flush()
+            
+            # Add line item
+            line_item = GRNLineItem(
+                grn_id=grn.id,
+                item_id=self.job_card.item_id,
+                quantity_received=self.qty_completed_today,
+                quantity_accepted=self.qty_good_today,
+                quantity_rejected=self.qty_defective_today
+            )
+            db.session.add(line_item)
+            
+            self.grn_id = grn.id
+            self.grn_auto_created = True
+    
+    def _create_good_batch(self):
+        """Create batch for good quantity - simplified"""
+        if self.qty_good_today > 0:
+            # For now, just assign a batch number
+            self.batch_number = f"GOOD-{self.job_card.job_card_number}-{self.report_date.strftime('%Y%m%d')}"
+    
+    def _create_scrap_batch(self):
+        """Create batch for scrap quantity - simplified"""
+        if self.qty_scrap_today > 0:
+            # For now, just assign a batch number
+            self.batch_number = f"SCRAP-{self.job_card.job_card_number}-{self.report_date.strftime('%Y%m%d')}"
 
 
 class JobCardMaterial(db.Model):
