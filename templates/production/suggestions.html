@@ -48,26 +48,48 @@
                                     <p class="fw-bold">{{ suggestion.title }}</p>
                                     <p class="text-muted">{{ suggestion.description }}</p>
                                     
-                                    {% if suggestion.items %}
+                                    {% if suggestion.get('raw_materials_required') %}
                                         <div class="table-responsive">
                                             <table class="table table-sm">
                                                 <thead>
                                                     <tr>
-                                                        <th>Item</th>
-                                                        <th>Quantity</th>
-                                                        <th>Cost</th>
+                                                        <th>Material</th>
+                                                        <th>Required Qty</th>
+                                                        <th>Available Qty</th>
+                                                        <th>Status</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {% for item in suggestion.items %}
+                                                    {% for material in suggestion.raw_materials_required %}
                                                         <tr>
-                                                            <td>{{ item.code }} - {{ item.name }}</td>
-                                                            <td>{{ item.quantity }} {{ item.unit }}</td>
-                                                            <td>₹{{ "%.2f"|format(item.estimated_cost) }}</td>
+                                                            <td>{{ material.material_code }} - {{ material.material_name }}</td>
+                                                            <td>{{ "%.2f"|format(material.needed_qty) }} {{ material.unit }}</td>
+                                                            <td>{{ "%.2f"|format(material.available_qty) }} {{ material.unit }}</td>
+                                                            <td>
+                                                                <span class="badge bg-{{ 'success' if material.sufficient else 'warning' }}">
+                                                                    {{ 'Available' if material.sufficient else 'Insufficient' }}
+                                                                </span>
+                                                            </td>
                                                         </tr>
                                                     {% endfor %}
                                                 </tbody>
                                             </table>
+                                        </div>
+                                    {% elif suggestion.get('item_details') %}
+                                        <div class="alert alert-info">
+                                            <strong>Item:</strong> {{ suggestion.item_details.item_code }} - {{ suggestion.item_details.item_name }}<br>
+                                            <strong>Required:</strong> {{ "%.2f"|format(suggestion.item_details.shortage_qty) }} {{ suggestion.item_details.unit }}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if suggestion.get('action_steps') %}
+                                        <div class="mt-3">
+                                            <strong>Action Steps:</strong>
+                                            <ol class="mt-2">
+                                                {% for step in suggestion.action_steps %}
+                                                    <li>{{ step }}</li>
+                                                {% endfor %}
+                                            </ol>
                                         </div>
                                     {% endif %}
                                     
