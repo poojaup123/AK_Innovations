@@ -2,6 +2,27 @@
 
 {% block title %}Production Orders - Factory Management System{% endblock %}
 
+{% block extra_head %}
+<style>
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.4rem;
+        font-size: 0.75rem;
+        border-radius: 0.2rem;
+    }
+    .action-buttons {
+        white-space: nowrap;
+    }
+    .table td {
+        vertical-align: middle;
+    }
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.35rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <div class="row mb-4">
@@ -56,37 +77,52 @@
                                 <td>{{ production.quantity_produced }}</td>
                                 <td>{{ production.production_date.strftime('%m/%d/%Y') }}</td>
                                 <td>
-                                    <span class="badge bg-{{ 'success' if production.status == 'completed' else 'warning' if production.status == 'in_progress' else 'primary' }}">
+                                    <span class="badge status-badge bg-{{ 'success' if production.status == 'completed' else 'warning' if production.status == 'in_progress' else 'info' if production.status == 'on_hold' else 'primary' }}">
                                         {{ production.status.replace('_', ' ').title() }}
                                     </span>
                                 </td>
                                 <td>{{ production.creator.username }}</td>
                                 <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{{ url_for('production.edit_production', id=production.id) }}" class="btn btn-outline-primary btn-sm">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <!-- Edit Button -->
+                                        <a href="{{ url_for('production.edit_production', id=production.id) }}" 
+                                           class="btn btn-outline-primary btn-sm" title="Edit Production">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <a href="{{ url_for('production.view_smart_suggestions', production_id=production.id) }}" class="btn btn-outline-info btn-sm">
-                                            <i class="fas fa-lightbulb"></i>
-                                        </a>
-                                        <!-- Daily Production Entry Button -->
+                                        
+                                        <!-- Daily Entry Button (only for active productions) -->
                                         {% if production.status != 'completed' %}
                                         <a href="{{ url_for('production.daily_production_entry', production_id=production.id) }}" 
-                                           class="btn btn-success btn-sm" title="Record Daily Production">
-                                            <i class="fas fa-plus-circle"></i> Daily Entry
+                                           class="btn btn-success btn-sm" title="Daily Entry">
+                                            <i class="fas fa-clipboard-check"></i>
                                         </a>
                                         {% endif %}
                                         
+                                        <!-- Smart Suggestions -->
+                                        <a href="{{ url_for('production.view_smart_suggestions', production_id=production.id) }}" 
+                                           class="btn btn-outline-info btn-sm" title="Smart Suggestions">
+                                            <i class="fas fa-lightbulb"></i>
+                                        </a>
+                                        
+                                        <!-- Status Dropdown (only for active productions) -->
                                         {% if production.status != 'completed' %}
-                                        <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                Status
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
+                                                    type="button" data-bs-toggle="dropdown" title="Change Status">
+                                                <i class="fas fa-cog"></i>
                                             </button>
-                                            <ul class="dropdown-menu">
+                                            <ul class="dropdown-menu dropdown-menu-end">
                                                 {% if production.status == 'planned' %}
-                                                <li><a class="dropdown-item" href="{{ url_for('production.update_status', id=production.id, status='in_progress') }}">Start Production</a></li>
+                                                <li><a class="dropdown-item" href="{{ url_for('production.update_status', id=production.id, status='in_progress') }}">
+                                                    <i class="fas fa-play text-warning me-2"></i>Start Production
+                                                </a></li>
                                                 {% endif %}
-                                                <li><a class="dropdown-item" href="{{ url_for('production.update_status', id=production.id, status='completed') }}">Complete</a></li>
+                                                <li><a class="dropdown-item" href="{{ url_for('production.update_status', id=production.id, status='completed') }}">
+                                                    <i class="fas fa-check text-success me-2"></i>Mark Complete
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="{{ url_for('production.update_status', id=production.id, status='on_hold') }}">
+                                                    <i class="fas fa-pause text-warning me-2"></i>Put On Hold
+                                                </a></li>
                                             </ul>
                                         </div>
                                         {% endif %}

@@ -5,7 +5,7 @@ This Flask-based Factory Management System is designed for small to medium manuf
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
-UI/UX Preferences: Compact, horizontally-arranged dashboard cards with consistent sizing and professional spacing throughout the application.
+UI/UX Preferences: Compact, horizontally-arranged dashboard cards with consistent sizing and professional spacing throughout the application. Clean, slim action buttons with minimal text and clear icons for better user experience.
 
 ## System Architecture
 
@@ -31,6 +31,7 @@ Core features include:
 - **Advanced Sheet Nesting Optimization:** AI-powered irregular shape nesting using OpenCV, scikit-image, and polygon3 libraries for complex manufacturing scenarios. Features image-based shape detection, multi-angle rotation optimization, scrap calculation, SVG layout generation, and comprehensive efficiency analysis with history tracking.
 - **Visual Component Scanning System:** Comprehensive AI-powered component detection from product images using computer vision. Features automatic component identification, inventory matching, dimension estimation, SVG layout generation, and BOM creation from detected components. Includes detection history, processing statistics, and integration with existing inventory management.
 - **Technical Drawing Analysis:** CAD file processing system supporting DXF/DWG/STP/STEP formats for precise component extraction. Features geometry-based component detection, annotation processing, dimension extraction, title block information parsing, filename analysis for 3D models, and BOM creation from technical drawings. Includes specialized detection for mechanical fasteners like anchor nuts, bolts, and security components. Complements photo-based detection with engineering precision.
+- **Daily Production Entry System:** Comprehensive daily production tracking with quantity recording, quality metrics (good/defective/scrap), shift management, automatic inventory updates based on BOM consumption, and production progress tracking. Features clean, compact action buttons for improved user experience and streamlined workflow integration.
 
 ### System Design Choices
 - **Application Factory Pattern:** Modern Flask architecture with proper package structure and organized separation of concerns.
