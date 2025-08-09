@@ -62,15 +62,46 @@
                                                 <tbody>
                                                     {% for material in suggestion.raw_materials_required %}
                                                         <tr>
-                                                            <td>{{ material.material_code }} - {{ material.material_name }}</td>
+                                                            <td>
+                                                                {% if material.get('material_code') %}
+                                                                    {{ material.material_code }} - {{ material.material_name }}
+                                                                {% else %}
+                                                                    {{ material.material_name }}
+                                                                {% endif %}
+                                                                {% if material.get('consolidated') %}
+                                                                    <span class="badge bg-info text-white ms-2">Consolidated</span>
+                                                                {% endif %}
+                                                            </td>
                                                             <td>{{ "%.2f"|format(material.needed_qty) }} {{ material.unit }}</td>
-                                                            <td>{{ "%.2f"|format(material.available_qty) }} {{ material.unit }}</td>
+                                                            <td>
+                                                                {% if material.get('available_qty') is defined %}
+                                                                    {{ "%.2f"|format(material.available_qty) }} {{ material.unit }}
+                                                                {% else %}
+                                                                    N/A
+                                                                {% endif %}
+                                                            </td>
                                                             <td>
                                                                 <span class="badge bg-{{ 'success' if material.sufficient else 'warning' }}">
-                                                                    {{ 'Available' if material.sufficient else 'Insufficient' }}
+                                                                    {% if material.get('consolidated') %}
+                                                                        Consolidated Purchase
+                                                                    {% else %}
+                                                                        {{ 'Available' if material.sufficient else 'Insufficient' }}
+                                                                    {% endif %}
                                                                 </span>
                                                             </td>
                                                         </tr>
+                                                        {% if material.get('used_by') %}
+                                                            <tr class="bg-light">
+                                                                <td colspan="4">
+                                                                    <small class="text-muted">
+                                                                        <strong>Used by:</strong>
+                                                                        {% for product in material.used_by %}
+                                                                            {{ product.product_name }} ({{ "%.1f"|format(product.quantity_needed) }} {{ material.unit }}){% if not loop.last %}, {% endif %}
+                                                                        {% endfor %}
+                                                                    </small>
+                                                                </td>
+                                                            </tr>
+                                                        {% endif %}
                                                     {% endfor %}
                                                 </tbody>
                                             </table>
