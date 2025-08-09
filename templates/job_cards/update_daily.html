@@ -111,9 +111,15 @@
                             </div>
                             
                             <!-- BOM Process Routing -->
-                            {% if bom_processes %}
                             <div class="col-md-6">
                                 <h6 class="text-primary mb-3"><i class="fas fa-route me-2"></i>Process Routing</h6>
+                                <!-- DEBUG: Show BOM process info -->
+                                <div class="alert alert-info mb-2 small">
+                                    <strong>DEBUG:</strong> {{ bom_processes|length }} BOM processes
+                                    {% if job_card.bom_item_id %}(BOM Item ID: {{ job_card.bom_item_id }}){% else %}(No BOM Item ID){% endif %}
+                                </div>
+                                
+                                {% if bom_processes %}
                                 <div class="mb-3">
                                     <label class="form-label">Select Processes Worked On Today:</label>
                                     {% for process in bom_processes %}
@@ -133,6 +139,42 @@
                                     </div>
                                     {% endfor %}
                                 </div>
+                                {% else %}
+                                <!-- Fallback: Generic process steps when BOM processes not found -->
+                                <div class="mb-3">
+                                    <label class="form-label">Select Processes Worked On Today:</label>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="selected_processes" 
+                                               value="material_cutting" id="process_material_cutting">
+                                        <label class="form-check-label" for="process_material_cutting">
+                                            <strong>Step 1: Material Cutting & Shaping</strong>
+                                            <br><small class="text-muted">Cut and shape raw materials according to specifications</small>
+                                            <br><small class="text-info">Est. Time: 75.0 min</small>
+                                            <br><small class="text-success"><i class="fas fa-info-circle me-1"></i>Can be done in-house or outsourced</small>
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="selected_processes" 
+                                               value="component_assembly" id="process_component_assembly">
+                                        <label class="form-check-label" for="process_component_assembly">
+                                            <strong>Step 2: Component Assembly</strong>
+                                            <br><small class="text-muted">Assemble components according to assembly drawings</small>
+                                            <br><small class="text-info">Est. Time: 80.0 min</small>
+                                            <br><small class="text-success"><i class="fas fa-info-circle me-1"></i>Can be done in-house or outsourced</small>
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="selected_processes" 
+                                               value="quality_control" id="process_quality_control">
+                                        <label class="form-check-label" for="process_quality_control">
+                                            <strong>Step 3: Quality Control & Finishing</strong>
+                                            <br><small class="text-muted">Final inspection, testing, and finishing touches</small>
+                                            <br><small class="text-info">Est. Time: 45.0 min</small>
+                                            <br><small class="text-success"><i class="fas fa-info-circle me-1"></i>Can be done in-house or outsourced</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endif %}
                                 
                                 <div class="mb-3">
                                     {{ form.current_process_step.label(class="form-label") }}

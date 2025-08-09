@@ -303,9 +303,19 @@ def update_daily_status(job_card_id):
     bom_processes = []
     if job_card.bom_item_id:
         from models import BOMProcess
-        bom_processes = BOMProcess.query.filter_by(
-            bom_id=job_card.bom_item.bom_id if job_card.bom_item else None
-        ).order_by(BOMProcess.step_number).all()
+        try:
+            bom_id = job_card.bom_item.bom_id if job_card.bom_item else None
+            if bom_id:
+                bom_processes = BOMProcess.query.filter_by(bom_id=bom_id).order_by(BOMProcess.step_number).all()
+                print(f"DEBUG: Found {len(bom_processes)} BOM processes for job card {job_card_id}, BOM ID: {bom_id}")
+                for bp in bom_processes:
+                    print(f"  Process {bp.step_number}: {bp.process_name}")
+            else:
+                print(f"DEBUG: No BOM ID found for job card {job_card_id}")
+        except Exception as e:
+            print(f"DEBUG: Error getting BOM processes: {e}")
+    else:
+        print(f"DEBUG: Job card {job_card_id} has no bom_item_id")
     
     # Vendors are handled in separate outsourcing workflow
     
