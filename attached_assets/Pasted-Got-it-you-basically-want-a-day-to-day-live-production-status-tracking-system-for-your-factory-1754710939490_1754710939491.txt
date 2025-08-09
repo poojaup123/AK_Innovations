@@ -1,0 +1,172 @@
+Got it — you basically want a **day-to-day live production status tracking system** for your factory so you always know:
+
+* What’s pending, in progress, and completed
+* Which batches are at which stage
+* How much quantity has been made today vs. planned
+* Scrap, rework, and delays
+
+Here’s how we can set it up in your app so it works for **in-house jobs, outsourced jobs, and full production orders**.
+
+---
+
+## 🛠️ **How Day-to-Day Production Status is Updated**
+
+### **1. Break Down by Job Card**
+
+Every **production order** generates **job cards** for sub-components and processes.
+Each job card has:
+
+* Process steps (routing)
+* Planned vs. actual quantities
+* Assigned worker/vendor
+* Target completion date
+
+---
+
+### **2. Daily Production Entry**
+
+Instead of only updating at the end, workers or supervisors log **daily production updates**:
+
+| Field              | Example                     |
+| ------------------ | --------------------------- |
+| Date               | 2025-08-09                  |
+| Job Card ID        | JW-2025-001                 |
+| Process Name       | Cutting                     |
+| Input Batch        | RAW-2025-0002               |
+| Quantity Completed | 50                          |
+| Scrap / Rework     | 2                           |
+| Worker / Dept      | Cutting Dept / Machine A    |
+| Remarks            | Machine stopped for 30 mins |
+
+✅ Each day’s entry updates:
+
+* Job progress (% complete)
+* WIP quantity
+* Cumulative production vs. plan
+* Scrap tally
+* Batch status
+
+---
+
+### **3. How Status Changes Automatically**
+
+* **Pending → In Progress** when first daily entry is logged
+* **In Progress → Completed** when output = planned qty (or marked complete manually)
+* **Completed** triggers:
+
+  * Batch update
+  * Cost roll-up
+  * Move to next routing step or final assembly
+
+---
+
+### **4. Real-Time Dashboard**
+
+A live dashboard shows **all jobs for today**:
+
+| Job Card | Process  | Planned Qty | Today’s Qty | Total Done | Status      |
+| -------- | -------- | ----------- | ----------- | ---------- | ----------- |
+| JW-001   | Cutting  | 100         | 50          | 50         | In Progress |
+| JW-002   | Plating  | 200         | 200         | 200        | Completed   |
+| JW-003   | Assembly | 50          | 0           | 0          | Pending     |
+
+---
+
+### **5. Outsourced vs. In-House Tracking**
+
+* **In-House** → Status comes from daily production entry form
+* **Outsourced** → Status comes from:
+
+  * **GRN** (when goods arrive from vendor)
+  * **Partial receipts** update daily if vendor sends in batches
+
+---
+
+### **6. Batch & QC Link**
+
+* Each daily update is linked to **input batch** and generates **output batch**
+* QC can approve/reject immediately after update
+* Scrap batches logged automatically
+
+---
+
+## 🔄 **Daily Update Cycle**
+
+```
+Morning:
+- Supervisors open "Today's Jobs" screen
+- Assign workers & machines
+
+Throughout the Day:
+- Operators log quantities at shift intervals
+- Scrap and rework captured immediately
+
+End of Day:
+- Supervisor reviews all updates
+- Approves day’s production log
+- Dashboard auto-refreshes for management
+```
+
+---
+
+## 📌 **Database Tracking**
+
+We’ll have a **`production_daily_log`** table:
+
+| Field                | Type    |
+| -------------------- | ------- |
+| log\_id              | PK      |
+| job\_card\_id        | FK      |
+| process\_id          | FK      |
+| date                 | Date    |
+| qty\_completed       | Integer |
+| qty\_scrap           | Integer |
+| worker\_id           | FK      |
+| remarks              | Text    |
+| status\_after\_entry | Enum    |
+
+This table powers:
+
+* Daily production report
+* Delay analysis
+* Scrap trends
+* Efficiency metrics
+
+---
+
+## 🖥️ **Example Flask/Jinja2 Update Screen**
+
+```html
+<h3>Daily Production Entry</h3>
+<form method="post" action="/production/update">
+  <label>Job Card</label>
+  <select name="job_card_id">
+    {% for job in jobs_today %}
+      <option value="{{ job.id }}">{{ job.name }} - {{ job.process }}</option>
+    {% endfor %}
+  </select>
+
+  <label>Quantity Completed</label>
+  <input type="number" name="qty_completed" required>
+
+  <label>Scrap</label>
+  <input type="number" name="qty_scrap" value="0">
+
+  <label>Remarks</label>
+  <textarea name="remarks"></textarea>
+
+  <button type="submit">Update</button>
+</form>
+```
+
+---
+
+## 📊 Reports Possible
+
+* **Daily Production Report** (planned vs. actual for the day)
+* **WIP Report** (how many parts are mid-process)
+* **Delay Report** (jobs not meeting daily targets)
+* **Scrap Report** (by process, by day)
+* **Efficiency Report** (output vs. man-hours/machine-hours)
+
+---

@@ -369,16 +369,16 @@ def view_grn_batches(grn_id):
 @grn_bp.route('/dashboard')
 @login_required
 def dashboard():
-    """GRN Dashboard with Parent-Child structure matching Batch Tracking Dashboard"""
+    """Standard GRN Dashboard - Separate from Job Work system"""
     
     # Get filter parameters
     search = request.args.get('search', '').strip()
     status_filter = request.args.get('status', '').strip()
-    source_type_filter = request.args.get('source_type', '').strip()
+    department_filter = request.args.get('department', '').strip()
     date_from = request.args.get('date_from', '').strip()
     date_to = request.args.get('date_to', '').strip()
     
-    # Calculate statistics
+    # Calculate basic statistics
     stats = {
         'total_grns': GRN.query.count(),
         'pending_inspection': GRN.query.filter(GRN.inspection_status == 'pending').count(),
@@ -386,188 +386,46 @@ def dashboard():
             GRN.received_date == date.today(),
             GRN.status == 'completed'
         ).count(),
-        'pending_grns': GRN.query.filter(GRN.status.in_(['draft', 'received'])).count(),
-        # By Document Type counts
-        'purchase_orders_with_grns': GRN.query.filter(GRN.purchase_order_id.isnot(None)).count(),
-        'job_works_with_grns': GRN.query.filter(GRN.job_work_id.isnot(None)).count(),
-        # Total count including pending ones
-        'total_job_works': JobWork.query.count(),
-        'total_purchase_orders': PurchaseOrder.query.count(),
-        # Status-based counts
-        'completed_grns': GRN.query.filter(GRN.status == 'completed').count(),
-        'partial_grns': GRN.query.filter(GRN.status == 'partial').count(),
-        'pending_grns_status': GRN.query.filter(GRN.status.in_(['draft', 'received', 'pending'])).count()
     }
     
-    # Parent-Child Structure: Get Parent orders with their associated GRNs
-    parent_child_data = []
+    # Get recent GRNs (last 20)
+    recent_grns_query = GRN.query
     
-    # 1. Purchase Orders as Parents
-    purchase_orders = PurchaseOrder.query.filter(
-        PurchaseOrder.grn_receipts_po.any()
-    ).order_by(PurchaseOrder.created_at.desc()).all()
-    
-    for po in purchase_orders:
-        # Calculate totals for this PO
-        total_qty = sum(item.qty for item in po.items)
-        grn_count = len(po.grn_receipts_po)
-        
-        # Use actual PO status from database (more accurate than GRN status logic)
-        if po.status == 'closed':
-            po_status = 'Completed'
-        elif po.status == 'partial':
-            po_status = 'Partial'
-        else:
-            po_status = 'Pending'
-        
-        # Build child GRNs with details
-        child_grns = []
-        for grn in po.grn_receipts_po:
-            # Get item details for this GRN
-            item_details = []
-            total_received = 0
-            total_scrap = 0
-            
-            for line_item in grn.line_items:
-                item_details.append(f"{line_item.item.name} ({line_item.quantity_received} {line_item.unit_of_measure})")
-                total_received += line_item.quantity_received or 0
-                total_scrap += line_item.quantity_rejected or 0
-            
-            child_grns.append({
-                'grn_number': grn.grn_number,
-                'grn_date': grn.received_date,
-                'item_details': ', '.join(item_details),
-                'received_qty': total_received,
-                'scrap_qty': total_scrap,
-                'status': grn.status.title(),
-                'grn_id': grn.id,
-                'source_type': 'Purchase Order',
-                'source_document': po.po_number,
-                'inspection_status': grn.inspection_status.title() if grn.inspection_status else 'Pending',
-                'inventory_updated': grn.add_to_inventory if hasattr(grn, 'add_to_inventory') else True
-            })
-        
-        parent_child_data.append({
-            'type': 'Purchase Order',
-            'parent_doc': po.po_number,
-            'date': po.created_at.date(),
-            'vendor_customer': po.supplier.name if po.supplier else 'N/A',
-            'status': po_status,
-            'total_qty': total_qty,
-            'grn_count': grn_count,
-            'child_grns': child_grns,
-            'parent_id': f'po_{po.id}'
-        })
-    
-    # 2. Job Works as Parents
-    job_works = JobWork.query.filter(
-        JobWork.grn_receipts.any()
-    ).order_by(JobWork.created_at.desc()).all()
-    
-    for jw in job_works:
-        # Calculate totals for this Job Work - use quantity_sent as the total
-        total_qty = getattr(jw, 'quantity_sent', 0)
-        grn_count = len(jw.grn_receipts)
-        
-        # Use JobWork status logic - check if completion is tracked
-        if hasattr(jw, 'status'):
-            if jw.status == 'completed':
-                jw_status = 'Completed'
-            elif jw.status == 'partial':
-                jw_status = 'Partial'
-            else:
-                jw_status = 'Pending'
-        else:
-            # Fallback to GRN completion logic for JobWork
-            if all(grn.status == 'completed' for grn in jw.grn_receipts):
-                jw_status = 'Completed'
-            elif any(grn.status in ['received', 'inspected'] for grn in jw.grn_receipts):
-                jw_status = 'Partial'
-            else:
-                jw_status = 'Pending'
-        
-        # Build child GRNs with details
-        child_grns = []
-        for grn in jw.grn_receipts:
-            # Get item details for this GRN
-            item_details = []
-            total_received = 0
-            total_scrap = 0
-            
-            for line_item in grn.line_items:
-                item_details.append(f"{line_item.item.name} ({line_item.quantity_received} {line_item.unit_of_measure})")
-                total_received += line_item.quantity_received or 0
-                total_scrap += line_item.quantity_rejected or 0
-            
-            child_grns.append({
-                'grn_number': grn.grn_number,
-                'grn_date': grn.received_date,
-                'item_details': ', '.join(item_details),
-                'received_qty': total_received,
-                'scrap_qty': total_scrap,
-                'status': grn.status.title(),
-                'grn_id': grn.id,
-                'source_type': 'Job Work',
-                'source_document': jw.job_number,
-                'inspection_status': grn.inspection_status.title() if grn.inspection_status else 'Pending',
-                'inventory_updated': grn.add_to_inventory if hasattr(grn, 'add_to_inventory') else True
-            })
-        
-        parent_child_data.append({
-            'type': 'Job Work',
-            'parent_doc': jw.job_number,
-            'date': jw.created_at.date(),
-            'vendor_customer': getattr(jw.vendor, 'name', 'In-House') if hasattr(jw, 'vendor') and jw.vendor else 'In-House',
-            'status': jw_status,
-            'total_qty': total_qty,
-            'grn_count': grn_count,
-            'child_grns': child_grns,
-            'parent_id': f'jw_{jw.id}'
-        })
-    
-    # Get job works pending GRN creation - including unified jobs with outsourced processes
-    pending_job_works = JobWork.query.filter(
-        JobWork.status.in_(['sent', 'partial_received']),
-        or_(
-            JobWork.work_type.in_(['outsourced', 'multi_process', 'vendor']),
-            # Include unified jobs that have outsourced processes
-            and_(
-                JobWork.work_type == 'unified',
-                JobWork.id.in_(
-                    db.session.query(JobWorkProcess.job_work_id).filter(
-                        JobWorkProcess.work_type == 'outsourced'
-                    ).distinct()
-                )
-            )
+    # Apply filters if provided
+    if search:
+        recent_grns_query = recent_grns_query.filter(
+            GRN.grn_number.ilike(f'%{search}%')
         )
-    ).order_by(JobWork.sent_date.desc()).limit(20).all()
     
-    # Get purchase orders pending GRN creation
-    pending_purchase_orders = PurchaseOrder.query.filter(
-        PurchaseOrder.status.in_(['sent', 'partial'])
-    ).order_by(PurchaseOrder.order_date.desc()).limit(20).all()
+    if status_filter:
+        recent_grns_query = recent_grns_query.filter(GRN.status == status_filter)
     
-    # Update PO quantities to ensure they're current
-    for po in pending_purchase_orders:
-        update_po_status_based_on_grn(po.id)
+    if date_from:
+        try:
+            from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
+            recent_grns_query = recent_grns_query.filter(GRN.grn_date >= from_date)
+        except:
+            pass
     
-    # Commit any changes and refresh data
-    db.session.commit()
+    if date_to:
+        try:
+            to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
+            recent_grns_query = recent_grns_query.filter(GRN.grn_date <= to_date)
+        except:
+            pass
     
-    # Filter POs that actually have pending quantities
-    pending_purchase_orders = [po for po in pending_purchase_orders 
-                             if any(item.pending_quantity > 0 for item in po.items)]
+    recent_grns = recent_grns_query.order_by(GRN.grn_date.desc()).limit(20).all()
     
-    # Calculate monthly trends
-    current_month = date.today().replace(day=1)
-    monthly_grns = GRN.query.filter(GRN.received_date >= current_month).count()
+    # Calculate monthly GRNs count
+    monthly_grns = GRN.query.filter(
+        func.extract('month', GRN.grn_date) == date.today().month,
+        func.extract('year', GRN.grn_date) == date.today().year
+    ).count()
     
     return render_template('grn/dashboard.html',
                          title='GRN Dashboard',
-                         parent_child_data=parent_child_data,
                          stats=stats,
-                         pending_job_works=pending_job_works,
-                         pending_purchase_orders=pending_purchase_orders,
+                         recent_grns=recent_grns,
                          monthly_grns=monthly_grns)
 
 
