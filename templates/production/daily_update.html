@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">{{ title }}</h2>
+            
+            <!-- Production Overview Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Production Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Product:</strong><br>
+                            <span class="text-primary">{{ item.name }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Planned Quantity:</strong><br>
+                            <span class="badge bg-info">{{ production.quantity_planned }} {{ production.planned_uom }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Total Produced:</strong><br>
+                            <span class="badge bg-success">{{ production.quantity_produced or 0 }} {{ production.produced_uom }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Progress:</strong><br>
+                            <div class="progress" style="height: 25px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ production.completion_percentage }}%">
+                                    {{ "%.1f"|format(production.completion_percentage) }}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Update Form -->
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-day me-2"></i>Daily Status Update
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <!-- Production Quantities Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-boxes me-2"></i>Today's Production Quantities
+                                </h6>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="today_produced" class="form-label">
+                                    <i class="fas fa-cogs me-1"></i>Produced Today
+                                </label>
+                                <input type="number" step="0.01" min="0" class="form-control" 
+                                       id="today_produced" name="today_produced" 
+                                       value="{{ production.today_produced or 0 }}" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="today_good" class="form-label">
+                                    <i class="fas fa-check-circle me-1 text-success"></i>Good Quality
+                                </label>
+                                <input type="number" step="0.01" min="0" class="form-control" 
+                                       id="today_good" name="today_good" 
+                                       value="{{ production.today_good or 0 }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="today_defective" class="form-label">
+                                    <i class="fas fa-exclamation-triangle me-1 text-warning"></i>Defective
+                                </label>
+                                <input type="number" step="0.01" min="0" class="form-control" 
+                                       id="today_defective" name="today_defective" 
+                                       value="{{ production.today_defective or 0 }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="today_scrap" class="form-label">
+                                    <i class="fas fa-trash me-1 text-danger"></i>Scrap
+                                </label>
+                                <input type="number" step="0.01" min="0" class="form-control" 
+                                       id="today_scrap" name="today_scrap" 
+                                       value="{{ production.today_scrap or 0 }}">
+                            </div>
+                        </div>
+
+                        <!-- Status and Resources Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-tasks me-2"></i>Status & Resources
+                                </h6>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="daily_status" class="form-label">
+                                    <i class="fas fa-flag me-1"></i>Daily Status
+                                </label>
+                                <select class="form-select" id="daily_status" name="daily_status" required>
+                                    <option value="planned" {% if production.daily_status == 'planned' %}selected{% endif %}>Planned</option>
+                                    <option value="active" {% if production.daily_status == 'active' %}selected{% endif %}>Active</option>
+                                    <option value="paused" {% if production.daily_status == 'paused' %}selected{% endif %}>Paused</option>
+                                    <option value="delayed" {% if production.daily_status == 'delayed' %}selected{% endif %}>Delayed</option>
+                                    <option value="completed" {% if production.daily_status == 'completed' %}selected{% endif %}>Completed</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="workers_assigned" class="form-label">
+                                    <i class="fas fa-users me-1"></i>Workers Assigned
+                                </label>
+                                <input type="number" min="0" class="form-control" 
+                                       id="workers_assigned" name="workers_assigned" 
+                                       value="{{ production.workers_assigned or 0 }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="machine_hours_today" class="form-label">
+                                    <i class="fas fa-cog me-1"></i>Machine Hours
+                                </label>
+                                <input type="number" step="0.1" min="0" class="form-control" 
+                                       id="machine_hours_today" name="machine_hours_today" 
+                                       value="{{ production.machine_hours_today or 0 }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="labor_hours_today" class="form-label">
+                                    <i class="fas fa-clock me-1"></i>Labor Hours
+                                </label>
+                                <input type="number" step="0.1" min="0" class="form-control" 
+                                       id="labor_hours_today" name="labor_hours_today" 
+                                       value="{{ production.labor_hours_today or 0 }}">
+                            </div>
+                        </div>
+
+                        <!-- Issues and Notes Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-sticky-note me-2"></i>Issues & Notes
+                                </h6>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="production_issues" class="form-label">
+                                    <i class="fas fa-exclamation-circle me-1 text-warning"></i>Production Issues
+                                </label>
+                                <textarea class="form-control" id="production_issues" name="production_issues" 
+                                          rows="3" placeholder="Any production issues encountered today...">{{ production.production_issues or '' }}</textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="quality_issues_today" class="form-label">
+                                    <i class="fas fa-shield-alt me-1 text-danger"></i>Quality Issues
+                                </label>
+                                <textarea class="form-control" id="quality_issues_today" name="quality_issues_today" 
+                                          rows="3" placeholder="Any quality issues today...">{{ production.quality_issues_today or '' }}</textarea>
+                            </div>
+                            <div class="col-md-6 mt-3">
+                                <label for="delay_reason" class="form-label">
+                                    <i class="fas fa-clock me-1 text-warning"></i>Delay Reason (if any)
+                                </label>
+                                <input type="text" class="form-control" id="delay_reason" name="delay_reason" 
+                                       value="{{ production.delay_reason or '' }}" 
+                                       placeholder="Reason for any delays...">
+                            </div>
+                            <div class="col-md-6 mt-3">
+                                <label for="supervisor_notes" class="form-label">
+                                    <i class="fas fa-user-tie me-1"></i>Supervisor Notes
+                                </label>
+                                <textarea class="form-control" id="supervisor_notes" name="supervisor_notes" 
+                                          rows="2" placeholder="Supervisor observations and notes...">{{ production.supervisor_notes or '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ url_for('production.view', production_id=production.id) }}" 
+                                       class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>Back to Production
+                                    </a>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-save me-2"></i>Update Daily Status
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Current Daily Statistics -->
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Today's Performance Metrics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="metric-card">
+                                <h3 class="text-success">{{ "%.1f"|format(production.daily_efficiency_rate) }}%</h3>
+                                <p class="text-muted mb-0">Daily Efficiency</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card">
+                                <h3 class="text-warning">{{ "%.1f"|format(production.daily_defect_rate) }}%</h3>
+                                <p class="text-muted mb-0">Daily Defect Rate</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card">
+                                <h3 class="text-primary">{{ production.workers_assigned or 0 }}</h3>
+                                <p class="text-muted mb-0">Workers Assigned</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card">
+                                <h3 class="text-info">{{ production.machine_hours_today or 0 }}h</h3>
+                                <p class="text-muted mb-0">Machine Hours</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.metric-card {
+    padding: 1rem;
+    border-radius: 8px;
+    background: #f8f9fa;
+    margin-bottom: 0.5rem;
+}
+
+.metric-card h3 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.progress {
+    background-color: #e9ecef;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.border-bottom {
+    border-bottom: 2px solid #dee2e6 !important;
+}
+</style>
+
+<script>
+// Auto-calculate good quantity
+document.getElementById('today_produced').addEventListener('input', function() {
+    const produced = parseFloat(this.value) || 0;
+    const defective = parseFloat(document.getElementById('today_defective').value) || 0;
+    const good = Math.max(0, produced - defective);
+    document.getElementById('today_good').value = good.toFixed(2);
+});
+
+document.getElementById('today_defective').addEventListener('input', function() {
+    const produced = parseFloat(document.getElementById('today_produced').value) || 0;
+    const defective = parseFloat(this.value) || 0;
+    const good = Math.max(0, produced - defective);
+    document.getElementById('today_good').value = good.toFixed(2);
+});
+</script>
+{% endblock %}

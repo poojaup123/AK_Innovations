@@ -1,0 +1,122 @@
+Great! Here's **how to redesign your Job Work + GRN flow** so that:
+
+* ✅ **GRN tracks both in-house and outsourced jobs**
+* ❌ **Invoice is only required for outsourced job work**
+* ✅ **Accounting entries are handled correctly**
+* ✅ **Production records are updated for in-house jobs**
+* ✅ **No duplication or unnecessary financial data is generated**
+
+---
+
+### ✅ Updated Job Work + GRN Workflow
+
+#### 🔁 Unified Flow: Both In-House & Outsourced
+
+```
+                 [ Job Work Order ]
+                         │
+               ┌─────────┴─────────┐
+         [ In-House Job ]      [ Outsourced Job ]
+               │                      │
+     Job done by internal     Sent to Vendor (External)
+          production              (Subcontracted Work)
+               │                      │
+               └─────────┬────────────┘
+                         ↓
+                [ GRN - Job Receipt ]
+                         ↓
+              [ QC Check: Accept/Reject ]
+                         ↓
+         ┌───────────────┴────────────────┐
+         │                                │
+ [ In-House Job ]                 [ Outsourced Job ]
+- No invoice                          - Create Invoice
+- No payment                         - Track cost/payable
+- Production updated                 - Accounting entry
+- Internal cost recorded             - Vendor payable created
+```
+
+---
+
+### 🧾 Explanation per Type:
+
+---
+
+#### ✅ **1. In-House Job Work**
+
+* **GRN Created?** ✅ Yes (batch tracking, inspection, scrap, qty in)
+* **Invoice Required?** ❌ No (we don't pay ourselves)
+* **Accounting Voucher?** ❌ No AP voucher
+* **Production Update?** ✅ Yes (linked to Production module)
+* **Inventory Update?** ✅ Yes (output received in stock)
+* **Scrap?** ✅ Tracked
+* **QC?** ✅ Required
+
+> 🔁 *Auto-create production record linked with GRN when job is internal*
+
+---
+
+#### ✅ **2. Outsourced Job Work**
+
+* **GRN Created?** ✅ Yes (vendor-delivered material)
+* **Invoice Required?** ✅ Yes (payment needed)
+* **Accounting Voucher?** ✅ Yes:
+
+  * Debit: GRN Clearing
+  * Credit: Vendor A/c
+* **Production Update?** ⛔ No direct update (not in-house)
+* **Inventory Update?** ✅ Yes
+* **Scrap?** ✅ Tracked
+* **QC?** ✅ Required
+
+> 🔁 *Auto-create payable linked with vendor + update ledger*
+
+---
+
+### 🧾 GRN Form Additions
+
+Add this field to your **GRN Form**:
+
+| Field                | Type                                | Notes                    |
+| -------------------- | ----------------------------------- | ------------------------ |
+| **Job Type**         | Dropdown (`In-House`, `Outsourced`) | Drives conditional logic |
+| **Linked Job Order** | Searchable field                    | Link to original job     |
+| **Invoice Required** | Auto: `No` if In-House              | Yes for Outsourced       |
+| **Vendor**           | Required only for Outsourced        | Auto-filled if available |
+
+---
+
+### 🔐 Backend Logic (Key Conditions)
+
+```python
+if job_type == "In-House":
+    skip_invoice_creation = True
+    skip_accounts_payable = True
+    create_production_entry = True
+
+elif job_type == "Outsourced":
+    require_invoice = True
+    create_accounts_payable_entry = True
+```
+
+---
+
+### 🔁 Benefits of This Design
+
+| Benefit                    | Description                                |
+| -------------------------- | ------------------------------------------ |
+| ✅ Simplified in-house flow | No extra vouchers or payments              |
+| ✅ Full traceability        | Every step tracked via GRN                 |
+| ✅ Integrated cost tracking | Internal cost tracked in production ledger |
+| ✅ Compliant                | GST & accounts handled only when needed    |
+| ✅ Unified UI               | One GRN system handles both flows          |
+
+---
+
+Would you like:
+
+* 🧾 **Job Work GRN Form UI mockup?**
+* ✅ Sample Flask logic for this new conditional flow?
+* 📊 Dashboard metrics to differentiate internal vs vendor job completions?
+
+Let me know how you'd like to implement this next.

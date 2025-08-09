@@ -1993,6 +1993,24 @@ class Production(db.Model):
     operator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Production operator
     quality_control_passed = db.Column(db.Boolean, default=False)  # QC status for batch
     
+    # Daily Status Tracking Fields
+    daily_status = db.Column(db.String(20), default='planned')  # planned, active, paused, delayed, completed
+    today_produced = db.Column(db.Float, default=0.0)  # Quantity produced today
+    today_good = db.Column(db.Float, default=0.0)  # Good quantity produced today
+    today_defective = db.Column(db.Float, default=0.0)  # Defective quantity today
+    today_scrap = db.Column(db.Float, default=0.0)  # Scrap quantity today
+    workers_assigned = db.Column(db.Integer, default=0)  # Workers assigned today
+    machine_hours_today = db.Column(db.Float, default=0.0)  # Machine hours used today
+    labor_hours_today = db.Column(db.Float, default=0.0)  # Labor hours today
+    overtime_hours_today = db.Column(db.Float, default=0.0)  # Overtime hours today
+    
+    # Issues and Notes
+    production_issues = db.Column(db.Text)  # Production issues encountered
+    quality_issues_today = db.Column(db.Text)  # Quality issues today
+    delay_reason = db.Column(db.String(200))  # Reason for delay if any
+    supervisor_notes = db.Column(db.Text)  # Daily supervisor notes
+    last_daily_update = db.Column(db.Date)  # Last date when daily status was updated
+    
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -2070,6 +2088,83 @@ class Production(db.Model):
             self.output_batch_id = output_batch.id
             return output_batch
         return None
+    
+    # Daily Status Tracking Methods
+    @property
+    def daily_efficiency_rate(self):
+        """Calculate today's efficiency rate"""
+        if self.today_produced > 0:
+            return (self.today_good / self.today_produced) * 100
+        return 0.0
+    
+    @property
+    def daily_defect_rate(self):
+        """Calculate today's defect rate"""
+        if self.today_produced > 0:
+            return (self.today_defective / self.today_produced) * 100
+        return 0.0
+    
+    @property
+    def is_on_schedule(self):
+        """Check if production is on schedule"""
+        if self.quantity_planned > 0 and self.production_date:
+            days_since_start = (date.today() - self.production_date).days + 1
+            expected_daily_rate = self.quantity_planned / max(days_since_start, 1)
+            return self.quantity_produced >= (expected_daily_rate * days_since_start * 0.9)  # 90% tolerance
+        return True
+    
+    @property
+    def daily_status_color(self):
+        """Return color class for daily status display"""
+        colors = {
+            'planned': 'secondary',
+            'active': 'success',
+            'paused': 'warning',
+            'delayed': 'danger',
+            'completed': 'primary'
+        }
+        return colors.get(self.daily_status, 'secondary')
+    
+    def update_daily_status(self, **kwargs):
+        """Update daily production status"""
+        today = date.today()
+        
+        # Reset today's values if it's a new day
+        if self.last_daily_update and self.last_daily_update < today:
+            self.today_produced = 0.0
+            self.today_good = 0.0
+            self.today_defective = 0.0
+            self.today_scrap = 0.0
+            self.machine_hours_today = 0.0
+            self.labor_hours_today = 0.0
+            self.overtime_hours_today = 0.0
+        
+        # Update provided fields
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+        
+        # Update cumulative totals
+        if 'today_produced' in kwargs:
+            self.quantity_produced = (self.quantity_produced or 0) + (kwargs['today_produced'] - (self.today_produced or 0))
+        if 'today_good' in kwargs:
+            self.quantity_good = (self.quantity_good or 0) + (kwargs['today_good'] - (self.today_good or 0))
+        if 'today_defective' in kwargs:
+            self.quantity_damaged = (self.quantity_damaged or 0) + (kwargs['today_defective'] - (self.today_defective or 0))
+        if 'today_scrap' in kwargs:
+            self.scrap_quantity = (self.scrap_quantity or 0) + (kwargs['today_scrap'] - (self.today_scrap or 0))
+        
+        # Update timestamps
+        self.last_daily_update = today
+        self.updated_at = datetime.utcnow()
+        
+        # Update main status based on daily status
+        if self.daily_status == 'completed':
+            self.status = 'completed'
+        elif self.daily_status in ['active', 'paused']:
+            self.status = 'in_progress'
+        
+        return True
 
 # Production-ProductionBatch relationship will be added at the very end of the file
 

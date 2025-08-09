@@ -39,46 +39,100 @@
                             <tr>
                                 <th>Production Number</th>
                                 <th>Product</th>
-                                <th>Planned Quantity</th>
-                                <th>Produced Quantity</th>
+                                <th>Planned/Produced</th>
+                                <th>Today's Progress</th>
+                                <th>Daily Status</th>
+                                <th>Efficiency</th>
                                 <th>Production Date</th>
-                                <th>Status</th>
-                                <th>Created By</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for production in productions.items %}
-                            <tr>
-                                <td><strong>{{ production.production_number }}</strong></td>
+                            <tr class="{% if production.daily_status == 'delayed' %}table-warning{% elif production.daily_status == 'active' %}table-success{% endif %}">
+                                <td>
+                                    <strong>{{ production.production_number }}</strong>
+                                    {% if production.last_daily_update == today %}
+                                    <span class="badge bg-success ms-1" title="Updated today">
+                                        <i class="fas fa-check"></i>
+                                    </span>
+                                    {% elif production.status == 'in_progress' %}
+                                    <span class="badge bg-warning ms-1" title="Needs daily update">
+                                        <i class="fas fa-exclamation"></i>
+                                    </span>
+                                    {% endif %}
+                                </td>
                                 <td>{{ production.produced_item.name }}</td>
-                                <td>{{ production.quantity_planned }}</td>
-                                <td>{{ production.quantity_produced }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">{{ production.quantity_planned }}</span>
+                                        <div class="progress flex-grow-1 me-2" style="height: 20px; width: 60px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ production.completion_percentage }}%"
+                                                 title="{{ "%.1f"|format(production.completion_percentage) }}%">
+                                            </div>
+                                        </div>
+                                        <span class="text-muted small">{{ production.quantity_produced or 0 }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="text-center">
+                                        <div class="fw-bold text-primary">{{ production.today_produced or 0 }}</div>
+                                        <div class="small text-muted">
+                                            Good: {{ production.today_good or 0 }} | 
+                                            Def: {{ production.today_defective or 0 }}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ production.daily_status_color }}">
+                                        {{ (production.daily_status or 'planned').replace('_', ' ').title() }}
+                                    </span>
+                                    {% if production.daily_status == 'delayed' and production.delay_reason %}
+                                    <div class="small text-muted mt-1" title="{{ production.delay_reason }}">
+                                        {{ production.delay_reason[:30] }}{% if production.delay_reason|length > 30 %}...{% endif %}
+                                    </div>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <div class="fw-bold {% if production.daily_efficiency_rate >= 95 %}text-success{% elif production.daily_efficiency_rate >= 85 %}text-warning{% else %}text-danger{% endif %}">
+                                        {{ "%.1f"|format(production.daily_efficiency_rate) }}%
+                                    </div>
+                                    <div class="small text-muted">
+                                        Defect: {{ "%.1f"|format(production.daily_defect_rate) }}%
+                                    </div>
+                                </td>
                                 <td>{{ production.production_date.strftime('%m/%d/%Y') }}</td>
                                 <td>
-                                    <span class="badge bg-{{ 'success' if production.status == 'completed' else 'warning' if production.status == 'in_progress' else 'primary' }}">
-                                        {{ production.status.replace('_', ' ').title() }}
-                                    </span>
-                                </td>
-                                <td>{{ production.creator.username }}</td>
-                                <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{{ url_for('production.edit_production', id=production.id) }}" class="btn btn-outline-primary btn-sm">
+                                        {% if production.status in ['planned', 'in_progress'] %}
+                                        <a href="{{ url_for('production.daily_update', id=production.id) }}" 
+                                           class="btn btn-outline-success btn-sm" title="Daily Update">
+                                            <i class="fas fa-calendar-day"></i>
+                                        </a>
+                                        {% endif %}
+                                        <a href="{{ url_for('production.edit_production', id=production.id) }}" 
+                                           class="btn btn-outline-primary btn-sm" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <a href="{{ url_for('production.view_smart_suggestions', production_id=production.id) }}" class="btn btn-outline-info btn-sm">
+                                        <a href="{{ url_for('production.view_smart_suggestions', production_id=production.id) }}" 
+                                           class="btn btn-outline-info btn-sm" title="Smart Suggestions">
                                             <i class="fas fa-lightbulb"></i>
                                         </a>
                                         {% if production.status != 'completed' %}
                                         <div class="btn-group btn-group-sm">
                                             <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                Status
+                                                <i class="fas fa-tasks"></i>
                                             </button>
                                             <ul class="dropdown-menu">
                                                 {% if production.status == 'planned' %}
-                                                <li><a class="dropdown-item" href="{{ url_for('production.update_status', id=production.id, status='in_progress') }}">Start Production</a></li>
+                                                <li><a class="dropdown-item" href="{{ url_for('production.update_status', id=production.id, status='in_progress') }}">
+                                                    <i class="fas fa-play me-2"></i>Start Production
+                                                </a></li>
                                                 {% endif %}
-                                                <li><a class="dropdown-item" href="{{ url_for('production.update_status', id=production.id, status='completed') }}">Complete</a></li>
+                                                <li><a class="dropdown-item" href="{{ url_for('production.update_status', id=production.id, status='completed') }}">
+                                                    <i class="fas fa-check me-2"></i>Complete
+                                                </a></li>
                                             </ul>
                                         </div>
                                         {% endif %}
