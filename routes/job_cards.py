@@ -245,7 +245,7 @@ def bulk_create_from_bom(production_id):
                          production=production,
                          bom_items=production.bom.items)
 
-@job_cards_bp.route('/update-daily/<int:job_card_id>', methods=['GET', 'POST'])
+@job_cards_bp.route('/update-daily-status/<int:job_card_id>', methods=['GET', 'POST'])
 @login_required
 def update_daily_status(job_card_id):
     """Update daily status for a job card"""

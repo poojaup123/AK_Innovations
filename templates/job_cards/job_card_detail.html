@@ -259,7 +259,7 @@
                             </a>
                         {% endif %}
                         {% endif %}
-                        <a href="{{ url_for('job_cards.update_daily', job_card_id=job_card.id) }}" class="btn btn-primary btn-sm">
+                        <a href="{{ url_for('job_cards.update_daily_status', job_card_id=job_card.id) }}" class="btn btn-primary btn-sm">
                             <i class="fas fa-plus me-2"></i>Add Progress Report
                         </a>
                     </div>
@@ -321,7 +321,7 @@
                         </div>
                     {% else %}
                         <p class="text-muted">No daily progress reports yet.</p>
-                        <a href="{{ url_for('job_cards.update_daily', job_card_id=job_card.id) }}" class="btn btn-primary">
+                        <a href="{{ url_for('job_cards.update_daily_status', job_card_id=job_card.id) }}" class="btn btn-primary">
                             <i class="fas fa-plus me-2"></i>Add First Progress Report
                         </a>
                     {% endif %}
