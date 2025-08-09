@@ -119,9 +119,9 @@ class JobCardDailyUpdateForm(FlaskForm):
     delay_reason = TextAreaField('Delay Reason (if applicable)', validators=[Optional()])
     supervisor_notes = TextAreaField('Supervisor Notes', validators=[Optional()])
     
-    # Batch Management
+    # Batch Management - Automated
     create_new_batch = BooleanField('Create New Output Batch', default=False)
-    input_batch_numbers = StringField('Input Batch Numbers (comma-separated)', validators=[Optional()])
+    # Note: Input batch numbers are automatically determined from job card material requirements
     
     # Workflow Control
     status_after_entry = SelectField('Action After Entry',
