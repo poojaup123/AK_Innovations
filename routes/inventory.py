@@ -130,7 +130,7 @@ def multi_state_view():
             scrap_qty = sum(b.quantity for b in batches if b.status == 'scrap')
             
             inventory_data.append({
-                'item_code': item.item_code,
+                'item_code': item.code,
                 'item_name': item.name,
                 'raw': raw_qty,
                 'wip': wip_qty,
