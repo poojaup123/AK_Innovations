@@ -101,31 +101,43 @@
                                 {{ form.hidden_tag() }}
                                 
                                 <div class="form-group mb-3">
-                                    {{ form.overall_notes.label(class="form-label") }}
-                                    {{ form.overall_notes(class="form-control", rows="3") }}
-                                    <small class="form-text text-muted">Overall observations for today's production</small>
+                                    {{ form.overall_assessment.label(class="form-label") }}
+                                    {{ form.overall_assessment(class="form-control") }}
+                                    <small class="form-text text-muted">Overall assessment of today's production performance</small>
                                 </div>
                                 
                                 <div class="form-group mb-3">
-                                    {{ form.action_items.label(class="form-label") }}
-                                    {{ form.action_items(class="form-control", rows="3") }}
-                                    <small class="form-text text-muted">Actions required for tomorrow</small>
+                                    {{ form.major_issues.label(class="form-label") }}
+                                    {{ form.major_issues(class="form-control", rows="3") }}
+                                    <small class="form-text text-muted">List any major issues identified during production</small>
                                 </div>
                                 
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            {{ form.reviewed_by.label(class="form-label") }}
-                                            {{ form.reviewed_by(class="form-control") }}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            {{ form.review_date.label(class="form-label") }}
-                                            {{ form.review_date(class="form-control", value=today) }}
-                                        </div>
+                                <div class="form-group mb-3">
+                                    {{ form.corrective_actions.label(class="form-label") }}
+                                    {{ form.corrective_actions(class="form-control", rows="3") }}
+                                    <small class="form-text text-muted">Required corrective actions to address issues</small>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.next_day_priorities.label(class="form-label") }}
+                                    {{ form.next_day_priorities(class="form-control", rows="3") }}
+                                    <small class="form-text text-muted">Key priorities for tomorrow's production</small>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    {{ form.resource_requirements.label(class="form-label") }}
+                                    {{ form.resource_requirements(class="form-control", rows="2") }}
+                                    <small class="form-text text-muted">Additional resources needed for upcoming production</small>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <div class="form-check">
+                                        {{ form.approve_production_day(class="form-check-input") }}
+                                        {{ form.approve_production_day.label(class="form-check-label") }}
                                     </div>
                                 </div>
+                                
+                                {{ form.review_date }}
                                 
                                 <div class="d-flex justify-content-between">
                                     <a href="{{ url_for('production.dashboard') }}" class="btn btn-secondary">
