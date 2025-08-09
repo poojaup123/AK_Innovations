@@ -96,7 +96,7 @@
                                             {% if job_card.priority == 'high' %}bg-danger
                                             {% elif job_card.priority == 'medium' %}bg-warning
                                             {% else %}bg-secondary{% endif %}">
-                                            {{ job_card.priority.title() }}
+                                            {{ job_card.priority.title() if job_card.priority else 'Medium' }}
                                         </span>
                                     </td>
                                 </tr>

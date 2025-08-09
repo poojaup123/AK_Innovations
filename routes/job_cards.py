@@ -254,7 +254,7 @@ def update_daily_status(job_card_id):
     # Get BOM processes for this job card
     bom_processes = []
     if job_card.bom_item_id:
-        from models.bom import BOMProcess
+        from models import BOMProcess
         bom_processes = BOMProcess.query.filter_by(
             bom_id=job_card.bom_item.bom_id if job_card.bom_item else None
         ).order_by(BOMProcess.step_number).all()
@@ -331,7 +331,7 @@ def view_job_card(id):
     # Get BOM processes for this job card
     routing_steps = []
     if job_card.bom_item_id:
-        from models.bom import BOMProcess
+        from models import BOMProcess
         bom_processes = BOMProcess.query.filter_by(
             bom_id=job_card.bom_item.bom_id if job_card.bom_item else None
         ).order_by(BOMProcess.step_number).all()
