@@ -14,13 +14,23 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <p><strong>Item:</strong> {{ production.produced_item.code }} - {{ production.produced_item.name }}</p>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <p><strong>BOM Reference:</strong> 
+                                {% if production.bom %}
+                                    <span class="badge bg-info text-white">BOM-{{ production.bom.id }}</span>
+                                    <small class="d-block text-muted">{{ production.bom.product.name if production.bom.product else 'Unknown Product' }}</small>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">No BOM</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-3">
                             <p><strong>Planned Quantity:</strong> {{ production.quantity_planned }} {{ production.planned_uom }}</p>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <p><strong>Status:</strong> 
                                 <span class="badge bg-{{ 'success' if production.status == 'completed' else 'primary' if production.status == 'in_progress' else 'secondary' }}">
                                     {{ production.status.replace('_', ' ').title() }}
@@ -47,6 +57,18 @@
                                 <div class="card-body">
                                     <p class="fw-bold">{{ suggestion.title }}</p>
                                     <p class="text-muted">{{ suggestion.description }}</p>
+                                    
+                                    <!-- BOM Reference Information -->
+                                    {% if suggestion.get('bom_id') %}
+                                        <div class="alert alert-info py-2 mb-3">
+                                            <small><strong>BOM Reference:</strong> 
+                                                <span class="badge bg-primary ms-1">BOM-{{ suggestion.bom_id }}</span>
+                                                {% if suggestion.get('bom_product_name') %}
+                                                    <span class="text-muted">- {{ suggestion.bom_product_name }}</span>
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                    {% endif %}
                                     
                                     {% if suggestion.get('raw_materials_required') %}
                                         <div class="table-responsive">

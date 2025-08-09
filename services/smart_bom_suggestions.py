@@ -304,6 +304,8 @@ class SmartBOMSuggestionService:
                     'feasibility': 'feasible',
                     'estimated_time': f"{suggestion.get('manufacturing_lead_time', 1)} days",
                     'bom_reference': suggestion.get('bom_code', 'N/A'),
+                    'bom_id': suggestion.get('bom_id'),
+                    'bom_product_name': suggestion.get('target_item_name'),
                     'action_steps': [
                         f"Create job card for {max_producible:.1f} units using BOM: {suggestion.get('bom_code', 'N/A')}",
                         f"Issue available raw materials (partial quantities)",
@@ -325,6 +327,8 @@ class SmartBOMSuggestionService:
                     'material_shortages': material_shortages,
                     'priority': 'high',
                     'estimated_cost': sum(mat['shortage_qty'] * (mat.get('unit_cost', 0) or 0) for mat in material_shortages),
+                    'bom_id': suggestion.get('bom_id'),
+                    'bom_product_name': suggestion.get('target_item_name'),
                     'action_steps': [
                         f"Purchase the following materials for remaining {(suggestion['target_quantity'] - max_producible):.1f} units:",
                         *[f"  • {mat['material_name']}: {mat['shortage_qty']:.1f} {mat['unit']}" for mat in material_shortages],
