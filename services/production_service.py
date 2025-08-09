@@ -57,7 +57,7 @@ class ProductionService:
                     target_completion_date=target_date,
                     priority='medium',  # Default priority
                     production_notes=f"Auto-generated from BOM process: {bom_process.process_name}",
-                    created_by_id=current_user.id if current_user.is_authenticated else 1
+                    created_by_id=current_user.id if current_user and current_user.is_authenticated else 1
                 )
                 
                 db.session.add(job_card)
@@ -134,7 +134,7 @@ class ProductionService:
                     priority='medium',
                     estimated_cost=estimated_cost,
                     production_notes=f"AI-Generated: {process_suggestion.get('outsource_reason', 'Smart suggestion based job card')}",
-                    created_by_id=current_user.id if current_user.is_authenticated else 1
+                    created_by_id=current_user.id if current_user and current_user.is_authenticated else 1
                 )
                 
                 # Set vendor if outsourcing is suggested
