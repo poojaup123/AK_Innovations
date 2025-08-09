@@ -475,10 +475,16 @@ def add_job_work():
                 try:
                     from models.department import Department
                     dept = Department.query.filter_by(code=dept_code).first()
-                    assigned_to_name = dept.name if dept else assigned_to.split('_')[1]
+                    assigned_to_name = dept.name if dept else assigned_to.split('_')[1].title()
                     assigned_to_type = 'in_house'
                 except ImportError:
-                    assigned_to_name = assigned_to.split('_')[1]
+                    # Fallback department names
+                    dept_names = {
+                        'production': 'Production',
+                        'assembly': 'Assembly', 
+                        'quality': 'Quality Control'
+                    }
+                    assigned_to_name = dept_names.get(dept_code, dept_code.title())
                     assigned_to_type = 'in_house'
             else:
                 assigned_to_name = assigned_to

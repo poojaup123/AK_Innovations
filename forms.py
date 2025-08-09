@@ -339,10 +339,18 @@ class JobWorkForm(FlaskForm):
                 assigned_choices.append((supplier.name, f"🏢 {supplier.name}"))
             
             # Add departments for in-house work
-            from models.department import Department
-            departments = Department.query.filter_by(is_active=True).order_by(Department.name).all()
-            for dept in departments:
-                assigned_choices.append((f"dept_{dept.code}", f"🏭 {dept.name}"))
+            try:
+                from models.department import Department
+                departments = Department.query.filter_by(is_active=True).order_by(Department.name).all()
+                for dept in departments:
+                    assigned_choices.append((f"department_{dept.code}", f"🏭 {dept.name}"))
+            except ImportError:
+                # Fallback departments if Department model not available
+                assigned_choices.extend([
+                    ('department_production', '🏭 Production'),
+                    ('department_assembly', '🏭 Assembly'),
+                    ('department_quality', '🏭 Quality Control')
+                ])
         except Exception:
             pass
         
