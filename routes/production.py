@@ -687,22 +687,12 @@ def add_production():
             db.session.flush()  # Flush to get the production ID
             print("Production flushed successfully")
             
-            # Auto-generate job cards from BOM
+            # Commit the production order first (separate from job card generation)
+            db.session.commit()
+            print("Production order saved successfully")
+            
+            # Job cards will be generated separately via smart suggestions or manual creation
             job_card_count = 0
-            try:
-                print("Attempting to generate job cards")
-                generated_job_cards = generate_job_cards_for_production(production.id)
-                job_card_count = len(generated_job_cards)
-                print(f"Generated {job_card_count} job cards")
-                
-                db.session.commit()
-                print("Production and job cards saved successfully")
-                
-            except Exception as e:
-                print(f"Job card generation failed (non-critical): {e}")
-                # Still commit the production order
-                db.session.commit()
-                print("Production saved without job cards")
             
             # Add smart suggestions info to flash message if available
             flash_message = 'Production order created successfully!'
