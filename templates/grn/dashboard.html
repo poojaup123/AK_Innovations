@@ -229,14 +229,7 @@
                                         </td>
                                         <td>
                                             <strong class="text-primary">{{ parent.parent_doc }}</strong>
-                                            <br><small class="text-muted">{{ parent.type }}
-                                            {% if parent.type == 'Outsourced Job Card' and parent.get('show_create_grn') %}
-                                                <a href="{{ url_for('grn_job_card.create_grn_for_job_card', job_card_id=parent['job_card_id']) }}" 
-                                                   class="btn btn-xs btn-success ms-2">
-                                                    <i class="fas fa-plus"></i> Create GRN
-                                                </a>
-                                            {% endif %}
-                                            </small>
+                                            <br><small class="text-muted">{{ parent.type }}</small>
                                         </td>
                                         <td>{{ parent.date.strftime('%d/%m/%Y') }}</td>
                                         <td>{{ parent.vendor_customer }}</td>
@@ -259,8 +252,28 @@
                                                 {{ parent.grn_count }} GRNs
                                             {% endif %}
                                         </td>
-                                        <td colspan="6" class="text-muted text-center">
-                                            <small><i class="fas fa-chevron-down"></i> Click to expand GRN details</small>
+                                        <td colspan="5" class="text-muted text-center">
+                                            {% if parent.type == 'Outsourced Job Card' and parent.get('show_create_grn') %}
+                                                <small class="text-info">No GRNs created yet</small>
+                                            {% else %}
+                                                <small><i class="fas fa-chevron-down"></i> Click to expand GRN details</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if parent.type == 'Outsourced Job Card' and parent.get('show_create_grn') %}
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ url_for('grn_job_card.quick_receive_job_card', job_card_id=parent['job_card_id']) }}" 
+                                                       class="btn btn-success btn-sm" title="Quick Receive">
+                                                        <i class="fas fa-bolt"></i> Quick Receive
+                                                    </a>
+                                                    <a href="{{ url_for('grn_job_card.create_grn_for_job_card', job_card_id=parent['job_card_id']) }}" 
+                                                       class="btn btn-outline-primary btn-sm" title="Create Full GRN">
+                                                        <i class="fas fa-plus"></i> Create GRN
+                                                    </a>
+                                                </div>
+                                            {% else %}
+                                                <small class="text-muted">-</small>
+                                            {% endif %}
                                         </td>
                                     </tr>
                                     
