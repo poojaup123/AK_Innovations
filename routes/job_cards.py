@@ -393,11 +393,13 @@ def update_daily_status(job_card_id):
             db.session.rollback()
             flash(f'Error updating daily status: {str(e)}', 'danger')
     
+    from datetime import date
     return render_template('job_cards/update_daily.html',
                          form=form,
                          job_card=job_card,
                          today_report=today_report,
-                         bom_processes=bom_processes)
+                         bom_processes=bom_processes,
+                         today=date.today())
 
 
 @job_cards_bp.route('/outsourcing-workflow/<int:job_card_id>', methods=['GET', 'POST'])
