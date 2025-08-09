@@ -28,6 +28,7 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
+                                <th>BOM ID</th>
                                 <th>Product</th>
                                 <th>Product Code</th>
                                 <th>Version</th>
@@ -40,6 +41,7 @@
                         <tbody>
                             {% for bom in boms.items %}
                             <tr>
+                                <td><span class="badge bg-primary">BOM-{{ bom.id }}</span></td>
                                 <td><strong>{{ bom.product.name }}</strong></td>
                                 <td>{{ bom.product.code }}</td>
                                 <td>{{ bom.version }}</td>

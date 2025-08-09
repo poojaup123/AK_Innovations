@@ -58,6 +58,17 @@
                                     <td>{{ job_card.production.production_number }}</td>
                                 </tr>
                                 <tr>
+                                    <td><strong>BOM Reference:</strong></td>
+                                    <td>
+                                        {% if job_card.production and job_card.production.bom %}
+                                            <span class="badge bg-info text-white">BOM-{{ job_card.production.bom.id }}</span>
+                                            <small class="text-muted ms-2">{{ job_card.production.bom.product.name if job_card.production.bom.product else 'Unknown Product' }}</small>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">No BOM</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
                                     <td><strong>Component:</strong></td>
                                     <td>{{ job_card.item.name if job_card.item else 'Unknown' }}</td>
                                 </tr>

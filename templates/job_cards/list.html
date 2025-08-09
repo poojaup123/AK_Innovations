@@ -70,6 +70,16 @@
                         <h6 class="card-title">{{ job_card.item.name if job_card.item else 'No Item' }}</h6>
                         <p class="card-text text-muted small">{{ job_card.process_name or 'General Production' }}</p>
                         
+                        <!-- BOM Reference -->
+                        {% if job_card.production and job_card.production.bom %}
+                            <div class="mb-2">
+                                <small class="text-info">
+                                    <i class="fas fa-sitemap"></i> BOM Reference: 
+                                    <span class="badge bg-info text-white">BOM-{{ job_card.production.bom.id }}</span>
+                                </small>
+                            </div>
+                        {% endif %}
+                        
                         <!-- Progress -->
                         <div class="mb-3">
                             <div class="d-flex justify-content-between align-items-center mb-1">
