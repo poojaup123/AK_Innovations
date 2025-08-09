@@ -4,20 +4,13 @@
 
 {% block extra_css %}
 <style>
-/* Force side-by-side layout for job card summary */
-@media (min-width: 768px) {
-    .main-content-row {
-        display: flex !important;
-        flex-wrap: nowrap !important;
+/* Side-by-side layout for desktop */
+@media (max-width: 768px) {
+    .d-flex.gap-4 {
+        flex-direction: column !important;
     }
-    .form-column {
-        flex: 1 1 65% !important;
-        max-width: 65% !important;
-    }
-    .summary-column {
-        flex: 1 1 35% !important;
-        max-width: 35% !important;
-        min-height: 600px;
+    .d-flex.gap-4 > div[style*="flex: 1"] {
+        min-width: 100% !important;
     }
 }
 </style>
@@ -42,10 +35,10 @@
         </div>
     </div>
 
-    <!-- Main Content Row with Fixed Layout -->
-    <div class="row gx-4 main-content-row">
-        <!-- Daily Status Form - Left Side -->
-        <div class="col-lg-8 col-md-7 form-column">
+    <!-- Main Content with Side-by-Side Layout -->
+    <div class="d-flex gap-4">
+        <!-- Left Column: Form -->
+        <div style="flex: 2; min-width: 0;">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
@@ -262,8 +255,8 @@
             </div>
         </div>
         
-        <!-- Job Card Summary - Right Side -->
-        <div class="col-lg-4 col-md-5 summary-column">
+        <!-- Right Column: Job Card Summary -->
+        <div style="flex: 1; min-width: 300px; max-width: 400px;">
             <div class="card shadow-sm" style="position: sticky; top: 20px;">
                 <div class="card-header bg-primary text-white">
                     <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Job Card Summary</h6>
