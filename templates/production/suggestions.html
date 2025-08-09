@@ -120,10 +120,22 @@
                                             {% set insufficient_materials = suggestion.raw_materials_required | selectattr('sufficient', 'equalto', false) | list %}
                                             {% if insufficient_materials %}
                                                 {% set material_data = insufficient_materials | map(attribute='material_id') | join(',') %}
-                                                {% set quantity_data = insufficient_materials | map(attribute='shortage_qty') | join(',') %}
-                                                <a href="{{ url_for('purchase.add_purchase_order') }}?from_suggestion=1&production_id={{ production.id }}&materials={{ material_data }}&quantities={{ quantity_data }}" 
+                                                <!-- Try both shortage_qty and needed_qty fields -->
+                                                {% set quantity_data = [] %}
+                                                {% for mat in insufficient_materials %}
+                                                    {% if mat.shortage_qty is defined %}
+                                                        {% set _ = quantity_data.append(mat.shortage_qty | string) %}
+                                                    {% elif mat.needed_qty is defined and mat.allocated_qty is defined %}
+                                                        {% set _ = quantity_data.append((mat.needed_qty - mat.allocated_qty) | string) %}
+                                                    {% elif mat.needed_qty is defined and mat.available_qty is defined %}
+                                                        {% set _ = quantity_data.append((mat.needed_qty - mat.available_qty) | string) %}
+                                                    {% else %}
+                                                        {% set _ = quantity_data.append('1.0') %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                                <a href="{{ url_for('purchase.add_purchase_order') }}?from_suggestion=1&production_id={{ production.id }}&materials={{ material_data }}&quantities={{ quantity_data | join(',') }}" 
                                                    class="btn btn-warning btn-sm">
-                                                    <i class="fas fa-exclamation-triangle me-2"></i>Purchase Missing Materials
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>Purchase Missing Materials ({{ insufficient_materials | length }} items)
                                                 </a>
                                             {% endif %}
                                         {% endif %}
