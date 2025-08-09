@@ -56,6 +56,7 @@ class JobCardForm(FlaskForm):
     
     # Notes
     notes = TextAreaField('Additional Notes', validators=[Optional()])
+    production_notes = TextAreaField('Production Notes', validators=[Optional()])
 
 class JobCardDailyUpdateForm(FlaskForm):
     """Daily status update form for job cards"""

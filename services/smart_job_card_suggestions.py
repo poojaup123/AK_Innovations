@@ -34,17 +34,17 @@ class SmartJobCardSuggestions:
                 'production_info': {
                     'production_number': production.production_number,
                     'item_name': production.produced_item.name,
-                    'planned_quantity': production.planned_quantity,
+                    'planned_quantity': production.quantity_planned,
                     'target_completion': getattr(production, 'target_completion_date', None),
                     'priority': getattr(production, 'priority', 'medium')
                 },
                 'bom_analysis': SmartJobCardSuggestions._analyze_bom_structure(main_bom),
-                'material_requirements': SmartJobCardSuggestions._calculate_material_requirements(main_bom, production.planned_quantity),
+                'material_requirements': SmartJobCardSuggestions._calculate_material_requirements(main_bom, production.quantity_planned),
                 'process_suggestions': SmartJobCardSuggestions._suggest_processes(main_bom),
                 'resource_assignments': SmartJobCardSuggestions._suggest_resource_assignments(main_bom),
-                'timeline_suggestions': SmartJobCardSuggestions._calculate_timeline_suggestions(main_bom, production.planned_quantity),
-                'inventory_availability': SmartJobCardSuggestions._check_inventory_availability(main_bom, production.planned_quantity),
-                'cost_estimates': SmartJobCardSuggestions._estimate_costs(main_bom, production.planned_quantity),
+                'timeline_suggestions': SmartJobCardSuggestions._calculate_timeline_suggestions(main_bom, production.quantity_planned),
+                'inventory_availability': SmartJobCardSuggestions._check_inventory_availability(main_bom, production.quantity_planned),
+                'cost_estimates': SmartJobCardSuggestions._estimate_costs(main_bom, production.quantity_planned),
                 'quality_requirements': SmartJobCardSuggestions._suggest_quality_requirements(main_bom),
                 'outsourcing_recommendations': SmartJobCardSuggestions._suggest_outsourcing_opportunities(main_bom)
             }
@@ -393,19 +393,19 @@ class SmartJobCardSuggestions:
             'production_info': {
                 'production_number': production.production_number,
                 'item_name': production.produced_item.name,
-                'planned_quantity': production.planned_quantity,
+                'planned_quantity': production.quantity_planned,
                 'target_completion': getattr(production, 'target_completion_date', None),
                 'priority': getattr(production, 'priority', 'medium')
             },
             'simple_job_card': {
                 'process_name': f"Production - {production.produced_item.name}",
-                'estimated_time_hours': production.planned_quantity * 0.5,  # Basic estimate
+                'estimated_time_hours': production.quantity_planned * 0.5,  # Basic estimate
                 'skill_required': 'Standard',
                 'quality_check': 'Visual inspection required'
             },
             'material_requirements': [{
                 'item_name': production.produced_item.name,
-                'quantity_required': production.planned_quantity,
+                'quantity_required': production.quantity_planned,
                 'unit_cost': getattr(production.produced_item, 'unit_cost', 0) or 0
             }]
         }

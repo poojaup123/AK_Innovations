@@ -279,7 +279,7 @@ class BOMPlanner:
                 bom = BOM.query.filter_by(product_id=production.item_id, is_active=True).first()
                 if bom:
                     for bom_item in bom.items:
-                        required_qty = bom_item.quantity_required * production.planned_quantity
+                        required_qty = bom_item.quantity_required * production.quantity_planned
                         material_demand[bom_item.item_id] += required_qty
             
             # Generate forecast report

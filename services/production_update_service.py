@@ -71,9 +71,9 @@ class ProductionUpdateService:
         production.scrap_quantity += received_quantities.get('scrap', 0)
         
         # Update progress percentage
-        if production.planned_quantity > 0:
+        if production.quantity_planned > 0:
             production.progress_percentage = min(
-                (production.completed_quantity / production.planned_quantity) * 100, 
+                (production.completed_quantity / production.quantity_planned) * 100, 
                 100
             )
     
@@ -196,7 +196,7 @@ class ProductionUpdateService:
         
         summary = {
             'production_number': production.production_number,
-            'total_planned': production.planned_quantity,
+            'total_planned': production.quantity_planned,
             'total_completed': production.completed_quantity,
             'total_good': production.good_quantity,
             'total_defective': production.defective_quantity,
