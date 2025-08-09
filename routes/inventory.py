@@ -115,59 +115,32 @@ def batch_traceability(batch_id):
 @inventory_bp.route('/multi-state')
 @login_required
 def multi_state_view():
-    """Multi-state inventory view showing all inventory stages"""
+    """Unified multi-state inventory view per user requirements"""
     try:
-        # Get all items and calculate multi-state totals
-        items = Item.query.all()
-        inventory_data = []
+        from services.unified_inventory import UnifiedInventoryService
         
-        for item in items:
-            # Calculate totals from batches using correct attributes
-            batches = ItemBatch.query.filter_by(item_id=item.id).all()
-            raw_qty = sum(b.qty_raw or 0 for b in batches)
-            wip_qty = sum(b.total_wip_quantity for b in batches)
-            finished_qty = sum(b.qty_finished or 0 for b in batches)
-            scrap_qty = sum(b.qty_scrap or 0 for b in batches)
-            
-            # Create a dictionary object that mimics the item with calculated values
-            item_data = {
-                'id': item.id,
-                'code': item.code,
-                'name': item.name,
-                'qty_raw': raw_qty,
-                'total_wip': wip_qty,
-                'qty_finished': finished_qty,
-                'qty_scrap': scrap_qty,
-                'total_stock': raw_qty + wip_qty + finished_qty + scrap_qty,
-                'available_stock': finished_qty,
-                'minimum_stock': getattr(item, 'minimum_stock', 0) or 0,
-                'unit_of_measure': item.unit_of_measure,
-                'item_type': getattr(item, 'item_type', 'material'),
-                'current_stock': getattr(item, 'current_stock', 0)
-            }
-            
-            inventory_data.append(item_data)
+        # Get multi-state inventory data
+        inventory_data = UnifiedInventoryService.get_multi_state_inventory()
         
         # Calculate summary totals
         summary = {
             'total_items': len(inventory_data),
-            'total_raw': sum(item['qty_raw'] for item in inventory_data),
-            'total_wip': sum(item['total_wip'] for item in inventory_data),
-            'total_finished': sum(item['qty_finished'] for item in inventory_data),
-            'total_scrap': sum(item['qty_scrap'] for item in inventory_data),
-            'total_available': sum(item['available_stock'] for item in inventory_data)
+            'total_raw': sum(item['raw'] for item in inventory_data),
+            'total_wip': sum(item['wip'] for item in inventory_data),
+            'total_finished': sum(item['finished'] for item in inventory_data),
+            'total_scrap': sum(item['scrap'] for item in inventory_data),
+            'total_available': sum(item['available'] for item in inventory_data)
         }
         
-        return render_template('inventory/multi_state_view.html', 
-                             items=inventory_data,
-                             summary=summary,
-                             total_raw=summary['total_raw'],
-                             total_wip=summary['total_wip'],
-                             total_finished=summary['total_finished'],
-                             total_scrap=summary['total_scrap'],
-                             title='Multi-State Inventory Tracking')
+        print(f"Multi-state view: rendering template with {len(inventory_data)} items")  # Debug
+        return render_template('inventory/multi_state_unified.html', 
+                             inventory_data=inventory_data,
+                             summary=summary)
         
     except Exception as e:
+        print(f"Multi-state view error: {e}")  # Debug logging
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")  # Full error details
         flash(f'Error loading multi-state view: {str(e)}', 'error')
         return redirect(url_for('inventory.dashboard'))
 
@@ -212,32 +185,32 @@ def batch_wise_view():
     state_filter = request.args.get('state', '')
     location_filter = request.args.get('location', '')
     
-    # Build base query - use ItemBatch instead of ItemBatch
-    from models.batch import ItemBatch
-    query = ItemBatch.query.join(Item)
+    # Build base query - use InventoryBatch instead of ItemBatch
+    from models.batch import InventoryBatch
+    query = InventoryBatch.query.join(Item)
     
     # Apply filters
     if item_filter:
-        query = query.filter(ItemBatch.item_id == item_filter)
+        query = query.filter(InventoryBatch.item_id == item_filter)
     
     if state_filter:
         if state_filter == 'raw':
-            query = query.filter(ItemBatch.qty_raw > 0)
+            query = query.filter(InventoryBatch.qty_raw > 0)
         elif state_filter == 'finished':
-            query = query.filter(ItemBatch.qty_finished > 0)
+            query = query.filter(InventoryBatch.qty_finished > 0)
         elif state_filter == 'scrap':
-            query = query.filter(ItemBatch.qty_scrap > 0)
+            query = query.filter(InventoryBatch.qty_scrap > 0)
         elif state_filter == 'wip':
-            query = query.filter(ItemBatch.qty_wip > 0)
+            query = query.filter(InventoryBatch.qty_wip > 0)
         elif state_filter == 'inspection':
-            query = query.filter(ItemBatch.qty_inspection > 0)
+            query = query.filter(InventoryBatch.qty_inspection > 0)
     
     if location_filter:
-        query = query.filter(ItemBatch.location.ilike(f'%{location_filter}%'))
+        query = query.filter(InventoryBatch.location.ilike(f'%{location_filter}%'))
     
     # Pagination
     page = request.args.get('page', 1, type=int)
-    batches = query.order_by(desc(ItemBatch.created_at)).paginate(
+    batches = query.order_by(desc(InventoryBatch.created_at)).paginate(
         page=page, per_page=20, error_out=False
     )
     
@@ -250,17 +223,17 @@ def batch_wise_view():
     parent_child_data = []
     
     # Group GRNs by their parent documents (Purchase Orders)
-    purchase_orders = PurchaseOrder.query.join(GRN, GRN.purchase_order_id == PurchaseOrder.id).order_by(desc(PurchaseOrder.created_at)).limit(10).all()
+    purchase_orders = PurchaseOrder.query.filter(PurchaseOrder.grn_receipts_po.any()).order_by(desc(PurchaseOrder.created_at)).limit(10).all()
     
     for idx, po in enumerate(purchase_orders):
-        po_grns = GRN.query.filter_by(purchase_order_id=po.id).all()
+        po_grns = po.grn_receipts_po
         if po_grns:
             # Prepare child GRNs data
             child_grns = []
             total_qty = 0
             
             for grn in po_grns:
-                grn_batches = ItemBatch.query.filter_by(grn_id=grn.id).all()
+                grn_batches = InventoryBatch.query.filter_by(grn_id=grn.id).all()
                 if grn_batches:
                     grn_qty = sum(batch.total_quantity for batch in grn_batches)
                     total_qty += grn_qty
@@ -296,30 +269,30 @@ def batch_wise_view():
     
     # Get filter options
     items = Item.query.order_by(Item.name).all()
-    storage_locations = db.session.query(ItemBatch.location).distinct().all()
+    storage_locations = db.session.query(InventoryBatch.location).distinct().all()
     locations = [loc[0] for loc in storage_locations if loc[0]]
     
     # Calculate batch statistics
     batch_stats = {
-        'total_batches': ItemBatch.query.count(),
-        'active_batches': ItemBatch.query.filter(
+        'total_batches': InventoryBatch.query.count(),
+        'active_batches': InventoryBatch.query.filter(
             db.or_(
-                ItemBatch.qty_raw > 0,
-                ItemBatch.qty_wip > 0,
-                ItemBatch.qty_finished > 0,
-                ItemBatch.qty_inspection > 0
+                InventoryBatch.qty_raw > 0,
+                InventoryBatch.qty_wip > 0,
+                InventoryBatch.qty_finished > 0,
+                InventoryBatch.qty_inspection > 0
             )
         ).count(),
-        'expired_batches': ItemBatch.query.filter(
-            ItemBatch.expiry_date < datetime.now().date()
-        ).count() if ItemBatch.query.filter(ItemBatch.expiry_date != None).count() > 0 else 0,
-        'batches_expiring_soon': ItemBatch.query.filter(
-            ItemBatch.expiry_date.between(
+        'expired_batches': InventoryBatch.query.filter(
+            InventoryBatch.expiry_date < datetime.now().date()
+        ).count() if InventoryBatch.query.filter(InventoryBatch.expiry_date != None).count() > 0 else 0,
+        'batches_expiring_soon': InventoryBatch.query.filter(
+            InventoryBatch.expiry_date.between(
                 datetime.now().date(),
                 (datetime.now() + timedelta(days=30)).date()
             )
-        ).count() if ItemBatch.query.filter(ItemBatch.expiry_date != None).count() > 0 else 0,
-        'quality_issues': ItemBatch.query.filter(ItemBatch.inspection_status == 'failed').count()
+        ).count() if InventoryBatch.query.filter(InventoryBatch.expiry_date != None).count() > 0 else 0,
+        'quality_issues': InventoryBatch.query.filter(InventoryBatch.inspection_status == 'failed').count()
     }
     
     return render_template('inventory/batch_tracking_dashboard_clean.html',
@@ -376,7 +349,7 @@ def process_breakdown():
                 if qty > 0:
                     items_in_process.append({
                         'item_name': item_data['item_name'],
-                        'item_code': item_data.get('item_code', item.code),
+                        'item_code': item_data['item_code'],
                         'quantity': qty,
                         'unit_of_measure': item_data['unit_of_measure']
                     })
@@ -752,14 +725,14 @@ def api_item_batch_details(item_code):
                 'error': 'Item not found'
             }), 404
         
-        # Get all batches for this item using ItemBatch model
-        from models.batch import ItemBatch
-        batches = ItemBatch.query.filter_by(item_id=item.id).all()
-        print(f"Found {len(batches)} ItemBatch records for item {item.code}")
+        # Get all batches for this item using InventoryBatch model
+        from models.batch import InventoryBatch
+        batches = InventoryBatch.query.filter_by(item_id=item.id).all()
+        print(f"Found {len(batches)} InventoryBatch records for item {item.code}")
         
         batch_data = []
         for batch in batches:
-            # Use ItemBatch field names
+            # Use InventoryBatch field names
             # Determine batch status based on inspection_status and quantities
             if hasattr(batch, 'inspection_status') and batch.inspection_status:
                 if batch.inspection_status == 'passed':
@@ -810,8 +783,24 @@ def api_item_batch_details(item_code):
         }), 500
 
 
-# Multi-state inventory export functionality
-def export_multi_state_inventory_items(items):
+@inventory_bp.route('/export_unified_inventory')
+@login_required
+def export_unified_inventory():
+    """Export unified multi-state inventory to Excel"""
+    try:
+        from services.unified_inventory import UnifiedInventoryService
+        
+        # Get all inventory items with multi-state data
+        items = UnifiedInventoryService.get_all_items_with_states()
+        
+        # Create a modified export for unified inventory
+        return export_unified_inventory_items(items)
+        
+    except Exception as e:
+        flash(f'Error exporting inventory: {str(e)}', 'danger')
+        return redirect(url_for('inventory.multi_state_view'))
+
+def export_unified_inventory_items(items):
     """Export unified multi-state inventory items to Excel"""
     from flask import make_response
     import io
@@ -984,29 +973,29 @@ def unified_batch_management():
     """Unified batch management combining tracking and analysis"""
     
     # Get all batch data
-    batches = ItemBatch.query.order_by(desc(ItemBatch.created_at)).all()
+    batches = InventoryBatch.query.order_by(desc(InventoryBatch.created_at)).all()
     
     # Get batch statistics
     batch_stats = {
-        'total_batches': ItemBatch.query.count(),
-        'active_batches': ItemBatch.query.filter(
+        'total_batches': InventoryBatch.query.count(),
+        'active_batches': InventoryBatch.query.filter(
             db.or_(
-                ItemBatch.qty_raw > 0,
-                ItemBatch.qty_wip > 0,
-                ItemBatch.qty_finished > 0,
-                ItemBatch.qty_inspection > 0
+                InventoryBatch.qty_raw > 0,
+                InventoryBatch.qty_wip > 0,
+                InventoryBatch.qty_finished > 0,
+                InventoryBatch.qty_inspection > 0
             )
         ).count(),
-        'expired_batches': ItemBatch.query.filter(
-            ItemBatch.expiry_date < datetime.now().date()
-        ).count() if ItemBatch.query.filter(ItemBatch.expiry_date != None).count() > 0 else 0,
-        'batches_expiring_soon': ItemBatch.query.filter(
-            ItemBatch.expiry_date.between(
+        'expired_batches': InventoryBatch.query.filter(
+            InventoryBatch.expiry_date < datetime.now().date()
+        ).count() if InventoryBatch.query.filter(InventoryBatch.expiry_date != None).count() > 0 else 0,
+        'batches_expiring_soon': InventoryBatch.query.filter(
+            InventoryBatch.expiry_date.between(
                 datetime.now().date(),
                 (datetime.now() + timedelta(days=30)).date()
             )
-        ).count() if ItemBatch.query.filter(ItemBatch.expiry_date != None).count() > 0 else 0,
-        'quality_issues': ItemBatch.query.filter(ItemBatch.inspection_status == 'failed').count(),
+        ).count() if InventoryBatch.query.filter(InventoryBatch.expiry_date != None).count() > 0 else 0,
+        'quality_issues': InventoryBatch.query.filter(InventoryBatch.inspection_status == 'failed').count(),
         'total_scrap_quantity': sum((batch.qty_scrap or 0) for batch in batches),
         'total_good_quantity': sum((batch.qty_raw or 0) + (batch.qty_finished or 0) for batch in batches)
     }
@@ -1017,7 +1006,7 @@ def unified_batch_management():
     
     # Get filter options
     items = Item.query.order_by(Item.name).all()
-    storage_locations = db.session.query(ItemBatch.location).distinct().all()
+    storage_locations = db.session.query(InventoryBatch.location).distinct().all()
     locations = [loc[0] for loc in storage_locations if loc[0]]
     
     # Process summary by state

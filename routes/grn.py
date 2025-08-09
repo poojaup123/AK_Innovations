@@ -341,126 +341,6 @@ def approve_inspection_and_move_to_inventory(batch_id, inspection_result='passed
 
 grn_bp = Blueprint('grn', __name__)
 
-@grn_bp.route('/add', methods=['GET', 'POST'])
-@login_required
-def add_grn():
-    """Add a new GRN"""
-    form = GRNForm()
-    
-    if form.validate_on_submit():
-        try:
-            grn = GRN(
-                grn_number=form.grn_number.data or GRN.generate_grn_number(),
-                job_work_id=form.job_work_id.data if form.job_work_id.data else None,
-                purchase_order_id=form.purchase_order_id.data if form.purchase_order_id.data else None,
-                received_date=form.received_date.data,
-                received_by=current_user.id,
-                delivery_note=form.delivery_note.data,
-                inspection_required=form.inspection_required.data,
-                status='received',
-                remarks=form.remarks.data
-            )
-            db.session.add(grn)
-            db.session.commit()
-            
-            flash(f'GRN {grn.grn_number} created successfully!', 'success')
-            return redirect(url_for('grn.view_grn', id=grn.id))
-            
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error creating GRN: {str(e)}', 'error')
-            
-    return render_template('grn/add_grn.html', form=form, title='Add New GRN')
-
-@grn_bp.route('/view/<int:id>')
-@login_required 
-def view_grn(id):
-    """View GRN details"""
-    grn = GRN.query.get_or_404(id)
-    return render_template('grn/view_grn.html', grn=grn, title=f'GRN {grn.grn_number}')
-
-@grn_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
-@login_required
-def edit_grn(id):
-    """Edit GRN details"""
-    grn = GRN.query.get_or_404(id)
-    form = GRNForm(obj=grn)
-    
-    if form.validate_on_submit():
-        try:
-            form.populate_obj(grn)
-            db.session.commit()
-            flash(f'GRN {grn.grn_number} updated successfully!', 'success')
-            return redirect(url_for('grn.view_grn', id=grn.id))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error updating GRN: {str(e)}', 'error')
-            
-    return render_template('grn/edit_grn.html', form=form, grn=grn, title=f'Edit GRN {grn.grn_number}')
-
-@grn_bp.route('/pending')
-@login_required
-def pending_grns():
-    """List pending GRNs"""
-    pending_grns = GRN.query.filter_by(status='received').all()
-    return render_template('grn/pending_grns.html', grns=pending_grns, title='Pending GRNs')
-
-@grn_bp.route('/completed')
-@login_required 
-def completed_grns():
-    """List completed GRNs"""
-    completed_grns = GRN.query.filter_by(status='completed').all()
-    return render_template('grn/completed_grns.html', grns=completed_grns, title='Completed GRNs')
-
-@grn_bp.route('/reports')
-@login_required
-def reports():
-    """GRN reports"""
-    # Get report statistics
-    total_grns = GRN.query.count()
-    pending_grns = GRN.query.filter_by(status='received').count()
-    completed_grns = GRN.query.filter_by(status='completed').count()
-    this_month_grns = GRN.query.filter(
-        func.extract('month', GRN.received_date) == datetime.now().month,
-        func.extract('year', GRN.received_date) == datetime.now().year
-    ).count()
-    
-    return render_template('grn/reports.html', 
-                         title='GRN Reports',
-                         total_grns=total_grns,
-                         pending_grns=pending_grns,
-                         completed_grns=completed_grns,
-                         this_month_grns=this_month_grns)
-
-@grn_bp.route('/list')
-@login_required
-def list_grns():
-    """List all GRNs with optional filtering"""
-    status = request.args.get('status')
-    
-    # Base query
-    query = GRN.query
-    
-    # Apply status filter if provided
-    if status:
-        query = query.filter_by(status=status)
-    
-    # Order by date descending
-    grns = query.order_by(GRN.received_date.desc()).all()
-    
-    # Determine title based on filter
-    if status == 'received':
-        title = 'Pending GRNs'
-        template = 'grn/pending_grns.html'
-    elif status == 'completed':
-        title = 'Completed GRNs'
-        template = 'grn/completed_grns.html'
-    else:
-        title = 'All GRNs'
-        template = 'grn/list_grns.html'
-    
-    return render_template(template, grns=grns, title=title)
-
 @grn_bp.route('/grn/<int:grn_id>/batches')
 @login_required 
 def view_grn_batches(grn_id):
@@ -489,16 +369,16 @@ def view_grn_batches(grn_id):
 @grn_bp.route('/dashboard')
 @login_required
 def dashboard():
-    """Standard GRN Dashboard - Separate from Job Work system"""
+    """GRN Dashboard with Parent-Child structure matching Batch Tracking Dashboard"""
     
     # Get filter parameters
     search = request.args.get('search', '').strip()
     status_filter = request.args.get('status', '').strip()
-    department_filter = request.args.get('department', '').strip()
+    source_type_filter = request.args.get('source_type', '').strip()
     date_from = request.args.get('date_from', '').strip()
     date_to = request.args.get('date_to', '').strip()
     
-    # Calculate basic statistics
+    # Calculate statistics
     stats = {
         'total_grns': GRN.query.count(),
         'pending_inspection': GRN.query.filter(GRN.inspection_status == 'pending').count(),
@@ -506,123 +386,179 @@ def dashboard():
             GRN.received_date == date.today(),
             GRN.status == 'completed'
         ).count(),
+        'pending_grns': GRN.query.filter(GRN.status.in_(['draft', 'received'])).count()
     }
     
-    # Get recent GRNs (last 20)
-    recent_grns_query = GRN.query
-    
-    # Apply filters if provided
-    if search:
-        recent_grns_query = recent_grns_query.filter(
-            GRN.grn_number.ilike(f'%{search}%')
-        )
-    
-    if status_filter:
-        recent_grns_query = recent_grns_query.filter(GRN.status == status_filter)
-    
-    if date_from:
-        try:
-            from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
-            recent_grns_query = recent_grns_query.filter(func.date(GRN.created_at) >= from_date)
-        except:
-            pass
-    
-    if date_to:
-        try:
-            to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
-            recent_grns_query = recent_grns_query.filter(func.date(GRN.created_at) <= to_date)
-        except:
-            pass
-    
-    recent_grns = recent_grns_query.order_by(GRN.created_at.desc()).limit(20).all()
-    
-    # Calculate monthly GRNs count
-    monthly_grns = GRN.query.filter(
-        func.extract('month', GRN.created_at) == date.today().month,
-        func.extract('year', GRN.created_at) == date.today().year
-    ).count()
-    
-    # Get parent-child relationship data for Purchase Orders and Job Works
+    # Parent-Child Structure: Get Parent orders with their associated GRNs
     parent_child_data = []
     
-    # Get all Purchase Orders with their GRNs (with simple counting instead of complex calculations)
-    purchase_orders = PurchaseOrder.query.all()
+    # 1. Purchase Orders as Parents
+    purchase_orders = PurchaseOrder.query.filter(
+        PurchaseOrder.grn_receipts_po.any()
+    ).order_by(PurchaseOrder.created_at.desc()).all()
+    
     for po in purchase_orders:
-        po_grns = GRN.query.filter_by(purchase_order_id=po.id).all()
+        # Calculate totals for this PO
+        total_qty = sum(item.qty for item in po.items)
+        grn_count = len(po.grn_receipts_po)
         
-        # Simple status calculation - if there are any GRNs, it's at least partial
-        if len(po_grns) == 0:
-            status = 'Pending'
-        elif po.status == 'fulfilled':
-            status = 'Completed'
+        # Use actual PO status from database (more accurate than GRN status logic)
+        if po.status == 'closed':
+            po_status = 'Completed'
+        elif po.status == 'partial':
+            po_status = 'Partial'
         else:
-            status = 'Partial'
+            po_status = 'Pending'
+        
+        # Build child GRNs with details
+        child_grns = []
+        for grn in po.grn_receipts_po:
+            # Get item details for this GRN
+            item_details = []
+            total_received = 0
+            total_scrap = 0
+            
+            for line_item in grn.line_items:
+                item_details.append(f"{line_item.item.name} ({line_item.quantity_received} {line_item.unit_of_measure})")
+                total_received += line_item.quantity_received or 0
+                total_scrap += line_item.quantity_rejected or 0
+            
+            child_grns.append({
+                'grn_number': grn.grn_number,
+                'grn_date': grn.received_date,
+                'item_details': ', '.join(item_details),
+                'received_qty': total_received,
+                'scrap_qty': total_scrap,
+                'status': grn.status.title(),
+                'grn_id': grn.id,
+                'source_type': 'Purchase Order',
+                'source_document': po.po_number,
+                'inspection_status': grn.inspection_status.title() if grn.inspection_status else 'Pending',
+                'inventory_updated': grn.add_to_inventory if hasattr(grn, 'add_to_inventory') else True
+            })
         
         parent_child_data.append({
             'type': 'Purchase Order',
-            'parent_number': po.po_number,
-            'parent_date': po.po_date if hasattr(po, 'po_date') and po.po_date else (po.created_at if hasattr(po, 'created_at') and po.created_at else (po.order_date if hasattr(po, 'order_date') and po.order_date else None)),
-            'supplier': po.supplier.name if po.supplier else 'N/A',
-            'total_grns': len(po_grns),
-            'status': status,
-            'parent_id': po.id,
-            'grns': po_grns
+            'parent_doc': po.po_number,
+            'date': po.created_at.date(),
+            'vendor_customer': po.supplier.name if po.supplier else 'N/A',
+            'status': po_status,
+            'total_qty': total_qty,
+            'grn_count': grn_count,
+            'child_grns': child_grns,
+            'parent_id': f'po_{po.id}'
         })
     
-    # Get all Job Works with their GRNs
-    job_works = JobWork.query.all()
+    # 2. Job Works as Parents
+    job_works = JobWork.query.filter(
+        JobWork.grn_receipts.any()
+    ).order_by(JobWork.created_at.desc()).all()
+    
     for jw in job_works:
-        jw_grns = GRN.query.filter_by(job_work_id=jw.id).all()
+        # Calculate totals for this Job Work - use quantity_sent as the total
+        total_qty = getattr(jw, 'quantity_sent', 0)
+        grn_count = len(jw.grn_receipts)
         
-        # Simple status calculation
-        if len(jw_grns) == 0:
-            status = 'Pending'
-        elif all(grn.status == 'completed' for grn in jw_grns):
-            status = 'Completed'
+        # Use JobWork status logic - check if completion is tracked
+        if hasattr(jw, 'status'):
+            if jw.status == 'completed':
+                jw_status = 'Completed'
+            elif jw.status == 'partial':
+                jw_status = 'Partial'
+            else:
+                jw_status = 'Pending'
         else:
-            status = 'Partial'
+            # Fallback to GRN completion logic for JobWork
+            if all(grn.status == 'completed' for grn in jw.grn_receipts):
+                jw_status = 'Completed'
+            elif any(grn.status in ['received', 'inspected'] for grn in jw.grn_receipts):
+                jw_status = 'Partial'
+            else:
+                jw_status = 'Pending'
+        
+        # Build child GRNs with details
+        child_grns = []
+        for grn in jw.grn_receipts:
+            # Get item details for this GRN
+            item_details = []
+            total_received = 0
+            total_scrap = 0
+            
+            for line_item in grn.line_items:
+                item_details.append(f"{line_item.item.name} ({line_item.quantity_received} {line_item.unit_of_measure})")
+                total_received += line_item.quantity_received or 0
+                total_scrap += line_item.quantity_rejected or 0
+            
+            child_grns.append({
+                'grn_number': grn.grn_number,
+                'grn_date': grn.received_date,
+                'item_details': ', '.join(item_details),
+                'received_qty': total_received,
+                'scrap_qty': total_scrap,
+                'status': grn.status.title(),
+                'grn_id': grn.id,
+                'source_type': 'Job Work',
+                'source_document': jw.job_number,
+                'inspection_status': grn.inspection_status.title() if grn.inspection_status else 'Pending',
+                'inventory_updated': grn.add_to_inventory if hasattr(grn, 'add_to_inventory') else True
+            })
         
         parent_child_data.append({
             'type': 'Job Work',
-            'parent_number': jw.job_number if hasattr(jw, 'job_number') and jw.job_number else f'JW-{jw.id}',
-            'parent_date': jw.start_date if hasattr(jw, 'start_date') and jw.start_date else (jw.created_at if hasattr(jw, 'created_at') else None),
-            'supplier': jw.customer_name if hasattr(jw, 'customer_name') and jw.customer_name else 'N/A',
-            'total_grns': len(jw_grns),
-            'status': status,
-            'parent_id': jw.id,
-            'grns': jw_grns
+            'parent_doc': jw.job_number,
+            'date': jw.created_at.date(),
+            'vendor_customer': getattr(jw.vendor, 'name', 'In-House') if hasattr(jw, 'vendor') and jw.vendor else 'In-House',
+            'status': jw_status,
+            'total_qty': total_qty,
+            'grn_count': grn_count,
+            'child_grns': child_grns,
+            'parent_id': f'jw_{jw.id}'
         })
     
-    # Get pending material receipts (POs and Job Works needing GRNs)
-    pending_purchase_orders = []
-    pending_job_works = []
+    # Get job works pending GRN creation - including unified jobs with outsourced processes
+    pending_job_works = JobWork.query.filter(
+        JobWork.status.in_(['sent', 'partial_received']),
+        or_(
+            JobWork.work_type.in_(['outsourced', 'multi_process', 'vendor']),
+            # Include unified jobs that have outsourced processes
+            and_(
+                JobWork.work_type == 'unified',
+                JobWork.id.in_(
+                    db.session.query(JobWorkProcess.job_work_id).filter(
+                        JobWorkProcess.work_type == 'outsourced'
+                    ).distinct()
+                )
+            )
+        )
+    ).order_by(JobWork.sent_date.desc()).limit(20).all()
     
-    # Find POs that need GRNs (not fully fulfilled)
-    for po in purchase_orders:
-        if po.status in ['sent', 'partial'] and len(GRN.query.filter_by(purchase_order_id=po.id).all()) == 0:
-            pending_purchase_orders.append(po)
-        elif po.status == 'partial':
-            pending_purchase_orders.append(po)
+    # Get purchase orders pending GRN creation
+    pending_purchase_orders = PurchaseOrder.query.filter(
+        PurchaseOrder.status.in_(['sent', 'partial'])
+    ).order_by(PurchaseOrder.order_date.desc()).limit(20).all()
     
-    # Find Job Works that need GRNs
-    for jw in job_works:
-        if jw.status in ['sent', 'partial_received'] and len(GRN.query.filter_by(job_work_id=jw.id).all()) == 0:
-            pending_job_works.append(jw)
+    # Update PO quantities to ensure they're current
+    for po in pending_purchase_orders:
+        update_po_status_based_on_grn(po.id)
     
-    # Enhanced statistics
-    stats.update({
-        'total_purchase_orders': len(purchase_orders),
-        'total_job_works': len(job_works)
-    })
+    # Commit any changes and refresh data
+    db.session.commit()
+    
+    # Filter POs that actually have pending quantities
+    pending_purchase_orders = [po for po in pending_purchase_orders 
+                             if any(item.pending_quantity > 0 for item in po.items)]
+    
+    # Calculate monthly trends
+    current_month = date.today().replace(day=1)
+    monthly_grns = GRN.query.filter(GRN.received_date >= current_month).count()
     
     return render_template('grn/dashboard.html',
                          title='GRN Dashboard',
-                         stats=stats,
-                         recent_grns=recent_grns,
-                         monthly_grns=monthly_grns,
                          parent_child_data=parent_child_data,
+                         stats=stats,
+                         pending_job_works=pending_job_works,
                          pending_purchase_orders=pending_purchase_orders,
-                         pending_job_works=pending_job_works)
+                         monthly_grns=monthly_grns)
 
 
 @grn_bp.route('/create/job_work/<int:job_work_id>')
@@ -738,7 +674,7 @@ def quick_receive(job_work_id):
     job_work = JobWork.query.get_or_404(job_work_id)
     
     # Redirect multi-process jobs to specialized form
-    if job_work.work_type == 'multi_process':
+    if job_work.work_type in ['multi_process', 'unified']:
         return redirect(url_for('grn.quick_receive_multi_process', job_work_id=job_work_id))
     
     form = QuickReceiveForm()
@@ -894,8 +830,8 @@ def quick_receive_multi_process(job_work_id):
     """Specialized quick receive form for multi-process job works"""
     job_work = JobWork.query.get_or_404(job_work_id)
     
-    # Ensure this is a multi-process job work
-    if job_work.work_type != 'multi_process':
+    # Ensure this is a multi-process or unified job work
+    if job_work.work_type not in ['multi_process', 'unified']:
         flash('This function is only for multi-process job works.', 'error')
         return redirect(url_for('grn.quick_receive', job_work_id=job_work_id))
     
@@ -1243,7 +1179,43 @@ def quick_receive_po(purchase_order_id, item_id):
                          po_item=po_item)
 
 
-
+@grn_bp.route('/list')
+@login_required
+def list_grns():
+    """List all GRNs with filtering"""
+    form = GRNSearchForm()
+    
+    # Build query - Use outerjoin to include GRNs without job work (e.g., from Purchase Orders)
+    query = GRN.query.outerjoin(JobWork).outerjoin(PurchaseOrder)
+    
+    # Apply filters
+    if request.args.get('search'):
+        search_term = request.args.get('search')
+        query = query.filter(
+            or_(
+                GRN.grn_number.ilike(f'%{search_term}%'),
+                JobWork.job_number.ilike(f'%{search_term}%'),
+                JobWork.customer_name.ilike(f'%{search_term}%'),
+                PurchaseOrder.po_number.ilike(f'%{search_term}%')
+            )
+        )
+    
+    if request.args.get('status'):
+        query = query.filter(GRN.status == request.args.get('status'))
+    
+    if request.args.get('inspection_status'):
+        query = query.filter(GRN.inspection_status == request.args.get('inspection_status'))
+    
+    # Pagination
+    page = request.args.get('page', 1, type=int)
+    grns = query.order_by(GRN.received_date.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
+    
+    return render_template('grn/list.html',
+                         title='All GRNs',
+                         grns=grns,
+                         form=form)
 
 
 @grn_bp.route('/detail/<int:grn_id>')

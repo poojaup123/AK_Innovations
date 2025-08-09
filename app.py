@@ -64,7 +64,6 @@ def create_app():
     from routes.jobwork import jobwork_bp
     from routes.jobwork_rates import jobwork_rates_bp
     from routes.production import production_bp
-    from routes.component_job_cards import component_job_cards_bp
     from routes.hr import hr_bp
     from routes.reports import reports_bp
     from routes.settings import settings_bp
@@ -104,13 +103,13 @@ def create_app():
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
     
     # Register unified inventory routes
-    # Unified inventory system removed - using standard inventory with multi-state view
+    from routes.inventory_unified import inventory_unified_bp
+    app.register_blueprint(inventory_unified_bp, url_prefix='/inventory-unified')
     app.register_blueprint(purchase_bp, url_prefix='/purchase')
     app.register_blueprint(sales_bp, url_prefix='/sales')
     app.register_blueprint(jobwork_bp, url_prefix='/jobwork')
     app.register_blueprint(jobwork_rates_bp, url_prefix='/jobwork-rates')
     app.register_blueprint(production_bp, url_prefix='/production')
-    app.register_blueprint(component_job_cards_bp)
     app.register_blueprint(hr_bp, url_prefix='/hr')
     app.register_blueprint(reports_bp, url_prefix='/reports')
     app.register_blueprint(settings_bp, url_prefix='/settings')
@@ -139,8 +138,6 @@ def create_app():
     # Register GRN blueprint if available
     if grn_bp:
         app.register_blueprint(grn_bp, url_prefix='/grn')
-    
-
     
     # Register Component Scanning blueprint
     try:

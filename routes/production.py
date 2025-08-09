@@ -2,18 +2,15 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from forms import ProductionForm, BOMForm, BOMItemForm, BOMProcessForm
-from forms_daily_production import DailyProductionEntryForm, ProductionProgressForm
 from models import Production, Item, BOM, BOMItem, BOMProcess, Supplier, ItemBatch, ProductionBatch
-from models.daily_production import DailyProductionEntry, DailyProductionStatus
 from services.process_integration import ProcessIntegrationService
 from services.authentic_accounting_integration import AuthenticAccountingIntegration
 from services.smart_bom_suggestions import SmartBOMSuggestionService
-from services.daily_production_service import DailyProductionService
 from app import db
 from sqlalchemy import func, or_
 from utils import generate_production_number
 from utils.batch_tracking import BatchTracker
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 import json
 
 production_bp = Blueprint('production', __name__)
@@ -45,9 +42,9 @@ def dashboard():
         for prod in completed_prods:
             if prod.bom:
                 # Calculate unit costs from BOM
-                bom_material_cost = sum(item.item.unit_price * item.quantity_required for item in prod.bom.items if item.item.unit_price) or 0
-                bom_labor_cost = getattr(prod.bom, 'labor_cost_per_unit', 0) or 0
-                scrap_percent = getattr(prod.bom, 'estimated_scrap_percent', 0) or 0
+                bom_material_cost = sum(item.item.purchase_price * item.quantity_required for item in prod.bom.items if item.item.purchase_price) or 0
+                bom_labor_cost = prod.bom.labor_cost_per_unit or 0
+                scrap_percent = prod.bom.scrap_percent or 0
                 
                 units = prod.quantity_produced or 1
                 total_cost += (bom_material_cost + bom_labor_cost) * units
@@ -583,6 +580,18 @@ def edit_production(id):
                          production=production,
                          bom_items=bom_items)
 
+@production_bp.route('/update_status/<int:id>/<status>')
+@login_required
+def update_status(id, status):
+    production = Production.query.get_or_404(id)
+    if status in ['planned', 'in_progress', 'completed']:
+        production.status = status
+        db.session.commit()
+        flash(f'Production status updated to {status}', 'success')
+    else:
+        flash('Invalid status', 'danger')
+    
+    return redirect(url_for('production.list_productions'))
 
 @production_bp.route('/bom')
 @login_required
@@ -1312,25 +1321,54 @@ def get_item_details(item_id):
         'item_type': item.item_type
     }
 
-@production_bp.route('/check-material-availability/<int:production_id>/<int:quantity>')
+@production_bp.route('/check_material_availability', methods=['POST'])
 @login_required
-def check_material_availability_api(production_id, quantity):
-    """API endpoint to check material availability for production quantity"""
-    try:
-        production = Production.query.get_or_404(production_id)
-        
-        # Validate material availability using the service
-        validation_result = DailyProductionService.validate_material_availability(
-            production, quantity
-        )
-        
-        return jsonify(validation_result)
-        
-    except Exception as e:
+def check_material_availability():
+    """API endpoint to check material availability for production planning"""
+    item_id = request.json.get('item_id')
+    quantity = float(request.json.get('quantity', 1))
+    
+    if not item_id:
+        return jsonify({'error': 'Item ID required'}), 400
+    
+    # Get BOM for the item
+    active_bom = BOM.query.filter_by(product_id=item_id, is_active=True).first()
+    
+    if not active_bom:
         return jsonify({
-            'success': False,
-            'message': f'Error checking material availability: {str(e)}'
-        }), 500
+            'has_bom': False,
+            'message': 'No BOM found for this item'
+        })
+    
+    # Check material availability
+    bom_items = BOMItem.query.filter_by(bom_id=active_bom.id).all()
+    material_data = []
+    has_shortages = False
+    
+    for bom_item in bom_items:
+        required_qty = bom_item.quantity_required * quantity
+        available_qty = bom_item.item.current_stock or 0
+        is_sufficient = available_qty >= required_qty
+        
+        if not is_sufficient:
+            has_shortages = True
+        
+        material_data.append({
+            'item_code': bom_item.item.code,
+            'item_name': bom_item.item.name,
+            'quantity_required': bom_item.quantity_required,
+            'total_required': required_qty,
+            'available_qty': available_qty,
+            'is_sufficient': is_sufficient,
+            'shortage_qty': max(0, required_qty - available_qty),
+            'unit': bom_item.item.unit_of_measure
+        })
+    
+    return jsonify({
+        'has_bom': True,
+        'has_shortages': has_shortages,
+        'materials': material_data
+    })
 
 # Process Integration Routes
 @production_bp.route('/bom/<int:id>/sync_from_processes', methods=['POST'])
@@ -1785,210 +1823,3 @@ def get_bom_job_work_data(bom_id):
             'success': False,
             'error': f'Error loading BOM data: {str(e)}'
         })
-
-
-# ========================================
-# DAILY PRODUCTION ENTRY ROUTES
-# ========================================
-
-@production_bp.route('/daily-entry/<int:production_id>', methods=['GET', 'POST'])
-@login_required
-def daily_production_entry(production_id):
-    """Record daily production quantities and quality metrics"""
-    production = Production.query.get_or_404(production_id)
-    
-    form = DailyProductionEntryForm()
-    
-    if request.method == 'GET':
-        # Pre-populate form with production details
-        form.production_id.data = production.id
-        form.production_number.data = production.production_number
-        form.item_name.data = production.produced_item.name if production.produced_item else 'Unknown Item'
-        
-        # Calculate suggested target based on remaining quantity and time
-        remaining_qty = production.quantity_planned - (production.quantity_produced or 0)
-        if remaining_qty > 0:
-            # Suggest daily target (you can make this more sophisticated)
-            form.target_quantity_today.data = min(remaining_qty, 100)  # Conservative daily target
-    
-    if form.validate_on_submit():
-        # Extract form data
-        form_data = {
-            'production_date': form.production_date.data,
-            'production_shift': form.production_shift.data,
-            'target_quantity_today': form.target_quantity_today.data,
-            'quantity_produced_today': form.quantity_produced_today.data,
-            'quantity_good_today': form.quantity_good_today.data or form.quantity_produced_today.data,
-            'quantity_defective_today': form.quantity_defective_today.data or 0,
-            'quantity_scrap_today': form.quantity_scrap_today.data or 0,
-            'weight_produced_today': form.weight_produced_today.data or 0,
-            'quality_control_passed': form.quality_control_passed.data,
-            'quality_notes': form.quality_notes.data,
-            'production_notes': form.production_notes.data,
-            'material_consumption_notes': form.material_consumption_notes.data
-        }
-        
-        # Record daily production (includes automatic material validation)
-        result = DailyProductionService.record_daily_production(
-            production_id, form_data, current_user.id
-        )
-        
-        if result['success']:
-            flash(result['message'], 'success')
-            return redirect(url_for('production.list_productions'))
-        else:
-            flash(result['message'], 'error')
-    
-    # Get existing daily entries for this production
-    daily_entries = DailyProductionEntry.get_entries_for_production(production_id)
-    entry_summary = DailyProductionEntry.get_summary_for_production(production_id)
-    
-    return render_template('production/daily_entry.html', 
-                         form=form, 
-                         production=production,
-                         daily_entries=daily_entries,
-                         entry_summary=entry_summary,
-                         title=f'Daily Production Entry - {production.production_number}')
-
-
-@production_bp.route('/quick-update/<int:production_id>', methods=['POST'])
-@login_required
-def quick_production_update(production_id):
-    """Quick production quantity update from production list"""
-    form = ProductionProgressForm()
-    
-    if form.validate_on_submit():
-        # Create simplified form data for daily entry
-        form_data = {
-            'production_date': date.today(),
-            'production_shift': 'general',
-            'target_quantity_today': 0,
-            'quantity_produced_today': form.additional_quantity.data,
-            'quantity_good_today': form.good_quantity.data or form.additional_quantity.data,
-            'quantity_defective_today': form.defective_quantity.data or 0,
-            'quantity_scrap_today': 0,
-            'weight_produced_today': 0,
-            'quality_control_passed': 'pending',
-            'quality_notes': '',
-            'production_notes': form.notes.data or 'Quick update from production list',
-            'material_consumption_notes': ''
-        }
-        
-        result = DailyProductionService.record_daily_production(
-            production_id, form_data, current_user.id
-        )
-        
-        return jsonify(result)
-    
-    return jsonify({'success': False, 'message': 'Invalid form data'})
-
-
-@production_bp.route('/daily-summary/<int:production_id>')
-@login_required
-def daily_production_summary(production_id):
-    """View daily production summary for a production order"""
-    production = Production.query.get_or_404(production_id)
-    
-    # Get date range from query parameters
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
-    
-    if start_date:
-        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-    if end_date:
-        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-    
-    # Get daily production summary
-    summary_result = DailyProductionService.get_daily_production_summary(
-        production_id, start_date, end_date
-    )
-    
-    if not summary_result['success']:
-        flash(summary_result['message'], 'error')
-        return redirect(url_for('production.list_productions'))
-    
-    return render_template('production/daily_summary.html',
-                         production=production,
-                         daily_entries=summary_result['daily_entries'],
-                         summary=summary_result['summary'],
-                         start_date=start_date,
-                         end_date=end_date,
-                         title=f'Daily Production Summary - {production.production_number}')
-
-
-@production_bp.route('/production-dashboard-data')
-@login_required
-def production_dashboard_data():
-    """API endpoint for production dashboard data"""
-    result = DailyProductionService.get_production_dashboard_data()
-    
-    if result['success']:
-        # Convert objects to dictionaries for JSON response
-        dashboard_data = result['dashboard_data']
-        
-        # Convert today's entries
-        today_entries_data = []
-        for entry in dashboard_data['today_entries']:
-            today_entries_data.append({
-                'id': entry.id,
-                'production_number': entry.production.production_number,
-                'item_name': entry.production.produced_item.name if entry.production.produced_item else 'Unknown',
-                'actual_quantity': entry.actual_quantity,
-                'good_quantity': entry.good_quantity,
-                'defective_quantity': entry.defective_quantity,
-                'quality_rate': entry.quality_rate,
-                'shift': entry.shift
-            })
-        
-        # Convert active productions
-        active_productions_data = []
-        for prod in dashboard_data['active_productions']:
-            progress_percentage = 0
-            if prod.quantity_planned > 0:
-                progress_percentage = (prod.quantity_produced or 0) / prod.quantity_planned * 100
-            
-            active_productions_data.append({
-                'id': prod.id,
-                'production_number': prod.production_number,
-                'item_name': prod.produced_item.name if prod.produced_item else 'Unknown',
-                'quantity_planned': prod.quantity_planned,
-                'quantity_produced': prod.quantity_produced or 0,
-                'progress_percentage': progress_percentage,
-                'status': prod.status
-            })
-        
-        response_data = {
-            'today_entries': today_entries_data,
-            'active_productions': active_productions_data,
-            'today_stats': dashboard_data['today_stats']
-        }
-        
-        return jsonify({'success': True, 'data': response_data})
-    
-    return jsonify(result)
-
-
-@production_bp.route('/update_status/<int:id>/<status>')
-@login_required
-def update_status(id, status):
-    """Update production order status"""
-    production = Production.query.get_or_404(id)
-    
-    # Validate status
-    valid_statuses = ['planned', 'in_progress', 'completed', 'on_hold', 'cancelled']
-    if status not in valid_statuses:
-        flash('Invalid status', 'error')
-        return redirect(url_for('production.list_productions'))
-    
-    try:
-        production.status = status
-        db.session.commit()
-        flash(f'Production {production.production_number} status updated to {status.replace("_", " ").title()}', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error updating status: {str(e)}', 'error')
-    
-    return redirect(url_for('production.list_productions'))
-
-
-

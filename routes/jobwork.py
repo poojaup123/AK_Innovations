@@ -188,9 +188,81 @@ def api_inventory_stock(item_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-
-
+@jobwork_bp.route('/api/bom/<int:bom_id>/details')
+@login_required
+def api_bom_details(bom_id):
+    """API to get BOM details including materials and processes"""
+    try:
+        from models import BOM
+        bom = BOM.query.get_or_404(bom_id)
+        
+        # Get BOM materials
+        materials = []
+        for bom_item in bom.items:
+            material = bom_item.material or bom_item.item
+            if material:
+                materials.append({
+                    'id': material.id,
+                    'name': material.name,
+                    'code': material.code,
+                    'quantity_required': bom_item.qty_required or bom_item.quantity_required,
+                    'unit': material.unit_of_measure
+                })
+        
+        # Get BOM processes
+        processes = []
+        try:
+            from models import BOMProcess
+            for bom_process in bom.processes:
+                # Get department/vendor name
+                department_name = ""
+                vendor_name = ""
+                if bom_process.department:
+                    department_name = bom_process.department.name
+                if bom_process.vendor:
+                    vendor_name = bom_process.vendor.name
+                    
+                # Get input and output product details for transformation
+                input_product_name = ""
+                output_product_name = ""
+                if hasattr(bom_process, 'input_product') and bom_process.input_product:
+                    input_product_name = bom_process.input_product.name
+                if hasattr(bom_process, 'output_product') and bom_process.output_product:
+                    output_product_name = bom_process.output_product.name
+                
+                processes.append({
+                    'sequence': bom_process.step_number,
+                    'process_name': bom_process.process_name,
+                    'operation_description': bom_process.operation_description or '',
+                    'setup_time': bom_process.setup_time_minutes or 0,
+                    'runtime_per_unit': bom_process.run_time_minutes or 0,  # Correct field name
+                    'labor_rate': bom_process.labor_rate_per_hour or 0,
+                    'is_outsourced': bom_process.is_outsourced or False,
+                    'department': department_name,
+                    'vendor': vendor_name,
+                    'cost_per_unit': bom_process.cost_per_unit or 0,
+                    # Add transformation data
+                    'input_product_id': getattr(bom_process, 'input_product_id', None),
+                    'output_product_id': getattr(bom_process, 'output_product_id', None),
+                    'input_quantity': getattr(bom_process, 'input_quantity', 1),
+                    'output_quantity': getattr(bom_process, 'output_quantity', 1),
+                    'input_product_name': input_product_name,
+                    'output_product_name': output_product_name
+                })
+        except (ImportError, AttributeError) as e:
+            # BOMProcess model not available or field missing
+            processes = []
+        
+        return jsonify({
+            'bom_id': bom_id,
+            'bom_code': bom.bom_code,
+            'product_id': bom.product_id,
+            'product_name': bom.product.name if bom.product else 'Unknown',
+            'materials': materials,
+            'processes': processes
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @jobwork_bp.route('/api/items')
 @login_required
@@ -403,16 +475,10 @@ def add_job_work():
                 try:
                     from models.department import Department
                     dept = Department.query.filter_by(code=dept_code).first()
-                    assigned_to_name = dept.name if dept else assigned_to.split('_')[1].title()
+                    assigned_to_name = dept.name if dept else assigned_to.split('_')[1]
                     assigned_to_type = 'in_house'
                 except ImportError:
-                    # Fallback department names
-                    dept_names = {
-                        'production': 'Production',
-                        'assembly': 'Assembly', 
-                        'quality': 'Quality Control'
-                    }
-                    assigned_to_name = dept_names.get(dept_code, dept_code.title())
+                    assigned_to_name = assigned_to.split('_')[1]
                     assigned_to_type = 'in_house'
             else:
                 assigned_to_name = assigned_to
@@ -600,126 +666,6 @@ def api_bom_production_check(bom_id, qty):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@jobwork_bp.route('/api/bom/<int:bom_id>/details')
-@login_required
-def api_bom_details(bom_id):
-    """Get complete BOM details with processes and material requirements"""
-    try:
-        from models import BOM, BOMItem, BOMProcess
-        bom = BOM.query.get_or_404(bom_id)
-        
-        # Get BOM materials
-        materials = []
-        for bom_item in bom.items:
-            material = bom_item.material or bom_item.item
-            if material:
-                materials.append({
-                    'id': material.id,
-                    'name': material.name,
-                    'code': material.code,
-                    'qty_required': bom_item.qty_required or bom_item.quantity_required or 0,
-                    'unit_cost': bom_item.unit_cost or 0,
-                    'uom': bom_item.uom.symbol if bom_item.uom else material.unit_of_measure,
-                    'current_stock': material.qty_raw or material.current_stock or 0,
-                    'is_critical': getattr(bom_item, 'is_critical', False)
-                })
-        
-        # Get BOM processes
-        processes = []
-        try:
-            bom_processes = BOMProcess.query.filter_by(bom_id=bom_id).order_by(BOMProcess.step_number).all()
-            for process in bom_processes:
-                processes.append({
-                    'id': process.id,
-                    'sequence': process.step_number,
-                    'name': process.process_name,
-                    'output_product_id': getattr(process, 'output_product_id', None),
-                    'output_quantity': getattr(process, 'output_quantity', 1),
-                    'rate_per_unit': getattr(process, 'rate_per_unit', 0),
-                    'estimated_time': getattr(process, 'estimated_time_minutes', 0),
-                    'scrap_percent': getattr(process, 'scrap_percent', 0),
-                    'work_type': getattr(process, 'work_type', 'in_house'),
-                    'supplier_id': getattr(process, 'supplier_id', None)
-                })
-        except Exception as e:
-            print(f"Error loading BOM processes: {e}")
-        
-        return jsonify({
-            'success': True,
-            'bom': {
-                'id': bom.id,
-                'code': bom.bom_code,
-                'product_name': bom.product.name if bom.product else 'Unknown',
-                'product_id': bom.product_id,
-                'output_quantity': bom.output_quantity or 1,
-                'labor_cost_per_unit': bom.labor_cost_per_unit or 0,
-                'overhead_cost_per_unit': bom.overhead_cost_per_unit or 0,
-                'estimated_scrap_percent': bom.estimated_scrap_percent or 0
-            },
-            'materials': materials,
-            'processes': processes
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@jobwork_bp.route('/api/bom/<int:bom_id>/calculate_requirements/<float:output_qty>')
-@login_required
-def api_bom_calculate_requirements(bom_id, output_qty):
-    """Calculate material requirements for specific output quantity"""
-    try:
-        from models import BOM
-        bom = BOM.query.get_or_404(bom_id)
-        
-        # Calculate conversion factor from BOM's output quantity to requested quantity
-        bom_output_qty = bom.output_quantity or 1.0
-        conversion_factor = output_qty / bom_output_qty
-        
-        # Calculate material requirements
-        material_requirements = []
-        total_material_cost = 0
-        
-        for bom_item in bom.items:
-            material = bom_item.material or bom_item.item
-            if material:
-                required_qty = (bom_item.qty_required or bom_item.quantity_required or 0) * conversion_factor
-                unit_cost = bom_item.unit_cost or 0
-                total_cost = required_qty * unit_cost
-                total_material_cost += total_cost
-                
-                material_requirements.append({
-                    'material_id': material.id,
-                    'material_name': material.name,
-                    'material_code': material.code,
-                    'required_qty': round(required_qty, 4),
-                    'unit_cost': unit_cost,
-                    'total_cost': round(total_cost, 2),
-                    'uom': bom_item.uom.symbol if bom_item.uom else material.unit_of_measure,
-                    'available_stock': material.qty_raw or material.current_stock or 0,
-                    'sufficient_stock': (material.qty_raw or material.current_stock or 0) >= required_qty
-                })
-        
-        # Calculate total costs
-        labor_cost = (bom.labor_cost_per_unit or 0) * conversion_factor
-        overhead_cost = (bom.overhead_cost_per_unit or 0) * conversion_factor
-        total_cost = total_material_cost + labor_cost + overhead_cost
-        
-        return jsonify({
-            'success': True,
-            'bom_id': bom_id,
-            'output_quantity': output_qty,
-            'conversion_factor': conversion_factor,
-            'material_requirements': material_requirements,
-            'costs': {
-                'total_material_cost': round(total_material_cost, 2),
-                'labor_cost': round(labor_cost, 2),
-                'overhead_cost': round(overhead_cost, 2),
-                'total_cost': round(total_cost, 2)
-            },
-            'can_produce': all(req['sufficient_stock'] for req in material_requirements)
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 # Comprehensive Batch Tracking API Endpoints
 
 # This function is handled by the earlier defined api_validate_batch_selection
@@ -847,9 +793,9 @@ def detail(id):
     if job.is_team_work:
         team_assignments = JobWorkTeamAssignment.query.filter_by(job_work_id=id).all()
     
-    # Load processes for multi-process job works
+    # Load processes for multi-process and unified job works
     processes = []
-    if job.work_type == 'multi_process':
+    if job.work_type in ['multi_process', 'unified']:
         try:
             from models import JobWorkProcess
             processes = JobWorkProcess.query.filter_by(job_work_id=id).order_by(JobWorkProcess.sequence_number).all()

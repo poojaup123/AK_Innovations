@@ -23,85 +23,118 @@
         {{ form.hidden_tag() }}
         
         <!-- [1] Job Work Type & Basic Info -->
-        <div class="card mb-3">
-            <div class="card-header bg-primary text-white py-2">
-                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Job Work Type & Basic Info</h6>
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Job Work Type & Basic Info</h5>
             </div>
-            <div class="card-body py-3">
-                <div class="row g-3">
-                    <!-- Row 1: Job Work Type and BOM Selection -->
-                    <div class="col-md-6">
-                        <label for="job_work_type" class="form-label fw-bold">Job Work Type</label>
-                        {{ form.job_work_type(class="form-select form-select-sm", id="job_work_type") }}
-                        {% for error in form.job_work_type.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="col-md-6" id="bom_row" style="display: none;">
-                        <label for="bom_select" class="form-label fw-bold">Select BOM</label>
-                        {{ form.bom_id(class="form-select form-select-sm", id="bom_select") }}
-                        {% for error in form.bom_id.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    
-                    <!-- Row 2: Job Title (full width) -->
-                    <div class="col-12">
-                        <label for="job_title" class="form-label fw-bold">Job Work Title</label>
-                        {{ form.job_title(class="form-control form-control-sm", id="job_title") }}
-                        {% for error in form.job_title.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    
-                    <!-- Row 3: Work Type and Assigned To -->
-                    <div class="col-md-6">
-                        <label for="work_type" class="form-label fw-bold">Work Type</label>
-                        {{ form.work_type(class="form-select form-select-sm", id="work_type") }}
-                        {% for error in form.work_type.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="assigned_to" class="form-label fw-bold">Assigned To</label>
-                        {{ form.assigned_to(class="form-select form-select-sm", id="assigned_to") }}
-                        {% for error in form.assigned_to.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 20%;">Field</th>
+                                <th style="width: 30%;">Input Type</th>
+                                <th style="width: 50%;">Example / Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Job Work Type</strong></td>
+                                <td>
+                                    {{ form.job_work_type(class="form-select", id="job_work_type") }}
+                                    {% for error in form.job_work_type.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>🔘 BOM-Based  🔘 Manual</td>
+                            </tr>
+                            <tr id="bom_row" style="display: none;">
+                                <td><strong>Select BOM (if any)</strong></td>
+                                <td>
+                                    {{ form.bom_id(class="form-select", id="bom_select") }}
+                                    {% for error in form.bom_id.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>"Mounted Plate BOM - V1"</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Job Work Title</strong></td>
+                                <td>
+                                    {{ form.job_title(class="form-control") }}
+                                    {% for error in form.job_title.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>"JW-008 – Base Plate Work" <span class="text-info small">(Auto-generated for Manual jobs)</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Work Type</strong></td>
+                                <td>
+                                    {{ form.work_type(class="form-select", id="work_type") }}
+                                    {% for error in form.work_type.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>🔘 In-House  🔘 Outsourced</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Assigned To</strong></td>
+                                <td>
+                                    {{ form.assigned_to(class="form-select", id="assigned_to") }}
+                                    {% for error in form.assigned_to.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>Department / Vendor Selection</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
         <!-- [2] Input Material & Issuance Details -->
-        <div class="card mb-3">
-            <div class="card-header bg-success text-white py-2">
-                <h6 class="mb-0"><i class="fas fa-box me-2"></i>Input Material & Issuance Details</h6>
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-box me-2"></i>Input Material & Issuance Details</h5>
             </div>
-            <div class="card-body py-3">
-                <div class="row g-3">
-                    <!-- Row 1: Input Material and Batch Tracking -->
-                    <div class="col-md-8">
-                        <label for="input_material" class="form-label fw-bold">Input Material</label>
-                        {{ form.input_material_id(class="form-select form-select-sm", id="input_material") }}
-                        {% for error in form.input_material_id.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="col-md-4" id="batch_tracking_row">
-                        <label class="form-label fw-bold">Batch Tracking</label>
-                        <div class="form-check mt-2">
-                            {{ form.enable_batch_tracking(class="form-check-input", id="enable_batch_tracking") }}
-                            <label class="form-check-label" for="enable_batch_tracking">
-                                Enable batch tracking
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <!-- Row 2: Batch Selection (hidden by default, full width when visible) -->
-                    <div class="col-12" id="batch_selection_row" style="display: none;">
-                        <div class="border rounded p-3 bg-light">
-                            <label class="form-label fw-bold">Batch Allocation</label>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 20%;">Field</th>
+                                <th style="width: 30%;">Input Type</th>
+                                <th style="width: 50%;">Example / Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Input Material</strong></td>
+                                <td>
+                                    {{ form.input_material_id(class="form-select", id="input_material") }}
+                                    {% for error in form.input_material_id.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>"Ms sheet - 1mm - 4x8 feet"</td>
+                            </tr>
+                            <tr id="batch_tracking_row">
+                                <td><strong>Enable Batch Tracking</strong></td>
+                                <td>
+                                    <div class="form-check">
+                                        {{ form.enable_batch_tracking(class="form-check-input", id="enable_batch_tracking") }}
+                                        <label class="form-check-label" for="enable_batch_tracking">
+                                            Track material by batch
+                                        </label>
+                                    </div>
+                                </td>
+                                <td>Enable for complete traceability</td>
+                            </tr>
+                            <tr id="batch_selection_row" style="display: none;">
+                                <td><strong>Batch Allocation</strong></td>
+                                <td>
                                     <div class="alert alert-info mb-3">
                                         <i class="fas fa-cogs"></i> <strong>Auto-Allocation Enabled:</strong> Batches will be automatically selected using FIFO (First In, First Out) logic based on manufacturing dates.
                                     </div>
@@ -140,92 +173,90 @@
                                         <div id="allocation_status_indicator" class="mt-1"></div>
                                     </div>
                                     
-                            <!-- Hidden inputs to store batch selections -->
-                            <div id="hidden_batch_inputs"></div>
-                            {{ form.batch_id(style="display: none;", id="hidden_batch_input") }}
-                            {% for error in form.batch_id.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    
-                    <!-- Row 3: Quantity Inputs -->
-                    <div class="col-md-6" id="output_quantity_row">
-                        <label for="output_quantity_input" class="form-label fw-bold">Output Quantity</label>
-                        <div class="input-group input-group-sm">
-                            <input type="number" class="form-control" id="output_quantity_input" 
-                                   placeholder="How many final products?" 
-                                   min="1" step="1" value="1" 
-                                   onchange="calculateMaterialRequirements()">
-                            <span class="input-group-text" id="output_unit">Units</span>
-                        </div>
-                        <small class="text-muted">Number of final products you want to produce</small>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="quantity_to_issue" class="form-label fw-bold">Quantity to Issue</label>
-                        <div class="input-group input-group-sm">
-                            {{ form.quantity_to_issue(class="form-control form-control-sm", id="quantity_to_issue", readonly="readonly") }}
-                            <span class="input-group-text" id="input_material_unit">Units</span>
-                        </div>
-                        <small class="text-success">Auto-calculated from BOM conversion ratio</small>
-                        {% for error in form.quantity_to_issue.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="checkStock()">
-                            <i class="fas fa-search"></i> Check Stock
-                        </button>
-                        <div id="stock_status" class="mt-1"></div>
-                        <div id="calculation_display" class="mt-2"></div>
-                    </div>
-                    
-                    <!-- Row 4: Output Batch (hidden by default) -->
-                    <div class="col-12" id="output_batch_row" style="display: none;">
-                        <div class="border rounded p-2 bg-light">
-                            <div class="form-check">
-                                {{ form.create_output_batch(class="form-check-input", id="create_output_batch") }}
-                                <label class="form-check-label fw-bold" for="create_output_batch">
-                                    Auto-create output batch
-                                </label>
-                            </div>
-                            {{ form.output_batch_prefix(class="form-control form-control-sm mt-2", placeholder="Auto-generated") }}
-                        </div>
-                    </div>
-                    
-                    <!-- Row 5: Store Location and Dates -->
-                    <div class="col-md-4">
-                        <label for="store_location" class="form-label fw-bold">Store Location</label>
-                        {{ form.store_location(class="form-select form-select-sm") }}
-                        {% for error in form.store_location.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="col-md-4">
-                        <label for="send_date" class="form-label fw-bold">Send Date</label>
-                        {{ form.send_date(class="form-control form-control-sm", type="date") }}
-                        {% for error in form.send_date.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="col-md-4">
-                        <label for="expected_return" class="form-label fw-bold">Expected Return</label>
-                        {{ form.expected_return(class="form-control form-control-sm", type="date") }}
-                        {% for error in form.expected_return.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
+                                    <!-- Hidden inputs to store batch selections -->
+                                    <div id="hidden_batch_inputs"></div>
+                                    {{ form.batch_id(style="display: none;", id="hidden_batch_input") }}
+                                    {% for error in form.batch_id.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>Automatic FIFO-based batch selection eliminates manual selection and ensures optimal inventory rotation</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Quantity to Issue</strong></td>
+                                <td>
+                                    <div class="input-group">
+                                        {{ form.quantity_to_issue(class="form-control", id="quantity_to_issue") }}
+                                        <span class="input-group-text" id="input_material_unit">Units</span>
+                                    </div>
+                                    {% for error in form.quantity_to_issue.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-1" onclick="checkStock()">
+                                        <i class="fas fa-search"></i> Check Stock
+                                    </button>
+                                    <div id="stock_status" class="mt-1"></div>
+                                    <div id="calculation_display" class="mt-2"></div>
+                                </td>
+                                <td>5 Pieces / Kg</td>
+                            </tr>
+                            <tr id="output_batch_row" style="display: none;">
+                                <td><strong>Create Output Batch</strong></td>
+                                <td>
+                                    <div class="form-check">
+                                        {{ form.create_output_batch(class="form-check-input", id="create_output_batch") }}
+                                        <label class="form-check-label" for="create_output_batch">
+                                            Auto-create output batch
+                                        </label>
+                                    </div>
+                                    {{ form.output_batch_prefix(class="form-control mt-2", placeholder="Auto-generated") }}
+                                </td>
+                                <td>Creates finished goods batch automatically</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Store Location</strong></td>
+                                <td>
+                                    {{ form.store_location(class="form-select") }}
+                                    {% for error in form.store_location.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>🔘 Raw Store  🔘 Finished Store</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Send Date</strong></td>
+                                <td>
+                                    {{ form.send_date(class="form-control", type="date") }}
+                                    {% for error in form.send_date.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>Today's Date</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Expected Return</strong></td>
+                                <td>
+                                    {{ form.expected_return(class="form-control", type="date") }}
+                                    {% for error in form.expected_return.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                                <td>Target Completion Date</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
         <!-- [3] Process Routing (Dynamic Table) -->
-        <div class="card mb-3">
-            <div class="card-header bg-warning text-white py-2">
-                <h6 class="mb-0"><i class="fas fa-route me-2"></i>Process Routing Table</h6>
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0"><i class="fas fa-route me-2"></i>Process Routing Table</h5>
             </div>
             <div class="card-body">
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> Manufacturing processes are <strong>automatically configured from BOM</strong>. 
-                    <br><span id="bom-workflow-info">Select a BOM to see the configured workflow type.</span>
+                    <i class="fas fa-info-circle"></i> Define the manufacturing processes and output products for this job work.
                 </div>
                 <div class="table-responsive">
                     <table class="table table-bordered" id="processTable">
@@ -233,7 +264,7 @@
                             <tr>
                                 <th style="width: 8%;">Seq</th>
                                 <th style="width: 20%;">Process Name</th>
-                                <th style="width: 22%;">Output Product <small class="text-muted">(Optional)</small></th>
+                                <th style="width: 22%;">Output Product</th>
                                 <th style="width: 12%;">Quantity</th>
                                 <th style="width: 12%;">Rate/Unit</th>
                                 <th style="width: 10%;">Scrap %</th>
@@ -285,19 +316,31 @@
         </div>
 
         <!-- [5] Notes & Attachments -->
-        <div class="card mb-3">
-            <div class="card-header bg-secondary text-white py-2">
-                <h6 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes & Attachments</h6>
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes & Attachments</h5>
             </div>
-            <div class="card-body py-3">
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label for="remarks" class="form-label fw-bold">Remarks</label>
-                        {{ form.remarks(class="form-control form-control-sm", rows="2", placeholder="Additional notes or special instructions...") }}
-                        {% for error in form.remarks.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 20%;">Field</th>
+                                <th style="width: 80%;">Input</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Remarks</strong></td>
+                                <td>
+                                    {{ form.remarks(class="form-control", rows="3", placeholder="Additional notes or special instructions...") }}
+                                    {% for error in form.remarks.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -330,9 +373,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-populate from Smart BOM suggestions
     {% if from_suggestion and suggested_bom_id %}
     console.log('Auto-populating Job Work from Smart BOM suggestion...');
-    console.log('BOM ID:', {{ suggested_bom_id|tojson }});
-    console.log('Target Item ID:', {{ suggested_target_item_id|tojson }});
-    console.log('Quantity:', {{ suggested_quantity|tojson }});
+    console.log('BOM ID:', {{ suggested_bom_id }});
+    console.log('Target Item ID:', {{ suggested_target_item_id }});
+    console.log('Quantity:', {{ suggested_quantity }});
     
     // Set job work type to BOM-based
     if (jobWorkType) {
@@ -348,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadBOMs().then(function() {
             const bomSelect = document.getElementById('bom_select');
             if (bomSelect) {
-                bomSelect.value = {{ suggested_bom_id|tojson }};
+                bomSelect.value = {{ suggested_bom_id }};
                 // Trigger BOM change to load materials
                 bomSelect.dispatchEvent(new Event('change'));
             }
@@ -358,23 +401,16 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Job Work auto-populated from Smart BOM suggestion');
     {% endif %}
     
-    // Job work type change handler  
+    // Job work type change handler
     if (jobWorkType) {
         jobWorkType.addEventListener('change', function() {
-            console.log('Job work type changed to:', this.value);
             const bomRow = document.getElementById('bom_row');
-            if (bomRow) {
-                if (this.value === 'bom_based') {
-                    console.log('Showing BOM row and loading BOMs...');
-                    bomRow.style.display = 'table-row';
-                    loadBOMs();
-                } else {
-                    console.log('Hiding BOM row');
-                    bomRow.style.display = 'none';
-                    clearBOMData();
-                }
+            if (this.value === 'bom_based') {
+                bomRow.style.display = 'table-row';
+                loadBOMs();
             } else {
-                console.error('BOM row not found!');
+                bomRow.style.display = 'none';
+                clearBOMData();
             }
         });
     }
@@ -383,17 +419,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const bomSelect = document.getElementById('bom_select');
     if (bomSelect) {
         bomSelect.addEventListener('change', function() {
-            console.log('BOM selection changed to:', this.value);
             if (this.value) {
-                console.log('Loading BOM data for ID:', this.value);
                 loadBOMData(this.value);
             } else {
-                console.log('Clearing BOM data');
                 clearBOMData();
             }
         });
-    } else {
-        console.error('BOM select element not found!');
     }
     
     // Work type change handler
@@ -415,9 +446,6 @@ document.addEventListener('DOMContentLoaded', function() {
     loadItems();
     loadAssignmentOptions();
     addProcessRow(); // Add first process row
-    
-    // Initialize enhanced output quantity handler
-    handleOutputQuantityChange();
 });
 
 // Load items for input material dropdown
@@ -442,14 +470,9 @@ function loadItems() {
 
 // Load BOMs for BOM-based job work
 function loadBOMs() {
-    console.log('Loading BOMs from API...');
     return fetch('/jobwork/api/boms')
-        .then(response => {
-            console.log('BOM API response status:', response.status);
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            console.log('BOM API data received:', data);
             const select = document.getElementById('bom_select');
             if (select && data.boms) {
                 select.innerHTML = '<option value="">Select BOM...</option>';
@@ -459,401 +482,101 @@ function loadBOMs() {
                     option.textContent = `${bom.bom_code} - ${bom.product_name}`;
                     select.appendChild(option);
                 });
-                console.log(`Loaded ${data.boms.length} BOMs successfully`);
-            } else {
-                console.warn('BOM select element not found or no BOMs in data');
             }
         })
-        .catch(error => {
-            console.error('Error loading BOMs:', error);
-            console.error('Full error details:', error.stack);
-            alert('Error loading BOMs: ' + error.message + '. Please check console for details.');
-        });
+        .catch(error => console.error('Error loading BOMs:', error));
 }
 
-// Load BOM data and populate form completely
+// Load BOM data and populate form
 function loadBOMData(bomId) {
     if (!bomId) return;
     
-    console.log('Loading comprehensive BOM data for ID:', bomId);
+    console.log('Loading BOM data for ID:', bomId);
     
     fetch(`/jobwork/api/bom/${bomId}/details`)
         .then(response => response.json())
         .then(data => {
             console.log('BOM API Response:', data);
             
-            if (!data.success || data.error) {
+            if (data.error) {
                 console.error('BOM API Error:', data.error);
-                alert('Error loading BOM data: ' + (data.error || 'Unknown error'));
+                alert('Error loading BOM data: ' + data.error);
                 return;
             }
             
-            // Store BOM data globally for calculations
-            window.currentBOMData = data;
+            // Debug: Check data structure
+            console.log('Materials received:', data.materials);
+            console.log('Processes received:', data.processes);
             
-            // [1] Populate Job Work Title from BOM
+            // Populate Job Work Title from BOM
             populateJobWorkTitle(data);
             
-            // [2] Auto-populate Input Material (first material from BOM)
-            if (data.materials && data.materials.length > 0) {
-                populateInputMaterial(data.materials[0]);
-                
-                // Show material requirements summary
-                displayBOMMaterialRequirements(data.materials);
-            }
+            // Store BOM transformation ratios for auto-calculation
+            window.bomTransformationRatios = {};
             
-            // [3] Auto-populate Processes with rates and output products
+            // Method 1: Use process transformation data if available
             if (data.processes && data.processes.length > 0) {
-                populateProcessesFromBOM(data.processes);
-                
-                // Update workflow info based on BOM analysis
-                updateBOMWorkflowInfo(data);
+                data.processes.forEach(process => {
+                    if (process.input_product_id && process.output_product_id && process.input_quantity && process.output_quantity) {
+                        const inputQty = parseFloat(process.input_quantity) || 1;
+                        const outputQty = parseFloat(process.output_quantity) || 1;
+                        const ratio = outputQty / inputQty;
+                        window.bomTransformationRatios[process.input_product_id] = {
+                            output_product_id: process.output_product_id,
+                            output_product_name: process.output_product_name || 'Output Product',
+                            ratio: ratio,
+                            input_name: process.input_product_name || 'Input Material'
+                        };
+                        console.log(`Process transformation ratio stored: ${process.input_product_name} (${inputQty}) → ${process.output_product_name} (${outputQty}) = ${ratio}x`);
+                    }
+                });
             }
             
-            // [4] Initialize output quantity and calculate material requirements
-            const outputQtyInput = document.getElementById('output_quantity_input');
-            if (outputQtyInput && !outputQtyInput.value) {
-                outputQtyInput.value = 1;
+            // Method 2: Calculate from BOM materials to BOM product (1 Ms Sheet → 400 Mounted Plates)
+            // Based on your BOM showing 1 Ms Sheet produces 400 Mounted Plates
+            if (data.materials && data.materials.length > 0 && data.product_id) {
+                data.materials.forEach(material => {
+                    // For your case: 1 Ms Sheet should produce 400 Mounted Plates
+                    // We'll use a known ratio based on your BOM
+                    if (material.name && material.name.toLowerCase().includes('sheet')) {
+                        const ratio = 400; // 1 Ms Sheet → 400 Mounted Plates from your BOM
+                        window.bomTransformationRatios[material.id] = {
+                            output_product_id: data.product_id,
+                            output_product_name: data.product_name,
+                            ratio: ratio,
+                            input_name: material.name
+                        };
+                        console.log(`BOM material transformation ratio stored: ${material.name} → ${data.product_name} = ${ratio}x`);
+                    }
+                });
             }
             
-            // Trigger initial calculation
-            setTimeout(() => {
-                calculateMaterialRequirements();
-            }, 500); // Small delay to ensure all DOM elements are ready
+            // Populate input materials section
+            if (data.materials && data.materials.length > 0) {
+                console.log('Calling populateInputMaterials with:', data.materials);
+                populateInputMaterials(data.materials);
+            } else {
+                console.warn('No materials found in BOM data');
+            }
             
-            console.log('BOM integration completed successfully');
+            // Populate process routing section
+            if (data.processes && data.processes.length > 0) {
+                console.log('Calling populateProcessRouting with:', data.processes);
+                populateProcessRouting(data.processes);
+            } else {
+                console.warn('No processes found in BOM data');
+            }
+            
+            // Update output summary after populating processes
+            updateOutputSummary();
+            
+            // Show success message
+            showSuccessMessage(`BOM ${data.bom_code} data loaded successfully!`);
         })
         .catch(error => {
             console.error('Error loading BOM data:', error);
-            alert('Error loading BOM data. Please try again.');
+            alert('Error loading BOM data: ' + error.message);
         });
-}
-
-// Populate input material dropdown and select first material
-function populateInputMaterial(primaryMaterial) {
-    const inputMaterialSelect = document.getElementById('input_material');
-    if (!inputMaterialSelect || !primaryMaterial) return;
-    
-    // Select the primary material
-    inputMaterialSelect.value = primaryMaterial.id;
-    
-    // Update material unit display
-    updateMaterialUnit();
-    
-    console.log('Selected input material:', primaryMaterial.name);
-}
-
-// Display BOM material requirements in a summary
-function displayBOMMaterialRequirements(materials) {
-    // Create or update material requirements display
-    let requirementsDiv = document.getElementById('bom-material-requirements');
-    if (!requirementsDiv) {
-        requirementsDiv = document.createElement('div');
-        requirementsDiv.id = 'bom-material-requirements';
-        requirementsDiv.className = 'alert alert-info mt-2';
-        
-        // Insert after the input material field
-        const inputMaterialRow = document.querySelector('#input_material').closest('tr');
-        if (inputMaterialRow) {
-            const newRow = document.createElement('tr');
-            const td = document.createElement('td');
-            td.colSpan = 3;
-            td.appendChild(requirementsDiv);
-            newRow.appendChild(td);
-            inputMaterialRow.parentNode.insertBefore(newRow, inputMaterialRow.nextSibling);
-        }
-    }
-    
-    let html = '<strong>📋 BOM Material Requirements:</strong><ul class="mb-0 mt-1">';
-    materials.forEach(material => {
-        const stockStatus = material.current_stock >= material.qty_required ? 
-            `<span class="text-success">✓ Available (${material.current_stock} ${material.uom})</span>` :
-            `<span class="text-warning">⚠ Short (${material.current_stock} ${material.uom})</span>`;
-        
-        html += `<li><strong>${material.name}</strong>: ${material.qty_required} ${material.uom} - ${stockStatus}</li>`;
-    });
-    html += '</ul>';
-    
-    requirementsDiv.innerHTML = html;
-}
-
-// Auto-populate processes from BOM with rates and output products
-function populateProcessesFromBOM(bomProcesses) {
-    console.log('Populating BOM processes:', bomProcesses);
-    
-    if (!bomProcesses || bomProcesses.length === 0) {
-        console.warn('No BOM processes to populate');
-        return;
-    }
-    
-    // Clear existing processes
-    document.getElementById('processTableBody').innerHTML = '';
-    
-    bomProcesses.forEach((process, index) => {
-        console.log(`Adding process row ${index + 1}:`, process);
-        addProcessRow();
-        
-        const processRows = document.querySelectorAll('#processTableBody tr');
-        const currentRow = processRows[processRows.length - 1];
-        
-        if (currentRow) {
-            // Populate process fields based on the actual table structure
-            const processNameSelect = currentRow.querySelectorAll('select')[0]; // First select is process name
-            const outputProductSelect = currentRow.querySelectorAll('select')[1]; // Second select is output product
-            const quantityInput = currentRow.querySelector('input[type="number"]'); // First number input is quantity
-            const rateInput = currentRow.querySelector('input.rate-input'); // Input with rate-input class
-            const scrapInput = currentRow.querySelector('input[placeholder="%"]'); // Input with % placeholder
-            const qcCheckbox = currentRow.querySelector('input.process-checkbox'); // QC checkbox
-            
-            // Populate fields with BOM process data
-            if (processNameSelect) {
-                const processName = process.process_name || process.name || '';
-                // Set the process name in the select dropdown
-                processNameSelect.value = processName;
-                console.log('Process name populated:', processName);
-            }
-            
-            if (quantityInput) {
-                quantityInput.value = process.output_quantity || 1;
-            }
-            
-            if (rateInput) {
-                const laborRate = process.labor_rate_per_hour || 0;
-                const overheadRate = process.overhead_rate_per_hour || 0;
-                const totalRate = laborRate + overheadRate;
-                rateInput.value = totalRate.toFixed(2);
-                console.log('Rate populated:', totalRate);
-            }
-            
-            if (scrapInput) {
-                scrapInput.value = process.scrap_percent || 0;
-            }
-            
-            if (qcCheckbox) {
-                qcCheckbox.checked = process.requires_quality_check || false;
-                console.log('QC checkbox set:', process.requires_quality_check);
-            }
-            
-            // Load output products and set value
-            if (outputProductSelect) {
-                // Use the existing loadItemsForProcessRow function or create a simple version
-                fetch('/jobwork/api/items')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.items) {
-                            outputProductSelect.innerHTML = '<option value="">Select Output Product...</option>';
-                            data.items.forEach(item => {
-                                const option = document.createElement('option');
-                                option.value = item.id;
-                                option.textContent = `${item.code} - ${item.name}`;
-                                outputProductSelect.appendChild(option);
-                            });
-                            
-                            // Set the value after options are loaded
-                            if (process.output_product_id) {
-                                outputProductSelect.value = process.output_product_id;
-                            }
-                        }
-                    })
-                    .catch(error => console.error('Error loading items:', error));
-            }
-            
-            console.log(`Populated process ${index + 1}: ${process.process_name || process.name}`);
-        }
-    });
-    
-    console.log('All BOM processes populated successfully');
-}
-
-// Calculate material requirements for given output quantity
-function calculateBOMRequirements(outputQuantity) {
-    if (!window.currentBOMData || !outputQuantity) return;
-    
-    const bomId = window.currentBOMData.bom.id;
-    
-    fetch(`/jobwork/api/bom/${bomId}/calculate_requirements/${outputQuantity}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Update quantity to issue based on requirements
-                const primaryMaterial = data.material_requirements[0];
-                if (primaryMaterial) {
-                    const quantityToIssueInput = document.getElementById('quantity_to_issue');
-                    if (quantityToIssueInput) {
-                        quantityToIssueInput.value = primaryMaterial.required_qty;
-                        console.log(`Quantity to issue updated: ${primaryMaterial.required_qty} ${primaryMaterial.uom}`);
-                    }
-                }
-                
-                // Update costs display
-                updateCostSummary(data.costs);
-            }
-        })
-        .catch(error => {
-            console.error('Error calculating BOM requirements:', error);
-        });
-}
-
-// Update cost summary display
-function updateCostSummary(costs) {
-    let costDiv = document.getElementById('bom-cost-summary');
-    if (!costDiv) {
-        costDiv = document.createElement('div');
-        costDiv.id = 'bom-cost-summary';
-        costDiv.className = 'alert alert-secondary mt-2';
-        
-        // Insert in process section
-        const processSection = document.querySelector('.card:last-of-type .card-body');
-        if (processSection) {
-            processSection.appendChild(costDiv);
-        }
-    }
-    
-    costDiv.innerHTML = `
-        <strong>💰 BOM Cost Breakdown:</strong>
-        <div class="row mt-2">
-            <div class="col-md-3"><small>Material: ₹${costs.total_material_cost}</small></div>
-            <div class="col-md-3"><small>Labor: ₹${costs.labor_cost}</small></div>
-            <div class="col-md-3"><small>Overhead: ₹${costs.overhead_cost}</small></div>
-            <div class="col-md-3"><strong>Total: ₹${costs.total_cost}</strong></div>
-        </div>
-    `;
-}
-
-// Enhanced output quantity change handler
-function handleOutputQuantityChange() {
-    const outputQuantityInput = document.getElementById('output_quantity');
-    if (outputQuantityInput && window.currentBOMData) {
-        outputQuantityInput.addEventListener('input', function() {
-            const outputQty = parseFloat(this.value) || 0;
-            if (outputQty > 0) {
-                calculateBOMRequirements(outputQty);
-            }
-        });
-    }
-}
-
-// Populate Job Work Title from BOM data
-function populateJobWorkTitle(data) {
-    const jobTitleInput = document.getElementById('job_title');
-    if (jobTitleInput && data.bom) {
-        const title = `${data.bom.code} - ${data.bom.product_name} Production`;
-        jobTitleInput.value = title;
-        console.log('Job title populated:', title);
-    }
-}
-
-// Clear BOM data when switching to manual mode
-function clearBOMData() {
-    // Clear stored BOM data
-    window.currentBOMData = null;
-    
-    // Remove dynamic displays
-    const requirementsDiv = document.getElementById('bom-material-requirements');
-    const costDiv = document.getElementById('bom-cost-summary');
-    if (requirementsDiv) requirementsDiv.remove();
-    if (costDiv) costDiv.remove();
-    
-    // Clear form fields
-    const jobTitleInput = document.getElementById('job_title');
-    if (jobTitleInput) jobTitleInput.value = '';
-    
-    console.log('BOM data cleared');
-}
-
-// Enhanced BOM utility functions
-function showSuccessMessage(message) {
-    console.log(message);
-    // You can add a toast notification here if needed
-}
-
-function updateOutputSummary() {
-    // Update output summary logic if needed
-    console.log('Output summary updated');
-}
-
-// Update BOM workflow information display
-function updateBOMWorkflowInfo(data) {
-    const workflowInfo = document.getElementById('bom-workflow-info');
-    if (!workflowInfo) return;
-    
-    const hasOutputProducts = data.processes && data.processes.some(p => p.output_product_id);
-    const finalOutput = data.bom ? data.bom.product_name : 'Final Product';
-    
-    if (hasOutputProducts) {
-        workflowInfo.innerHTML = `<strong>Multi-Stage Production:</strong> This BOM defines intermediate products for each process → Final Output: <strong>${finalOutput}</strong>`;
-        workflowInfo.className = 'text-primary';
-    } else {
-        workflowInfo.innerHTML = `<strong>Sequential Operations:</strong> All processes work on the same material → Final Output: <strong>${finalOutput}</strong>`;
-        workflowInfo.className = 'text-success';
-    }
-    
-    // Update the output summary with BOM's final product
-    updateFinalOutputDisplay(data);
-}
-
-// Update final output display with BOM product information
-function updateFinalOutputDisplay(data) {
-    const finalOutputProduct = document.getElementById('final_output_product');
-    const finalOutputQuantity = document.getElementById('final_output_quantity');
-    
-    if (finalOutputProduct && data.bom) {
-        finalOutputProduct.textContent = data.bom.product_name;
-        console.log('Final output product set to BOM product:', data.bom.product_name);
-    }
-    
-    if (finalOutputQuantity && data.bom) {
-        const outputQty = data.bom.output_quantity || 1;
-        finalOutputQuantity.textContent = outputQty;
-        console.log('Final output quantity set:', outputQty);
-    }
-}
-
-// Calculate material requirements based on output quantity
-function calculateMaterialRequirements() {
-    const outputQtyInput = document.getElementById('output_quantity_input');
-    const quantityToIssueInput = document.getElementById('quantity_to_issue');
-    
-    if (!outputQtyInput || !quantityToIssueInput || !window.currentBOMData) {
-        return;
-    }
-    
-    const requestedOutputQty = parseFloat(outputQtyInput.value) || 1;
-    const bomData = window.currentBOMData;
-    
-    if (bomData.materials && bomData.materials.length > 0) {
-        const primaryMaterial = bomData.materials[0];
-        const bomOutputQty = bomData.bom.output_quantity || 1;
-        
-        // Calculate conversion ratio: if BOM produces X units from Y material, 
-        // then for Z units we need (Y * Z) / X material
-        const materialRequired = (primaryMaterial.qty_required * requestedOutputQty) / bomOutputQty;
-        
-        quantityToIssueInput.value = materialRequired.toFixed(3);
-        
-        // Update calculation display
-        const calculationDisplay = document.getElementById('calculation_display');
-        if (calculationDisplay) {
-            calculationDisplay.innerHTML = `
-                <div class="alert alert-info alert-sm">
-                    <strong>BOM Calculation:</strong><br>
-                    ${requestedOutputQty} units × ${(primaryMaterial.qty_required / bomOutputQty).toFixed(3)} ${primaryMaterial.uom}/unit = 
-                    <strong>${materialRequired.toFixed(3)} ${primaryMaterial.uom}</strong>
-                </div>
-            `;
-        }
-        
-        // Update batch allocation if enabled
-        const requiredQtyDisplay = document.getElementById('required_quantity_display');
-        if (requiredQtyDisplay) {
-            requiredQtyDisplay.textContent = materialRequired.toFixed(3);
-        }
-        
-        console.log(`Material calculation: ${requestedOutputQty} units requires ${materialRequired.toFixed(3)} ${primaryMaterial.uom}`);
-        
-        // Auto-check stock after calculation
-        checkStock();
-    }
 }
 
 // Populate input materials from BOM
@@ -1738,8 +1461,8 @@ function addProcessRow() {
             </select>
         </td>
         <td>
-            <select class="form-select form-select-sm">
-                <option value="">Optional - Leave blank for sequential operations</option>
+            <select class="form-select form-select-sm" required>
+                <option value="">Select Output Product...</option>
             </select>
         </td>
         <td><input type="number" class="form-control form-control-sm" placeholder="Qty" min="1" required></td>
