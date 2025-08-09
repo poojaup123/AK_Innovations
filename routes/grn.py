@@ -561,7 +561,7 @@ def dashboard():
         parent_child_data.append({
             'type': 'Purchase Order',
             'parent_number': po.po_number,
-            'parent_date': getattr(po, 'po_date', getattr(po, 'created_at', getattr(po, 'order_date', None))),
+            'parent_date': po.po_date if hasattr(po, 'po_date') and po.po_date else (po.created_at if hasattr(po, 'created_at') and po.created_at else (po.order_date if hasattr(po, 'order_date') and po.order_date else None)),
             'supplier': po.supplier.name if po.supplier else 'N/A',
             'total_grns': len(po_grns),
             'status': status,
@@ -584,9 +584,9 @@ def dashboard():
         
         parent_child_data.append({
             'type': 'Job Work',
-            'parent_number': getattr(jw, 'job_number', f'JW-{jw.id}'),
-            'parent_date': getattr(jw, 'start_date', getattr(jw, 'created_at', None)),
-            'supplier': getattr(jw, 'customer_name', 'N/A'),
+            'parent_number': jw.job_number if hasattr(jw, 'job_number') and jw.job_number else f'JW-{jw.id}',
+            'parent_date': jw.start_date if hasattr(jw, 'start_date') and jw.start_date else (jw.created_at if hasattr(jw, 'created_at') else None),
+            'supplier': jw.customer_name if hasattr(jw, 'customer_name') and jw.customer_name else 'N/A',
             'total_grns': len(jw_grns),
             'status': status,
             'parent_id': jw.id,

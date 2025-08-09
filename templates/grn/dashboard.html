@@ -474,14 +474,14 @@
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div class="flex-grow-1">
                                         <span class="badge bg-info me-2">Job Work</span>
-                                        <h6 class="mb-1">{{ getattr(job, 'job_number', 'JW-' + job.id|string) }}</h6>
-                                        <p class="mb-1 text-muted small">{{ getattr(job, 'customer_name', 'N/A') }}</p>
+                                        <h6 class="mb-1">{{ job.job_number if job.job_number else ('JW-' + job.id|string) }}</h6>
+                                        <p class="mb-1 text-muted small">{{ job.customer_name if job.customer_name else 'N/A' }}</p>
                                         <p class="mb-1 small">
                                             <span class="text-muted">Status:</span> 
-                                            <strong>{{ job.status.replace('_', ' ').title() }}</strong>
+                                            <strong>{{ job.status.replace('_', ' ').title() if job.status else 'Unknown' }}</strong>
                                         </p>
                                         <span class="badge bg-{{ 'warning' if job.status == 'partial_received' else 'primary' }}">
-                                            {{ job.status.replace('_', ' ').title() }}
+                                            {{ job.status.replace('_', ' ').title() if job.status else 'Unknown' }}
                                         </span>
                                     </div>
                                     <div class="dropdown">
