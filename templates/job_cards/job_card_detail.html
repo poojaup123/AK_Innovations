@@ -114,8 +114,12 @@
                                     <td>{{ "%.1f"|format(job_card.planned_quantity) }}</td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Completed:</strong></td>
-                                    <td>{{ "%.1f"|format(job_card.completed_quantity) }} ({{ "%.1f"|format(job_card.completion_rate) }}%)</td>
+                                    <td><strong>Progress:</strong></td>
+                                    <td>
+                                        {% set progress_pct = ((job_card.completed_quantity or 0) / job_card.planned_quantity * 100) if job_card.planned_quantity > 0 else 0 %}
+                                        {{ "%.1f"|format(job_card.completed_quantity or 0) }} / {{ "%.1f"|format(job_card.planned_quantity) }}
+                                        <span class="badge bg-info ms-2">{{ "%.1f"|format(progress_pct) }}%</span>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td><strong>Output Batch:</strong></td>
@@ -266,7 +270,7 @@
                                         <td class="text-success">{{ "%.1f"|format(status.qty_good_today) }}</td>
                                         <td class="text-warning">{{ "%.1f"|format(status.qty_defective_today) }}</td>
                                         <td class="text-danger">{{ "%.1f"|format(status.qty_scrap_today) }}</td>
-                                        <td>{{ "%.1f"|format(status.efficiency_rate) }}%</td>
+                                        <td>{{ "%.1f"|format(status.efficiency_rate or 0) }}%</td>
                                         <td>
                                             <span class="badge 
                                                 {% if status.daily_status == 'completed' %}bg-success
@@ -366,24 +370,24 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <span>Estimated Cost:</span>
-                        <strong>₹{{ "%.2f"|format(job_card.estimated_cost) }}</strong>
+                        <strong>₹{{ "%.2f"|format(job_card.estimated_cost or 0) }}</strong>
                     </div>
                     <div class="d-flex justify-content-between">
                         <span>Actual Cost:</span>
-                        <strong>₹{{ "%.2f"|format(job_card.actual_cost) }}</strong>
+                        <strong>₹{{ "%.2f"|format(job_card.actual_cost or 0) }}</strong>
                     </div>
                     <hr>
                     <div class="d-flex justify-content-between">
                         <span>Material:</span>
-                        <span>₹{{ "%.2f"|format(job_card.material_cost) }}</span>
+                        <span>₹{{ "%.2f"|format(job_card.material_cost or 0) }}</span>
                     </div>
                     <div class="d-flex justify-content-between">
                         <span>Labor:</span>
-                        <span>₹{{ "%.2f"|format(job_card.labor_cost) }}</span>
+                        <span>₹{{ "%.2f"|format(job_card.labor_cost or 0) }}</span>
                     </div>
                     <div class="d-flex justify-content-between">
                         <span>Overhead:</span>
-                        <span>₹{{ "%.2f"|format(job_card.overhead_cost) }}</span>
+                        <span>₹{{ "%.2f"|format(job_card.overhead_cost or 0) }}</span>
                     </div>
                 </div>
             </div>
@@ -395,21 +399,21 @@
                 </div>
                 <div class="card-body">
                     <div class="text-center mb-3">
-                        <h4 class="text-primary">{{ "%.1f"|format(job_card.efficiency_rate) }}%</h4>
-                        <small class="text-muted">Overall Efficiency</small>
+                        <h4 class="text-primary">{{ "%.1f"|format(job_card.progress_percentage or 0) }}%</h4>
+                        <small class="text-muted">Overall Progress</small>
                     </div>
                     
                     <div class="row text-center">
                         <div class="col-4">
-                            <h6 class="text-success">{{ "%.1f"|format(job_card.good_quantity) }}</h6>
+                            <h6 class="text-success">{{ "%.1f"|format(job_card.good_quantity or 0) }}</h6>
                             <small class="text-muted">Good</small>
                         </div>
                         <div class="col-4">
-                            <h6 class="text-warning">{{ "%.1f"|format(job_card.defective_quantity) }}</h6>
+                            <h6 class="text-warning">{{ "%.1f"|format(job_card.defective_quantity or 0) }}</h6>
                             <small class="text-muted">Defective</small>
                         </div>
                         <div class="col-4">
-                            <h6 class="text-danger">{{ "%.1f"|format(job_card.scrap_quantity) }}</h6>
+                            <h6 class="text-danger">{{ "%.1f"|format(job_card.scrap_quantity or 0) }}</h6>
                             <small class="text-muted">Scrap</small>
                         </div>
                     </div>
