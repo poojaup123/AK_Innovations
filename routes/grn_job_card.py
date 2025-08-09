@@ -96,6 +96,27 @@ def quick_receive_job_card(job_card_id):
             logging.error(f'Error updating inventory for job card {job_card.id}: {str(e)}')
             flash(f'GRN {grn.grn_number} created successfully, but inventory update failed: {str(e)}', 'warning')
         
+        # Update production order with received quantities
+        try:
+            from services.production_update_service import ProductionUpdateService
+            
+            received_quantities = {
+                'total': job_card.outsource_quantity,
+                'good': job_card.outsource_quantity,  # Quick receive assumes all good
+                'defective': 0,
+                'scrap': 0
+            }
+            
+            ProductionUpdateService.update_production_on_job_card_receipt(
+                job_card.id, received_quantities
+            )
+            
+            logging.info(f'Production order updated for job card {job_card.job_card_number} receipt')
+            
+        except Exception as e:
+            logging.error(f'Error updating production order for job card {job_card.id}: {str(e)}')
+            # Don't fail the GRN creation for production update issues
+        
         return redirect(url_for('grn.dashboard'))
         
     except Exception as e:

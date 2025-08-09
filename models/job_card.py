@@ -463,6 +463,9 @@ class JobCardDailyStatus(db.Model):
         if self.qty_good_today > 0:
             self._create_good_batch()
         
+        # Update production order with QC approved quantities
+        self._update_production_on_qc_approval()
+        
         db.session.commit()
     
     def reject_by_qc(self, qc_inspector_id, notes):
@@ -520,6 +523,29 @@ class JobCardDailyStatus(db.Model):
         if self.qty_scrap_today > 0:
             # For now, just assign a batch number
             self.batch_number = f"SCRAP-{self.job_card.job_card_number}-{self.report_date.strftime('%Y%m%d')}"
+    
+    def _update_production_on_qc_approval(self):
+        """Update production order when QC approves job card daily status"""
+        try:
+            from services.production_update_service import ProductionUpdateService
+            
+            # Only update production if this is QC approved
+            if self.qc_approved and self.qty_good_today > 0:
+                received_quantities = {
+                    'total': self.qty_completed_today,
+                    'good': self.qty_good_today,
+                    'defective': self.qty_defective_today,
+                    'scrap': self.qty_scrap_today
+                }
+                
+                ProductionUpdateService.update_production_on_job_card_receipt(
+                    self.job_card_id, received_quantities
+                )
+                
+        except Exception as e:
+            # Log error but don't fail the QC approval
+            import logging
+            logging.error(f"Error updating production on QC approval: {e}")
 
 
 class JobCardMaterial(db.Model):
