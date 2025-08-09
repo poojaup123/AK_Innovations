@@ -373,9 +373,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-populate from Smart BOM suggestions
     {% if from_suggestion and suggested_bom_id %}
     console.log('Auto-populating Job Work from Smart BOM suggestion...');
-    console.log('BOM ID:', {{ suggested_bom_id }});
-    console.log('Target Item ID:', {{ suggested_target_item_id }});
-    console.log('Quantity:', {{ suggested_quantity }});
+    console.log('BOM ID:', {{ suggested_bom_id|tojson }});
+    console.log('Target Item ID:', {{ suggested_target_item_id|tojson }});
+    console.log('Quantity:', {{ suggested_quantity|tojson }});
     
     // Set job work type to BOM-based
     if (jobWorkType) {
@@ -391,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadBOMs().then(function() {
             const bomSelect = document.getElementById('bom_select');
             if (bomSelect) {
-                bomSelect.value = {{ suggested_bom_id }};
+                bomSelect.value = {{ suggested_bom_id|tojson }};
                 // Trigger BOM change to load materials
                 bomSelect.dispatchEvent(new Event('change'));
             }
@@ -426,12 +426,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const bomSelect = document.getElementById('bom_select');
     if (bomSelect) {
         bomSelect.addEventListener('change', function() {
+            console.log('BOM selection changed to:', this.value);
             if (this.value) {
+                console.log('Loading BOM data for ID:', this.value);
                 loadBOMData(this.value);
             } else {
+                console.log('Clearing BOM data');
                 clearBOMData();
             }
         });
+    } else {
+        console.error('BOM select element not found!');
     }
     
     // Work type change handler
@@ -504,7 +509,8 @@ function loadBOMs() {
         })
         .catch(error => {
             console.error('Error loading BOMs:', error);
-            alert('Error loading BOMs. Please check if BOMs are available.');
+            console.error('Full error details:', error.stack);
+            alert('Error loading BOMs: ' + error.message + '. Please check console for details.');
         });
 }
 
