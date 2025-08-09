@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from flask_login import login_required, current_user
 from app import db
 from models import JobWork, Item, User, PurchaseOrder, PurchaseOrderItem, JobWorkProcess, ItemBatch
+from models.job_card import JobCard
 from models.grn import GRN, GRNLineItem
 from models.batch import BatchMovementLedger, BatchConsumptionReport
 from forms_grn import GRNForm, GRNLineItemForm, QuickReceiveForm, QuickReceivePOForm, GRNSearchForm, MultiProcessQuickReceiveForm
@@ -551,6 +552,68 @@ def dashboard():
     # Calculate monthly trends
     current_month = date.today().replace(day=1)
     monthly_grns = GRN.query.filter(GRN.received_date >= current_month).count()
+    
+    # Add outsourced job cards to parent_child_data (UNIFIED GRN DASHBOARD)
+    outsourced_job_cards = JobCard.query.filter(
+        JobCard.parent_job_card_id.isnot(None),
+        JobCard.outsource_quantity > 0
+    ).order_by(JobCard.created_at.desc()).all()
+    
+    for job_card in outsourced_job_cards:
+        # Status mapping for job cards
+        if job_card.status == 'outsourced':
+            jc_status = 'Pending GRN'
+        elif job_card.status == 'received':
+            jc_status = 'Received'  
+        else:
+            jc_status = job_card.status.title()
+            
+        # Child GRNs for this job card (if any)
+        child_grns = []
+        grn_count = 0
+        
+        if job_card.grn_id:
+            # This job card has an associated GRN
+            grn = GRN.query.get(job_card.grn_id)
+            if grn:
+                grn_count = 1
+                # Get item details for this GRN
+                item_details = []
+                total_received = 0
+                total_scrap = 0
+                
+                for line_item in grn.line_items:
+                    item_details.append(f"{line_item.item.name} ({line_item.quantity_received} {line_item.unit_of_measure})")
+                    total_received += line_item.quantity_received or 0
+                    total_scrap += line_item.quantity_rejected or 0
+                
+                child_grns.append({
+                    'grn_number': grn.grn_number,
+                    'grn_date': grn.received_date,
+                    'item_details': ', '.join(item_details),
+                    'received_qty': total_received,
+                    'scrap_qty': total_scrap,
+                    'status': grn.status.title(),
+                    'grn_id': grn.id,
+                    'source_type': 'Outsourced Job Card',
+                    'source_document': job_card.job_card_number,
+                    'inspection_status': grn.inspection_status.title() if grn.inspection_status else 'Pending',
+                    'inventory_updated': grn.add_to_inventory if hasattr(grn, 'add_to_inventory') else True
+                })
+        
+        parent_child_data.append({
+            'type': 'Outsourced Job Card',
+            'parent_doc': job_card.job_card_number,
+            'date': job_card.created_at.date(),
+            'vendor_customer': job_card.assigned_vendor.name if job_card.assigned_vendor else 'N/A',
+            'status': jc_status,
+            'total_qty': job_card.outsource_quantity,
+            'grn_count': grn_count,
+            'child_grns': child_grns,
+            'parent_id': f'jc_{job_card.id}',
+            'show_create_grn': not job_card.grn_id,  # Show "Create GRN" if no GRN exists
+            'job_card_id': job_card.id  # For GRN creation link
+        })
     
     return render_template('grn/dashboard.html',
                          title='GRN Dashboard',

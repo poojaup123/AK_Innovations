@@ -229,7 +229,14 @@
                                         </td>
                                         <td>
                                             <strong class="text-primary">{{ parent.parent_doc }}</strong>
-                                            <br><small class="text-muted">{{ parent.type }}</small>
+                                            <br><small class="text-muted">{{ parent.type }}
+                                            {% if parent.type == 'Outsourced Job Card' and parent.get('show_create_grn') %}
+                                                <a href="{{ url_for('grn_job_card.create_grn_for_job_card', job_card_id=parent['job_card_id']) }}" 
+                                                   class="btn btn-xs btn-success ms-2">
+                                                    <i class="fas fa-plus"></i> Create GRN
+                                                </a>
+                                            {% endif %}
+                                            </small>
                                         </td>
                                         <td>{{ parent.date.strftime('%d/%m/%Y') }}</td>
                                         <td>{{ parent.vendor_customer }}</td>
@@ -238,12 +245,20 @@
                                             <span class="badge bg-success">{{ parent.status }}</span>
                                             {% elif parent.status == 'Partial' %}
                                             <span class="badge bg-warning">{{ parent.status }}</span>
+                                            {% elif parent.status == 'Pending GRN' %}
+                                            <span class="badge bg-info">{{ parent.status }}</span>
                                             {% else %}
                                             <span class="badge bg-secondary">{{ parent.status }}</span>
                                             {% endif %}
                                         </td>
                                         <td>{{ parent.total_qty }}</td>
-                                        <td>{{ parent.grn_count }} GRNs</td>
+                                        <td>
+                                            {% if parent.type == 'Outsourced Job Card' and parent.get('show_create_grn') %}
+                                                <span class="badge bg-warning">Awaiting GRN</span>
+                                            {% else %}
+                                                {{ parent.grn_count }} GRNs
+                                            {% endif %}
+                                        </td>
                                         <td colspan="6" class="text-muted text-center">
                                             <small><i class="fas fa-chevron-down"></i> Click to expand GRN details</small>
                                         </td>
