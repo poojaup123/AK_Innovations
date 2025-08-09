@@ -58,14 +58,92 @@
         </div>
     </div>
 
-    <!-- Production Summary Cards -->
+    <!-- Daily Production Status Header -->
+    <div class="row mb-3">
+        <div class="col">
+            <div class="alert alert-info">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0"><i class="fas fa-calendar-day me-2"></i>Daily Production Status - {{ today.strftime('%A, %B %d, %Y') }}</h5>
+                        <small class="text-muted">Real-time production tracking and daily updates</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-success fs-6">{{ status_groups.active|length }} Active</span>
+                        <span class="badge bg-warning fs-6">{{ status_groups.delayed|length }} Delayed</span>
+                        <span class="badge bg-secondary fs-6">{{ productions_without_reports|length }} Need Update</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Production Metrics Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
             <div class="card stats-card border-primary">
                 <div class="card-body text-center">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-title text-muted">Production Target</h6>
+                            <h6 class="card-title text-muted">Today's Production</h6>
+                            <h4 class="text-primary">{{ "%.1f"|format(stats.total_completed_today) }}</h4>
+                        </div>
+                        <i class="fas fa-industry stats-icon text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stats-card border-success">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Good Quality</h6>
+                            <h4 class="text-success">{{ "%.1f"|format(stats.total_good_today) }}</h4>
+                        </div>
+                        <i class="fas fa-check-circle stats-icon text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stats-card border-warning">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Defective</h6>
+                            <h4 class="text-warning">{{ "%.1f"|format(stats.total_defective_today) }}</h4>
+                        </div>
+                        <i class="fas fa-exclamation-triangle stats-icon text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stats-card border-info">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Efficiency Rate</h6>
+                            <h4 class="text-info">{{ "%.1f"|format(stats.efficiency_rate_today) }}%</h4>
+                        </div>
+                        <i class="fas fa-chart-line stats-icon text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overall Production Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card border-primary">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Total Productions</h6>
                             <h4 class="text-primary">{{ stats.total_productions or 0 }}</h4>
                         </div>
                         <i class="fas fa-bullseye stats-icon text-primary"></i>
@@ -303,6 +381,259 @@
             </div>
         </div>
     </div>
+
+    <!-- Daily Production Status Tracking Section -->
+    {% if today_reports or productions_without_reports %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-calendar-check me-2"></i>Daily Production Status Tracking</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Status Tabs -->
+                    <ul class="nav nav-tabs mb-3" id="dailyStatusTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="active-status-tab" data-bs-toggle="tab" data-bs-target="#active-status" type="button" role="tab">
+                                <i class="fas fa-play-circle text-success me-2"></i>Active ({{ status_groups.active|length }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="need-update-tab" data-bs-toggle="tab" data-bs-target="#need-update" type="button" role="tab">
+                                <i class="fas fa-exclamation-triangle text-warning me-2"></i>Need Update ({{ productions_without_reports|length }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="delayed-status-tab" data-bs-toggle="tab" data-bs-target="#delayed-status" type="button" role="tab">
+                                <i class="fas fa-clock text-danger me-2"></i>Delayed ({{ status_groups.delayed|length }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="completed-status-tab" data-bs-toggle="tab" data-bs-target="#completed-status" type="button" role="tab">
+                                <i class="fas fa-check-circle text-primary me-2"></i>Completed Today ({{ status_groups.completed|length }})
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="dailyStatusTabContent">
+                        <!-- Active Productions -->
+                        <div class="tab-pane fade show active" id="active-status" role="tabpanel">
+                            {% if status_groups.active %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Production #</th>
+                                                <th>Item</th>
+                                                <th>Today's Progress</th>
+                                                <th>Progress %</th>
+                                                <th>Workers</th>
+                                                <th>Issues</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for report in status_groups.active %}
+                                            <tr>
+                                                <td>
+                                                    <strong>{{ report.production.production_number }}</strong>
+                                                    {% if not report.is_on_schedule %}
+                                                        <span class="badge bg-warning ms-1">Behind Schedule</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% set item = report.production.item %}
+                                                    {{ item.code if item else 'N/A' }} - {{ item.name if item else 'Unknown Item' }}
+                                                </td>
+                                                <td>
+                                                    <small><strong>Good:</strong> {{ "%.1f"|format(report.qty_good_today) }}</small><br>
+                                                    <small><strong>Defective:</strong> {{ "%.1f"|format(report.qty_defective_today) }}</small>
+                                                </td>
+                                                <td>
+                                                    <div class="progress" style="height: 20px;">
+                                                        <div class="progress-bar bg-{{ report.status_color }}" role="progressbar" 
+                                                             style="width: {{ report.progress_percentage }}%">
+                                                            {{ "%.1f"|format(report.progress_percentage) }}%
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>{{ report.workers_assigned }} workers</td>
+                                                <td>
+                                                    {% if report.production_issues or report.quality_issues %}
+                                                        <i class="fas fa-exclamation-triangle text-warning" 
+                                                           title="Issues: {{ report.production_issues or '' }} {{ report.quality_issues or '' }}"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-check text-success"></i>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <a href="{{ url_for('production.update_daily_status', production_id=report.production_id) }}" 
+                                                       class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-edit"></i> Update
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">No active productions today</p>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Productions Needing Updates -->
+                        <div class="tab-pane fade" id="need-update" role="tabpanel">
+                            {% if productions_without_reports %}
+                                <div class="alert alert-warning">
+                                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Productions Need Daily Status Update</h6>
+                                    <p class="mb-0">These productions are active but don't have today's status reported yet.</p>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Production #</th>
+                                                <th>Item</th>
+                                                <th>Planned Qty</th>
+                                                <th>Status</th>
+                                                <th>Created</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for production in productions_without_reports %}
+                                            <tr>
+                                                <td><strong>{{ production.production_number }}</strong></td>
+                                                <td>
+                                                    {% set item = production.item %}
+                                                    {{ item.code if item else 'N/A' }} - {{ item.name if item else 'Unknown Item' }}
+                                                </td>
+                                                <td>{{ "%.1f"|format(production.quantity_planned or 0) }}</td>
+                                                <td><span class="badge bg-secondary">{{ production.status|title }}</span></td>
+                                                <td>{{ production.created_at.strftime('%Y-%m-%d') }}</td>
+                                                <td>
+                                                    <a href="{{ url_for('production.update_daily_status', production_id=production.id) }}" 
+                                                       class="btn btn-primary btn-sm">
+                                                        <i class="fas fa-plus me-2"></i>Add Daily Status
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                                    <p class="text-muted">All active productions have daily status updates!</p>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Delayed Productions -->
+                        <div class="tab-pane fade" id="delayed-status" role="tabpanel">
+                            {% if status_groups.delayed %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Production #</th>
+                                                <th>Item</th>
+                                                <th>Delay Reason</th>
+                                                <th>Progress %</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for report in status_groups.delayed %}
+                                            <tr>
+                                                <td><strong>{{ report.production.production_number }}</strong></td>
+                                                <td>
+                                                    {% set item = report.production.item %}
+                                                    {{ item.code if item else 'N/A' }} - {{ item.name if item else 'Unknown Item' }}
+                                                </td>
+                                                <td>{{ report.delay_reason or 'No reason specified' }}</td>
+                                                <td>
+                                                    <div class="progress" style="height: 20px;">
+                                                        <div class="progress-bar bg-danger" role="progressbar" 
+                                                             style="width: {{ report.progress_percentage }}%">
+                                                            {{ "%.1f"|format(report.progress_percentage) }}%
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <a href="{{ url_for('production.update_daily_status', production_id=report.production_id) }}" 
+                                                       class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-edit"></i> Update
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-smile fa-3x text-success mb-3"></i>
+                                    <p class="text-muted">No delayed productions today - great job!</p>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Completed Today -->
+                        <div class="tab-pane fade" id="completed-status" role="tabpanel">
+                            {% if status_groups.completed %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Production #</th>
+                                                <th>Item</th>
+                                                <th>Completed Qty</th>
+                                                <th>Good/Defective</th>
+                                                <th>Efficiency</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for report in status_groups.completed %}
+                                            <tr>
+                                                <td><strong>{{ report.production.production_number }}</strong></td>
+                                                <td>
+                                                    {% set item = report.production.item %}
+                                                    {{ item.code if item else 'N/A' }} - {{ item.name if item else 'Unknown Item' }}
+                                                </td>
+                                                <td>{{ "%.1f"|format(report.qty_completed_today) }}</td>
+                                                <td>
+                                                    <span class="text-success">{{ "%.1f"|format(report.qty_good_today) }}</span> / 
+                                                    <span class="text-warning">{{ "%.1f"|format(report.qty_defective_today) }}</span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-{{ 'success' if report.efficiency_rate >= 95 else 'warning' if report.efficiency_rate >= 80 else 'danger' }}">
+                                                        {{ "%.1f"|format(report.efficiency_rate) }}%
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">No productions completed today yet</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 

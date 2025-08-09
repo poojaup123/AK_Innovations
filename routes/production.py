@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from forms import ProductionForm, BOMForm, BOMItemForm, BOMProcessForm
 from models import Production, Item, BOM, BOMItem, BOMProcess, Supplier, ItemBatch, ProductionBatch
+from models.daily_production import DailyProductionStatus, DailyProductionSummary
 from services.process_integration import ProcessIntegrationService
 from services.authentic_accounting_integration import AuthenticAccountingIntegration
 from services.smart_bom_suggestions import SmartBOMSuggestionService
@@ -10,19 +11,55 @@ from app import db
 from sqlalchemy import func, or_
 from utils import generate_production_number
 from utils.batch_tracking import BatchTracker
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import json
+from forms_daily_production import DailyProductionUpdateForm, QuickStatusUpdateForm
 
 production_bp = Blueprint('production', __name__)
 
 @production_bp.route('/dashboard')
 @login_required
 def dashboard():
+    today = date.today()
+    
     # Enhanced production statistics
     total_productions = Production.query.count()
     planned_productions = Production.query.filter_by(status='planned').count()
     in_progress_productions = Production.query.filter_by(status='in_progress').count()
     completed_productions = Production.query.filter_by(status='completed').count()
+    
+    # Daily Production Status Integration
+    active_productions = Production.query.filter(
+        Production.status.in_(['planned', 'in_progress'])
+    ).all()
+    
+    # Get today's production status reports
+    today_reports = DailyProductionStatus.query.filter_by(report_date=today).all()
+    
+    # Get or create today's summary
+    daily_summary = DailyProductionSummary.generate_daily_summary(today)
+    
+    # Calculate daily metrics
+    total_completed_today = sum(r.qty_completed_today for r in today_reports)
+    total_good_today = sum(r.qty_good_today for r in today_reports)
+    total_defective_today = sum(r.qty_defective_today for r in today_reports)
+    efficiency_rate = (total_good_today / total_completed_today * 100) if total_completed_today > 0 else 0
+    
+    # Group reports by status
+    status_groups = {
+        'active': [r for r in today_reports if r.daily_status == 'active'],
+        'planned': [r for r in today_reports if r.daily_status == 'planned'],
+        'completed': [r for r in today_reports if r.daily_status == 'completed'],
+        'delayed': [r for r in today_reports if r.daily_status == 'delayed'],
+        'paused': [r for r in today_reports if r.daily_status == 'paused']
+    }
+    
+    # Productions without daily reports (need initial entry)
+    reported_production_ids = {r.production_id for r in today_reports}
+    productions_without_reports = [
+        prod for prod in active_productions 
+        if prod.id not in reported_production_ids
+    ]
     
     # Calculate cost metrics from completed productions
     completed_prods = Production.query.filter_by(status='completed').all()
@@ -42,7 +79,7 @@ def dashboard():
         for prod in completed_prods:
             if prod.bom:
                 # Calculate unit costs from BOM
-                bom_material_cost = sum(item.item.purchase_price * item.quantity_required for item in prod.bom.items if item.item.purchase_price) or 0
+                bom_material_cost = sum(item.item.cost_price * item.quantity_required for item in prod.bom.items if item.item and item.item.cost_price) or 0
                 bom_labor_cost = prod.bom.labor_cost_per_unit or 0
                 scrap_percent = prod.bom.scrap_percent or 0
                 
@@ -72,20 +109,19 @@ def dashboard():
         'avg_material_cost': avg_material_cost,
         'avg_labor_cost': avg_labor_cost,
         'avg_scrap_percent': avg_scrap_percent,
-        'avg_efficiency': avg_efficiency
+        'avg_efficiency': avg_efficiency,
+        # Daily production metrics
+        'total_completed_today': total_completed_today,
+        'total_good_today': total_good_today,
+        'total_defective_today': total_defective_today,
+        'efficiency_rate_today': efficiency_rate
     }
     
     # Recent productions
     recent_productions = Production.query.order_by(Production.created_at.desc()).limit(10).all()
     
-    # Active productions with BOM processes for pipeline view
-    active_productions = Production.query.filter(
-        Production.status.in_(['planned', 'in_progress'])
-    ).order_by(Production.created_at.desc()).limit(5).all()
-    
     # Today's production summary
-    from datetime import date
-    today_productions = Production.query.filter_by(production_date=date.today()).all()
+    today_productions = Production.query.filter_by(production_date=today).all()
     
     # Products with BOM
     products_with_bom = db.session.query(Item).join(BOM).filter(BOM.is_active == True).all()
@@ -95,7 +131,152 @@ def dashboard():
                          recent_productions=recent_productions,
                          active_productions=active_productions,
                          today_productions=today_productions,
-                         products_with_bom=products_with_bom)
+                         products_with_bom=products_with_bom,
+                         # Daily production status data
+                         today=today,
+                         today_reports=today_reports,
+                         daily_summary=daily_summary,
+                         status_groups=status_groups,
+                         productions_without_reports=productions_without_reports)
+
+@production_bp.route('/update-daily-status/<int:production_id>', methods=['GET', 'POST'])
+@login_required
+def update_daily_status(production_id):
+    """Update daily production status for a specific production order"""
+    production = Production.query.get_or_404(production_id)
+    
+    # Get or create today's report
+    today_report = DailyProductionStatus.get_today_report(production_id)
+    
+    form = DailyProductionUpdateForm()
+    if today_report:
+        # Pre-populate form with existing data
+        form = DailyProductionUpdateForm(obj=today_report)
+    
+    form.production_id.data = production_id
+    
+    if form.validate_on_submit():
+        try:
+            # Calculate cumulative values
+            cumulative_completed = (today_report.cumulative_completed if today_report else 0) + form.qty_completed_today.data
+            cumulative_good = (today_report.cumulative_good if today_report else 0) + form.qty_good_today.data
+            cumulative_defective = (today_report.cumulative_defective if today_report else 0) + form.qty_defective_today.data
+            cumulative_scrap = (today_report.cumulative_scrap if today_report else 0) + form.qty_scrap_today.data
+            
+            # Calculate progress percentage
+            progress_percentage = 0
+            if production.quantity_planned and production.quantity_planned > 0:
+                progress_percentage = min(100, (cumulative_completed / production.quantity_planned) * 100)
+            
+            # Create or update daily status
+            updated_report = DailyProductionStatus.create_or_update_today(
+                production_id=production_id,
+                qty_completed_today=form.qty_completed_today.data,
+                qty_good_today=form.qty_good_today.data,
+                qty_defective_today=form.qty_defective_today.data,
+                qty_scrap_today=form.qty_scrap_today.data,
+                cumulative_completed=cumulative_completed,
+                cumulative_good=cumulative_good,
+                cumulative_defective=cumulative_defective,
+                cumulative_scrap=cumulative_scrap,
+                progress_percentage=progress_percentage,
+                daily_status=form.daily_status.data,
+                workers_assigned=form.workers_assigned.data,
+                machine_hours_used=form.machine_hours_used.data,
+                overtime_hours=form.overtime_hours.data,
+                material_consumed_cost=form.material_consumed_cost.data,
+                labor_cost_today=form.labor_cost_today.data,
+                production_issues=form.production_issues.data,
+                quality_issues=form.quality_issues.data,
+                delay_reason=form.delay_reason.data,
+                supervisor_notes=form.supervisor_notes.data,
+                shift_start_time=form.shift_start_time.data,
+                shift_end_time=form.shift_end_time.data,
+                created_by_id=current_user.id
+            )
+            
+            # Update main production status if needed
+            if form.daily_status.data == 'completed':
+                production.status = 'completed'
+                production.quantity_produced = cumulative_completed
+                production.quantity_good = cumulative_good
+                production.quantity_damaged = cumulative_defective
+                production.scrap_quantity = cumulative_scrap
+            elif form.daily_status.data == 'active' and production.status == 'planned':
+                production.status = 'in_progress'
+            
+            db.session.commit()
+            
+            flash(f'Daily production status updated for {production.production_number}', 'success')
+            return redirect(url_for('production.dashboard'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating production status: {str(e)}', 'danger')
+    
+    # Get production item for display
+    item = Item.query.get(production.item_id) if production.item_id else None
+    
+    return render_template('daily_production/update_form.html',
+                         form=form,
+                         production=production,
+                         item=item,
+                         today_report=today_report,
+                         title=f'Update Daily Status - {production.production_number}')
+
+@production_bp.route('/quick-daily-update', methods=['POST'])
+@login_required 
+def quick_daily_update():
+    """Quick status update via AJAX"""
+    try:
+        data = request.get_json()
+        production_id = data.get('production_id')
+        qty_completed = float(data.get('qty_completed', 0))
+        status = data.get('status', 'active')
+        notes = data.get('notes', '')
+        
+        production = Production.query.get_or_404(production_id)
+        
+        # Update today's report
+        today_report = DailyProductionStatus.get_today_report(production_id)
+        cumulative_completed = (today_report.cumulative_completed if today_report else 0) + qty_completed
+        
+        # Calculate progress
+        progress_percentage = 0
+        if production.quantity_planned and production.quantity_planned > 0:
+            progress_percentage = min(100, (cumulative_completed / production.quantity_planned) * 100)
+        
+        DailyProductionStatus.create_or_update_today(
+            production_id=production_id,
+            qty_completed_today=qty_completed,
+            qty_good_today=qty_completed,  # Assume good unless specified otherwise
+            cumulative_completed=cumulative_completed,
+            cumulative_good=cumulative_completed,
+            progress_percentage=progress_percentage,
+            daily_status=status,
+            supervisor_notes=notes,
+            created_by_id=current_user.id
+        )
+        
+        # Update main production status
+        if status == 'completed':
+            production.status = 'completed'
+            production.quantity_produced = cumulative_completed
+        elif status == 'active' and production.status == 'planned':
+            production.status = 'in_progress'
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Quick update applied to {production.production_number}',
+            'progress_percentage': progress_percentage,
+            'cumulative_completed': cumulative_completed
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @production_bp.route('/list')
 @login_required
