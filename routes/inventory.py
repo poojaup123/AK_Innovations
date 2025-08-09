@@ -129,6 +129,7 @@ def multi_state_view():
             finished_qty = sum(b.quantity for b in batches if b.status == 'finished_goods')
             scrap_qty = sum(b.quantity for b in batches if b.status == 'scrap')
             
+            total_qty = raw_qty + wip_qty + finished_qty + scrap_qty
             inventory_data.append({
                 'item_code': item.code,
                 'item_name': item.name,
@@ -136,6 +137,7 @@ def multi_state_view():
                 'wip': wip_qty,
                 'finished': finished_qty,
                 'scrap': scrap_qty,
+                'total_qty': total_qty,
                 'available': finished_qty,
                 'unit_of_measure': item.unit_of_measure
             })
@@ -363,7 +365,7 @@ def process_breakdown():
                 if qty > 0:
                     items_in_process.append({
                         'item_name': item_data['item_name'],
-                        'item_code': item_data['item_code'],
+                        'item_code': item_data.get('item_code', item.code),
                         'quantity': qty,
                         'unit_of_measure': item_data['unit_of_measure']
                     })
