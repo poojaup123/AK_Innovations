@@ -172,6 +172,7 @@ def add_purchase_order():
     suggested_item_id = request.args.get('item_id')
     suggested_quantity = request.args.get('quantity')
     suggested_materials = request.args.get('materials')  # Comma-separated material IDs
+    suggested_quantities = request.args.get('quantities')  # Comma-separated quantities
     
     # Auto-generate PO number if not provided
     if not form.po_number.data:
@@ -301,14 +302,20 @@ def add_purchase_order():
             # Multiple materials from suggestion
             try:
                 material_ids = [int(mid) for mid in suggested_materials.split(',')]
-                for material_id in material_ids:
+                quantities = []
+                if suggested_quantities:
+                    quantities = [float(q) for q in suggested_quantities.split(',')]
+                
+                for i, material_id in enumerate(material_ids):
                     material = Item.query.get(material_id)
                     if material:
+                        # Use actual shortage quantity if available, otherwise default to 1.0
+                        quantity = quantities[i] if i < len(quantities) else 1.0
                         pre_filled_items.append({
                             'item_id': material_id,
                             'item_code': material.code,
                             'item_name': material.name,
-                            'quantity': 1.0,  # Default quantity
+                            'quantity': quantity,
                             'unit': material.unit_of_measure,
                             'rate': material.unit_price or 0.0
                         })

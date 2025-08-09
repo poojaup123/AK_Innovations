@@ -119,7 +119,9 @@
                                             <!-- Create PO for insufficient raw materials -->
                                             {% set insufficient_materials = suggestion.raw_materials_required | selectattr('sufficient', 'equalto', false) | list %}
                                             {% if insufficient_materials %}
-                                                <a href="{{ url_for('purchase.add_purchase_order') }}?from_suggestion=1&production_id={{ production.id }}&materials={{ insufficient_materials | map(attribute='material_id') | join(',') }}" 
+                                                {% set material_data = insufficient_materials | map(attribute='material_id') | join(',') %}
+                                                {% set quantity_data = insufficient_materials | map(attribute='shortage_qty') | join(',') %}
+                                                <a href="{{ url_for('purchase.add_purchase_order') }}?from_suggestion=1&production_id={{ production.id }}&materials={{ material_data }}&quantities={{ quantity_data }}" 
                                                    class="btn btn-warning btn-sm">
                                                     <i class="fas fa-exclamation-triangle me-2"></i>Purchase Missing Materials
                                                 </a>
