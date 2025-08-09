@@ -59,6 +59,13 @@ def init_default_modules():
             'url_endpoint': 'jobwork.dashboard'
         },
         {
+            'name': 'component_job_cards',
+            'title': 'Job Cards',
+            'description': 'Component-level production tracking and job cards',
+            'icon': 'fas fa-tasks',
+            'url_endpoint': 'component_job_cards.dashboard'
+        },
+        {
             'name': 'sales',
             'title': 'Sales Orders',
             'description': 'Customer orders and sales tracking',

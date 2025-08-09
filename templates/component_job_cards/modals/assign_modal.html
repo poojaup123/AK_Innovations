@@ -1,0 +1,78 @@
+<!-- Assignment Modal -->
+<div class="modal fade" id="assignModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Assign Job Card</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <input type="hidden" id="assignCardId">
+                    <div class="mb-3">
+                        <label class="form-label">Assignment Type</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="assignmentType" id="assignToWorker" value="worker" checked>
+                            <label class="btn btn-outline-primary" for="assignToWorker">In-House Worker</label>
+                            <input type="radio" class="btn-check" name="assignmentType" id="assignToVendor" value="vendor">
+                            <label class="btn btn-outline-info" for="assignToVendor">External Vendor</label>
+                        </div>
+                    </div>
+                    
+                    <div id="workerSection" class="mb-3">
+                        <label for="assignWorker" class="form-label">Select Worker</label>
+                        <select class="form-select" id="assignWorker">
+                            <option value="">-- Select Worker --</option>
+                            {% for worker in workers %}
+                            <option value="{{ worker.id }}">{{ worker.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div id="vendorSection" class="mb-3" style="display: none;">
+                        <label for="assignVendor" class="form-label">Select Vendor</label>
+                        <select class="form-select" id="assignVendor">
+                            <option value="">-- Select Vendor --</option>
+                            {% for vendor in vendors %}
+                            <option value="{{ vendor.id }}">{{ vendor.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="assignDepartment" class="form-label">Department (Optional)</label>
+                        <input type="text" class="form-control" id="assignDepartment">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitAssignment()">Assign</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const workerRadio = document.getElementById('assignToWorker');
+    const vendorRadio = document.getElementById('assignToVendor');
+    const workerSection = document.getElementById('workerSection');
+    const vendorSection = document.getElementById('vendorSection');
+    
+    function toggleSections() {
+        if (workerRadio.checked) {
+            workerSection.style.display = 'block';
+            vendorSection.style.display = 'none';
+            document.getElementById('assignVendor').value = '';
+        } else {
+            workerSection.style.display = 'none';
+            vendorSection.style.display = 'block';
+            document.getElementById('assignWorker').value = '';
+        }
+    }
+    
+    workerRadio.addEventListener('change', toggleSections);
+    vendorRadio.addEventListener('change', toggleSections);
+});
+</script>
