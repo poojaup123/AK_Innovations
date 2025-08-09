@@ -276,6 +276,24 @@ def update_daily_status(job_card_id):
             cumulative_defective = (today_report.cumulative_defective if today_report else 0) + form.qty_defective_today.data
             cumulative_scrap = (today_report.cumulative_scrap if today_report else 0) + form.qty_scrap_today.data
             
+            # Handle process selection for BOM-based tracking
+            selected_processes = request.form.getlist('selected_processes')
+            process_notes = ""
+            if selected_processes:
+                # Update job card with selected processes
+                job_card.current_process_step = form.current_process_step.data
+                job_card.process_notes = form.process_notes.data
+                
+                # Track which processes were worked on today (for multi-step workflow)
+                from models import BOMProcess
+                process_names = []
+                for process_id in selected_processes:
+                    process = BOMProcess.query.get(process_id)
+                    if process:
+                        process_names.append(f"Step {process.step_number}: {process.process_name}")
+                
+                process_notes = f"Processes worked: {', '.join(process_names)}"
+                
             # Update daily status report
             updated_report = JobCardDailyStatus.create_or_update_today(
                 job_card_id=job_card_id,
@@ -296,7 +314,7 @@ def update_daily_status(job_card_id):
                 production_issues=form.production_issues.data,
                 material_issues=form.material_issues.data,
                 machine_issues=form.machine_issues.data,
-                operator_notes=form.operator_notes.data,
+                operator_notes=process_notes if process_notes else form.operator_notes.data,
                 reported_by_id=current_user.id
             )
             

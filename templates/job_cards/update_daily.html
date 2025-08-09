@@ -100,7 +100,7 @@
                                 <div class="mb-3">
                                     <label class="form-label">Select Processes Worked On Today:</label>
                                     {% for process in bom_processes %}
-                                    <div class="form-check">
+                                    <div class="form-check mb-2">
                                         <input class="form-check-input" type="checkbox" name="selected_processes" 
                                                value="{{ process.id }}" id="process_{{ process.id }}">
                                         <label class="form-check-label" for="process_{{ process.id }}">
@@ -111,6 +111,7 @@
                                             {% if process.setup_time_minutes or process.run_time_minutes %}
                                             <br><small class="text-info">Est. Time: {{ (process.setup_time_minutes or 0) + (process.run_time_minutes or 0) }} min</small>
                                             {% endif %}
+                                            <br><small class="text-success"><i class="fas fa-info-circle me-1"></i>Can be done in-house or outsourced</small>
                                         </label>
                                     </div>
                                     {% endfor %}
