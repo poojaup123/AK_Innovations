@@ -143,17 +143,24 @@ def create_job_card(production_id=None):
             form.target_completion_date.data = getattr(production, 'target_completion_date', None) or (datetime.now().date() + timedelta(days=7))
             form.priority.data = getattr(production, 'priority', 'medium')
             
-            # Smart process suggestions
-            if smart_suggestions.get('process_suggestions'):
-                first_process = smart_suggestions['process_suggestions'][0]
-                form.process_name.data = first_process['process_name']
-                form.operation_description.data = first_process['operation_description']
-                form.setup_time_minutes.data = first_process.get('estimated_time', 30)
+            # Smart process suggestions from BOM processes
+            if smart_suggestions.get('process_suggestions') and len(smart_suggestions['process_suggestions']) > 0:
+                # Find the next process based on existing job cards for this production
+                existing_job_cards = JobCard.query.filter_by(production_id=production_id).count()
+                process_index = existing_job_cards  # Next process in sequence
+                
+                if process_index < len(smart_suggestions['process_suggestions']):
+                    current_process = smart_suggestions['process_suggestions'][process_index]
+                    form.process_name.data = current_process['process_name']
+                    form.operation_description.data = current_process['operation_description']
+                    form.process_sequence.data = current_process.get('step_number', process_index + 1)
+                    form.setup_time_minutes.data = current_process.get('setup_time', 30)
+                    form.run_time_minutes.data = current_process.get('run_time', 60)
                 
                 # Suggest worker based on skill requirements
-                if smart_suggestions.get('resource_assignments'):
-                    first_assignment = smart_suggestions['resource_assignments'][0]
-                    suggested_workers = first_assignment.get('suggested_workers', [])
+                if smart_suggestions.get('resource_assignments') and len(smart_suggestions['resource_assignments']) > process_index:
+                    assignment = smart_suggestions['resource_assignments'][process_index]
+                    suggested_workers = assignment.get('suggested_workers', [])
                     if suggested_workers:
                         form.assigned_worker_id.data = suggested_workers[0]['worker_id']
             

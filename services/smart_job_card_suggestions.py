@@ -72,7 +72,7 @@ class SmartJobCardSuggestions:
                     'quantity_required': item.quantity_required,
                     'unit_cost': getattr(item.item, 'unit_cost', None) or getattr(item.item, 'cost_per_unit', None) or 0,
                     'total_cost': (item.quantity_required * (getattr(item.item, 'unit_cost', None) or getattr(item.item, 'cost_per_unit', None) or 0)),
-                    'category': item.item.category or 'General'
+                    'category': getattr(item.item, 'category', None) or 'General'
                 }
                 for item in bom_items
             ],
@@ -139,13 +139,18 @@ class SmartJobCardSuggestions:
                 'step_number': process.step_number,
                 'process_name': process.process_name,
                 'operation_description': process.operation_description,
-                'estimated_time': (process.setup_time_minutes or 0) + (process.run_time_minutes or 0),
+                'setup_time': process.setup_time_minutes or 30,
+                'run_time': process.run_time_minutes or 60,
+                'estimated_time': (process.setup_time_minutes or 30) + (process.run_time_minutes or 60),
                 'skill_level': process.skill_level or 'Standard',
+                'skill_required': process.skill_level or 'Standard',
                 'suggested_job_type': 'outsourced' if outsource_suggestion['should_outsource'] else 'in_house',
                 'outsource_reason': outsource_suggestion['reason'],
                 'suggested_vendor': outsource_suggestion.get('vendor_id'),
-                'quality_requirements': process.quality_requirements or 'Standard inspection',
-                'special_instructions': process.special_instructions
+                'quality_requirements': getattr(process, 'quality_requirements', None) or 'Standard inspection',
+                'quality_standards': getattr(process, 'quality_requirements', None) or 'Standard inspection',
+                'special_instructions': getattr(process, 'special_instructions', None) or 'Follow standard procedures',
+                'machine_requirements': getattr(process, 'machine_requirements', None) or 'Standard equipment'
             })
         
         return suggestions
