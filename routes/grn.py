@@ -386,7 +386,17 @@ def dashboard():
             GRN.received_date == date.today(),
             GRN.status == 'completed'
         ).count(),
-        'pending_grns': GRN.query.filter(GRN.status.in_(['draft', 'received'])).count()
+        'pending_grns': GRN.query.filter(GRN.status.in_(['draft', 'received'])).count(),
+        # By Document Type counts
+        'purchase_orders_with_grns': GRN.query.filter(GRN.purchase_order_id.isnot(None)).count(),
+        'job_works_with_grns': GRN.query.filter(GRN.job_work_id.isnot(None)).count(),
+        # Total count including pending ones
+        'total_job_works': JobWork.query.count(),
+        'total_purchase_orders': PurchaseOrder.query.count(),
+        # Status-based counts
+        'completed_grns': GRN.query.filter(GRN.status == 'completed').count(),
+        'partial_grns': GRN.query.filter(GRN.status == 'partial').count(),
+        'pending_grns_status': GRN.query.filter(GRN.status.in_(['draft', 'received', 'pending'])).count()
     }
     
     # Parent-Child Structure: Get Parent orders with their associated GRNs
