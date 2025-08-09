@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Receive Vendor Invoice</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('unified_jobwork_grn.unified_dashboard') }}">Unified Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('unified_jobwork_grn.view_grn', grn_id=grn.id) }}">{{ grn.grn_number }}</a></li>
+                        <li class="breadcrumb-item active">Receive Invoice</li>
+                    </ol>
+                </nav>
+            </div>
+
+            <!-- GRN Details Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-receipt me-2"></i>
+                        GRN Details - {{ grn.grn_number }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="30%">Job Work:</th>
+                                    <td>{{ job_work.job_number }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Customer:</th>
+                                    <td>{{ job_work.customer_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Process:</th>
+                                    <td><span class="badge bg-info">{{ job_work.process }}</span></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="30%">Received Date:</th>
+                                    <td>{{ grn.received_date.strftime('%m/%d/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Total Received:</th>
+                                    <td><strong>{{ grn.total_quantity_received }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Expected Amount:</th>
+                                    <td><strong>₹{{ "%.2f"|format(grn.total_amount) }}</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Invoice Entry Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-invoice me-2"></i>
+                        Vendor Invoice Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="invoice_number" class="form-label">Invoice Number</label>
+                                    <input type="text" class="form-control" id="invoice_number" 
+                                           name="invoice_number" required placeholder="Enter vendor invoice number">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="invoice_date" class="form-label">Invoice Date</label>
+                                    <input type="date" class="form-control" id="invoice_date" 
+                                           name="invoice_date" required value="{{ date.today() }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="base_amount" class="form-label">Base Amount (Before Tax)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="number" class="form-control" id="base_amount" 
+                                               name="base_amount" step="0.01" min="0" required 
+                                               value="{{ grn.total_amount }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="gst_amount" class="form-label">GST Amount</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="number" class="form-control" id="gst_amount" 
+                                               name="gst_amount" step="0.01" min="0" value="0">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="total_amount" class="form-label">Total Amount</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="number" class="form-control" id="total_amount" 
+                                               name="total_amount" step="0.01" min="0" required readonly>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="remarks" class="form-label">Remarks</label>
+                                    <textarea class="form-control" id="remarks" name="remarks" rows="3" 
+                                              placeholder="Additional notes about this invoice"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Next Steps:</strong> After receiving this invoice, you'll be able to make payment to the vendor to complete the outsourced job work workflow.
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('unified_jobwork_grn.view_grn', grn_id=grn.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to GRN
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Receive Invoice
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const baseAmountInput = document.getElementById('base_amount');
+    const gstAmountInput = document.getElementById('gst_amount');
+    const totalAmountInput = document.getElementById('total_amount');
+    
+    function updateTotalAmount() {
+        const baseAmount = parseFloat(baseAmountInput.value) || 0;
+        const gstAmount = parseFloat(gstAmountInput.value) || 0;
+        totalAmountInput.value = (baseAmount + gstAmount).toFixed(2);
+    }
+    
+    // Auto-calculate GST (18% default)
+    baseAmountInput.addEventListener('input', function() {
+        const baseAmount = parseFloat(this.value) || 0;
+        gstAmountInput.value = (baseAmount * 0.18).toFixed(2);
+        updateTotalAmount();
+    });
+    
+    gstAmountInput.addEventListener('input', updateTotalAmount);
+    
+    // Initial calculation
+    updateTotalAmount();
+});
+</script>
+{% endblock %}

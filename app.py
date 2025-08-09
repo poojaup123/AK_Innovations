@@ -139,6 +139,13 @@ def create_app():
     if grn_bp:
         app.register_blueprint(grn_bp, url_prefix='/grn')
     
+    # Register Unified Job Work + GRN blueprint
+    try:
+        from routes.unified_jobwork_grn import unified_jobwork_grn_bp
+        app.register_blueprint(unified_jobwork_grn_bp, url_prefix='/unified-grn')
+    except ImportError as e:
+        print(f"Unified Job Work + GRN blueprint import error: {e}")
+    
     # Register Component Scanning blueprint
     try:
         from routes.component_scanning import component_scanning_bp

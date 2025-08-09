@@ -110,10 +110,7 @@ def list_productions():
     productions = query.order_by(Production.created_at.desc()).paginate(
         page=page, per_page=20, error_out=False)
     
-    return render_template('production/list.html', 
-                         productions=productions, 
-                         status_filter=status_filter,
-                         today=date.today())
+    return render_template('production/list.html', productions=productions, status_filter=status_filter)
 
 # Enhanced Batch Tracking API Endpoints for Production
 
@@ -583,86 +580,6 @@ def edit_production(id):
                          production=production,
                          bom_items=bom_items)
 
-@production_bp.route('/daily-update/<int:id>', methods=['GET', 'POST'])
-@login_required
-def daily_update(id):
-    """Update daily production status"""
-    production = Production.query.get_or_404(id)
-    item = Item.query.get(production.item_id)
-    
-    if request.method == 'POST':
-        try:
-            # Get form data
-            today_produced = float(request.form.get('today_produced', 0))
-            today_good = float(request.form.get('today_good', 0))
-            today_defective = float(request.form.get('today_defective', 0))
-            today_scrap = float(request.form.get('today_scrap', 0))
-            daily_status = request.form.get('daily_status', 'active')
-            workers_assigned = int(request.form.get('workers_assigned', 0))
-            machine_hours = float(request.form.get('machine_hours_today', 0))
-            labor_hours = float(request.form.get('labor_hours_today', 0))
-            overtime_hours = float(request.form.get('overtime_hours_today', 0))
-            
-            # Update daily status
-            production.update_daily_status(
-                today_produced=today_produced,
-                today_good=today_good,
-                today_defective=today_defective,
-                today_scrap=today_scrap,
-                daily_status=daily_status,
-                workers_assigned=workers_assigned,
-                machine_hours_today=machine_hours,
-                labor_hours_today=labor_hours,
-                overtime_hours_today=overtime_hours,
-                production_issues=request.form.get('production_issues', ''),
-                quality_issues_today=request.form.get('quality_issues_today', ''),
-                delay_reason=request.form.get('delay_reason', ''),
-                supervisor_notes=request.form.get('supervisor_notes', '')
-            )
-            
-            db.session.commit()
-            flash('Daily production status updated successfully!', 'success')
-            return redirect(url_for('production.view', production_id=id))
-            
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error updating daily status: {str(e)}', 'error')
-    
-    return render_template('production/daily_update.html',
-                         title=f'Daily Update - {production.production_number}',
-                         production=production,
-                         item=item)
-
-@production_bp.route('/api/quick-daily-update/<int:id>', methods=['POST'])
-@login_required
-def api_quick_daily_update(id):
-    """Quick API update for daily production status"""
-    try:
-        production = Production.query.get_or_404(id)
-        data = request.json
-        
-        # Update daily status
-        production.update_daily_status(
-            today_produced=data.get('today_produced', 0),
-            today_good=data.get('today_good', 0),
-            today_defective=data.get('today_defective', 0),
-            daily_status=data.get('daily_status', 'active'),
-            supervisor_notes=data.get('notes', '')
-        )
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Daily status updated successfully',
-            'efficiency_rate': production.daily_efficiency_rate,
-            'defect_rate': production.daily_defect_rate,
-            'completion_percentage': production.completion_percentage
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)}), 500
 
 @production_bp.route('/bom')
 @login_required

@@ -1,0 +1,215 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Receive Materials - Unified GRN</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('jobwork.list_job_works') }}">Job Works</a></li>
+                        <li class="breadcrumb-item active">Create GRN</li>
+                    </ol>
+                </nav>
+            </div>
+
+            <!-- Job Work Information Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-briefcase me-2"></i>
+                        Job Work Details - {{ job_work.job_number }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="30%">Customer:</th>
+                                    <td>{{ job_work.customer_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Item:</th>
+                                    <td>{{ item.name }} ({{ item.code }})</td>
+                                </tr>
+                                <tr>
+                                    <th>Process:</th>
+                                    <td>
+                                        <span class="badge bg-info">{{ job_work.process }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Work Type:</th>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if job_work.work_type == 'in_house' else 'warning' }}">
+                                            {{ job_work.work_type.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="30%">Sent Date:</th>
+                                    <td>{{ job_work.sent_date.strftime('%m/%d/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Quantity Sent:</th>
+                                    <td><strong>{{ job_work.quantity_sent }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Already Received:</th>
+                                    <td>{{ job_work.quantity_received or 0 }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Remaining:</th>
+                                    <td><strong class="text-primary">{{ remaining_quantity }}</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if job_work.work_type == 'in_house' %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>In-House Work:</strong> Receiving these materials will automatically update production records and move inventory from WIP to finished goods.
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Outsourced Work:</strong> Receiving these materials will create vendor payables and require invoice processing for payment.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- GRN Creation Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clipboard-check me-2"></i>
+                        Material Receipt Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="quantity_received" class="form-label">Quantity Received</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="quantity_received" 
+                                               name="quantity_received" step="0.01" min="0.01" 
+                                               max="{{ remaining_quantity }}" required>
+                                        <span class="input-group-text">pcs</span>
+                                    </div>
+                                    <div class="form-text">Maximum: {{ remaining_quantity }}</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="quantity_passed" class="form-label">Quantity Passed (Good)</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="quantity_passed" 
+                                               name="quantity_passed" step="0.01" min="0" required>
+                                        <span class="input-group-text">pcs</span>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="quantity_rejected" class="form-label">Quantity Rejected (Defective)</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="quantity_rejected" 
+                                               name="quantity_rejected" step="0.01" min="0" value="0">
+                                        <span class="input-group-text">pcs</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="quality_status" class="form-label">Overall Quality Status</label>
+                                    <select class="form-select" id="quality_status" name="quality_status" required>
+                                        <option value="passed">Passed</option>
+                                        <option value="partial">Partial (Mixed Quality)</option>
+                                        <option value="rejected">Rejected</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="remarks" class="form-label">Remarks</label>
+                                    <textarea class="form-control" id="remarks" name="remarks" rows="4" 
+                                              placeholder="Quality observations, process notes, etc."></textarea>
+                                </div>
+
+                                <!-- Rate Information (Read-only) -->
+                                <div class="mb-3">
+                                    <label class="form-label">Rate Information</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="text" class="form-control" value="{{ job_work.rate_per_unit }}" readonly>
+                                        <span class="input-group-text">per unit</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Create GRN & Receive Materials
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const receivedInput = document.getElementById('quantity_received');
+    const passedInput = document.getElementById('quantity_passed');
+    const rejectedInput = document.getElementById('quantity_rejected');
+    
+    // Auto-update passed quantity when received changes
+    receivedInput.addEventListener('input', function() {
+        const received = parseFloat(this.value) || 0;
+        const rejected = parseFloat(rejectedInput.value) || 0;
+        passedInput.value = Math.max(0, received - rejected);
+    });
+    
+    // Auto-update passed quantity when rejected changes
+    rejectedInput.addEventListener('input', function() {
+        const received = parseFloat(receivedInput.value) || 0;
+        const rejected = parseFloat(this.value) || 0;
+        passedInput.value = Math.max(0, received - rejected);
+    });
+    
+    // Validate that passed + rejected = received
+    function validateQuantities() {
+        const received = parseFloat(receivedInput.value) || 0;
+        const passed = parseFloat(passedInput.value) || 0;
+        const rejected = parseFloat(rejectedInput.value) || 0;
+        
+        if (Math.abs((passed + rejected) - received) > 0.01) {
+            receivedInput.setCustomValidity('Passed + Rejected must equal Received quantity');
+        } else {
+            receivedInput.setCustomValidity('');
+        }
+    }
+    
+    [receivedInput, passedInput, rejectedInput].forEach(input => {
+        input.addEventListener('change', validateQuantities);
+    });
+});
+</script>
+{% endblock %}

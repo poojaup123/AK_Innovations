@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Job Work Status - {{ status.job_work.job_number }}</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('unified_jobwork_grn.unified_dashboard') }}">Unified Dashboard</a></li>
+                        <li class="breadcrumb-item active">Job Work Status</li>
+                    </ol>
+                </nav>
+            </div>
+
+            <!-- Job Work Overview -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-briefcase me-2"></i>
+                        Job Work Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="20%">Job Number:</th>
+                                    <td><strong>{{ status.job_work.job_number }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Customer:</th>
+                                    <td>{{ status.job_work.customer_name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Item:</th>
+                                    <td>{{ status.job_work.item.name }} ({{ status.job_work.item.code }})</td>
+                                </tr>
+                                <tr>
+                                    <th>Process:</th>
+                                    <td><span class="badge bg-info">{{ status.job_work.process }}</span></td>
+                                </tr>
+                                <tr>
+                                    <th>Work Type:</th>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if status.work_type == 'in_house' else 'warning' }}">
+                                            {{ status.work_type.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-4">
+                            <!-- Progress Chart -->
+                            <div class="text-center">
+                                <div class="progress-circle mx-auto mb-3" style="width: 120px; height: 120px; position: relative;">
+                                    <svg viewBox="0 0 36 36" style="width: 100%; height: 100%;">
+                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                              fill="none" stroke="#eee" stroke-width="2"/>
+                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                              fill="none" stroke="#007bff" stroke-width="2"
+                                              stroke-dasharray="{{ status.completion_percentage }}, 100"/>
+                                    </svg>
+                                    <div class="position-absolute top-50 start-50 translate-middle text-center">
+                                        <h4 class="mb-0">{{ "%.0f"|format(status.completion_percentage) }}%</h4>
+                                        <small class="text-muted">Complete</small>
+                                    </div>
+                                </div>
+                                <p><strong>{{ status.total_received }}/{{ status.total_sent }}</strong> Received</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GRN History -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-receipt me-2"></i>
+                        GRN History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if status.grns %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>GRN Number</th>
+                                    <th>Received Date</th>
+                                    <th>Quantity</th>
+                                    <th>Status</th>
+                                    <th>Workflow Progress</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for grn_info in status.grns %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('unified_jobwork_grn.view_grn', grn_id=grn_info.grn.id) }}">
+                                            {{ grn_info.grn.grn_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ grn_info.grn.received_date.strftime('%m/%d/%Y') }}</td>
+                                    <td>{{ grn_info.grn.total_quantity_received }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if grn_info.grn.status == 'completed' else 'warning' if grn_info.grn.status == 'received' else 'primary' }}">
+                                            {{ grn_info.grn.status.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if grn_info.workflow_status %}
+                                        <div class="progress" style="height: 20px;">
+                                            {% set progress = 0 %}
+                                            {% if grn_info.workflow_status.material_received %}{% set progress = progress + 20 %}{% endif %}
+                                            {% if grn_info.workflow_status.grn_voucher_created %}{% set progress = progress + 20 %}{% endif %}
+                                            {% if grn_info.workflow_status.invoice_received %}{% set progress = progress + 30 %}{% endif %}
+                                            {% if grn_info.workflow_status.payment_made %}{% set progress = progress + 30 %}{% endif %}
+                                            <div class="progress-bar" role="progressbar" style="width: {{ progress }}%">
+                                                {{ progress }}%
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('unified_jobwork_grn.view_grn', grn_id=grn_info.grn.id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">No GRNs created yet for this job work.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Next Actions -->
+            {% if status.next_actions %}
+            <div class="card mb-4">
+                <div class="card-header bg-warning">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Next Actions Required
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% for action in status.next_actions %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ action }}
+                            <span class="badge bg-warning rounded-pill">Action Required</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Navigation -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('unified_jobwork_grn.unified_dashboard') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                        
+                        <div class="btn-group">
+                            {% if status.total_received < status.total_sent %}
+                            <a href="{{ url_for('unified_jobwork_grn.create_grn_form', job_work_id=status.job_work.id) }}" 
+                               class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Receive More Materials
+                            </a>
+                            {% endif %}
+                            
+                            <a href="{{ url_for('jobwork.detail', id=status.job_work.id) }}" class="btn btn-info">
+                                <i class="fas fa-info-circle me-2"></i>Job Work Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
