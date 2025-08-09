@@ -585,7 +585,14 @@ def add_job_work():
     
     # GET request - show form
     title = "Create New Job Work"
-    return render_template('jobwork/form.html', form=form, title=title)
+    return render_template('jobwork/form.html', 
+                         form=form, 
+                         title=title,
+                         from_suggestion=from_suggestion,
+                         production_id=production_id,
+                         suggested_bom_id=suggested_bom_id,
+                         suggested_target_item_id=suggested_target_item_id,
+                         suggested_quantity=suggested_quantity)
 
 @jobwork_bp.route('/api/generate-job-number')
 @login_required

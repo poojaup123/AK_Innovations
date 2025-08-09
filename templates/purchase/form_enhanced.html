@@ -866,6 +866,46 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.borderColor = '';
         });
     }
+    
+    // Auto-populate items from Smart BOM suggestions
+    {% if from_suggestion and pre_filled_items %}
+    console.log('Auto-populating items from Smart BOM suggestion...');
+    const preFilledItems = {{ pre_filled_items | tojson }};
+    
+    preFilledItems.forEach(function(item, index) {
+        console.log('Adding pre-filled item:', item);
+        addPOItem(); // Add a new row
+        
+        // Get the last added row
+        const tbody = document.getElementById('poItemsBody');
+        const lastRow = tbody.rows[tbody.rows.length - 1];
+        
+        // Populate the fields
+        const itemSelect = lastRow.querySelector('select[name*="item_id"]');
+        const codeInput = lastRow.querySelector('input[name*="rm_code"]');
+        const descriptionInput = lastRow.querySelector('textarea[name*="description"]');
+        const quantityInput = lastRow.querySelector('input[name*="qty"]');
+        const rateInput = lastRow.querySelector('input[name*="rate"]');
+        const uomInput = lastRow.querySelector('input[name*="uom"]');
+        
+        if (itemSelect) {
+            itemSelect.value = item.item_id;
+            // Trigger the change event to populate other fields
+            populateItemDetails(itemSelect);
+        }
+        
+        if (codeInput) codeInput.value = item.item_code;
+        if (descriptionInput) descriptionInput.value = item.item_name;
+        if (quantityInput) quantityInput.value = item.quantity;
+        if (rateInput) rateInput.value = item.rate;
+        if (uomInput) uomInput.value = item.unit;
+        
+        // Calculate amounts
+        if (quantityInput) calculateAmount(quantityInput);
+    });
+    
+    console.log('Pre-filled', preFilledItems.length, 'items from suggestion');
+    {% endif %}
 });
 </script>
 {% endblock %}

@@ -246,6 +246,8 @@ def add_purchase_order():
     ).all()
     
     items = []
+    pre_filled_items = []
+    
     for item, bom_rate, uom_conversion in items_data:
         # Set BOM rate as base rate
         base_rate = bom_rate if bom_rate is not None else item.unit_price
@@ -275,7 +277,51 @@ def add_purchase_order():
         item.bom_rate = item.purchase_rate
         items.append(item)
     
-    return render_template('purchase/form_enhanced.html', form=form, title='Add Purchase Order', items=items)
+    # Pre-fill items from suggestion parameters
+    if from_suggestion:
+        if suggested_item_id:
+            # Single item from suggestion
+            try:
+                item_id = int(suggested_item_id)
+                suggested_item = Item.query.get(item_id)
+                if suggested_item:
+                    quantity = float(suggested_quantity) if suggested_quantity else 1.0
+                    pre_filled_items.append({
+                        'item_id': item_id,
+                        'item_code': suggested_item.code,
+                        'item_name': suggested_item.name,
+                        'quantity': quantity,
+                        'unit': suggested_item.unit_of_measure,
+                        'rate': suggested_item.unit_price or 0.0
+                    })
+            except (ValueError, TypeError):
+                pass
+                
+        elif suggested_materials:
+            # Multiple materials from suggestion
+            try:
+                material_ids = [int(mid) for mid in suggested_materials.split(',')]
+                for material_id in material_ids:
+                    material = Item.query.get(material_id)
+                    if material:
+                        pre_filled_items.append({
+                            'item_id': material_id,
+                            'item_code': material.code,
+                            'item_name': material.name,
+                            'quantity': 1.0,  # Default quantity
+                            'unit': material.unit_of_measure,
+                            'rate': material.unit_price or 0.0
+                        })
+            except (ValueError, TypeError):
+                pass
+    
+    return render_template('purchase/form_enhanced.html', 
+                         form=form, 
+                         title='Add Purchase Order', 
+                         items=items,
+                         pre_filled_items=pre_filled_items,
+                         from_suggestion=from_suggestion,
+                         production_id=production_id)
 
 @purchase_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
