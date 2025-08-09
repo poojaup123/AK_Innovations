@@ -115,12 +115,30 @@ def batch_traceability(batch_id):
 @inventory_bp.route('/multi-state')
 @login_required
 def multi_state_view():
-    """Unified multi-state inventory view per user requirements"""
+    """Multi-state inventory view showing all inventory stages"""
     try:
-        from services.unified_inventory import UnifiedInventoryService
+        # Get all items and calculate multi-state totals
+        items = Item.query.all()
+        inventory_data = []
         
-        # Get multi-state inventory data
-        inventory_data = UnifiedInventoryService.get_multi_state_inventory()
+        for item in items:
+            # Calculate totals from batches
+            batches = ItemBatch.query.filter_by(item_id=item.id).all()
+            raw_qty = sum(b.quantity for b in batches if b.status == 'raw_material')
+            wip_qty = sum(b.quantity for b in batches if b.status == 'wip')
+            finished_qty = sum(b.quantity for b in batches if b.status == 'finished_goods')
+            scrap_qty = sum(b.quantity for b in batches if b.status == 'scrap')
+            
+            inventory_data.append({
+                'item_code': item.item_code,
+                'item_name': item.name,
+                'raw': raw_qty,
+                'wip': wip_qty,
+                'finished': finished_qty,
+                'scrap': scrap_qty,
+                'available': finished_qty,
+                'unit_of_measure': item.unit_of_measure
+            })
         
         # Calculate summary totals
         summary = {
@@ -132,15 +150,11 @@ def multi_state_view():
             'total_available': sum(item['available'] for item in inventory_data)
         }
         
-        print(f"Multi-state view: rendering template with {len(inventory_data)} items")  # Debug
-        return render_template('inventory/multi_state_unified.html', 
+        return render_template('inventory/multi_state_view.html', 
                              inventory_data=inventory_data,
                              summary=summary)
         
     except Exception as e:
-        print(f"Multi-state view error: {e}")  # Debug logging
-        import traceback
-        print(f"Traceback: {traceback.format_exc()}")  # Full error details
         flash(f'Error loading multi-state view: {str(e)}', 'error')
         return redirect(url_for('inventory.dashboard'))
 
@@ -783,24 +797,8 @@ def api_item_batch_details(item_code):
         }), 500
 
 
-@inventory_bp.route('/export_unified_inventory')
-@login_required
-def export_unified_inventory():
-    """Export unified multi-state inventory to Excel"""
-    try:
-        from services.unified_inventory import UnifiedInventoryService
-        
-        # Get all inventory items with multi-state data
-        items = UnifiedInventoryService.get_all_items_with_states()
-        
-        # Create a modified export for unified inventory
-        return export_unified_inventory_items(items)
-        
-    except Exception as e:
-        flash(f'Error exporting inventory: {str(e)}', 'danger')
-        return redirect(url_for('inventory.multi_state_view'))
-
-def export_unified_inventory_items(items):
+# Multi-state inventory export functionality
+def export_multi_state_inventory_items(items):
     """Export unified multi-state inventory items to Excel"""
     from flask import make_response
     import io

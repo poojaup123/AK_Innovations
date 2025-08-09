@@ -847,9 +847,9 @@ def detail(id):
     if job.is_team_work:
         team_assignments = JobWorkTeamAssignment.query.filter_by(job_work_id=id).all()
     
-    # Load processes for multi-process and unified job works
+    # Load processes for multi-process job works
     processes = []
-    if job.work_type in ['multi_process', 'unified']:
+    if job.work_type == 'multi_process':
         try:
             from models import JobWorkProcess
             processes = JobWorkProcess.query.filter_by(job_work_id=id).order_by(JobWorkProcess.sequence_number).all()

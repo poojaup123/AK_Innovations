@@ -403,23 +403,23 @@ def dashboard():
     if date_from:
         try:
             from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
-            recent_grns_query = recent_grns_query.filter(GRN.grn_date >= from_date)
+            recent_grns_query = recent_grns_query.filter(func.date(GRN.created_at) >= from_date)
         except:
             pass
     
     if date_to:
         try:
             to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
-            recent_grns_query = recent_grns_query.filter(GRN.grn_date <= to_date)
+            recent_grns_query = recent_grns_query.filter(func.date(GRN.created_at) <= to_date)
         except:
             pass
     
-    recent_grns = recent_grns_query.order_by(GRN.grn_date.desc()).limit(20).all()
+    recent_grns = recent_grns_query.order_by(GRN.created_at.desc()).limit(20).all()
     
     # Calculate monthly GRNs count
     monthly_grns = GRN.query.filter(
-        func.extract('month', GRN.grn_date) == date.today().month,
-        func.extract('year', GRN.grn_date) == date.today().year
+        func.extract('month', GRN.created_at) == date.today().month,
+        func.extract('year', GRN.created_at) == date.today().year
     ).count()
     
     return render_template('grn/dashboard.html',
@@ -542,7 +542,7 @@ def quick_receive(job_work_id):
     job_work = JobWork.query.get_or_404(job_work_id)
     
     # Redirect multi-process jobs to specialized form
-    if job_work.work_type in ['multi_process', 'unified']:
+    if job_work.work_type == 'multi_process':
         return redirect(url_for('grn.quick_receive_multi_process', job_work_id=job_work_id))
     
     form = QuickReceiveForm()
@@ -698,8 +698,8 @@ def quick_receive_multi_process(job_work_id):
     """Specialized quick receive form for multi-process job works"""
     job_work = JobWork.query.get_or_404(job_work_id)
     
-    # Ensure this is a multi-process or unified job work
-    if job_work.work_type not in ['multi_process', 'unified']:
+    # Ensure this is a multi-process job work
+    if job_work.work_type != 'multi_process':
         flash('This function is only for multi-process job works.', 'error')
         return redirect(url_for('grn.quick_receive', job_work_id=job_work_id))
     

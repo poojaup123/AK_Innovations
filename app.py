@@ -104,8 +104,7 @@ def create_app():
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
     
     # Register unified inventory routes
-    from routes.inventory_unified import inventory_unified_bp
-    app.register_blueprint(inventory_unified_bp, url_prefix='/inventory-unified')
+    # Unified inventory system removed - using standard inventory with multi-state view
     app.register_blueprint(purchase_bp, url_prefix='/purchase')
     app.register_blueprint(sales_bp, url_prefix='/sales')
     app.register_blueprint(jobwork_bp, url_prefix='/jobwork')
@@ -141,12 +140,7 @@ def create_app():
     if grn_bp:
         app.register_blueprint(grn_bp, url_prefix='/grn')
     
-    # Register Unified Job Work + GRN blueprint
-    try:
-        from routes.unified_jobwork_grn import unified_jobwork_grn_bp
-        app.register_blueprint(unified_jobwork_grn_bp, url_prefix='/unified-grn')
-    except ImportError as e:
-        print(f"Unified Job Work + GRN blueprint import error: {e}")
+
     
     # Register Component Scanning blueprint
     try:
