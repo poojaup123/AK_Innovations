@@ -399,8 +399,10 @@ def outsourcing_workflow(job_card_id, report_id=None):
             # Create new job card for outsourced work instead of updating existing one
             outsourced_job_card = JobCard(
                 job_card_number=f"OUTSOURCE-{job_card.job_card_number}-{len(JobCard.query.filter(JobCard.parent_job_card_id == job_card_id).all()) + 1}",
+                production_id=job_card.production_id,
                 item_id=job_card.item_id,
                 bom_item_id=job_card.bom_item_id,
+                planned_quantity=outsource_quantity,
                 quantity_planned=outsource_quantity,
                 outsource_quantity=outsource_quantity,
                 assigned_vendor_id=vendor_id,
@@ -408,7 +410,8 @@ def outsourcing_workflow(job_card_id, report_id=None):
                 status='outsourced',
                 parent_job_card_id=job_card_id,
                 created_from_report_id=selected_report.report_number if selected_report else None,
-                process_name=form.selected_processes.data
+                process_name=form.selected_processes.data,
+                target_completion_date=job_card.target_completion_date
             )
             db.session.add(outsourced_job_card)
             
