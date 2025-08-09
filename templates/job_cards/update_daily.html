@@ -4,27 +4,15 @@
 
 {% block extra_css %}
 <style>
-/* Force Bootstrap columns to stay side-by-side */
-.row {
-    display: flex !important;
-    flex-wrap: wrap !important;
-}
-
-.col-8 {
-    flex: 0 0 auto !important;
-    width: 66.66666667% !important;
-}
-
-.col-4 {
-    flex: 0 0 auto !important;
-    width: 33.33333333% !important;
-}
-
-/* Mobile responsiveness */
-@media (max-width: 992px) {
-    .col-8, .col-4 {
+/* Mobile responsiveness - stack vertically on small screens */
+@media (max-width: 1200px) {
+    .main-container {
+        padding-right: 0 !important;
+    }
+    .summary-absolute {
+        position: static !important;
         width: 100% !important;
-        max-width: 100% !important;
+        margin-top: 20px;
     }
 }
 </style>
@@ -49,9 +37,10 @@
         </div>
     </div>
 
-    <!-- Split Layout: Form Left, Summary Right -->
-    <div class="row">
-        <div class="col-8">
+    <!-- Form takes up main space, Summary positioned absolutely on right -->
+    <div class="main-container" style="position: relative; padding-right: 420px;">
+        <!-- Form Section -->
+        <div>
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
@@ -268,8 +257,9 @@
             </div>
         </div>
         
-        <div class="col-4">
-            <div class="card shadow-sm" style="position: sticky; top: 20px;">
+        <!-- Job Card Summary - Absolutely positioned on right -->
+        <div class="summary-absolute" style="position: absolute; top: 0; right: 0; width: 400px;">
+            <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white">
                     <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Job Card Summary</h6>
                 </div>
