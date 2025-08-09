@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Job Cards - Factory Management System{% endblock %}
+
+{% block head %}
+<style>
+.job-card-item {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    transition: all 0.2s;
+}
+
+.job-card-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.progress-bar-container {
+    height: 8px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-tasks"></i> Job Cards Management</h1>
+            <p class="text-muted">Track and manage all production job cards</p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group">
+                <a href="{{ url_for('production.list_productions') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Back to Production
+                </a>
+                <a href="{{ url_for('production.add_production') }}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> New Production Order
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Cards List -->
+    {% if job_cards %}
+        <div class="row">
+            {% for job_card in job_cards %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card job-card-item h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">{{ job_card.job_card_number }}</h6>
+                        <span class="badge status-badge bg-{{ 'success' if job_card.status == 'completed' else 'warning' if job_card.status == 'in_progress' else 'primary' }}">
+                            {{ job_card.status.replace('_', ' ').title() }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title">{{ job_card.item.name if job_card.item else 'No Item' }}</h6>
+                        <p class="card-text text-muted small">{{ job_card.process_name or 'General Production' }}</p>
+                        
+                        <!-- Progress -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">Progress</small>
+                                <small class="fw-bold">{{ "%.1f"|format(job_card.progress_percentage or 0) }}%</small>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar bg-success" style="width: {{ job_card.progress_percentage or 0 }}%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Quantities -->
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="small text-muted">Planned</div>
+                                <div class="fw-bold">{{ job_card.planned_quantity or 0 }}</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="small text-muted">Completed</div>
+                                <div class="fw-bold text-success">{{ job_card.completed_quantity or 0 }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Dates -->
+                        {% if job_card.target_completion_date %}
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar"></i> Target: {{ job_card.target_completion_date.strftime('%m/%d/%Y') }}
+                            </small>
+                        </div>
+                        {% endif %}
+
+                        <!-- Assignment -->
+                        {% if job_card.assigned_worker or job_card.assigned_vendor %}
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-user"></i>
+                                {% if job_card.assigned_worker %}
+                                    {{ job_card.assigned_worker.name }}
+                                {% elif job_card.assigned_vendor %}
+                                    {{ job_card.assigned_vendor.name }} (Vendor)
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn-group w-100">
+                            <a href="{{ url_for('job_card_management.view_job_card', job_card_id=job_card.id) }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <a href="{{ url_for('job_card_management.daily_update', job_card_id=job_card.id) }}" class="btn btn-success btn-sm">
+                                <i class="fas fa-edit"></i> Update
+                            </a>
+                            {% if job_card.status != 'completed' %}
+                            <div class="btn-group">
+                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    {% if job_card.status == 'planned' %}
+                                    <li><a class="dropdown-item" href="{{ url_for('job_card_management.update_status', job_card_id=job_card.id, status='in_progress') }}">Start Job</a></li>
+                                    {% endif %}
+                                    <li><a class="dropdown-item" href="{{ url_for('job_card_management.update_status', job_card_id=job_card.id, status='completed') }}">Complete</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('job_card_management.update_status', job_card_id=job_card.id, status='on_hold') }}">Put on Hold</a></li>
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-tasks fa-4x text-muted mb-3"></i>
+                    <h4>No Job Cards Found</h4>
+                    <p class="text-muted">Job cards will be automatically created when you create production orders with BOMs.</p>
+                    <a href="{{ url_for('production.add_production') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Production Order
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

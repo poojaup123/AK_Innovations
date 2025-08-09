@@ -286,9 +286,7 @@ def list_job_cards():
             )
         )
     
-    job_cards = query.order_by(JobCard.created_at.desc()).paginate(
-        page=page, per_page=20, error_out=False
-    )
+    job_cards = query.order_by(JobCard.created_at.desc()).all()
     
     return render_template('job_cards/list.html', job_cards=job_cards)
 

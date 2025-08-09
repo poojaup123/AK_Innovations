@@ -38,7 +38,7 @@ def view_production_job_cards(production_id):
                          title=f'Job Cards - {production.production_number}')
 
 @job_card_management_bp.route('/view/<int:job_card_id>')
-@login_required
+@login_required  
 def view_job_card(job_card_id):
     """View detailed job card information"""
     job_card = JobCard.query.get_or_404(job_card_id)
@@ -295,6 +295,27 @@ def api_dashboard_stats():
         
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
+
+@job_card_management_bp.route('/update-status/<int:job_card_id>')
+@login_required
+def update_status(job_card_id):
+    """Update job card status"""
+    job_card = JobCard.query.get_or_404(job_card_id)
+    new_status = request.args.get('status')
+    
+    if new_status in ['planned', 'in_progress', 'completed', 'on_hold']:
+        job_card.status = new_status
+        
+        if new_status == 'in_progress' and not job_card.actual_start_date:
+            job_card.actual_start_date = date.today()
+        elif new_status == 'completed':
+            job_card.actual_end_date = date.today()
+            job_card.progress_percentage = 100
+        
+        db.session.commit()
+        flash(f'Job card status updated to {new_status.replace("_", " ").title()}', 'success')
+    
+    return redirect(url_for('job_card_management.list_job_cards'))
 
 @job_card_management_bp.route('/mark-process-complete/<int:job_card_id>', methods=['POST'])
 @login_required
