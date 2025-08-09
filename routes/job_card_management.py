@@ -83,7 +83,7 @@ def generate_job_cards(production_id):
     except Exception as e:
         flash(f'Error generating job cards: {str(e)}', 'danger')
     
-    return redirect(url_for('job_cards.view_production_job_cards', production_id=production_id))
+    return redirect(url_for('job_card_management.view_production_job_cards', production_id=production_id))
 
 @job_card_management_bp.route('/update/<int:job_card_id>', methods=['GET', 'POST'])
 @login_required
