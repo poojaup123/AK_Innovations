@@ -122,32 +122,40 @@ def multi_state_view():
         inventory_data = []
         
         for item in items:
-            # Calculate totals from batches
+            # Calculate totals from batches using correct attributes
             batches = ItemBatch.query.filter_by(item_id=item.id).all()
-            raw_qty = sum(b.quantity for b in batches if b.status == 'raw_material')
-            wip_qty = sum(b.quantity for b in batches if b.status == 'wip')
-            finished_qty = sum(b.quantity for b in batches if b.status == 'finished_goods')
-            scrap_qty = sum(b.quantity for b in batches if b.status == 'scrap')
+            raw_qty = sum(b.qty_raw or 0 for b in batches)
+            wip_qty = sum(b.total_wip_quantity for b in batches)
+            finished_qty = sum(b.qty_finished or 0 for b in batches)
+            scrap_qty = sum(b.qty_scrap or 0 for b in batches)
             
-            # Set calculated values on the item object for template compatibility
-            item.qty_raw = raw_qty
-            item.total_wip = wip_qty
-            item.qty_finished = finished_qty
-            item.qty_scrap = scrap_qty
-            item.total_stock = raw_qty + wip_qty + finished_qty + scrap_qty
-            item.available_stock = finished_qty
-            item.minimum_stock = getattr(item, 'minimum_stock', 0)
+            # Create a dictionary object that mimics the item with calculated values
+            item_data = {
+                'id': item.id,
+                'code': item.code,
+                'name': item.name,
+                'qty_raw': raw_qty,
+                'total_wip': wip_qty,
+                'qty_finished': finished_qty,
+                'qty_scrap': scrap_qty,
+                'total_stock': raw_qty + wip_qty + finished_qty + scrap_qty,
+                'available_stock': finished_qty,
+                'minimum_stock': getattr(item, 'minimum_stock', 0) or 0,
+                'unit_of_measure': item.unit_of_measure,
+                'item_type': getattr(item, 'item_type', 'material'),
+                'current_stock': getattr(item, 'current_stock', 0)
+            }
             
-            inventory_data.append(item)
+            inventory_data.append(item_data)
         
         # Calculate summary totals
         summary = {
             'total_items': len(inventory_data),
-            'total_raw': sum(item.qty_raw for item in inventory_data),
-            'total_wip': sum(item.total_wip for item in inventory_data),
-            'total_finished': sum(item.qty_finished for item in inventory_data),
-            'total_scrap': sum(item.qty_scrap for item in inventory_data),
-            'total_available': sum(item.available_stock for item in inventory_data)
+            'total_raw': sum(item['qty_raw'] for item in inventory_data),
+            'total_wip': sum(item['total_wip'] for item in inventory_data),
+            'total_finished': sum(item['qty_finished'] for item in inventory_data),
+            'total_scrap': sum(item['qty_scrap'] for item in inventory_data),
+            'total_available': sum(item['available_stock'] for item in inventory_data)
         }
         
         return render_template('inventory/multi_state_view.html', 
