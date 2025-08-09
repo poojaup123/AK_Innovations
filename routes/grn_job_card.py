@@ -52,12 +52,12 @@ def quick_receive_job_card(job_card_id):
             line_item = GRNLineItem(
                 grn_id=grn.id,
                 item_id=job_card.item_id,
-                quantity_ordered=job_card.outsource_quantity,
                 quantity_received=job_card.outsource_quantity,  # Quick receive assumes full quantity
+                quantity_passed=job_card.outsource_quantity,   # All passed for quick receive
                 quantity_rejected=0,
-                unit_of_measure='PCS',
+                unit_of_measure=job_card.item.unit_of_measure if job_card.item else 'PCS',
                 inspection_status='passed',  # Quick receive auto-passes inspection
-                remarks=f"Quick received for outsourced work"
+                remarks=f"Quick received for outsourced work - Job Card: {job_card.job_card_number}"
             )
             db.session.add(line_item)
         
