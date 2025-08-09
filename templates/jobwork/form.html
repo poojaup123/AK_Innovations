@@ -615,30 +615,86 @@ function displayBOMMaterialRequirements(materials) {
 
 // Auto-populate processes from BOM with rates and output products
 function populateProcessesFromBOM(bomProcesses) {
+    console.log('Populating BOM processes:', bomProcesses);
+    
+    if (!bomProcesses || bomProcesses.length === 0) {
+        console.warn('No BOM processes to populate');
+        return;
+    }
+    
     // Clear existing processes
     document.getElementById('processTableBody').innerHTML = '';
     
     bomProcesses.forEach((process, index) => {
+        console.log(`Adding process row ${index + 1}:`, process);
         addProcessRow();
         
         const processRows = document.querySelectorAll('#processTableBody tr');
         const currentRow = processRows[processRows.length - 1];
         
         if (currentRow) {
-            // Populate process fields
-            const processNameInput = currentRow.querySelector('input[name$="_name"]');
-            const outputProductSelect = currentRow.querySelector('select[name$="_output_product"]');
-            const quantityInput = currentRow.querySelector('input[name$="_quantity"]');
-            const rateInput = currentRow.querySelector('input[name$="_rate"]');
-            const scrapInput = currentRow.querySelector('input[name$="_scrap"]');
+            // Populate process fields based on the actual table structure
+            const processNameSelect = currentRow.querySelectorAll('select')[0]; // First select is process name
+            const outputProductSelect = currentRow.querySelectorAll('select')[1]; // Second select is output product
+            const quantityInput = currentRow.querySelector('input[type="number"]'); // First number input is quantity
+            const rateInput = currentRow.querySelector('input.rate-input'); // Input with rate-input class
+            const scrapInput = currentRow.querySelector('input[placeholder="%"]'); // Input with % placeholder
+            const qcCheckbox = currentRow.querySelector('input.process-checkbox'); // QC checkbox
             
-            if (processNameInput) processNameInput.value = process.name || '';
-            if (outputProductSelect) outputProductSelect.value = process.output_product_id || '';
-            if (quantityInput) quantityInput.value = process.output_quantity || 1;
-            if (rateInput) rateInput.value = process.rate_per_unit || 0;
-            if (scrapInput) scrapInput.value = process.scrap_percent || 0;
+            // Populate fields with BOM process data
+            if (processNameSelect) {
+                const processName = process.process_name || process.name || '';
+                // Set the process name in the select dropdown
+                processNameSelect.value = processName;
+                console.log('Process name populated:', processName);
+            }
             
-            console.log(`Populated process ${index + 1}: ${process.name}`);
+            if (quantityInput) {
+                quantityInput.value = process.output_quantity || 1;
+            }
+            
+            if (rateInput) {
+                const laborRate = process.labor_rate_per_hour || 0;
+                const overheadRate = process.overhead_rate_per_hour || 0;
+                const totalRate = laborRate + overheadRate;
+                rateInput.value = totalRate.toFixed(2);
+                console.log('Rate populated:', totalRate);
+            }
+            
+            if (scrapInput) {
+                scrapInput.value = process.scrap_percent || 0;
+            }
+            
+            if (qcCheckbox) {
+                qcCheckbox.checked = process.requires_quality_check || false;
+                console.log('QC checkbox set:', process.requires_quality_check);
+            }
+            
+            // Load output products and set value
+            if (outputProductSelect) {
+                // Use the existing loadItemsForProcessRow function or create a simple version
+                fetch('/jobwork/api/items')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.items) {
+                            outputProductSelect.innerHTML = '<option value="">Select Output Product...</option>';
+                            data.items.forEach(item => {
+                                const option = document.createElement('option');
+                                option.value = item.id;
+                                option.textContent = `${item.code} - ${item.name}`;
+                                outputProductSelect.appendChild(option);
+                            });
+                            
+                            // Set the value after options are loaded
+                            if (process.output_product_id) {
+                                outputProductSelect.value = process.output_product_id;
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Error loading items:', error));
+            }
+            
+            console.log(`Populated process ${index + 1}: ${process.process_name || process.name}`);
         }
     });
     
