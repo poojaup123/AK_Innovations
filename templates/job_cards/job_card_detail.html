@@ -290,12 +290,13 @@
                                     <tr class="parent-row" data-report-id="{{ status.report_number }}">
                                         <td>
                                             {% if status.outsourced_jobs and status.outsourced_jobs|length > 0 %}
-                                            <button class="btn btn-sm btn-outline-secondary toggle-children" 
-                                                    data-report-id="{{ status.report_number }}">
-                                                <i class="fas fa-plus"></i>
+                                            <button class="btn btn-sm btn-outline-primary toggle-children" 
+                                                    data-report-id="{{ status.report_number }}"
+                                                    title="Show/Hide {{ status.outsourced_jobs|length }} outsourced job(s)">
+                                                <i class="fas fa-plus me-1"></i>{{ status.outsourced_jobs|length }}
                                             </button>
                                             {% else %}
-                                            <span class="text-muted">{{ status.outsourced_jobs|length if status.outsourced_jobs else 0 }}</span>
+                                            <span class="text-muted">0</span>
                                             {% endif %}
                                         </td>
                                         <td>
@@ -618,24 +619,34 @@ var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
     return new bootstrap.Tooltip(tooltipTriggerEl)
 })
 
-// Parent-Child Table Toggle
+// Parent-Child Table Toggle - Enhanced with debugging
 document.querySelectorAll('.toggle-children').forEach(button => {
     button.addEventListener('click', function() {
         const reportId = this.getAttribute('data-report-id');
         const childRows = document.querySelectorAll(`tr.child-row[data-parent="${reportId}"]`);
         const icon = this.querySelector('i');
         
+        console.log(`Toggle clicked for report: ${reportId}, found ${childRows.length} child rows`);
+        
+        let isExpanded = false;
         childRows.forEach(row => {
             if (row.classList.contains('d-none')) {
                 row.classList.remove('d-none');
-                icon.classList.remove('fa-plus');
-                icon.classList.add('fa-minus');
+                isExpanded = true;
             } else {
                 row.classList.add('d-none');
-                icon.classList.remove('fa-minus');
-                icon.classList.add('fa-plus');
+                isExpanded = false;
             }
         });
+        
+        // Update icon based on expanded state
+        if (isExpanded) {
+            icon.classList.remove('fa-plus');
+            icon.classList.add('fa-minus');
+        } else {
+            icon.classList.remove('fa-minus');
+            icon.classList.add('fa-plus');
+        }
     });
 });
 </script>
