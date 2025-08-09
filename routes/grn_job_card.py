@@ -62,9 +62,9 @@ def quick_receive_job_card(job_card_id):
             db.session.add(line_item)
         
         # Update job card with GRN reference
-        # Note: We don't have grn_id field on job_card, so we'll use the remarks field to track the connection
+        job_card.grn_id = grn.id  # Link the job card to the created GRN
         job_card.status = 'received'
-        # We'll create a reference in the GRN remarks instead
+        # Also update the GRN remarks for tracking
         grn.remarks = f"Quick received from {job_card.assigned_vendor.name if job_card.assigned_vendor else 'vendor'} - Job Card: {job_card.job_card_number}"
         
         db.session.commit()
