@@ -258,11 +258,14 @@
                         </tr>
                         <tr>
                             <td><strong>Completed:</strong></td>
-                            <td>{{ "%.1f"|format(job_card.completed_quantity) }}</td>
+                            <td>{{ "%.1f"|format(job_card.completed_quantity or 0) }}</td>
                         </tr>
                         <tr>
                             <td><strong>Progress:</strong></td>
-                            <td>{{ "%.1f"|format(job_card.completion_rate) }}%</td>
+                            <td>
+                                {% set progress_pct = ((job_card.completed_quantity or 0) / job_card.planned_quantity * 100) if job_card.planned_quantity > 0 else 0 %}
+                                {{ "%.1f"|format(progress_pct) }}%
+                            </td>
                         </tr>
                         <tr>
                             <td><strong>Target Date:</strong></td>
