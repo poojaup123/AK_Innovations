@@ -4,7 +4,23 @@
 
 {% block extra_css %}
 <style>
-/* Ensure proper column layout */
+/* Force Bootstrap columns to stay side-by-side */
+.row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+}
+
+.col-8 {
+    flex: 0 0 auto !important;
+    width: 66.66666667% !important;
+}
+
+.col-4 {
+    flex: 0 0 auto !important;
+    width: 33.33333333% !important;
+}
+
+/* Mobile responsiveness */
 @media (max-width: 992px) {
     .col-8, .col-4 {
         width: 100% !important;
