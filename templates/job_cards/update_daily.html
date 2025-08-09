@@ -21,9 +21,10 @@
         </div>
     </div>
 
+    <!-- Main Content Row with Fixed Layout -->
     <div class="row">
-        <!-- Daily Status Form -->
-        <div class="col-lg-8">
+        <!-- Daily Status Form - Left Side -->
+        <div class="col-xl-8 col-lg-7">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
@@ -240,29 +241,49 @@
             </div>
         </div>
         
-        <!-- Job Card Summary -->
-        <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header">
+        <!-- Job Card Summary - Right Side -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header bg-primary text-white">
                     <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Job Card Summary</h6>
                 </div>
                 <div class="card-body">
-                    <table class="table table-sm">
-                        <tr>
-                            <td><strong>Job Card:</strong></td>
-                            <td>{{ job_card.job_card_number }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Item:</strong></td>
-                            <td>{{ job_card.item.name if job_card.item else 'Unknown' }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Process:</strong></td>
-                            <td>{{ job_card.process_name }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Status:</strong></td>
-                            <td>
+                    <div class="row g-2 mb-3">
+                        <div class="col-12">
+                            <div class="border-bottom pb-2 mb-2">
+                                <h6 class="text-primary mb-1">{{ job_card.job_card_number }}</h6>
+                                <small class="text-muted">{{ job_card.item.name if job_card.item else 'Unknown Item' }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="text-center p-2 bg-light rounded">
+                                <div class="h5 mb-1 text-primary">{{ "%.0f"|format(job_card.planned_quantity) }}</div>
+                                <small class="text-muted">Planned Qty</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-2 bg-light rounded">
+                                <div class="h5 mb-1 text-success">{{ "%.0f"|format(job_card.completed_quantity or 0) }}</div>
+                                <small class="text-muted">Completed</small>
+                            </div>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">Progress</small>
+                                <small class="text-muted">
+                                    {% set progress_pct = ((job_card.completed_quantity or 0) / job_card.planned_quantity * 100) if job_card.planned_quantity > 0 else 0 %}
+                                    {{ "%.1f"|format(progress_pct) }}%
+                                </small>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-success" style="width: {{ progress_pct }}%"></div>
+                            </div>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <div class="d-flex justify-content-between align-items-center">
                                 <span class="badge 
                                     {% if job_card.status == 'completed' %}bg-success
                                     {% elif job_card.status == 'in_progress' %}bg-warning
@@ -270,33 +291,18 @@
                                     {% else %}bg-secondary{% endif %}">
                                     {{ job_card.status.title() }}
                                 </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>Planned Qty:</strong></td>
-                            <td>{{ "%.1f"|format(job_card.planned_quantity) }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Completed:</strong></td>
-                            <td>{{ "%.1f"|format(job_card.completed_quantity or 0) }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Progress:</strong></td>
-                            <td>
-                                {% set progress_pct = ((job_card.completed_quantity or 0) / job_card.planned_quantity * 100) if job_card.planned_quantity > 0 else 0 %}
-                                {{ "%.1f"|format(progress_pct) }}%
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>Target Date:</strong></td>
-                            <td>
-                                {{ job_card.target_completion_date.strftime('%Y-%m-%d') }}
-                                {% if job_card.is_overdue %}
-                                    <span class="badge bg-danger ms-1">Overdue</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    </table>
+                                <small class="text-muted">
+                                    Target: {{ job_card.target_completion_date.strftime('%m-%d') }}
+                                    {% if job_card.target_completion_date < today %}
+                                        <span class="badge bg-danger ms-1">Overdue</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <small class="text-muted d-block">Process: {{ job_card.process_name }}</small>
+                        </div>
+                    </div>
                 </div>
             </div>
             
