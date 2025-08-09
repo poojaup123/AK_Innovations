@@ -460,6 +460,7 @@ def view_job_card(id):
     return render_template('job_cards/job_card_detail.html',
                          job_card=job_card,
                          daily_reports=daily_reports,
+                         daily_statuses=daily_reports,  # Template compatibility
                          materials=materials,
                          routing_steps=routing_steps)
 
