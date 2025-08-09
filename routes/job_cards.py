@@ -29,6 +29,17 @@ def _generate_process_name_for_component(bom_item):
     else:
         return f"Processing - {bom_item.item.name}"
 
+@job_cards_bp.route('/first')
+@login_required
+def view_first_job_card():
+    """Redirect to the first available job card for easy access"""
+    first_job_card = JobCard.query.order_by(JobCard.id.desc()).first()
+    if first_job_card:
+        return redirect(url_for('job_cards.view_job_card', id=first_job_card.id))
+    else:
+        flash('No job cards found', 'warning')
+        return redirect(url_for('job_cards.dashboard'))
+
 @job_cards_bp.route('/dashboard')
 @login_required
 def dashboard():
