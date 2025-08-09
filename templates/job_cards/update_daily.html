@@ -4,37 +4,11 @@
 
 {% block extra_css %}
 <style>
-/* Force Job Card Summary to right side */
-.main-container {
-    position: relative;
-}
-
-.form-section {
-    margin-right: 420px; /* Leave space for summary */
-}
-
-.summary-section {
-    position: fixed;
-    top: 120px;
-    right: 20px;
-    width: 380px;
-    z-index: 1000;
-    max-height: calc(100vh - 140px);
-    overflow-y: auto;
-}
-
-/* Mobile responsiveness */
-@media (max-width: 1200px) {
-    .form-section {
-        margin-right: 0;
-    }
-    
-    .summary-section {
-        position: static;
-        width: 100%;
-        max-height: none;
-        overflow-y: visible;
-        margin-top: 20px;
+/* Ensure proper column layout */
+@media (max-width: 992px) {
+    .col-8, .col-4 {
+        width: 100% !important;
+        max-width: 100% !important;
     }
 }
 </style>
@@ -59,10 +33,9 @@
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="main-container">
-        <!-- Form Section -->
-        <div class="form-section">
+    <!-- Split Layout: Form Left, Summary Right -->
+    <div class="row">
+        <div class="col-8">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
@@ -279,9 +252,8 @@
             </div>
         </div>
         
-        <!-- Job Card Summary - Fixed Right Position -->
-        <div class="summary-section">
-            <div class="card shadow-sm">
+        <div class="col-4">
+            <div class="card shadow-sm" style="position: sticky; top: 20px;">
                 <div class="card-header bg-primary text-white">
                     <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Job Card Summary</h6>
                 </div>
