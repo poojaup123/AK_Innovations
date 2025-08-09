@@ -52,7 +52,7 @@ class JobCardGenerator:
                 production=production,
                 bom=main_bom,
                 level=1,
-                parent_quantity=production.quantity,
+                parent_quantity=production.quantity_planned,
                 parent_job_card=None
             )
             
@@ -75,26 +75,25 @@ class JobCardGenerator:
         """Create a simple job card for items without BOM"""
         job_card_number = self._generate_job_card_number(production)
         
-        job_card = JobCard(
-            job_card_number=job_card_number,
-            production_id=production.id,
-            item_id=production.item_id,
-            process_name="Assembly/Manufacturing",
-            process_sequence=1,
-            planned_quantity=production.quantity,
-            planned_start_date=production.start_date,
-            target_completion_date=production.target_date,
-            job_type='in_house',
-            status='planned',
-            component_level=1,
-            operation_description=f"Complete manufacturing of {production.item.name}",
-            process_routing=json.dumps([{
-                "step": 1,
-                "process": "Manufacturing",
-                "description": "Complete item manufacturing",
-                "estimated_time": 480  # 8 hours default
-            }])
-        )
+        job_card = JobCard()
+        job_card.job_card_number = job_card_number
+        job_card.production_id = production.id
+        job_card.item_id = production.item_id
+        job_card.process_name = "Assembly/Manufacturing"
+        job_card.process_sequence = 1
+        job_card.planned_quantity = production.quantity_planned
+        job_card.planned_start_date = production.start_date
+        job_card.target_completion_date = production.target_date
+        job_card.job_type = 'in_house'
+        job_card.status = 'planned'
+        job_card.component_level = 1
+        job_card.operation_description = f"Complete manufacturing of {production.item.name}"
+        job_card.process_routing = json.dumps([{
+            "step": 1,
+            "process": "Manufacturing", 
+            "description": "Complete item manufacturing",
+            "estimated_time": 480  # 8 hours default
+        }])
         
         db.session.add(job_card)
         self.generated_cards.append(job_card)
@@ -113,7 +112,7 @@ class JobCardGenerator:
         """
         
         # Get all BOM items for this BOM
-        bom_items = BOMItem.query.filter_by(bom_id=bom.id).order_by(BOMItem.sequence).all()
+        bom_items = BOMItem.query.filter_by(bom_id=bom.id).order_by(BOMItem.id).all()
         
         for bom_item in bom_items:
             # Calculate required quantity
@@ -166,27 +165,26 @@ class JobCardGenerator:
         # Calculate dates based on level and dependencies
         start_date, end_date = self._calculate_job_dates(production, level, job_type)
         
-        job_card = JobCard(
-            job_card_number=job_card_number,
-            production_id=production.id,
-            item_id=bom_item.item_id,
-            bom_item_id=bom_item.id,
-            component_level=level,
-            parent_job_card_id=parent_job_card.id if parent_job_card else None,
-            process_name=self._get_primary_process_name(bom_item),
-            process_sequence=bom_item.sequence,
-            planned_quantity=required_quantity,
-            planned_start_date=start_date,
-            planned_end_date=end_date,
-            target_completion_date=end_date,
-            job_type=job_type,
-            status='planned',
-            operation_description=f"Process {bom_item.item.name} for {production.item.name}",
-            process_routing=json.dumps(process_routing),
-            special_instructions=bom_item.notes or "",
-            estimated_cost=self._estimate_job_cost(bom_item, required_quantity),
-            department=self._determine_department(bom_item, job_type)
-        )
+        job_card = JobCard()
+        job_card.job_card_number = job_card_number
+        job_card.production_id = production.id
+        job_card.item_id = bom_item.item_id
+        job_card.bom_item_id = bom_item.id
+        job_card.component_level = level
+        job_card.parent_job_card_id = parent_job_card.id if parent_job_card else None
+        job_card.process_name = self._get_primary_process_name(bom_item)
+        job_card.process_sequence = 1  # Use sequential numbering
+        job_card.planned_quantity = required_quantity
+        job_card.planned_start_date = start_date
+        job_card.planned_end_date = end_date
+        job_card.target_completion_date = end_date
+        job_card.job_type = job_type
+        job_card.status = 'planned'
+        job_card.operation_description = f"Process {bom_item.item.name} for {production.item.name}"
+        job_card.process_routing = json.dumps(process_routing)
+        job_card.special_instructions = bom_item.notes or ""
+        job_card.estimated_cost = self._estimate_job_cost(bom_item, required_quantity)
+        job_card.department = self._determine_department(bom_item, job_type)
         
         db.session.add(job_card)
         self.generated_cards.append(job_card)
