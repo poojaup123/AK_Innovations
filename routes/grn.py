@@ -542,11 +542,69 @@ def dashboard():
         func.extract('year', GRN.created_at) == date.today().year
     ).count()
     
+    # Get parent-child relationship data for Purchase Orders and Job Works
+    parent_child_data = []
+    
+    # Get all Purchase Orders with their GRNs (with simple counting instead of complex calculations)
+    purchase_orders = PurchaseOrder.query.all()
+    for po in purchase_orders:
+        po_grns = GRN.query.filter_by(purchase_order_id=po.id).all()
+        
+        # Simple status calculation - if there are any GRNs, it's at least partial
+        if len(po_grns) == 0:
+            status = 'Pending'
+        elif po.status == 'fulfilled':
+            status = 'Completed'
+        else:
+            status = 'Partial'
+        
+        parent_child_data.append({
+            'type': 'Purchase Order',
+            'parent_number': po.po_number,
+            'parent_date': getattr(po, 'po_date', getattr(po, 'created_at', getattr(po, 'order_date', None))),
+            'supplier': po.supplier.name if po.supplier else 'N/A',
+            'total_grns': len(po_grns),
+            'status': status,
+            'parent_id': po.id,
+            'grns': po_grns
+        })
+    
+    # Get all Job Works with their GRNs
+    job_works = JobWork.query.all()
+    for jw in job_works:
+        jw_grns = GRN.query.filter_by(job_work_id=jw.id).all()
+        
+        # Simple status calculation
+        if len(jw_grns) == 0:
+            status = 'Pending'
+        elif all(grn.status == 'completed' for grn in jw_grns):
+            status = 'Completed'
+        else:
+            status = 'Partial'
+        
+        parent_child_data.append({
+            'type': 'Job Work',
+            'parent_number': jw.job_number,
+            'parent_date': getattr(jw, 'start_date', getattr(jw, 'created_at', None)),
+            'supplier': jw.customer_name,
+            'total_grns': len(jw_grns),
+            'status': status,
+            'parent_id': jw.id,
+            'grns': jw_grns
+        })
+    
+    # Enhanced statistics
+    stats.update({
+        'total_purchase_orders': len(purchase_orders),
+        'total_job_works': len(job_works)
+    })
+    
     return render_template('grn/dashboard.html',
                          title='GRN Dashboard',
                          stats=stats,
                          recent_grns=recent_grns,
-                         monthly_grns=monthly_grns)
+                         monthly_grns=monthly_grns,
+                         parent_child_data=parent_child_data)
 
 
 @grn_bp.route('/create/job_work/<int:job_work_id>')
