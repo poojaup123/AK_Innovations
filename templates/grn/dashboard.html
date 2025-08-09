@@ -342,11 +342,11 @@
                                                 </button>
                                             {% endif %}
                                             {% if parent.type == 'Purchase Order' %}
-                                                <a href="{{ url_for('grn_workflow.create_from_po', purchase_order_id=parent.parent_id) }}" class="btn btn-outline-success btn-sm">
+                                                <a href="{{ url_for('grn.create_grn_for_po', purchase_order_id=parent.parent_id) }}" class="btn btn-outline-success btn-sm">
                                                     <i class="fas fa-plus me-1"></i>New GRN
                                                 </a>
                                             {% else %}
-                                                <a href="{{ url_for('grn_workflow.create_from_job_work', job_work_id=parent.parent_id) }}" class="btn btn-outline-success btn-sm">
+                                                <a href="{{ url_for('grn.create_grn', job_work_id=parent.parent_id) }}" class="btn btn-outline-success btn-sm">
                                                     <i class="fas fa-plus me-1"></i>New GRN
                                                 </a>
                                             {% endif %}

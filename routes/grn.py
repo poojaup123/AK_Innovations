@@ -584,9 +584,9 @@ def dashboard():
         
         parent_child_data.append({
             'type': 'Job Work',
-            'parent_number': jw.job_number,
+            'parent_number': getattr(jw, 'job_number', f'JW-{jw.id}'),
             'parent_date': getattr(jw, 'start_date', getattr(jw, 'created_at', None)),
-            'supplier': jw.customer_name,
+            'supplier': getattr(jw, 'customer_name', 'N/A'),
             'total_grns': len(jw_grns),
             'status': status,
             'parent_id': jw.id,
