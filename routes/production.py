@@ -428,7 +428,23 @@ def add_production():
                         'unit': bom_item.item.unit_of_measure
                     })
         
-        # Simple production creation - skip complex analysis for user convenience
+        # Get smart suggestions but don't block the save process
+        smart_suggestions = []
+        smart_analysis = {}
+        if material_shortages and active_bom:
+            try:
+                print("Getting smart BOM suggestions (non-blocking)")
+                from services.smart_bom_suggestions import SmartBOMSuggestionService
+                smart_analysis = SmartBOMSuggestionService.analyze_material_shortages_with_suggestions(
+                    active_bom, form.quantity_planned.data
+                )
+                smart_suggestions = smart_analysis.get('suggestions', [])
+                print(f"Generated {len(smart_suggestions)} smart suggestions")
+            except Exception as e:
+                print(f"Smart suggestions failed (non-blocking): {e}")
+                smart_suggestions = []
+                smart_analysis = {}
+        
         print(f"BOM processing complete. Material shortages: {len(material_shortages)}")
         print("Creating production order directly (simple mode)")
         
@@ -456,7 +472,15 @@ def add_production():
             db.session.add(production)
             db.session.commit()
             print("Production saved successfully")
-            flash('Production order created successfully! All required materials are available.', 'success')
+            
+            # Add smart suggestions info to flash message if available
+            flash_message = 'Production order created successfully!'
+            if material_shortages:
+                flash_message += f' Note: {len(material_shortages)} materials need procurement.'
+            if smart_suggestions:
+                flash_message += f' {len(smart_suggestions)} smart suggestions available.'
+            
+            flash(flash_message, 'success')
             return redirect(url_for('production.list_productions'))
         except Exception as e:
             print(f"Error saving production: {str(e)}")
@@ -489,6 +513,33 @@ def add_production():
                          title='Add Production',
                          bom_items=bom_items,
                          selected_item=selected_item)
+
+@production_bp.route('/suggestions/<int:production_id>')
+@login_required
+def view_smart_suggestions(production_id):
+    """View smart BOM suggestions for a production order"""
+    production = Production.query.get_or_404(production_id)
+    
+    smart_suggestions = []
+    smart_analysis = {}
+    
+    if production.bom_id:
+        try:
+            from services.smart_bom_suggestions import SmartBOMSuggestionService
+            bom = BOM.query.get(production.bom_id)
+            if bom:
+                smart_analysis = SmartBOMSuggestionService.analyze_material_shortages_with_suggestions(
+                    bom, production.quantity_planned
+                )
+                smart_suggestions = smart_analysis.get('suggestions', [])
+        except Exception as e:
+            flash(f'Error generating suggestions: {str(e)}', 'warning')
+    
+    return render_template('production/suggestions.html',
+                         production=production,
+                         smart_suggestions=smart_suggestions,
+                         smart_analysis=smart_analysis,
+                         title=f'Smart Suggestions - {production.production_number}')
 
 @production_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required

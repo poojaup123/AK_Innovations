@@ -66,6 +66,9 @@
                                         <a href="{{ url_for('production.edit_production', id=production.id) }}" class="btn btn-outline-primary btn-sm">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        <a href="{{ url_for('production.view_smart_suggestions', production_id=production.id) }}" class="btn btn-outline-info btn-sm">
+                                            <i class="fas fa-lightbulb"></i>
+                                        </a>
                                         {% if production.status != 'completed' %}
                                         <div class="btn-group btn-group-sm">
                                             <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
