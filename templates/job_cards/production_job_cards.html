@@ -16,9 +16,11 @@
                     <a href="{{ url_for('production.dashboard') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back to Production
                     </a>
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#generateJobCardsModal">
-                        <i class="fas fa-magic me-2"></i>Regenerate Job Cards
-                    </button>
+                    {% if job_cards %}
+                    <a href="{{ url_for('job_cards.create_job_card', production_id=production.id) }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Job Card
+                    </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -62,6 +64,54 @@
 
     <!-- Job Cards List -->
     <div class="row">
+        {% if not job_cards %}
+        <!-- No Job Cards State -->
+        <div class="col-12">
+            <div class="card bg-light border-0">
+                <div class="card-body text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-clipboard-list fa-5x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Job Cards Generated</h4>
+                        <p class="text-muted">Job cards will be automatically generated when this production order has an associated BOM.</p>
+                    </div>
+                    
+                    {% if production.bom_id %}
+                    <!-- Production has BOM - show generation button -->
+                    <div class="mb-4">
+                        <div class="alert alert-info d-inline-block">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>BOM Available:</strong> This production order has {{ bom_processes_count or 'multiple' }} processes defined in its BOM.
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('production.generate_job_cards_now', production_id=production.id) }}" 
+                       class="btn btn-success btn-lg">
+                        <i class="fas fa-magic me-2"></i>Generate Job Cards Now
+                    </a>
+                    {% else %}
+                    <!-- No BOM available -->
+                    <div class="mb-4">
+                        <div class="alert alert-warning d-inline-block">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>No BOM:</strong> Add a BOM to this production order first.
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('bom.create') }}?item_id={{ production.item_id }}" 
+                       class="btn btn-primary me-2">
+                        <i class="fas fa-plus me-2"></i>Create BOM
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('job_cards.create_job_card', production_id=production.id) }}" 
+                       class="btn btn-outline-primary">
+                        <i class="fas fa-plus me-2"></i>Create Manual Job Card
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Display existing job cards -->
         {% for job_card in job_cards %}
         <div class="col-lg-6 mb-4">
             <div class="card job-card-item" data-job-type="{{ job_card.job_type }}">
@@ -243,42 +293,11 @@
             </div>
         </div>
         {% endfor %}
-    </div>
-
-    {% if not job_cards %}
-    <div class="row">
-        <div class="col text-center py-5">
-            <i class="fas fa-tasks fa-4x text-muted mb-3"></i>
-            <h4 class="text-muted">No Job Cards Generated</h4>
-            <p class="text-muted">Job cards will be automatically generated when you create a production order with a BOM.</p>
-            <form method="POST" action="{{ url_for('job_card_management.generate_job_cards', production_id=production.id) }}" style="display: inline;">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-magic me-2"></i>Generate Job Cards Now
-                </button>
-            </form>
-        </div>
-    </div>
-    {% endif %}
-</div>
-
-<!-- No modal needed anymore -->
-                <p>This will generate job cards based on the BOM for this production order.</p>
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    This will replace any existing job cards for this production order.
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form method="POST" action="{{ url_for('job_card_management.generate_job_cards', production_id=production.id) }}" style="display: inline;">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-magic me-2"></i>Generate Job Cards
-                    </button>
-                </form>
-            </div>
-        </div>
+        {% endif %}
     </div>
 </div>
+
+
 
 <style>
 .job-card-item {

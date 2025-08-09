@@ -14,10 +14,10 @@ from app import db
 from sqlalchemy import func, or_
 from utils import generate_production_number
 from services.job_card_generator import generate_job_cards_for_production
+from services.production_service import ProductionService
 from utils.batch_tracking import BatchTracker
 from datetime import datetime, timedelta, date
 import json
-from services.job_card_generator import generate_job_cards_for_production
 from forms_daily_production import DailyProductionUpdateForm, QuickStatusUpdateForm
 
 production_bp = Blueprint('production', __name__)
@@ -691,8 +691,15 @@ def add_production():
             db.session.commit()
             print("Production order saved successfully")
             
-            # Job cards will be generated separately via smart suggestions or manual creation
+            # Auto-generate job cards if BOM exists and has processes
             job_card_count = 0
+            if selected_bom and selected_bom.processes:
+                try:
+                    job_card_count = ProductionService.auto_generate_job_cards_from_bom(production.id)
+                    print(f"Auto-generated {job_card_count} job cards from BOM")
+                except Exception as e:
+                    print(f"Error auto-generating job cards: {e}")
+                    # Don't fail the production creation if job card generation fails
             
             # Add smart suggestions info to flash message if available
             flash_message = 'Production order created successfully!'
@@ -768,6 +775,37 @@ def view_smart_suggestions(production_id):
                          smart_suggestions=smart_suggestions,
                          smart_analysis=smart_analysis,
                          title=f'Smart Suggestions - {production.production_number}')
+
+@production_bp.route('/generate-job-cards/<int:production_id>')
+@login_required
+def generate_job_cards_now(production_id):
+    """Manually trigger job card generation for a production order"""
+    try:
+        production = Production.query.get_or_404(production_id)
+        
+        if not production.bom_id:
+            flash('Production order must have a BOM to generate job cards', 'warning')
+            return redirect(url_for('job_cards.view_production_job_cards', production_id=production_id))
+        
+        # Check if job cards already exist
+        existing_count = JobCard.query.filter_by(production_id=production_id).count()
+        if existing_count > 0:
+            flash(f'Job cards already exist for this production order ({existing_count} cards). Use individual job card creation instead.', 'info')
+            return redirect(url_for('job_cards.view_production_job_cards', production_id=production_id))
+        
+        # Generate job cards from BOM
+        job_card_count = ProductionService.auto_generate_job_cards_from_bom(production_id)
+        
+        if job_card_count > 0:
+            flash(f'Successfully generated {job_card_count} job cards from BOM processes!', 'success')
+        else:
+            flash('No job cards could be generated. Check if BOM has defined processes.', 'warning')
+        
+        return redirect(url_for('job_cards.view_production_job_cards', production_id=production_id))
+        
+    except Exception as e:
+        flash(f'Error generating job cards: {str(e)}', 'danger')
+        return redirect(url_for('production.list_productions'))
 
 @production_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
