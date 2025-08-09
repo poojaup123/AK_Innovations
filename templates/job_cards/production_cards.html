@@ -213,10 +213,10 @@
                     
                     <div class="card-footer">
                         <div class="btn-group w-100">
-                            <a href="{{ url_for('job_cards.view_detail', job_card_id=job_card.id) }}" class="btn btn-primary btn-sm">
+                            <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-primary btn-sm">
                                 <i class="fas fa-eye"></i> View
                             </a>
-                            <a href="{{ url_for('job_cards.daily_update', job_card_id=job_card.id) }}" class="btn btn-success btn-sm">
+                            <a href="{{ url_for('job_cards.update_daily_status', job_card_id=job_card.id) }}" class="btn btn-success btn-sm">
                                 <i class="fas fa-edit"></i> Update
                             </a>
                             {% if job_card.status != 'completed' %}
@@ -226,10 +226,10 @@
                                 </button>
                                 <ul class="dropdown-menu">
                                     {% if job_card.status == 'planned' %}
-                                    <li><a class="dropdown-item" href="{{ url_for('job_cards.update_status', job_card_id=job_card.id, status='in_progress') }}">Start Job</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="updateJobCardStatus({{ job_card.id }}, 'in_progress')">Start Job</a></li>
                                     {% endif %}
-                                    <li><a class="dropdown-item" href="{{ url_for('job_cards.update_status', job_card_id=job_card.id, status='completed') }}">Complete</a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('job_cards.update_status', job_card_id=job_card.id, status='on_hold') }}">Put on Hold</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="updateJobCardStatus({{ job_card.id }}, 'completed')">Complete</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="updateJobCardStatus({{ job_card.id }}, 'on_hold')">Put on Hold</a></li>
                                 </ul>
                             </div>
                             {% endif %}
@@ -258,23 +258,59 @@
 <script>
 function generateJobCards(productionId) {
     if (confirm('This will generate job cards for this production order. Continue?')) {
-        fetch(`/job-cards/generate/${productionId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            alert('Error generating job cards: ' + error);
-        });
+        // Use form submission instead of fetch to avoid JSON parsing issues
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/job-cards/generate/${productionId}`;
+        
+        // Add CSRF token if available
+        const csrfToken = document.querySelector('meta[name=csrf-token]');
+        if (csrfToken) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'csrf_token';
+            input.value = csrfToken.getAttribute('content');
+            form.appendChild(input);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function updateJobCardStatus(jobCardId, status) {
+    if (confirm(`Change job card status to ${status}?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/job-cards/quick-update`;
+        
+        // Add form data
+        const data = {
+            job_card_id: jobCardId,
+            status: status,
+            qty_completed: 0
+        };
+        
+        for (const [key, value] of Object.entries(data)) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = value;
+            form.appendChild(input);
+        }
+        
+        // Add CSRF token if available
+        const csrfToken = document.querySelector('meta[name=csrf-token]');
+        if (csrfToken) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'csrf_token';
+            input.value = csrfToken.getAttribute('content');
+            form.appendChild(input);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 </script>
