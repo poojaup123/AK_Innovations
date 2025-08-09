@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from datetime import datetime, date
 from models import db
-from models.core import Item, Supplier
+from models import Item, Supplier
 from models.grn import GRN, GRNLineItem, GRNWorkflowStatus
 from models.job_card import JobCard
 from forms_grn import GRNForm

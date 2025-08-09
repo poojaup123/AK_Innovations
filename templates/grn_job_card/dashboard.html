@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+
+{% block title %}Outsourced Job Card GRN Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-truck-loading me-2"></i>Outsourced Job Card GRN Dashboard</h2>
+                    <p class="text-muted">Track and manage GRNs for outsourced job cards</p>
+                </div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('job_cards.list_job_cards') }}">Job Cards</a></li>
+                        <li class="breadcrumb-item active">GRN Dashboard</li>
+                    </ol>
+                </nav>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <h5>Total Outsourced</h5>
+                            <h2>{{ stats.total_outsourced }}</h2>
+                            <small>Job Cards</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <h5>Pending GRN</h5>
+                            <h2>{{ stats.pending_grn }}</h2>
+                            <small>Awaiting Receipt</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h5>Received</h5>
+                            <h2>{{ stats.received }}</h2>
+                            <small>With GRN</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h5>In Inspection</h5>
+                            <h2>{{ stats.in_inspection }}</h2>
+                            <small>Quality Check</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Outsourced Job Cards Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Recent Outsourced Job Cards
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if outsourced_jobs %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Job Card</th>
+                                    <th>Parent Job Card</th>
+                                    <th>Item</th>
+                                    <th>Process</th>
+                                    <th>Vendor</th>
+                                    <th>Outsourced Qty</th>
+                                    <th>Received Qty</th>
+                                    <th>GRN Status</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for job in outsourced_jobs %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ job.job_card_number }}</strong><br>
+                                        <small class="text-muted">{{ job.created_at.strftime('%Y-%m-%d') }}</small>
+                                    </td>
+                                    <td>
+                                        {% if job.parent_job_card %}
+                                            <a href="{{ url_for('job_cards.view_job_card', id=job.parent_job_card.id) }}" class="text-decoration-none">
+                                                {{ job.parent_job_card.job_card_number }}
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if job.item %}
+                                            <strong>{{ job.item.name }}</strong><br>
+                                            <small class="text-muted">{{ job.item.code }}</small>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ job.process_name or '-' }}</td>
+                                    <td>
+                                        {% if job.assigned_vendor %}
+                                            {{ job.assigned_vendor.name }}
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ "%.2f"|format(job.outsource_quantity or 0) }}</span>
+                                    </td>
+                                    <td>
+                                        {% if job.grn_received_quantity %}
+                                            <span class="badge bg-success">{{ "%.2f"|format(job.grn_received_quantity) }}</span>
+                                        {% else %}
+                                            <span class="badge bg-light text-dark">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if job.grn_id %}
+                                            {% if job.grn %}
+                                                {% if job.grn.status == 'completed' %}
+                                                    <span class="badge bg-success">Completed</span>
+                                                {% elif job.grn.status == 'received' %}
+                                                    <span class="badge bg-info">Received</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">{{ job.grn.status|title }}</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-info">GRN Created</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-warning">No GRN</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if job.status == 'outsourced' %}
+                                            <span class="badge bg-warning">In Process</span>
+                                        {% elif job.status == 'received' %}
+                                            <span class="badge bg-success">Received</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ job.status|title }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('job_cards.view_job_card', id=job.id) }}" 
+                                               class="btn btn-outline-primary" title="View Job Card">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if not job.grn_id %}
+                                                <a href="{{ url_for('grn_job_card.create_grn_for_job_card', job_card_id=job.id) }}" 
+                                                   class="btn btn-outline-success" title="Create GRN">
+                                                    <i class="fas fa-truck-loading"></i>
+                                                </a>
+                                            {% else %}
+                                                <a href="{{ url_for('grn_job_card.view_grn_for_job_card', job_card_id=job.id) }}" 
+                                                   class="btn btn-outline-info" title="View GRN">
+                                                    <i class="fas fa-receipt"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Outsourced Job Cards Found</h5>
+                        <p class="text-muted">Outsourced job cards will appear here once work is sent to external vendors.</p>
+                        <a href="{{ url_for('job_cards.list_job_cards') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>View All Job Cards
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-clock me-1"></i>Pending GRNs</h6>
+                        </div>
+                        <div class="card-body">
+                            {% set pending_jobs = outsourced_jobs | selectattr('grn_id', 'none') | list %}
+                            {% if pending_jobs %}
+                                <p class="mb-2">{{ pending_jobs|length }} job cards awaiting GRN creation:</p>
+                                <ul class="list-unstyled">
+                                    {% for job in pending_jobs[:5] %}
+                                    <li class="mb-1">
+                                        <a href="{{ url_for('grn_job_card.create_grn_for_job_card', job_card_id=job.id) }}" 
+                                           class="text-decoration-none">
+                                            {{ job.job_card_number }} 
+                                            <small class="text-muted">({{ job.assigned_vendor.name if job.assigned_vendor else 'No Vendor' }})</small>
+                                        </a>
+                                    </li>
+                                    {% endfor %}
+                                    {% if pending_jobs|length > 5 %}
+                                    <li><small class="text-muted">... and {{ pending_jobs|length - 5 }} more</small></li>
+                                    {% endif %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted mb-0">All outsourced work has GRNs created.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-check-circle me-1"></i>Inspection Status</h6>
+                        </div>
+                        <div class="card-body">
+                            {% set inspection_jobs = outsourced_jobs | selectattr('grn_id', 'defined') | list %}
+                            {% if inspection_jobs %}
+                                <p class="mb-2">Quality control status:</p>
+                                <ul class="list-unstyled">
+                                    {% for job in inspection_jobs[:5] %}
+                                    <li class="mb-1">
+                                        <a href="{{ url_for('grn_job_card.view_grn_for_job_card', job_card_id=job.id) }}" 
+                                           class="text-decoration-none">
+                                            {{ job.job_card_number }}
+                                            {% if job.grn and job.grn.inspection_status == 'completed' %}
+                                                <span class="badge bg-success ms-1">Inspected</span>
+                                            {% else %}
+                                                <span class="badge bg-warning ms-1">Pending</span>
+                                            {% endif %}
+                                        </a>
+                                    </li>
+                                    {% endfor %}
+                                    {% if inspection_jobs|length > 5 %}
+                                    <li><small class="text-muted">... and {{ inspection_jobs|length - 5 }} more</small></li>
+                                    {% endif %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted mb-0">No items awaiting inspection.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
