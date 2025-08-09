@@ -74,8 +74,8 @@
                                                             </td>
                                                             <td>{{ "%.2f"|format(material.needed_qty) }} {{ material.unit }}</td>
                                                             <td>
-                                                                {% if material.get('available_qty') is defined %}
-                                                                    {{ "%.2f"|format(material.available_qty) }} {{ material.unit }}
+                                                                {% if material.get('available_qty') is not none %}
+                                                                    {{ "%.2f"|format(material.get('available_qty', 0)) }} {{ material.unit }}
                                                                 {% else %}
                                                                     N/A
                                                                 {% endif %}
