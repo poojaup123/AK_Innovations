@@ -34,7 +34,8 @@ def quick_receive_job_card(job_card_id):
         # Create GRN automatically
         grn = GRN(
             grn_number=grn_number,
-            job_card_id=job_card_id,
+            job_work_id=None,  # Not a traditional job work
+            purchase_order_id=None,  # Not a purchase order
             received_date=date.today(),
             received_by=current_user.id,
             delivery_note=f"Quick receive for {job_card.job_card_number}",
@@ -61,10 +62,10 @@ def quick_receive_job_card(job_card_id):
             db.session.add(line_item)
         
         # Update job card with GRN reference
-        job_card.grn_id = grn.id
-        job_card.grn_received_quantity = job_card.outsource_quantity
-        job_card.grn_received_date = date.today()
+        # Note: We don't have grn_id field on job_card, so we'll use the remarks field to track the connection
         job_card.status = 'received'
+        # We'll create a reference in the GRN remarks instead
+        grn.remarks = f"Quick received from {job_card.assigned_vendor.name if job_card.assigned_vendor else 'vendor'} - Job Card: {job_card.job_card_number}"
         
         db.session.commit()
         
