@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Production Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-tachometer-alt me-2"></i>Daily Production Dashboard</h2>
+        <div class="d-flex gap-2">
+            <span class="badge bg-primary fs-6">{{ today.strftime('%A, %B %d, %Y') }}</span>
+            <a href="{{ url_for('daily_production.reports') }}" class="btn btn-outline-primary">
+                <i class="fas fa-chart-line me-2"></i>View Reports
+            </a>
+            <a href="{{ url_for('daily_production.generate_summary') }}" class="btn btn-success">
+                <i class="fas fa-sync me-2"></i>Generate Summary
+            </a>
+        </div>
+    </div>
+
+    <!-- Daily Metrics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ "%.1f"|format(total_completed_today) }}</h4>
+                            <p class="card-text">Total Produced Today</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-industry fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ "%.1f"|format(total_good_today) }}</h4>
+                            <p class="card-text">Good Quality</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ "%.1f"|format(total_defective_today) }}</h4>
+                            <p class="card-text">Defective</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ "%.1f"|format(efficiency_rate) }}%</h4>
+                            <p class="card-text">Efficiency Rate</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-chart-line fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Production Status Tabs -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs" id="statusTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab">
+                        <i class="fas fa-play-circle text-success me-2"></i>Active ({{ status_groups.active|length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="planned-tab" data-bs-toggle="tab" data-bs-target="#planned" type="button" role="tab">
+                        <i class="fas fa-clock text-secondary me-2"></i>Planned ({{ status_groups.planned|length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="delayed-tab" data-bs-toggle="tab" data-bs-target="#delayed" type="button" role="tab">
+                        <i class="fas fa-exclamation-circle text-danger me-2"></i>Delayed ({{ status_groups.delayed|length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="paused-tab" data-bs-toggle="tab" data-bs-target="#paused" type="button" role="tab">
+                        <i class="fas fa-pause-circle text-warning me-2"></i>Paused ({{ status_groups.paused|length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">
+                        <i class="fas fa-check-circle text-primary me-2"></i>Completed ({{ status_groups.completed|length }})
+                    </button>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="card-body">
+            <div class="tab-content" id="statusTabContent">
+                {% for status, reports in status_groups.items() %}
+                <div class="tab-pane fade {% if status == 'active' %}show active{% endif %}" id="{{ status }}" role="tabpanel">
+                    {% if reports %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Production #</th>
+                                        <th>Item</th>
+                                        <th>Planned Qty</th>
+                                        <th>Today's Progress</th>
+                                        <th>Progress %</th>
+                                        <th>Workers</th>
+                                        <th>Issues</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for report in reports %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ report.production.production_number }}</strong>
+                                            {% if not report.is_on_schedule %}
+                                                <span class="badge bg-warning ms-1">Behind Schedule</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% set item = report.production.item %}
+                                            {{ item.code if item else 'N/A' }} - {{ item.name if item else 'Unknown Item' }}
+                                        </td>
+                                        <td>{{ "%.1f"|format(report.production.quantity_planned or 0) }}</td>
+                                        <td>
+                                            <div class="d-flex flex-column">
+                                                <small><strong>Good:</strong> {{ "%.1f"|format(report.qty_good_today) }}</small>
+                                                <small><strong>Defective:</strong> {{ "%.1f"|format(report.qty_defective_today) }}</small>
+                                                {% if report.qty_scrap_today > 0 %}
+                                                    <small class="text-warning"><strong>Scrap:</strong> {{ "%.1f"|format(report.qty_scrap_today) }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-{{ report.status_color }}" role="progressbar" 
+                                                     style="width: {{ report.progress_percentage }}%"
+                                                     aria-valuenow="{{ report.progress_percentage }}" 
+                                                     aria-valuemin="0" aria-valuemax="100">
+                                                    {{ "%.1f"|format(report.progress_percentage) }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ report.workers_assigned }} workers</span>
+                                        </td>
+                                        <td>
+                                            {% if report.production_issues or report.quality_issues %}
+                                                <i class="fas fa-exclamation-triangle text-warning" 
+                                                   title="Production Issues: {{ report.production_issues or '' }} Quality Issues: {{ report.quality_issues or '' }}"></i>
+                                            {% else %}
+                                                <i class="fas fa-check text-success" title="No issues reported"></i>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{{ url_for('daily_production.update_production_status', production_id=report.production_id) }}" 
+                                                   class="btn btn-outline-primary" title="Update Status">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{{ url_for('daily_production.shift_log', daily_status_id=report.id) }}" 
+                                                   class="btn btn-outline-info" title="Add Shift Log">
+                                                    <i class="fas fa-clock"></i>
+                                                </a>
+                                                <a href="{{ url_for('production.view', production_id=report.production_id) }}" 
+                                                   class="btn btn-outline-secondary" title="View Production">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No productions with {{ status }} status today</p>
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Productions Without Daily Reports -->
+    {% if productions_without_reports %}
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Productions Needing Daily Status Update ({{ productions_without_reports|length }})
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Production #</th>
+                            <th>Item</th>
+                            <th>Planned Qty</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for production in productions_without_reports %}
+                        <tr>
+                            <td><strong>{{ production.production_number }}</strong></td>
+                            <td>
+                                {% set item = production.item %}
+                                {{ item.code if item else 'N/A' }} - {{ item.name if item else 'Unknown Item' }}
+                            </td>
+                            <td>{{ "%.1f"|format(production.quantity_planned or 0) }}</td>
+                            <td><span class="badge bg-secondary">{{ production.status|title }}</span></td>
+                            <td>{{ production.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <a href="{{ url_for('daily_production.update_production_status', production_id=production.id) }}" 
+                                   class="btn btn-primary btn-sm">
+                                    <i class="fas fa-plus me-2"></i>Add Daily Status
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Shift Logs -->
+    {% if recent_shifts %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-clock me-2"></i>Recent Shift Logs
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Shift</th>
+                            <th>Production #</th>
+                            <th>Start Time</th>
+                            <th>Duration</th>
+                            <th>Quantity</th>
+                            <th>Workers</th>
+                            <th>Supervisor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for shift in recent_shifts %}
+                        <tr>
+                            <td><span class="badge bg-secondary">{{ shift.shift_type|title }}</span></td>
+                            <td>{{ shift.daily_status.production.production_number }}</td>
+                            <td>{{ shift.shift_start.strftime('%H:%M') if shift.shift_start else '-' }}</td>
+                            <td>{{ "%.1f"|format(shift.shift_duration_hours) }}h</td>
+                            <td>{{ "%.1f"|format(shift.qty_produced_shift) }}</td>
+                            <td>{{ shift.workers_present }}</td>
+                            <td>{{ shift.supervisor_name or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Quick Update Modal -->
+<div class="modal fade" id="quickUpdateModal" tabindex="-1" aria-labelledby="quickUpdateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickUpdateModalLabel">Quick Production Update</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="quickUpdateForm">
+                    <input type="hidden" id="quickProductionId" name="production_id">
+                    <div class="mb-3">
+                        <label for="quickQtyCompleted" class="form-label">Quantity Completed</label>
+                        <input type="number" class="form-control" id="quickQtyCompleted" name="qty_completed" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quickStatus" class="form-label">Status</label>
+                        <select class="form-select" id="quickStatus" name="status" required>
+                            <option value="active">Active</option>
+                            <option value="paused">Paused</option>
+                            <option value="completed">Completed</option>
+                            <option value="delayed">Delayed</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quickNotes" class="form-label">Quick Notes</label>
+                        <textarea class="form-control" id="quickNotes" name="notes" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveQuickUpdate">Save Update</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Quick update functionality
+function openQuickUpdate(productionId, productionNumber) {
+    document.getElementById('quickProductionId').value = productionId;
+    document.getElementById('quickUpdateModalLabel').textContent = 'Quick Update - ' + productionNumber;
+    new bootstrap.Modal(document.getElementById('quickUpdateModal')).show();
+}
+
+document.getElementById('saveQuickUpdate').addEventListener('click', function() {
+    const formData = new FormData(document.getElementById('quickUpdateForm'));
+    const data = Object.fromEntries(formData.entries());
+    
+    fetch('{{ url_for("daily_production.quick_update") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while updating production status');
+    });
+});
+
+// Auto-refresh every 5 minutes
+setTimeout(function() {
+    location.reload();
+}, 300000);
+</script>
+{% endblock %}

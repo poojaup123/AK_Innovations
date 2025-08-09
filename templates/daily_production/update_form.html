@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-edit me-2"></i>{{ title }}</h2>
+        <div>
+            <a href="{{ url_for('daily_production.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+            <a href="{{ url_for('production.view', production_id=production.id) }}" class="btn btn-outline-primary">
+                <i class="fas fa-eye me-2"></i>View Production
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Production Info Card -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Production Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless table-sm">
+                        <tr>
+                            <td><strong>Production #:</strong></td>
+                            <td>{{ production.production_number }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Item:</strong></td>
+                            <td>{{ item.code if item else 'N/A' }} - {{ item.name if item else 'Unknown Item' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Planned Qty:</strong></td>
+                            <td>{{ "%.1f"|format(production.quantity_planned or 0) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Current Status:</strong></td>
+                            <td><span class="badge bg-secondary">{{ production.status|title }}</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Production Date:</strong></td>
+                            <td>{{ production.production_date.strftime('%Y-%m-%d') if production.production_date else 'Not set' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Created:</strong></td>
+                            <td>{{ production.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        </tr>
+                    </table>
+
+                    {% if today_report %}
+                    <hr>
+                    <h6>Today's Progress</h6>
+                    <div class="progress mb-2" style="height: 20px;">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ today_report.progress_percentage }}%"
+                             aria-valuenow="{{ today_report.progress_percentage }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ "%.1f"|format(today_report.progress_percentage) }}%
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        Cumulative: {{ "%.1f"|format(today_report.cumulative_completed) }} completed, 
+                        {{ "%.1f"|format(today_report.cumulative_good) }} good quality
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if today_report and today_report.shift_logs %}
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>Today's Shift Logs
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for log in today_report.shift_logs %}
+                    <div class="border-bottom pb-2 mb-2">
+                        <strong>{{ log.shift_type|title }} Shift</strong>
+                        <br><small class="text-muted">{{ log.shift_start.strftime('%H:%M') if log.shift_start else '-' }} - {{ log.shift_end.strftime('%H:%M') if log.shift_end else 'Ongoing' }}</small>
+                        <br><small>Produced: {{ "%.1f"|format(log.qty_produced_shift) }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Update Form -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>Daily Production Update - {{ date.today().strftime('%B %d, %Y') }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('daily_production.update_production_status', production_id=production.id) }}">
+                        {{ form.hidden_tag() }}
+
+                        <div class="row">
+                            <!-- Quantity Updates -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-chart-line me-2"></i>Quantity Updates
+                                </h6>
+
+                                <div class="mb-3">
+                                    {{ form.qty_completed_today.label(class="form-label") }}
+                                    {{ form.qty_completed_today(class="form-control") }}
+                                    {% for error in form.qty_completed_today.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.qty_good_today.label(class="form-label") }}
+                                    {{ form.qty_good_today(class="form-control") }}
+                                    {% for error in form.qty_good_today.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            {{ form.qty_defective_today.label(class="form-label") }}
+                                            {{ form.qty_defective_today(class="form-control") }}
+                                            {% for error in form.qty_defective_today.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            {{ form.qty_scrap_today.label(class="form-label") }}
+                                            {{ form.qty_scrap_today(class="form-control") }}
+                                            {% for error in form.qty_scrap_today.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.daily_status.label(class="form-label") }}
+                                    {{ form.daily_status(class="form-select") }}
+                                    {% for error in form.daily_status.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Resource and Cost Tracking -->
+                            <div class="col-md-6">
+                                <h6 class="text-success mb-3">
+                                    <i class="fas fa-users me-2"></i>Resources & Costs
+                                </h6>
+
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            {{ form.workers_assigned.label(class="form-label") }}
+                                            {{ form.workers_assigned(class="form-control") }}
+                                            {% for error in form.workers_assigned.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            {{ form.machine_hours_used.label(class="form-label") }}
+                                            {{ form.machine_hours_used(class="form-control") }}
+                                            {% for error in form.machine_hours_used.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.overtime_hours.label(class="form-label") }}
+                                    {{ form.overtime_hours(class="form-control") }}
+                                    {% for error in form.overtime_hours.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            {{ form.material_consumed_cost.label(class="form-label") }}
+                                            <div class="input-group">
+                                                <span class="input-group-text">₹</span>
+                                                {{ form.material_consumed_cost(class="form-control") }}
+                                            </div>
+                                            {% for error in form.material_consumed_cost.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            {{ form.labor_cost_today.label(class="form-label") }}
+                                            <div class="input-group">
+                                                <span class="input-group-text">₹</span>
+                                                {{ form.labor_cost_today(class="form-control") }}
+                                            </div>
+                                            {% for error in form.labor_cost_today.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shift Timing -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h6 class="text-warning mb-3">
+                                    <i class="fas fa-clock me-2"></i>Shift Timing
+                                </h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.shift_start_time.label(class="form-label") }}
+                                    {{ form.shift_start_time(class="form-control") }}
+                                    {% for error in form.shift_start_time.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.shift_end_time.label(class="form-label") }}
+                                    {{ form.shift_end_time(class="form-control") }}
+                                    {% for error in form.shift_end_time.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Issues and Notes -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h6 class="text-danger mb-3">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Issues & Notes
+                                </h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.production_issues.label(class="form-label") }}
+                                    {{ form.production_issues(class="form-control") }}
+                                    {% for error in form.production_issues.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.quality_issues.label(class="form-label") }}
+                                    {{ form.quality_issues(class="form-control") }}
+                                    {% for error in form.quality_issues.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.delay_reason.label(class="form-label") }}
+                                    {{ form.delay_reason(class="form-control") }}
+                                    {% for error in form.delay_reason.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.supervisor_notes.label(class="form-label") }}
+                                    {{ form.supervisor_notes(class="form-control") }}
+                                    {% for error in form.supervisor_notes.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <div>
+                                <a href="{{ url_for('daily_production.shift_log', daily_status_id=today_report.id) }}" 
+                                   class="btn btn-outline-info" {% if not today_report %}disabled{% endif %}>
+                                    <i class="fas fa-clock me-2"></i>Add Shift Log
+                                </a>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-secondary me-2" onclick="history.back()">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Update Daily Status
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-calculate good quantity when completed is entered
+document.getElementById('qty_completed_today').addEventListener('input', function() {
+    const completed = parseFloat(this.value) || 0;
+    const defective = parseFloat(document.getElementById('qty_defective_today').value) || 0;
+    const scrap = parseFloat(document.getElementById('qty_scrap_today').value) || 0;
+    const good = Math.max(0, completed - defective - scrap);
+    document.getElementById('qty_good_today').value = good.toFixed(2);
+});
+
+// Auto-calculate good quantity when defective or scrap changes
+document.getElementById('qty_defective_today').addEventListener('input', updateGoodQuantity);
+document.getElementById('qty_scrap_today').addEventListener('input', updateGoodQuantity);
+
+function updateGoodQuantity() {
+    const completed = parseFloat(document.getElementById('qty_completed_today').value) || 0;
+    const defective = parseFloat(document.getElementById('qty_defective_today').value) || 0;
+    const scrap = parseFloat(document.getElementById('qty_scrap_today').value) || 0;
+    const good = Math.max(0, completed - defective - scrap);
+    document.getElementById('qty_good_today').value = good.toFixed(2);
+}
+
+// Show/hide delay reason based on status
+document.getElementById('daily_status').addEventListener('change', function() {
+    const delayReasonGroup = document.getElementById('delay_reason').closest('.mb-3');
+    if (this.value === 'delayed') {
+        delayReasonGroup.style.display = 'block';
+        document.getElementById('delay_reason').required = true;
+    } else {
+        delayReasonGroup.style.display = 'none';
+        document.getElementById('delay_reason').required = false;
+    }
+});
+
+// Initialize delay reason visibility
+document.getElementById('daily_status').dispatchEvent(new Event('change'));
+</script>
+{% endblock %}

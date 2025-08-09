@@ -210,9 +210,14 @@
                     Inventory
                 </a>
                 
-                <a class="nav-link {{ 'active' if 'production' in request.endpoint }}" href="{{ url_for('production.dashboard') }}">
+                <a class="nav-link {{ 'active' if 'production' in request.endpoint and 'daily_production' not in request.endpoint }}" href="{{ url_for('production.dashboard') }}">
                     <i class="fas fa-cogs"></i>
                     Production
+                </a>
+                
+                <a class="nav-link {{ 'active' if 'daily_production' in request.endpoint }}" href="{{ url_for('daily_production.dashboard') }}">
+                    <i class="fas fa-calendar-day text-warning"></i>
+                    Daily Production Status
                 </a>
                 
                 <a class="nav-link {{ 'active' if 'jobwork' in request.endpoint }}" href="{{ url_for('jobwork.dashboard') }}">

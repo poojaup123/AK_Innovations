@@ -123,6 +123,9 @@ def create_app():
     app.register_blueprint(tally_bp, url_prefix='/tally')
     app.register_blueprint(packing_bp, url_prefix='/packing')
     app.register_blueprint(tally_import_bp, url_prefix='/tally')
+    
+    from routes.daily_production import daily_production_bp
+    app.register_blueprint(daily_production_bp)
     app.register_blueprint(live_status_bp)
     from routes.backup import backup_bp
     app.register_blueprint(backup_bp, url_prefix='/backup')
