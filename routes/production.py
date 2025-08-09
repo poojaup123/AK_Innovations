@@ -142,11 +142,13 @@ def dashboard():
         'job_cards_active_today': job_cards_active_today
     }
     
-    # Recent productions
-    recent_productions = Production.query.order_by(Production.created_at.desc()).limit(10).all()
+    # Recent productions with item data loaded
+    recent_productions = Production.query.join(Item).order_by(Production.created_at.desc()).limit(10).all()
     
-    # Today's production summary
-    today_productions = Production.query.filter_by(production_date=today).all()
+    # Today's production summary - get active productions with proper item loading
+    today_productions = Production.query.join(Item).filter(
+        Production.status.in_(['planned', 'in_progress'])
+    ).all()
     
     # Products with BOM
     products_with_bom = db.session.query(Item).join(BOM).filter(BOM.is_active == True).all()
