@@ -20,7 +20,7 @@ job_card_management_bp = Blueprint('job_card_management', __name__, url_prefix='
 
 @job_card_management_bp.route('/production/<int:production_id>')
 @login_required
-def view_production_job_cards(production_id):
+def production_job_cards(production_id):
     """View all job cards for a specific production order"""
     production = Production.query.get_or_404(production_id)
     
