@@ -740,60 +740,16 @@ function clearBOMData() {
     
     console.log('BOM data cleared');
 }
-                            output_product_name: process.output_product_name || 'Output Product',
-                            ratio: ratio,
-                            input_name: process.input_product_name || 'Input Material'
-                        };
-                        console.log(`Process transformation ratio stored: ${process.input_product_name} (${inputQty}) → ${process.output_product_name} (${outputQty}) = ${ratio}x`);
-                    }
-                });
-            }
-            
-            // Method 2: Calculate from BOM materials to BOM product (1 Ms Sheet → 400 Mounted Plates)
-            // Based on your BOM showing 1 Ms Sheet produces 400 Mounted Plates
-            if (data.materials && data.materials.length > 0 && data.product_id) {
-                data.materials.forEach(material => {
-                    // For your case: 1 Ms Sheet should produce 400 Mounted Plates
-                    // We'll use a known ratio based on your BOM
-                    if (material.name && material.name.toLowerCase().includes('sheet')) {
-                        const ratio = 400; // 1 Ms Sheet → 400 Mounted Plates from your BOM
-                        window.bomTransformationRatios[material.id] = {
-                            output_product_id: data.product_id,
-                            output_product_name: data.product_name,
-                            ratio: ratio,
-                            input_name: material.name
-                        };
-                        console.log(`BOM material transformation ratio stored: ${material.name} → ${data.product_name} = ${ratio}x`);
-                    }
-                });
-            }
-            
-            // Populate input materials section
-            if (data.materials && data.materials.length > 0) {
-                console.log('Calling populateInputMaterials with:', data.materials);
-                populateInputMaterials(data.materials);
-            } else {
-                console.warn('No materials found in BOM data');
-            }
-            
-            // Populate process routing section
-            if (data.processes && data.processes.length > 0) {
-                console.log('Calling populateProcessRouting with:', data.processes);
-                populateProcessRouting(data.processes);
-            } else {
-                console.warn('No processes found in BOM data');
-            }
-            
-            // Update output summary after populating processes
-            updateOutputSummary();
-            
-            // Show success message
-            showSuccessMessage(`BOM ${data.bom_code} data loaded successfully!`);
-        })
-        .catch(error => {
-            console.error('Error loading BOM data:', error);
-            alert('Error loading BOM data: ' + error.message);
-        });
+
+// Enhanced BOM utility functions
+function showSuccessMessage(message) {
+    console.log(message);
+    // You can add a toast notification here if needed
+}
+
+function updateOutputSummary() {
+    // Update output summary logic if needed
+    console.log('Output summary updated');
 }
 
 // Populate input materials from BOM
