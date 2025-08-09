@@ -23,7 +23,7 @@ class DailyProductionService:
         Returns:
             dict: Validation result with availability status and details
         """
-        from models.bom import BOM, BOMItem
+        from models import BOM, BOMItem
         
         # Check if production has BOM
         if not production.bom_id:
