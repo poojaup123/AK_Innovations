@@ -291,13 +291,13 @@ def unified_dashboard():
     }
     
     # Get recent activities
-    recent_grns = GRN.query.filter_by(job_work_id=JobWork.id).order_by(GRN.created_at.desc()).limit(10).all()
+    recent_grns = GRN.query.filter(GRN.job_work_id.isnot(None)).order_by(GRN.created_at.desc()).limit(10).all()
     
     # Get active job works needing attention
-    active_job_works = JobWork.query.filter(JobWork.status.in_(['sent', 'partial_received'])).order_by(JobWork.expected_return).all()
+    active_job_works = JobWork.query.filter(JobWork.status.in_(['sent', 'partial_received'])).order_by(JobWork.id.desc()).limit(20).all()
     
-    # Get workflow status that needs action
-    pending_actions = db.session.query(GRNWorkflowStatus, GRN, JobWork).join(GRN).join(JobWork).filter(
+    # Get workflow status that needs action - simplified query
+    pending_actions = db.session.query(GRNWorkflowStatus).filter(
         db.or_(
             db.and_(GRNWorkflowStatus.grn_voucher_created == True, GRNWorkflowStatus.invoice_received == False),
             db.and_(GRNWorkflowStatus.invoice_received == True, GRNWorkflowStatus.payment_made == False)
