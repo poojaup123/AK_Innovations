@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Job Cards Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-clipboard-list text-info"></i> Job Cards Dashboard</h2>
+                <div>
+                    <a href="{{ url_for('job_cards.create_job_card') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create Job Card
+                    </a>
+                    <a href="{{ url_for('production.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Production
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card border-primary">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Total Job Cards</h6>
+                            <h4 class="text-primary">{{ stats.total_job_cards or 0 }}</h4>
+                        </div>
+                        <i class="fas fa-tasks stats-icon text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-warning">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Active</h6>
+                            <h4 class="text-warning">{{ stats.active_job_cards or 0 }}</h4>
+                        </div>
+                        <i class="fas fa-play stats-icon text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-success">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Completed</h6>
+                            <h4 class="text-success">{{ stats.completed_job_cards or 0 }}</h4>
+                        </div>
+                        <i class="fas fa-check stats-icon text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card border-danger">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-muted">Overdue</h6>
+                            <h4 class="text-danger">{{ stats.overdue_job_cards or 0 }}</h4>
+                        </div>
+                        <i class="fas fa-exclamation-triangle stats-icon text-danger"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Cards Table -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>All Job Cards
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if job_cards %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Job Card #</th>
+                                        <th>Production</th>
+                                        <th>Process</th>
+                                        <th>Item</th>
+                                        <th>Assigned To</th>
+                                        <th>Progress</th>
+                                        <th>Target Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for job_card in job_cards %}
+                                    <tr>
+                                        <td><strong>{{ job_card.job_card_number }}</strong></td>
+                                        <td>
+                                            {% if job_card.production %}
+                                                {{ job_card.production.production_number }}
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <strong>{{ job_card.process_name }}</strong>
+                                            <br><small class="text-muted">{{ job_card.process_type|title }}</small>
+                                        </td>
+                                        <td>
+                                            {% set item = job_card.item %}
+                                            {{ item.code if item else 'N/A' }} - {{ item.name if item else 'Unknown Item' }}
+                                        </td>
+                                        <td>
+                                            {% if job_card.assigned_worker %}
+                                                <i class="fas fa-user me-1 text-primary"></i>{{ job_card.assigned_worker.name }}
+                                            {% elif job_card.assigned_vendor %}
+                                                <i class="fas fa-building me-1 text-info"></i>{{ job_card.assigned_vendor.name }}
+                                            {% else %}
+                                                <span class="text-muted">Unassigned</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="progress mb-1" style="height: 20px;">
+                                                <div class="progress-bar bg-{{ 'success' if job_card.completion_rate >= 100 else 'warning' if job_card.completion_rate >= 50 else 'danger' }}" 
+                                                     role="progressbar" style="width: {{ job_card.completion_rate }}%">
+                                                    {{ "%.0f"|format(job_card.completion_rate) }}%
+                                                </div>
+                                            </div>
+                                            <small>{{ "%.1f"|format(job_card.completed_quantity) }} / {{ "%.1f"|format(job_card.planned_quantity) }}</small>
+                                        </td>
+                                        <td>
+                                            {{ job_card.target_completion_date.strftime('%Y-%m-%d') }}
+                                            {% if job_card.is_overdue %}
+                                                <br><span class="badge bg-danger">Overdue</span>
+                                            {% elif job_card.days_remaining <= 1 %}
+                                                <br><span class="badge bg-warning">Due Soon</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if job_card.status == 'completed' else 'primary' if job_card.status == 'in_progress' else 'secondary' }}">
+                                                {{ job_card.status|title }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('job_cards.view_job_card', job_card_id=job_card.id) }}" 
+                                                   class="btn btn-sm btn-outline-info" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('job_cards.update_daily_status', job_card_id=job_card.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary" title="Update Status">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Job Cards Found</h5>
+                            <p class="text-muted">Create your first job card to start tracking production processes.</p>
+                            <a href="{{ url_for('job_cards.create_job_card') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create Job Card
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stats-card {
+    transition: transform 0.2s;
+    border-width: 2px;
+}
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+.stats-icon {
+    font-size: 2rem;
+    opacity: 0.7;
+}
+</style>
+{% endblock %}

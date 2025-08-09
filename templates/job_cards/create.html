@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Create Job Card{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus me-2"></i>Create New Job Card
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+
+                        <!-- Hidden field for production ID -->
+                        {{ form.production_id() }}
+                        
+                        <div class="row">
+                            <!-- Job Card Number -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.job_card_number.label(class="form-label") }}
+                                    {{ form.job_card_number(class="form-control", readonly=true) }}
+                                    {% for error in form.job_card_number.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Item Selection -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.item_id.label(class="form-label") }}
+                                    {{ form.item_id(class="form-select") }}
+                                    {% for error in form.item_id.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Process Details -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.process_name.label(class="form-label") }}
+                                    {{ form.process_name(class="form-control") }}
+                                    {% for error in form.process_name.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Process Sequence -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.process_sequence.label(class="form-label") }}
+                                    {{ form.process_sequence(class="form-control") }}
+                                    {% for error in form.process_sequence.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Operation Description -->
+                        <div class="mb-3">
+                            {{ form.operation_description.label(class="form-label") }}
+                            {{ form.operation_description(class="form-control", rows="2") }}
+                            {% for error in form.operation_description.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="row">
+                            <!-- Planned Quantity -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.planned_quantity.label(class="form-label") }}
+                                    {{ form.planned_quantity(class="form-control") }}
+                                    {% for error in form.planned_quantity.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Machine/Workstation -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.machine_workstation.label(class="form-label") }}
+                                    {{ form.machine_workstation(class="form-control") }}
+                                    {% for error in form.machine_workstation.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Priority -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.priority.label(class="form-label") }}
+                                    {{ form.priority(class="form-select") }}
+                                    {% for error in form.priority.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Time Estimates -->
+                            <div class="col-md-6">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            {{ form.setup_time_minutes.label(class="form-label") }}
+                                            {{ form.setup_time_minutes(class="form-control") }}
+                                            {% for error in form.setup_time_minutes.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="mb-3">
+                                            {{ form.run_time_minutes.label(class="form-label") }}
+                                            {{ form.run_time_minutes(class="form-control") }}
+                                            {% for error in form.run_time_minutes.errors %}
+                                                <div class="text-danger small">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Estimated Cost -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.estimated_cost.label(class="form-label") }}
+                                    {{ form.estimated_cost(class="form-control") }}
+                                    {% for error in form.estimated_cost.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Dates -->
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.planned_start_date.label(class="form-label") }}
+                                    {{ form.planned_start_date(class="form-control") }}
+                                    {% for error in form.planned_start_date.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.planned_end_date.label(class="form-label") }}
+                                    {{ form.planned_end_date(class="form-control") }}
+                                    {% for error in form.planned_end_date.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.target_completion_date.label(class="form-label") }}
+                                    {{ form.target_completion_date(class="form-control") }}
+                                    {% for error in form.target_completion_date.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Worker Assignment -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.assigned_worker_id.label(class="form-label") }}
+                                    {{ form.assigned_worker_id(class="form-select") }}
+                                    {% for error in form.assigned_worker_id.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Vendor Assignment -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.assigned_vendor_id.label(class="form-label") }}
+                                    {{ form.assigned_vendor_id(class="form-select") }}
+                                    {% for error in form.assigned_vendor_id.errors %}
+                                        <div class="text-danger small">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Production Notes -->
+                        <div class="mb-3">
+                            {{ form.production_notes.label(class="form-label") }}
+                            {{ form.production_notes(class="form-control", rows="3") }}
+                            {% for error in form.production_notes.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('job_cards.dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Job Cards
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Create Job Card
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Production Info Sidebar -->
+        {% if production %}
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Production Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Production Number:</strong>
+                        <br><span class="text-primary">{{ production.production_number }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Item:</strong>
+                        <br>{{ production.item.code if production.item else 'N/A' }} - {{ production.item.name if production.item else 'Unknown Item' }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Planned Quantity:</strong>
+                        <br>{{ "%.1f"|format(production.quantity_planned or 0) }} {{ production.item.unit_of_measure if production.item else 'units' }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Status:</strong>
+                        <br><span class="badge bg-{{ 'success' if production.status == 'completed' else 'primary' if production.status == 'in_progress' else 'secondary' }}">
+                            {{ production.status|title }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
