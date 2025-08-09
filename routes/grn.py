@@ -615,12 +615,20 @@ def dashboard():
             'job_card_id': job_card.id  # For GRN creation link
         })
     
+    # Get pending outsourced job cards for the "Pending Material Receipt" sidebar
+    pending_job_cards = JobCard.query.filter(
+        JobCard.parent_job_card_id.isnot(None),
+        JobCard.outsource_quantity > 0,
+        JobCard.grn_id.is_(None)  # Only those without GRNs
+    ).order_by(JobCard.created_at.desc()).all()
+    
     return render_template('grn/dashboard.html',
                          title='GRN Dashboard',
                          parent_child_data=parent_child_data,
                          stats=stats,
                          pending_job_works=pending_job_works,
                          pending_purchase_orders=pending_purchase_orders,
+                         pending_job_cards=pending_job_cards,
                          monthly_grns=monthly_grns)
 
 

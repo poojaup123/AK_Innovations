@@ -392,6 +392,7 @@
                             <ul class="list-unstyled">
                                 <li><span class="badge bg-success me-2">PO</span> Purchase Orders: <strong>{{ parent_child_data|selectattr('type', 'equalto', 'Purchase Order')|list|length }}</strong></li>
                                 <li><span class="badge bg-info me-2">JW</span> Job Works: <strong>{{ parent_child_data|selectattr('type', 'equalto', 'Job Work')|list|length }}</strong></li>
+                                <li><span class="badge bg-warning me-2">JC</span> Outsourced Job Cards: <strong>{{ parent_child_data|selectattr('type', 'equalto', 'Outsourced Job Card')|list|length }}</strong></li>
                             </ul>
                         </div>
                         <div class="col-md-6">
@@ -400,6 +401,7 @@
                                 <li><span class="badge bg-success me-2">Completed</span> {{ parent_child_data|selectattr('status', 'equalto', 'Completed')|list|length }}</li>
                                 <li><span class="badge bg-warning me-2">Partial</span> {{ parent_child_data|selectattr('status', 'equalto', 'Partial')|list|length }}</li>
                                 <li><span class="badge bg-secondary me-2">Pending</span> {{ parent_child_data|selectattr('status', 'equalto', 'Pending')|list|length }}</li>
+                                <li><span class="badge bg-info me-2">Pending GRN</span> {{ parent_child_data|selectattr('status', 'equalto', 'Pending GRN')|list|length }}</li>
                             </ul>
                         </div>
                     </div>
@@ -412,10 +414,10 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5><i class="fas fa-truck me-2"></i>Pending Material Receipt</h5>
-                    <span class="badge bg-warning">{{ (pending_job_works|length + pending_purchase_orders|length) }} items</span>
+                    <span class="badge bg-warning">{{ (pending_job_works|length + pending_purchase_orders|length + pending_job_cards|length) }} items</span>
                 </div>
                 <div class="card-body">
-                    {% if pending_job_works or pending_purchase_orders %}
+                    {% if pending_job_works or pending_purchase_orders or pending_job_cards %}
                         <div class="list-group list-group-flush">
                             <!-- Job Works -->
                             {% for job in pending_job_works %}
@@ -452,6 +454,46 @@
                                             <li>
                                                 <a class="dropdown-item" href="{{ url_for('jobwork.detail', id=job.id) }}">
                                                     <i class="fas fa-eye me-2"></i>View Job Work
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            <!-- Outsourced Job Cards -->
+                            {% for job_card in pending_job_cards %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <span class="badge bg-info me-2">Outsourced Job Card</span>
+                                        <h6 class="mb-1">{{ job_card.job_card_number }}</h6>
+                                        <p class="mb-1 text-muted small">
+                                            {% if job_card.assigned_vendor %}{{ job_card.assigned_vendor.name }}{% else %}N/A{% endif %}
+                                        </p>
+                                        <p class="mb-1 small">
+                                            <span class="text-muted">Pending Receipt:</span> 
+                                            <strong>{{ "%.2f"|format(job_card.outsource_quantity or 0) }} pcs</strong>
+                                        </p>
+                                        <span class="badge bg-warning">
+                                            Awaiting GRN
+                                        </span>
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            Action
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('grn_job_card.create_grn_for_job_card', job_card_id=job_card.id) }}">
+                                                    <i class="fas fa-plus me-2"></i>Create GRN
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item" href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}">
+                                                    <i class="fas fa-eye me-2"></i>View Job Card
                                                 </a>
                                             </li>
                                         </ul>
