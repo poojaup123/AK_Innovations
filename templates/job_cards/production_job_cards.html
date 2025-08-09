@@ -337,17 +337,24 @@ function createGatePass(jobCardId) {
                 'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Server error: ' + response.status);
+            }
+        })
         .then(data => {
-            if (data.success) {
+            if (data && data.success) {
                 alert('Gate pass created successfully!');
                 location.reload();
             } else {
-                alert('Error creating gate pass: ' + data.message);
+                alert('Error creating gate pass: ' + (data ? data.message : 'Unknown error'));
             }
         })
         .catch(error => {
-            alert('Error: ' + error.message);
+            console.error('Gate pass creation error:', error);
+            alert('Error creating gate pass. Please check the console for details.');
         });
     }
 }
