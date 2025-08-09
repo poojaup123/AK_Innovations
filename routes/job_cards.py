@@ -322,13 +322,8 @@ def update_daily_status(job_card_id):
                 reported_by_id=current_user.id
             )
             
+            # Always return to job card detail page to show the progress report
             flash(f'Daily status updated for job card {job_card.job_card_number}', 'success')
-            
-            # Check if any processes were completed and offer outsourcing option
-            if selected_processes and form.qty_good_today.data > 0:
-                flash('Progress saved! You can now outsource completed work if needed.', 'info')
-                return redirect(url_for('job_cards.outsourcing_workflow', job_card_id=job_card_id))
-            
             return redirect(url_for('job_cards.view_job_card', id=job_card_id))
             
         except Exception as e:
