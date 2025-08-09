@@ -18,7 +18,7 @@ The system is built on a Flask backend using a modern application factory patter
 Core features include:
 - **Multi-State Inventory:** Tracks items in Raw Material, Work in Progress (WIP), Finished Goods, and Scrap states, with process-specific WIP tracking.
 - **BOM-Driven Manufacturing:** Supports Bill of Materials for production planning, including material availability checks, automatic labor cost and scrap calculations, and BOM-driven material reservations.
-- **Unified Job Work System:** A single, comprehensive form manages all job work types (in-house/outsourced, single/multi-process), integrating with GRN for material receipt and inventory updates.
+- **Separate Job Work & GRN Systems:** Clean separation between Job Work system for outsourced work and authentic GRN system for material receipt, maintaining data integrity and proper workflow separation.
 - **Automated Workflows:** Features automated Purchase Order status progression, automatic inventory updates, and GRN-based material receipt.
 - **Data Integrity & Automation:** Implements auto-generation for all unique codes, real-time stock validation, mechanisms to detect and correct data inconsistencies, and comprehensive accounting automation that creates proper journal entries for all financial transactions across modules.
 - **Process Management:** Detailed tracking of manufacturing processes within BOMs, including step-by-step workflow, cost calculations, and individual process scrap tracking.
