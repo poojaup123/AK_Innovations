@@ -127,59 +127,7 @@
                                     {{ form.process_notes(class="form-control", rows="3", placeholder="Process-specific notes and observations") }}
                                 </div>
                                 
-                                <!-- Outsourcing Options -->
-                                <div class="card border-info mt-3">
-                                    <div class="card-header bg-info text-white">
-                                        <h6 class="mb-0"><i class="fas fa-external-link-alt me-2"></i>Outsourcing Options</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="form-check mb-3">
-                                            {{ form.outsource_process(class="form-check-input", id="outsource_toggle") }}
-                                            <label class="form-check-label" for="outsource_toggle">
-                                                <strong>Outsource Selected Process(es)</strong>
-                                                <br><small class="text-muted">Send selected processes to external vendor</small>
-                                            </label>
-                                        </div>
-                                        
-                                        <div id="outsourcing_details" style="display: none;">
-                                            <div class="alert alert-info">
-                                                <i class="fas fa-info-circle me-1"></i>
-                                                <strong>Partial Outsourcing:</strong> You can outsource a specific quantity while continuing other work in-house.
-                                            </div>
-                                            
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <div class="mb-3">
-                                                        {{ form.outsource_quantity.label(class="form-label") }}
-                                                        {{ form.outsource_quantity(class="form-control", placeholder="e.g., 50", step="0.1") }}
-                                                        <div class="form-text">
-                                                            <small class="text-muted">
-                                                                Completed Today: <span id="completed_qty_display">0</span> | 
-                                                                Available: <span id="available_for_outsource">0</span>
-                                                            </small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Select Vendor</label>
-                                                        <select class="form-select" name="outsource_vendor_id">
-                                                            <option value="">Choose vendor...</option>
-                                                            {% for vendor in vendors %}
-                                                            <option value="{{ vendor.id }}">{{ vendor.name }} - {{ vendor.contact_person }}</option>
-                                                            {% endfor %}
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                {{ form.outsource_notes.label(class="form-label") }}
-                                                {{ form.outsource_notes(class="form-control", rows="2", placeholder="Special instructions for vendor (e.g., zinc coating specifications)") }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+
                                 
                                 <div class="form-check mb-3">
                                     {{ form.process_completed(class="form-check-input") }}

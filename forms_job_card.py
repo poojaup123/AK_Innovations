@@ -123,11 +123,7 @@ class JobCardDailyUpdateForm(FlaskForm):
     create_new_batch = BooleanField('Create New Output Batch', default=False)
     # Note: Input batch numbers are automatically determined from job card material requirements
     
-    # Outsourcing Management
-    outsource_process = BooleanField('Outsource Selected Process(es)', default=False)
-    outsource_quantity = FloatField('Quantity to Outsource', validators=[Optional(), NumberRange(min=0)], default=0)
-    outsource_vendor_id = IntegerField('Outsource to Vendor', validators=[Optional()])
-    outsource_notes = TextAreaField('Outsourcing Instructions', validators=[Optional()])
+
     
     # Workflow Control
     status_after_entry = SelectField('Action After Entry',
@@ -135,8 +131,6 @@ class JobCardDailyUpdateForm(FlaskForm):
                                        ('none', 'Save Only'),
                                        ('pending_approval', 'Submit for Supervisor Approval'),
                                        ('submit_to_qc', 'Submit to Quality Control'),
-                                       ('outsource_process', 'Send to Vendor for Processing'),
-                                       ('partial_outsource', 'Partial Outsource - Continue Other Work'),
                                        ('complete_job', 'Mark Job Card Complete')
                                    ],
                                    default='none')

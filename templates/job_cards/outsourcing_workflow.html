@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Outsourcing Workflow - {{ job_card.job_card_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-external-link-alt me-2"></i>Outsourcing Workflow</h2>
+                    <p class="text-muted mb-0">Send completed work to external vendor for further processing</p>
+                </div>
+                <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Job Card
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Outsourcing Form -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-shipping-fast me-2"></i>Send Work for Outsourcing</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Progress Summary -->
+                    <div class="alert alert-success mb-4">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Job Card:</strong> {{ job_card.job_card_number }}<br>
+                                <strong>Item:</strong> {{ job_card.item.name if job_card.item else 'Unknown' }}
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Available Quantity:</strong> {{ available_quantity }} pcs<br>
+                                <strong>Status:</strong> Ready for Outsourcing
+                            </div>
+                            <div class="col-md-4">
+                                {% if latest_report %}
+                                <strong>Today's Progress:</strong><br>
+                                Good: {{ latest_report.qty_good_today }}, 
+                                Defective: {{ latest_report.qty_defective_today }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('job_cards.outsourcing_workflow', job_card_id=job_card.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.selected_processes.label(class="form-label") }}
+                                    {{ form.selected_processes(class="form-select") }}
+                                    <div class="form-text">Choose which process to outsource</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.vendor_id.label(class="form-label") }}
+                                    {{ form.vendor_id(class="form-select") }}
+                                    <div class="form-text">Select vendor for processing</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.available_quantity.label(class="form-label") }}
+                                    {{ form.available_quantity(class="form-control") }}
+                                    <div class="form-text">Quantity available for outsourcing</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.outsource_quantity.label(class="form-label") }}
+                                    {{ form.outsource_quantity(class="form-control", placeholder="e.g., 50", step="0.1") }}
+                                    <div class="form-text">How many pieces to send to vendor</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.expected_return_days.label(class="form-label") }}
+                                    {{ form.expected_return_days(class="form-control") }}
+                                    <div class="form-text">Expected turnaround time</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.outsource_cost_estimate.label(class="form-label") }}
+                                    {{ form.outsource_cost_estimate(class="form-control", step="0.01") }}
+                                    <div class="form-text">Estimated cost per unit</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            {{ form.outsource_notes.label(class="form-label") }}
+                            {{ form.outsource_notes(class="form-control", rows="3") }}
+                            <div class="form-text">{{ form.outsource_notes.description }}</div>
+                        </div>
+
+                        <!-- Options -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.create_tracking_batch(class="form-check-input") }}
+                                    {{ form.create_tracking_batch.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Creates a separate batch for tracking outsourced items</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    {{ form.notify_vendor(class="form-check-input") }}
+                                    {{ form.notify_vendor.label(class="form-check-label") }}
+                                </div>
+                                <small class="text-muted">Send notification to vendor about the work</small>
+                            </div>
+                        </div>
+
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>Send for Outsourcing
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Card Summary -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Job Card Summary</h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Job Card:</strong></td>
+                            <td>{{ job_card.job_card_number }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Item:</strong></td>
+                            <td>{{ job_card.item.name if job_card.item else 'Unknown' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Process:</strong></td>
+                            <td>{{ job_card.process_name }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status:</strong></td>
+                            <td>
+                                <span class="badge 
+                                    {% if job_card.status == 'completed' %}bg-success
+                                    {% elif job_card.status == 'in_progress' %}bg-warning
+                                    {% elif job_card.status == 'planned' %}bg-info
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ job_card.status.title() }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Planned Qty:</strong></td>
+                            <td>{{ "%.1f"|format(job_card.planned_quantity) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Available:</strong></td>
+                            <td class="text-success">{{ available_quantity }} pcs</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            {% if latest_report %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Today's Progress</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="text-success">
+                                <h4>{{ latest_report.qty_good_today }}</h4>
+                                <small>Good</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-warning">
+                                <h4>{{ latest_report.qty_defective_today }}</h4>
+                                <small>Defective</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-danger">
+                                <h4>{{ latest_report.qty_scrap_today }}</h4>
+                                <small>Scrap</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-fill outsource quantity with available quantity
+document.addEventListener('DOMContentLoaded', function() {
+    const availableQty = {{ available_quantity }};
+    const outsourceQtyField = document.getElementById('outsource_quantity');
+    
+    if (outsourceQtyField && !outsourceQtyField.value && availableQty > 0) {
+        outsourceQtyField.value = availableQty;
+    }
+    
+    // Update estimate cost total when quantity changes
+    const costField = document.getElementById('outsource_cost_estimate');
+    const qtyField = document.getElementById('outsource_quantity');
+    
+    function updateCostEstimate() {
+        const qty = parseFloat(qtyField.value) || 0;
+        const cost = parseFloat(costField.value) || 0;
+        const total = qty * cost;
+        
+        // Display total cost estimate
+        let totalDisplay = document.getElementById('total_cost_display');
+        if (!totalDisplay) {
+            totalDisplay = document.createElement('small');
+            totalDisplay.id = 'total_cost_display';
+            totalDisplay.className = 'text-muted';
+            costField.parentNode.appendChild(totalDisplay);
+        }
+        totalDisplay.textContent = total > 0 ? `Total Estimate: ₹${total.toFixed(2)}` : '';
+    }
+    
+    if (qtyField && costField) {
+        qtyField.addEventListener('input', updateCostEstimate);
+        costField.addEventListener('input', updateCostEstimate);
+    }
+});
+</script>
+{% endblock %}

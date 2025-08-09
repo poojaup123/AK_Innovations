@@ -259,11 +259,7 @@ def update_daily_status(job_card_id):
             bom_id=job_card.bom_item.bom_id if job_card.bom_item else None
         ).order_by(BOMProcess.step_number).all()
     
-    # Get available vendors for outsourcing
-    from models import Supplier
-    vendors = Supplier.query.filter(
-        Supplier.partner_type.in_(['vendor', 'both'])
-    ).filter_by(is_active=True).all()
+    # Vendors are handled in separate outsourcing workflow
     
     # Get today's report if exists
     today_report = JobCardDailyStatus.get_today_report(job_card_id)
@@ -300,27 +296,7 @@ def update_daily_status(job_card_id):
                 
                 process_notes = f"Processes worked: {', '.join(process_names)}"
             
-            # Handle outsourcing workflow
-            if form.outsource_process.data and request.form.get('outsource_vendor_id'):
-                vendor_id = request.form.get('outsource_vendor_id')
-                outsource_quantity = form.outsource_quantity.data or 0
-                outsource_notes = form.outsource_notes.data
-                
-                # Find vendor for notes
-                vendor = Supplier.query.get(vendor_id)
-                vendor_name = vendor.name if vendor else f"Vendor ID: {vendor_id}"
-                
-                # Update job card status for partial outsourcing
-                if outsource_quantity > 0:
-                    job_card.status = 'partially_outsourced'
-                    job_card.assigned_vendor_id = vendor_id
-                    job_card.outsource_notes = outsource_notes
-                    job_card.outsourced_quantity = outsource_quantity
-                    
-                    if process_notes:
-                        process_notes += f" | Outsourced {outsource_quantity} pcs to {vendor_name}"
-                    else:
-                        process_notes = f"Outsourced {outsource_quantity} pcs to {vendor_name}"
+            # No more inline outsourcing - handled in separate workflow
                 
             # Update daily status report
             updated_report = JobCardDailyStatus.create_or_update_today(
@@ -347,7 +323,13 @@ def update_daily_status(job_card_id):
             )
             
             flash(f'Daily status updated for job card {job_card.job_card_number}', 'success')
-            return redirect(url_for('job_cards.dashboard'))
+            
+            # Check if any processes were completed and offer outsourcing option
+            if selected_processes and form.qty_good_today.data > 0:
+                flash('Progress saved! You can now outsource completed work if needed.', 'info')
+                return redirect(url_for('job_cards.outsourcing_workflow', job_card_id=job_card_id))
+            
+            return redirect(url_for('job_cards.view_job_card', id=job_card_id))
             
         except Exception as e:
             db.session.rollback()
@@ -357,8 +339,88 @@ def update_daily_status(job_card_id):
                          form=form,
                          job_card=job_card,
                          today_report=today_report,
-                         bom_processes=bom_processes,
-                         vendors=vendors)
+                         bom_processes=bom_processes)
+
+
+@job_cards_bp.route('/outsourcing-workflow/<int:job_card_id>', methods=['GET', 'POST'])
+@login_required
+def outsourcing_workflow(job_card_id):
+    """Separate outsourcing workflow after progress report submission"""
+    job_card = JobCard.query.get_or_404(job_card_id)
+    
+    # Get available vendors
+    from models import Supplier
+    vendors = Supplier.query.filter(
+        Supplier.partner_type.in_(['vendor', 'both'])
+    ).filter_by(is_active=True).all()
+    
+    # Get BOM processes for this job card
+    bom_processes = []
+    if job_card.bom_item_id:
+        from models import BOMProcess
+        bom_processes = BOMProcess.query.filter_by(
+            bom_id=job_card.bom_item.bom_id if job_card.bom_item else None
+        ).order_by(BOMProcess.step_number).all()
+    
+    # Get latest daily report to check available quantities
+    from models import JobCardDailyStatus
+    latest_report = JobCardDailyStatus.get_today_report(job_card_id)
+    available_quantity = latest_report.qty_good_today if latest_report else 0
+    
+    from forms_outsourcing import OutsourcingWorkflowForm
+    form = OutsourcingWorkflowForm()
+    
+    # Populate form choices
+    form.selected_processes.choices = [
+        (str(process.id), f"Step {process.step_number}: {process.process_name}")
+        for process in bom_processes
+    ]
+    
+    form.vendor_id.choices = [
+        (str(vendor.id), f"{vendor.name} - {vendor.contact_person}")
+        for vendor in vendors
+    ]
+    
+    form.job_card_id.data = job_card_id
+    form.available_quantity.data = available_quantity
+    
+    if form.validate_on_submit():
+        try:
+            # Create outsourcing record
+            vendor_id = int(form.vendor_id.data)
+            vendor = Supplier.query.get(vendor_id)
+            outsource_quantity = form.outsource_quantity.data
+            
+            # Update job card
+            job_card.status = 'partially_outsourced'
+            job_card.assigned_vendor_id = vendor_id
+            job_card.outsource_notes = form.outsource_notes.data
+            
+            # Create tracking batch if requested
+            if form.create_tracking_batch.data:
+                from models import ItemBatch
+                outsource_batch = ItemBatch(
+                    item_id=job_card.item_id,
+                    batch_number=f"OUTSOURCE-{job_card.job_card_number}-{vendor.name.upper()[:3]}",
+                    qty_wip=outsource_quantity,
+                    batch_type='outsourced',
+                    notes=f"Sent to {vendor.name} for processing"
+                )
+                db.session.add(outsource_batch)
+            
+            db.session.commit()
+            flash(f'Successfully sent {outsource_quantity} pieces to {vendor.name} for outsourcing', 'success')
+            return redirect(url_for('job_cards.view_job_card', id=job_card_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error processing outsourcing: {str(e)}', 'danger')
+    
+    return render_template('job_cards/outsourcing_workflow.html',
+                         form=form,
+                         job_card=job_card,
+                         latest_report=latest_report,
+                         available_quantity=available_quantity)
 
 @job_cards_bp.route('/view/<int:id>')
 @login_required
