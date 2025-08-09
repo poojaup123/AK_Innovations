@@ -129,32 +129,35 @@ def multi_state_view():
             finished_qty = sum(b.quantity for b in batches if b.status == 'finished_goods')
             scrap_qty = sum(b.quantity for b in batches if b.status == 'scrap')
             
-            total_qty = raw_qty + wip_qty + finished_qty + scrap_qty
-            inventory_data.append({
-                'item_code': item.code,
-                'item_name': item.name,
-                'raw': raw_qty,
-                'wip': wip_qty,
-                'finished': finished_qty,
-                'scrap': scrap_qty,
-                'total_qty': total_qty,
-                'available': finished_qty,
-                'unit_of_measure': item.unit_of_measure
-            })
+            # Set calculated values on the item object for template compatibility
+            item.qty_raw = raw_qty
+            item.total_wip = wip_qty
+            item.qty_finished = finished_qty
+            item.qty_scrap = scrap_qty
+            item.total_stock = raw_qty + wip_qty + finished_qty + scrap_qty
+            item.available_stock = finished_qty
+            item.minimum_stock = getattr(item, 'minimum_stock', 0)
+            
+            inventory_data.append(item)
         
         # Calculate summary totals
         summary = {
             'total_items': len(inventory_data),
-            'total_raw': sum(item['raw'] for item in inventory_data),
-            'total_wip': sum(item['wip'] for item in inventory_data),
-            'total_finished': sum(item['finished'] for item in inventory_data),
-            'total_scrap': sum(item['scrap'] for item in inventory_data),
-            'total_available': sum(item['available'] for item in inventory_data)
+            'total_raw': sum(item.qty_raw for item in inventory_data),
+            'total_wip': sum(item.total_wip for item in inventory_data),
+            'total_finished': sum(item.qty_finished for item in inventory_data),
+            'total_scrap': sum(item.qty_scrap for item in inventory_data),
+            'total_available': sum(item.available_stock for item in inventory_data)
         }
         
         return render_template('inventory/multi_state_view.html', 
-                             inventory_data=inventory_data,
-                             summary=summary)
+                             items=inventory_data,
+                             summary=summary,
+                             total_raw=summary['total_raw'],
+                             total_wip=summary['total_wip'],
+                             total_finished=summary['total_finished'],
+                             total_scrap=summary['total_scrap'],
+                             title='Multi-State Inventory Tracking')
         
     except Exception as e:
         flash(f'Error loading multi-state view: {str(e)}', 'error')
