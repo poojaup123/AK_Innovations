@@ -251,6 +251,14 @@ def update_daily_status(job_card_id):
     """Update daily status for a job card"""
     job_card = JobCard.query.get_or_404(job_card_id)
     
+    # Get BOM processes for this job card
+    bom_processes = []
+    if job_card.bom_item_id:
+        from models.bom import BOMProcess
+        bom_processes = BOMProcess.query.filter_by(
+            bom_id=job_card.bom_item.bom_id if job_card.bom_item else None
+        ).order_by(BOMProcess.step_number).all()
+    
     # Get today's report if exists
     today_report = JobCardDailyStatus.get_today_report(job_card_id)
     
@@ -302,7 +310,8 @@ def update_daily_status(job_card_id):
     return render_template('job_cards/update_daily.html',
                          form=form,
                          job_card=job_card,
-                         today_report=today_report)
+                         today_report=today_report,
+                         bom_processes=bom_processes)
 
 @job_cards_bp.route('/view/<int:id>')
 @login_required
@@ -319,6 +328,23 @@ def view_job_card(id):
             flash('No job cards found in the system.', 'warning')
             return redirect(url_for('job_cards.dashboard'))
     
+    # Get BOM processes for this job card
+    routing_steps = []
+    if job_card.bom_item_id:
+        from models.bom import BOMProcess
+        bom_processes = BOMProcess.query.filter_by(
+            bom_id=job_card.bom_item.bom_id if job_card.bom_item else None
+        ).order_by(BOMProcess.step_number).all()
+        
+        routing_steps = [{
+            'step': process.step_number,
+            'process': process.process_name,
+            'description': process.operation_description,
+            'est_time': (process.setup_time_minutes or 0) + (process.run_time_minutes or 0),
+            'status': 'pending',  # Default status
+            'process_id': process.id
+        } for process in bom_processes]
+    
     # Get recent daily reports
     daily_reports = JobCardDailyStatus.query.filter_by(
         job_card_id=id
@@ -330,7 +356,8 @@ def view_job_card(id):
     return render_template('job_cards/job_card_detail.html',
                          job_card=job_card,
                          daily_reports=daily_reports,
-                         materials=materials)
+                         materials=materials,
+                         routing_steps=routing_steps)
 
 @job_cards_bp.route('/list')
 @login_required

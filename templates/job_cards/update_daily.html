@@ -76,6 +76,54 @@
                                 </div>
                             </div>
                             
+                            <!-- BOM Process Routing -->
+                            {% if bom_processes %}
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3"><i class="fas fa-route me-2"></i>Process Routing</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">Select Processes Worked On Today:</label>
+                                    {% for process in bom_processes %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="selected_processes" 
+                                               value="{{ process.id }}" id="process_{{ process.id }}">
+                                        <label class="form-check-label" for="process_{{ process.id }}">
+                                            <strong>Step {{ process.step_number }}: {{ process.process_name }}</strong>
+                                            {% if process.operation_description %}
+                                            <br><small class="text-muted">{{ process.operation_description }}</small>
+                                            {% endif %}
+                                            {% if process.setup_time_minutes or process.run_time_minutes %}
+                                            <br><small class="text-info">Est. Time: {{ (process.setup_time_minutes or 0) + (process.run_time_minutes or 0) }} min</small>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.current_process_step.label(class="form-label") }}
+                                    {{ form.current_process_step(class="form-control", placeholder="Current process being worked on") }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.process_notes.label(class="form-label") }}
+                                    {{ form.process_notes(class="form-control", rows="3", placeholder="Process-specific notes and observations") }}
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    {{ form.process_completed(class="form-check-input") }}
+                                    {{ form.process_completed.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Continue with Time Tracking section -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3"><i class="fas fa-clock me-2"></i>Time Tracking</h6>
+                                </div>
+                            </div>
+                            
                             <!-- Time Tracking -->
                             <div class="col-md-6">
                                 <h6 class="text-primary mb-3"><i class="fas fa-clock me-2"></i>Time Tracking</h6>

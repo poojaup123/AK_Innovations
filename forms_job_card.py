@@ -6,7 +6,7 @@ and workflow control according to the production specifications.
 """
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, IntegerField, FloatField, SelectField, DateField, BooleanField, HiddenField
+from wtforms import StringField, TextAreaField, IntegerField, FloatField, SelectField, DateField, BooleanField, HiddenField, FieldList, FormField
 from wtforms.validators import DataRequired, Optional, NumberRange
 from datetime import date
 
@@ -72,6 +72,14 @@ class JobCardDailyUpdateForm(FlaskForm):
     qty_scrap_today = FloatField('Scrap Quantity Today', 
                                validators=[Optional(), NumberRange(min=0)], 
                                default=0)
+    
+    # Process Selection
+    selected_processes = TextAreaField('Selected Processes (JSON)', validators=[Optional()])
+    
+    # Process-wise tracking
+    process_completed = BooleanField('Process Completed Today', default=False)
+    current_process_step = StringField('Current Process Step', validators=[Optional()])
+    process_notes = TextAreaField('Process-specific Notes', validators=[Optional()])
     
     # Status and Progress
     daily_status = SelectField('Today\'s Status',
