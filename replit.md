@@ -5,7 +5,7 @@ This Flask-based Factory Management System is designed for small to medium manuf
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
-UI/UX Preferences: Compact, horizontally-arranged dashboard cards with consistent sizing and professional spacing throughout the application.
+UI/UX Preferences: Compact, horizontally-arranged dashboard cards with consistent sizing and professional spacing throughout the application. Job Card Summary should appear on the right side of forms, not at the bottom.
 
 ## System Architecture
 
