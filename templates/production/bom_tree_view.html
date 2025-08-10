@@ -307,8 +307,8 @@
 
                 <!-- Cost Summary -->
                 {% if tree.bom.total_material_cost and tree.bom.total_material_cost > 0 %}
-                <div class="cost-summary">
-                    <i class="fas fa-calculator"></i> <strong>Cost Breakdown (Per Unit):</strong><br>
+                <div class="cost-summary" style="background-color: #f8f9fa; border: 2px solid #007bff; padding: 1rem; margin: 1rem 0;">
+                    <i class="fas fa-calculator text-primary"></i> <strong style="color: #007bff; font-size: 1.1em;">Detailed Cost Breakdown (Per Unit):</strong><br><br>
                     {% set material_cost_per_unit = tree.bom.total_material_cost / (tree.bom.output_quantity or 1.0) %}
                     {% set labor_cost_per_unit = (tree.bom.labor_cost_per_unit or 0) / (tree.bom.output_quantity or 1.0) %}
                     {% set process_cost_per_unit = 0 %}
