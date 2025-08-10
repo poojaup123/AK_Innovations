@@ -215,7 +215,13 @@
                             <div class="col-6">
                                 <div class="bg-light rounded p-2">
                                     <small class="text-muted d-block">Est. Cost</small>
-                                    <strong class="text-success">₹{{ "%.2f"|format(bom.processes|sum(attribute='cost_per_unit') or 0) }}</strong>
+                                    {% set total_cost = 0 %}
+                                    {% for process in bom.processes %}
+                                        {% if process.cost_per_unit %}
+                                            {% set total_cost = total_cost + process.cost_per_unit %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    <strong class="text-success">₹{{ "%.2f"|format(total_cost) }}</strong>
                                 </div>
                             </div>
                         </div>
