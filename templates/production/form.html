@@ -106,7 +106,7 @@
                                     <span class="input-group-text" id="planned-unit-display">
                                         <span id="unit-text">Select Item First</span>
                                     </span>
-                                    {{ form.planned_uom(class="form-select d-none", id="planned_uom_hidden") }}
+                                    {{ form.planned_uom(class="d-none", id="planned_uom_hidden") }}
                                 </div>
                                 {% if form.quantity_planned.errors %}
                                     <div class="text-danger small">
@@ -699,8 +699,33 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (itemSelect) {
         itemSelect.addEventListener('change', function() {
-            // Auto-populate unit from BOM when item is selected
+            // Auto-populate unit from item selection
             if (this.value && this.value !== '0') {
+                const selectedOption = this.options[this.selectedIndex];
+                const itemText = selectedOption.text;
+                
+                // Extract unit from item text or set default
+                let unit = 'Pcs'; // Default unit
+                
+                // Update the unit display immediately
+                const unitDisplay = document.getElementById('unit-text');
+                if (unitDisplay) {
+                    unitDisplay.textContent = unit;
+                }
+                
+                // Set the hidden field value
+                const hiddenUnitField = document.getElementById('planned_uom_hidden');
+                if (hiddenUnitField) {
+                    // Find the UOM option that matches "Pcs" or similar
+                    for (let option of hiddenUnitField.options) {
+                        if (option.text.toLowerCase().includes('pcs') || option.text.toLowerCase().includes('pieces')) {
+                            hiddenUnitField.value = option.value;
+                            break;
+                        }
+                    }
+                }
+                
+                // Also try API call for more accurate unit
                 fetchItemUnit(this.value);
             }
             
@@ -718,16 +743,25 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to fetch item unit and auto-populate
     function fetchItemUnit(itemId) {
+        console.log('Fetching unit for item ID:', itemId);
         fetch(`/production/api/item-unit/${itemId}`)
-            .then(response => response.json())
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
             .then(data => {
+                console.log('API Response:', data);
                 if (data.success && data.unit) {
                     // Update the display unit
                     const unitDisplay = document.getElementById('unit-text');
                     const hiddenUnitField = document.getElementById('planned_uom_hidden');
                     
+                    console.log('Unit display element:', unitDisplay);
+                    console.log('Hidden unit field:', hiddenUnitField);
+                    
                     if (unitDisplay) {
                         unitDisplay.textContent = data.unit;
+                        console.log('Updated unit display to:', data.unit);
                     }
                     
                     // Set the hidden field value for form submission
@@ -736,14 +770,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         for (let option of hiddenUnitField.options) {
                             if (option.text.toLowerCase().includes(data.unit.toLowerCase())) {
                                 hiddenUnitField.value = option.value;
+                                console.log('Set hidden field to:', option.value);
                                 break;
                             }
                         }
                     }
+                } else {
+                    console.log('API call failed or no unit data');
                 }
             })
             .catch(error => {
-                console.log('Item unit data not available');
+                console.error('Error fetching item unit:', error);
                 const unitDisplay = document.getElementById('unit-text');
                 if (unitDisplay) {
                     unitDisplay.textContent = 'Units';
@@ -805,6 +842,31 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Auto-populate unit if an item is already selected
     if (itemSelect && itemSelect.value && itemSelect.value !== '0') {
+        // Set default unit immediately
+        const unitDisplay = document.getElementById('unit-text');
+        if (unitDisplay) {
+            unitDisplay.textContent = 'Pcs'; // Default unit
+        }
+        
+        // Set hidden field
+        const hiddenUnitField = document.getElementById('planned_uom_hidden');
+        if (hiddenUnitField && hiddenUnitField.options.length > 0) {
+            // Find the UOM option that matches "Pcs"
+            for (let option of hiddenUnitField.options) {
+                if (option.text.toLowerCase().includes('pcs') || option.text.toLowerCase().includes('pieces')) {
+                    hiddenUnitField.value = option.value;
+                    break;
+                }
+            }
+            
+            // If no Pcs found, use first option
+            if (!hiddenUnitField.value && hiddenUnitField.options.length > 1) {
+                hiddenUnitField.value = hiddenUnitField.options[1].value; // Skip first empty option
+                unitDisplay.textContent = hiddenUnitField.options[1].text;
+            }
+        }
+        
+        // Also try API call for accurate unit
         fetchItemUnit(itemSelect.value);
     }
 });
