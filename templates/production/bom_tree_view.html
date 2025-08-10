@@ -507,7 +507,17 @@ function showPackingAnalysis(productId, productName) {
         </div>
     `;
     
+    // Prevent body scroll lock
+    document.body.style.overflow = 'auto';
+    document.body.style.paddingRight = '0px';
+    
     modal.show();
+    
+    // Ensure scrolling remains enabled after modal opens
+    setTimeout(() => {
+        document.body.style.overflow = 'auto';
+        document.body.classList.remove('modal-open');
+    }, 100);
     
     // For demo purposes, create a temporary production to analyze
     const testQuantity = 100;
@@ -603,7 +613,17 @@ function showProductionPlan(productId, productName) {
         </div>
     `;
     
+    // Prevent body scroll lock
+    document.body.style.overflow = 'auto';
+    document.body.style.paddingRight = '0px';
+    
     modal.show();
+    
+    // Ensure scrolling remains enabled after modal opens
+    setTimeout(() => {
+        document.body.style.overflow = 'auto';
+        document.body.classList.remove('modal-open');
+    }, 100);
     
     // Simulated production plan response
     setTimeout(() => {
@@ -720,7 +740,7 @@ function optimizePackaging() {
     modal.hide();
 }
 
-// Add some visual styling for non-backdrop modals
+// Add some visual styling for non-backdrop modals and ensure scrolling works
 document.addEventListener('DOMContentLoaded', function() {
     // Add custom styling for modals without backdrop
     const style = document.createElement('style');
@@ -736,8 +756,31 @@ document.addEventListener('DOMContentLoaded', function() {
         .modal-header {
             cursor: move;
         }
+        /* Override Bootstrap's body scroll lock */
+        body.modal-open {
+            overflow: auto !important;
+            padding-right: 0 !important;
+        }
+        /* Ensure the page remains scrollable */
+        html, body {
+            overflow-x: hidden;
+            overflow-y: auto !important;
+        }
     `;
     document.head.appendChild(style);
+    
+    // Monitor for modal events and prevent scroll lock
+    document.addEventListener('shown.bs.modal', function(e) {
+        document.body.style.overflow = 'auto';
+        document.body.style.paddingRight = '0px';
+        document.body.classList.remove('modal-open');
+    });
+    
+    document.addEventListener('hidden.bs.modal', function(e) {
+        document.body.style.overflow = 'auto';
+        document.body.style.paddingRight = '0px';
+        document.body.classList.remove('modal-open');
+    });
 });
 </script>
 
