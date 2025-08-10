@@ -2142,9 +2142,9 @@ class BOM(db.Model):
                 material_bom = BOM.query.filter_by(product_id=material.id, is_active=True).first()
                 
                 if material_bom:
-                    # Use the BOM cost for this material (recursive cost calculation)
+                    # Use only the material cost for this material (recursive material cost only, exclude labor/overhead)
                     # Always apply output_quantity conversion for accurate per-unit costing
-                    base_cost = material_bom.total_cost_per_unit
+                    base_cost = material_bom.total_material_cost  # Use material cost only, not total_cost_per_unit
                     if material_bom.output_quantity and material_bom.output_quantity > 0:
                         material_cost = base_cost / material_bom.output_quantity
                     else:
