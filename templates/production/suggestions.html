@@ -6,11 +6,21 @@
         <div class="col-12">
             <!-- Header -->
             <div class="card border-primary">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">
                         <i class="fas fa-lightbulb me-2"></i>
                         Smart BOM Suggestions - {{ production.production_number }}
                     </h4>
+                    <div>
+                        <a href="{{ url_for('production.view_smart_suggestions', production_id=production.id) }}" 
+                           class="btn btn-light btn-sm me-2" title="Refresh with latest BOM changes">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </a>
+                        <a href="{{ url_for('production.view_production', id=production.id) }}" 
+                           class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -19,7 +29,10 @@
                         </div>
                         <div class="col-md-3">
                             <p><strong>BOM Reference:</strong> 
-                                {% if production.bom %}
+                                {% if current_bom %}
+                                    <span class="badge bg-success text-white">{{ current_bom.bom_code }}</span>
+                                    <small class="d-block text-success">✓ Latest Active BOM</small>
+                                {% elif production.bom %}
                                     <span class="badge bg-info text-white">BOM-{{ production.bom.id }}</span>
                                     <small class="d-block text-muted">{{ production.bom.product.name if production.bom.product else 'Unknown Product' }}</small>
                                 {% else %}

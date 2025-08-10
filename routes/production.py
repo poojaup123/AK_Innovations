@@ -771,28 +771,45 @@ def add_production():
 @production_bp.route('/suggestions/<int:production_id>')
 @login_required
 def view_smart_suggestions(production_id):
-    """View smart BOM suggestions for a production order"""
+    """View smart BOM suggestions for a production order with real-time BOM refresh"""
     production = Production.query.get_or_404(production_id)
     
     smart_suggestions = []
     smart_analysis = {}
     
-    if production.bom_id:
+    # Always use the latest active BOM for the production item, not the cached BOM ID
+    current_active_bom = BOM.query.filter_by(product_id=production.item_id, is_active=True).first()
+    
+    if current_active_bom:
         try:
             from services.smart_bom_suggestions import SmartBOMSuggestionService
-            bom = BOM.query.get(production.bom_id)
-            if bom:
-                smart_analysis = SmartBOMSuggestionService.analyze_material_shortages_with_suggestions(
-                    bom, production.quantity_planned
-                )
-                smart_suggestions = smart_analysis.get('suggestions', [])
+            print(f"Refreshing suggestions with latest BOM: {current_active_bom.bom_code}")
+            
+            # Generate fresh suggestions with current BOM data
+            smart_analysis = SmartBOMSuggestionService.analyze_material_shortages_with_suggestions(
+                current_active_bom, production.quantity_planned
+            )
+            smart_suggestions = smart_analysis.get('suggestions', [])
+            print(f"Generated {len(smart_suggestions)} fresh suggestions")
+            
+            # Update the production record with the current BOM if it's different
+            if production.bom_id != current_active_bom.id:
+                print(f"Updating production BOM from {production.bom_id} to {current_active_bom.id}")
+                production.bom_id = current_active_bom.id
+                db.session.commit()
+                flash('Updated production order with latest BOM version', 'info')
+                
         except Exception as e:
+            print(f"Error generating suggestions: {str(e)}")
             flash(f'Error generating suggestions: {str(e)}', 'warning')
+    else:
+        flash('No active BOM found for this production item', 'warning')
     
     return render_template('production/suggestions.html',
                          production=production,
                          smart_suggestions=smart_suggestions,
                          smart_analysis=smart_analysis,
+                         current_bom=current_active_bom,
                          title=f'Smart Suggestions - {production.production_number}')
 
 @production_bp.route('/generate-job-cards/<int:production_id>')
