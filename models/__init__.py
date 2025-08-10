@@ -2369,17 +2369,14 @@ class BOM(db.Model):
                     # Calculate required quantity
                     required_qty = bom_item.qty_required or bom_item.quantity_required or 0
                     
-                    # Get sub-BOM process costs per unit
-                    sub_bom_labor_per_unit = 0.0
+                    # Get sub-BOM total process costs (without dividing by output quantity)
+                    sub_bom_total_labor_cost = 0.0
                     for sub_process in material_bom.processes:
-                        sub_bom_labor_per_unit += sub_process.converted_cost_per_unit or 0.0
+                        sub_bom_total_labor_cost += sub_process.converted_cost_per_unit or 0.0
                     
-                    # Convert to per-unit cost based on sub-BOM output quantity
-                    if material_bom.output_quantity and material_bom.output_quantity > 0:
-                        sub_bom_labor_per_unit = sub_bom_labor_per_unit / material_bom.output_quantity
-                    
-                    # Add to total (multiply by quantity required in this BOM)
-                    total_labor_cost += sub_bom_labor_per_unit * required_qty
+                    # Add the full labor cost multiplied by quantity required in this BOM
+                    # This means when Castor Wheel needs 1 Base Plate, it gets the full ₹1.005 labor cost
+                    total_labor_cost += sub_bom_total_labor_cost * required_qty
         
         # Add manual labor cost if specified
         if self.labor_cost_per_unit and self.labor_cost_per_unit > 0:
