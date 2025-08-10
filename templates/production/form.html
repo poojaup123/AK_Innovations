@@ -698,6 +698,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (itemSelect) {
         itemSelect.addEventListener('change', function() {
+            // Auto-populate planned quantity and unit from BOM
+            if (this.value && this.value !== '0') {
+                fetchBOMData(this.value);
+            }
+            
             // Only reload if the item actually changed to prevent infinite loops
             const urlParams = new URLSearchParams(window.location.search);
             const currentItemId = urlParams.get('item_id');
@@ -708,6 +713,39 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = currentUrl.toString();
             }
         });
+    }
+    
+    // Function to fetch BOM data and populate quantity/unit fields
+    function fetchBOMData(itemId) {
+        fetch(`/production/api/bom-data/${itemId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.bom) {
+                    // Auto-populate planned quantity from BOM output quantity
+                    const quantityField = document.getElementById('quantity_planned');
+                    const unitField = document.getElementById('planned_uom');
+                    
+                    if (quantityField && data.bom.output_quantity) {
+                        quantityField.value = data.bom.output_quantity;
+                        // Trigger input event to update material availability
+                        quantityField.dispatchEvent(new Event('input'));
+                    }
+                    
+                    // Auto-select appropriate unit if available
+                    if (unitField && data.bom.product_unit) {
+                        // Try to find matching unit in dropdown
+                        for (let option of unitField.options) {
+                            if (option.text.toLowerCase().includes(data.bom.product_unit.toLowerCase())) {
+                                unitField.value = option.value;
+                                break;
+                            }
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.log('BOM data not available for auto-population');
+            });
     }
 });
 
