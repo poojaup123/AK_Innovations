@@ -77,7 +77,33 @@ class SmartBOMSuggestionService:
             optimized_suggestions, purchase_suggestions
         )
         
-        all_suggestions = optimized_suggestions + consolidated_purchase_suggestions
+        # Filter out material_procurement_recommendation suggestions that got consolidated
+        filtered_optimized_suggestions = []
+        for suggestion in optimized_suggestions:
+            if suggestion.get('type') == 'material_procurement_recommendation':
+                # Check if this suggestion has materials that are now consolidated
+                has_consolidated_materials = False
+                if suggestion.get('material_shortages'):
+                    for material in suggestion['material_shortages']:
+                        # Check if any material from consolidated suggestions matches this material
+                        for consolidated_suggestion in consolidated_purchase_suggestions:
+                            if consolidated_suggestion.get('type') == 'consolidated_purchase_recommendation':
+                                if consolidated_suggestion.get('raw_materials_required'):
+                                    for consolidated_material in consolidated_suggestion['raw_materials_required']:
+                                        if consolidated_material.get('material_id') == material.get('material_id'):
+                                            has_consolidated_materials = True
+                                            break
+                            if has_consolidated_materials:
+                                break
+                
+                # Only keep if not consolidated
+                if not has_consolidated_materials:
+                    filtered_optimized_suggestions.append(suggestion)
+            else:
+                # Keep all other suggestion types
+                filtered_optimized_suggestions.append(suggestion)
+        
+        all_suggestions = filtered_optimized_suggestions + consolidated_purchase_suggestions
         
         return {
             'has_shortages': len(shortages) > 0,
@@ -439,6 +465,31 @@ class SmartBOMSuggestionService:
                                 'quantity_needed': shortage_qty
                             })
                             consolidated_materials[material_id]['estimated_cost'] += shortage_qty * material.get('unit_cost', 0)
+            
+            # Also process material_shortages from material_procurement_recommendation suggestions
+            if suggestion.get('type') == 'material_procurement_recommendation' and suggestion.get('material_shortages'):
+                for material in suggestion['material_shortages']:
+                    material_id = material['material_id']
+                    shortage_qty = material.get('shortage_qty', 0)
+                    
+                    if shortage_qty > 0:
+                        if material_id not in consolidated_materials:
+                            consolidated_materials[material_id] = {
+                                'material_id': material_id,
+                                'material_name': material['material_name'],
+                                'unit': material['unit'],
+                                'total_shortage_qty': 0,
+                                'used_by_products': [],
+                                'estimated_cost': 0,
+                                'unit_cost': material.get('unit_cost', 0)
+                            }
+                        
+                        consolidated_materials[material_id]['total_shortage_qty'] += shortage_qty
+                        consolidated_materials[material_id]['used_by_products'].append({
+                            'product_name': suggestion.get('target_item', 'Unknown'),
+                            'quantity_needed': shortage_qty
+                        })
+                        consolidated_materials[material_id]['estimated_cost'] += shortage_qty * material.get('unit_cost', 0)
         
         # Create consolidated purchase suggestions
         consolidated_suggestions = []
@@ -493,13 +544,33 @@ class SmartBOMSuggestionService:
                 
                 consolidated_suggestions.append(consolidated_suggestion)
         
+        # Filter out individual manufacturing suggestions that have been consolidated
+        filtered_manufacturing_suggestions = []
+        consolidated_material_ids = set(consolidated_materials.keys())
+        
+        for suggestion in manufacturing_suggestions:
+            if suggestion.get('type') == 'material_procurement_recommendation':
+                # Check if this procurement suggestion has materials that are consolidated
+                has_consolidated_materials = False
+                if suggestion.get('material_shortages'):
+                    for material in suggestion['material_shortages']:
+                        if material['material_id'] in consolidated_material_ids:
+                            has_consolidated_materials = True
+                            break
+                
+                # Only keep procurement suggestions that don't have consolidated materials
+                if not has_consolidated_materials:
+                    filtered_manufacturing_suggestions.append(suggestion)
+            else:
+                # Keep all other types of manufacturing suggestions
+                filtered_manufacturing_suggestions.append(suggestion)
+        
         # Add remaining non-consolidated purchase suggestions
         remaining_purchase_suggestions = []
-        consolidated_material_ids = set(consolidated_materials.keys())
         
         for suggestion in purchase_suggestions:
             item_details = suggestion.get('item_details', {})
             if item_details.get('item_id') not in consolidated_material_ids:
                 remaining_purchase_suggestions.append(suggestion)
         
-        return consolidated_suggestions + remaining_purchase_suggestions
+        return consolidated_suggestions + filtered_manufacturing_suggestions + remaining_purchase_suggestions

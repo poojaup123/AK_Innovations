@@ -792,6 +792,10 @@ def view_smart_suggestions(production_id):
             smart_suggestions = smart_analysis.get('suggestions', [])
             print(f"Generated {len(smart_suggestions)} fresh suggestions")
             
+            # Debug: Print suggestion types to understand what's being generated
+            for i, suggestion in enumerate(smart_suggestions):
+                print(f"Suggestion {i+1}: {suggestion.get('type', 'Unknown')} - {suggestion.get('title', 'No title')}")
+            
             # Update the production record with the current BOM if it's different
             if production.bom_id != current_active_bom.id:
                 print(f"Updating production BOM from {production.bom_id} to {current_active_bom.id}")
