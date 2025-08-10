@@ -311,7 +311,12 @@
                     <i class="fas fa-calculator"></i> <strong>Cost Breakdown (Per Unit):</strong><br>
                     {% set material_cost_per_unit = tree.bom.total_material_cost / (tree.bom.output_quantity or 1.0) %}
                     {% set labor_cost_per_unit = (tree.bom.labor_cost_per_unit or 0) / (tree.bom.output_quantity or 1.0) %}
-                    {% set process_cost_per_unit = tree.bom.processes|sum(attribute='converted_cost_per_unit') if tree.bom.processes else 0 %}
+                    {% set process_cost_per_unit = 0 %}
+                    {% if tree.bom.processes %}
+                        {% for process in tree.bom.processes %}
+                            {% set process_cost_per_unit = process_cost_per_unit + (process.converted_cost_per_unit or 0) %}
+                        {% endfor %}
+                    {% endif %}
                     {% set overhead_cost_per_unit = (tree.bom.overhead_cost_per_unit or 0) / (tree.bom.output_quantity or 1.0) %}
                     {% set total_cost_per_unit = tree.bom.total_cost_per_unit / (tree.bom.output_quantity or 1.0) %}
                     
