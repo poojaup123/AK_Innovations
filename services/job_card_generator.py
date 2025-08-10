@@ -143,16 +143,9 @@ class JobCardGenerator:
                 )
             else:
                 # This is a raw material or purchased component
-                # Check if it needs processing (based on item type or custom logic)
-                material = getattr(bom_item, 'material', None) or getattr(bom_item, 'item', None)
-                if self._item_needs_processing(material):
-                    job_card = self._create_job_card_for_bom_item(
-                        production=production,
-                        bom_item=bom_item,
-                        required_quantity=required_quantity,
-                        level=level,
-                        parent_job_card=parent_job_card
-                    )
+                # Raw materials don't need job cards - they are just consumed/issued
+                # Only create job cards for items that have their own manufacturing processes
+                continue
     
     def _create_job_card_for_bom_item(self, production, bom_item, required_quantity, level, parent_job_card):
         """Create a job card for a specific BOM item"""
