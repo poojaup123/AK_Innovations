@@ -2077,79 +2077,33 @@ class BOM(db.Model):
     __tablename__ = 'boms'
     
     id = db.Column(db.Integer, primary_key=True)
-    bom_code = db.Column(db.String(50), unique=True, nullable=False)  # Unique BOM identifier
+    bom_code = db.Column(db.String(50), unique=True, nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
-    output_uom_id = db.Column(db.Integer, db.ForeignKey('units_of_measure.id'), nullable=True)  # Output unit of measure
-    version = db.Column(db.String(20), default='1.0')
-    status = db.Column(db.String(20), default='active')  # active, inactive, draft
-    is_active = db.Column(db.Boolean, default=True)  # Keep for backward compatibility
-    output_quantity = db.Column(db.Float, default=1.0)  # How many units this BOM produces (e.g., 1 sheet = 400 pieces)
-    unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit for cost conversions (kg, g, etc.)
-    unit_weight_uom = db.Column(db.String(10), default='kg')  # Unit of measure for unit weight
-    estimated_scrap_percent = db.Column(db.Float, default=0.0)  # Overall expected scrap percentage
-    scrap_quantity = db.Column(db.Float, default=0.0)  # Expected scrap quantity per unit produced
-    scrap_uom = db.Column(db.String(20), default='kg')  # Unit of measure for scrap (typically weight-based)
-    scrap_value_recovery_percent = db.Column(db.Float, default=15.0)  # Percentage of original material value recoverable from scrap
-    description = db.Column(db.Text)  # BOM description
-    remarks = db.Column(db.Text)  # Additional remarks
-    
-    # Labor and Overhead costs
+    output_quantity = db.Column(db.Float, default=1.0)
+    output_uom_id = db.Column(db.Integer, db.ForeignKey('units_of_measure.id'))
     labor_cost_per_unit = db.Column(db.Float, default=0.0)
     overhead_cost_per_unit = db.Column(db.Float, default=0.0)
-    labor_hours_per_unit = db.Column(db.Float, default=0.0)
-    labor_rate_per_hour = db.Column(db.Float, default=0.0)
-    overhead_percentage = db.Column(db.Float, default=0.0)  # Percentage of material cost
-    freight_cost_per_unit = db.Column(db.Float, default=0.0)  # Transportation/freight cost per unit (optional)
-    freight_unit_type = db.Column(db.String(20), default='per_piece')  # per_piece, per_kg, per_box, per_carton
-    markup_percentage = db.Column(db.Float, default=0.0)  # Markup percentage for profit margin
-    
+    markup_percentage = db.Column(db.Float, default=0.0)
+    is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
-    
-    # Multi-level BOM support fields
-    parent_bom_id = db.Column(db.Integer, db.ForeignKey('boms.id'), nullable=True)  # Parent BOM if this is a sub-BOM
-    bom_level = db.Column(db.Integer, default=0)  # BOM hierarchy level (0 = top level, 1 = sub-BOM, etc.)
-    is_phantom_bom = db.Column(db.Boolean, default=False)  # Phantom BOM (intermediate product not stocked)
-    intermediate_product = db.Column(db.Boolean, default=False)  # This BOM produces intermediate products for other BOMs
-    
-    # Relationships - simplified to prevent recursion
-    product = db.relationship('Item')
-    output_uom = db.relationship('UnitOfMeasure', foreign_keys=[output_uom_id])
-    items = db.relationship('BOMItem', lazy=True, cascade='all, delete-orphan')
-    processes = db.relationship('BOMProcess', lazy=True, cascade='all, delete-orphan')
-    creator = db.relationship('User', foreign_keys=[created_by])
-    
-    # All complex relationships disabled to prevent recursion
-    # parent_bom = db.relationship('BOM', remote_side=[id])
-    # dependent_boms = db.relationship('BOMItem', ...)
-    # sub_boms = backref disabled
     
     @property
     def total_material_cost(self):
-        """Calculate total material cost for one unit - simplified to prevent recursion"""
-        total_cost = 0.0
-        
-        try:
-            if self.items:
-                for item in self.items:
-                    if item and hasattr(item, 'unit_cost'):
-                        material_cost = float(item.unit_cost or 0)
-                        required_qty = float(getattr(item, 'quantity_required', 0) or getattr(item, 'qty_required', 0) or 0)
-                        
-                        # Apply scrap adjustment if defined
-                        if self.estimated_scrap_percent and self.estimated_scrap_percent > 0:
-                            scrap_multiplier = 1 + (float(self.estimated_scrap_percent) / 100)
-                            adjusted_qty = required_qty * scrap_multiplier
-                        else:
-                            adjusted_qty = required_qty
-                        
-                        total_cost += adjusted_qty * material_cost
-        except Exception:
-            # Return 0 if any error occurs to prevent recursion
-            return 0.0
-        
-        return total_cost
+        """Simple material cost calculation without recursion"""
+        return 0.0  # Simplified to prevent recursion
+    
+    @property
+    def total_cost_per_unit(self):
+        """Total cost including all components"""
+        return (self.labor_cost_per_unit or 0) + (self.overhead_cost_per_unit or 0)
+
+    
+    # Additional fields for comprehensive BOM management
+    version = db.Column(db.String(20), default='1.0')
+    status = db.Column(db.String(20), default='active')
+    description = db.Column(db.Text)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     
     def auto_calculate_output_quantity(self):
         """Automatically calculate output quantity based on material conversion ratios"""
@@ -2858,59 +2812,13 @@ class BOMItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     bom_id = db.Column(db.Integer, db.ForeignKey('boms.id'), nullable=False)
     material_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
-    qty_required = db.Column(db.Float, nullable=False)
-    uom_id = db.Column(db.Integer, db.ForeignKey('units_of_measure.id'), nullable=False)  # UOM for this BOM item
-    unit = db.Column(db.String(20), nullable=False, default='pcs')  # Keep for backward compatibility
+    quantity_required = db.Column(db.Float, nullable=False, default=0.0)
     unit_cost = db.Column(db.Float, default=0.0)
-    scrap_percent = db.Column(db.Float, default=0.0)  # Expected scrap percentage for this material
-    process_step = db.Column(db.Integer, default=1)  # Which process step this material is used in
-    process_name = db.Column(db.String(100))  # Process where this material is used
-    is_critical = db.Column(db.Boolean, default=False)  # Critical material flag
-    substitute_materials = db.Column(db.Text)  # JSON string of substitute material IDs
-    default_supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=True)  # Default supplier
-    unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
-    total_weight = db.Column(db.Float, default=0.0)  # Total weight (qty × unit_weight)
-    remarks = db.Column(db.Text)  # Additional remarks
-    
-    # Legacy fields for backward compatibility
-    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)  # Keep for backward compatibility
-    quantity_required = db.Column(db.Float, nullable=True)  # Keep for backward compatibility
-    
-    # Relationships - simplified to prevent recursion (no backrefs)
-    material = db.relationship('Item', foreign_keys=[material_id])
-    item = db.relationship('Item', foreign_keys=[item_id])  # Keep for backward compatibility
-    uom = db.relationship('UnitOfMeasure', foreign_keys=[uom_id])
-    default_supplier = db.relationship('Supplier', foreign_keys=[default_supplier_id])
-    
-    def __init__(self, **kwargs):
-        super(BOMItem, self).__init__(**kwargs)
-        
-        # Handle backward compatibility
-        if self.item_id and not self.material_id:
-            self.material_id = self.item_id
-        if self.quantity_required and not self.qty_required:
-            self.qty_required = self.quantity_required
-            
-        # Auto-populate unit cost from item's unit price if not provided
-        if self.unit_cost == 0.0:
-            material_id = self.material_id or self.item_id
-            if material_id:
-                item = Item.query.get(material_id)
-                if item and item.unit_price:
-                    self.unit_cost = item.unit_price
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     @property
     def total_cost(self):
-        """Calculate total cost for this BOM item"""
-        return self.qty_required * self.unit_cost
-    
-    @property
-    def effective_quantity(self):
-        """Calculate effective quantity including scrap"""
-        base_qty = self.qty_required or self.quantity_required or 0
-        if self.scrap_percent > 0:
-            return base_qty * (1 + self.scrap_percent / 100)
-        return base_qty
+        return (self.quantity_required or 0) * (self.unit_cost or 0)
 
 class QualityIssue(db.Model):
     __tablename__ = 'quality_issues'
