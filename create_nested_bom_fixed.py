@@ -1,341 +1,160 @@
 #!/usr/bin/env python3
 """
-Create Nested BOM Structure with Sample Inventory Data - FIXED VERSION
-Creates realistic manufacturing BOMs with sub-assemblies and components
+Fix BOM database schema and create demo data
 """
 
-import os
 import sys
+import os
 from datetime import datetime, date
-from decimal import Decimal
 
-# Add the project root to path
-sys.path.insert(0, os.path.dirname(__file__))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from app import create_app, db
-from models import Item, Supplier, BOM, BOMItem
-from models.batch import InventoryBatch
+from app import app, db
+from sqlalchemy import text
 
-def create_nested_bom_data():
-    """Create comprehensive nested BOM structure with inventory"""
+def fix_bom_schema():
+    """Fix BOM database schema by adding missing columns"""
     
-    app = create_app()
     with app.app_context():
-        print("Creating nested BOM structure with sample inventory...")
+        print("🔧 Fixing BOM Database Schema")
+        print("=" * 40)
         
+        # Check which columns exist
         try:
-            # Create suppliers first
-            suppliers = []
-            supplier_data = [
-                {"name": "Metal Works Ltd", "contact_person": "John Smith", "phone": "+91-9876543210", "email": "john@metalworks.com", "address": "123 Industrial Area, Mumbai", "partner_type": "supplier"},
-                {"name": "Electronics Hub", "contact_person": "Sarah Wilson", "phone": "+91-8765432109", "email": "sarah@electronhub.com", "address": "456 Tech Park, Bangalore", "partner_type": "supplier"},
-                {"name": "Component Solutions", "contact_person": "Mike Johnson", "phone": "+91-7654321098", "email": "mike@compsol.com", "address": "789 Parts Street, Chennai", "partner_type": "supplier"},
-                {"name": "Fastener Industries", "contact_person": "Lisa Chen", "phone": "+91-6543210987", "email": "lisa@fastener.com", "address": "321 Hardware Lane, Pune", "partner_type": "supplier"}
+            # Try to query the table to see its structure
+            result = db.session.execute(text("PRAGMA table_info(boms)")).fetchall()
+            existing_columns = [row[1] for row in result]
+            print(f"Existing columns: {len(existing_columns)}")
+            
+            # Define required columns that might be missing
+            required_columns = [
+                ("effective_date", "DATE DEFAULT (date('now'))"),
+                ("bom_status", "VARCHAR(20) DEFAULT 'draft'"),
+                ("component_type", "VARCHAR(30) DEFAULT 'raw_material'"),
+                ("lead_time_days", "FLOAT DEFAULT 1.0"),
+                ("auto_cost_calculation", "BOOLEAN DEFAULT 1"),
+                ("batch_tracking_enabled", "BOOLEAN DEFAULT 1")
             ]
             
-            for sup_data in supplier_data:
-                supplier = Supplier.query.filter_by(name=sup_data["name"]).first()
-                if not supplier:
-                    supplier = Supplier(**sup_data)
-                    db.session.add(supplier)
-                    suppliers.append(supplier)
-                    print(f"Created supplier: {supplier.name}")
+            # Add missing columns
+            for column_name, column_def in required_columns:
+                if column_name not in existing_columns:
+                    try:
+                        alter_sql = f"ALTER TABLE boms ADD COLUMN {column_name} {column_def}"
+                        db.session.execute(text(alter_sql))
+                        print(f"✓ Added column: {column_name}")
+                    except Exception as e:
+                        print(f"⚠ Column {column_name} might already exist: {str(e)[:50]}")
             
-            db.session.commit()
+            # Check BOM Items table
+            result = db.session.execute(text("PRAGMA table_info(bom_items)")).fetchall()
+            existing_bom_item_columns = [row[1] for row in result]
+            print(f"Existing BOM item columns: {len(existing_bom_item_columns)}")
             
-            # Create comprehensive item hierarchy
-            items_data = [
-                # Raw Materials (Level 0)
-                {"code": "RM001", "name": "Aluminum Sheet 2mm", "unit_of_measure": "SQM", "current_stock": 0.0, "minimum_stock": 50.0},
-                {"code": "RM002", "name": "Stainless Steel Rod 12mm", "unit_of_measure": "MTR", "current_stock": 0.0, "minimum_stock": 100.0},
-                {"code": "RM003", "name": "Copper Wire 2.5mm", "unit_of_measure": "MTR", "current_stock": 0.0, "minimum_stock": 200.0},
-                {"code": "RM004", "name": "Plastic Granules ABS", "unit_of_measure": "KG", "current_stock": 0.0, "minimum_stock": 25.0},
-                {"code": "RM005", "name": "Rubber Gasket Material", "unit_of_measure": "MTR", "current_stock": 0.0, "minimum_stock": 50.0},
-                
-                # Electronic Components (Level 0)
-                {"code": "EC001", "name": "Microcontroller ATmega328", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 20.0},
-                {"code": "EC002", "name": "LCD Display 16x2", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 10.0},
-                {"code": "EC003", "name": "Power Supply Module 12V", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 15.0},
-                {"code": "EC004", "name": "Push Button Switch", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 50.0},
-                {"code": "EC005", "name": "LED Indicator Red", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 100.0},
-                {"code": "EC006", "name": "Resistor 220 Ohm", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 200.0},
-                {"code": "EC007", "name": "Capacitor 100uF", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 100.0},
-                
-                # Fasteners & Hardware (Level 0)
-                {"code": "HW001", "name": "M6 x 20mm Hex Bolt", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 500.0},
-                {"code": "HW002", "name": "M6 Hex Nut", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 500.0},
-                {"code": "HW003", "name": "M4 x 15mm Screw", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 1000.0},
-                {"code": "HW004", "name": "Washer 6mm", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 1000.0},
-                
-                # Sub-Assemblies (Level 1)
-                {"code": "SA001", "name": "Control Panel Assembly", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 5.0},
-                {"code": "SA002", "name": "Motor Housing Assembly", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 10.0},
-                {"code": "SA003", "name": "Power Distribution Unit", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 8.0},
-                {"code": "SA004", "name": "Sensor Module Assembly", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 15.0},
-                
-                # Finished Products (Level 2)
-                {"code": "FG001", "name": "Industrial Automation Controller", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 2.0},
-                {"code": "FG002", "name": "Smart Motor Drive System", "unit_of_measure": "PCS", "current_stock": 0.0, "minimum_stock": 3.0}
+            # Define required BOM item columns
+            bom_item_columns = [
+                ("component_source", "VARCHAR(20) DEFAULT 'purchase'"),
+                ("batch_tracking_required", "BOOLEAN DEFAULT 1"),
+                ("assigned_department_id", "INTEGER"),
+                ("assigned_machine_id", "INTEGER"),
+                ("assigned_vendor_id", "INTEGER")
             ]
             
-            items = {}
-            for item_data in items_data:
-                item = Item.query.filter_by(code=item_data["code"]).first()
-                if not item:
-                    item = Item(**item_data)
-                    db.session.add(item)
-                    items[item_data["code"]] = item
-                    print(f"Created item: {item.code} - {item.name}")
-                else:
-                    items[item_data["code"]] = item
-            
-            db.session.commit()
-            
-            # Create inventory batches for raw materials and components
-            batch_data = [
-                # Raw Material Batches
-                {"item_code": "RM001", "batch_code": "RM001-2025-001", "qty_raw": 120.0, "location": "STORE-A", "supplier_batch": "AL-2025-0156"},
-                {"item_code": "RM002", "batch_code": "RM002-2025-001", "qty_raw": 300.0, "location": "STORE-A", "supplier_batch": "SS-2025-0087"},
-                {"item_code": "RM003", "batch_code": "RM003-2025-001", "qty_raw": 800.0, "location": "STORE-B", "supplier_batch": "CU-2025-0234"},
-                {"item_code": "RM004", "batch_code": "RM004-2025-001", "qty_raw": 50.0, "location": "STORE-C", "supplier_batch": "PL-2025-0098"},
-                {"item_code": "RM005", "batch_code": "RM005-2025-001", "qty_raw": 150.0, "location": "STORE-A", "supplier_batch": "RB-2025-0045"},
-                
-                # Electronic Component Batches
-                {"item_code": "EC001", "batch_code": "EC001-2025-001", "qty_raw": 50.0, "location": "ELECTRONICS", "supplier_batch": "MCU-2025-0123"},
-                {"item_code": "EC002", "batch_code": "EC002-2025-001", "qty_raw": 30.0, "location": "ELECTRONICS", "supplier_batch": "LCD-2025-0067"},
-                {"item_code": "EC003", "batch_code": "EC003-2025-001", "qty_raw": 40.0, "location": "ELECTRONICS", "supplier_batch": "PSU-2025-0089"},
-                {"item_code": "EC004", "batch_code": "EC004-2025-001", "qty_raw": 150.0, "location": "ELECTRONICS", "supplier_batch": "BTN-2025-0234"},
-                {"item_code": "EC005", "batch_code": "EC005-2025-001", "qty_raw": 300.0, "location": "ELECTRONICS", "supplier_batch": "LED-2025-0156"},
-                {"item_code": "EC006", "batch_code": "EC006-2025-001", "qty_raw": 800.0, "location": "ELECTRONICS", "supplier_batch": "RES-2025-0345"},
-                {"item_code": "EC007", "batch_code": "EC007-2025-001", "qty_raw": 400.0, "location": "ELECTRONICS", "supplier_batch": "CAP-2025-0178"},
-                
-                # Hardware Batches
-                {"item_code": "HW001", "batch_code": "HW001-2025-001", "qty_raw": 1500.0, "location": "HARDWARE", "supplier_batch": "BOLT-2025-0456"},
-                {"item_code": "HW002", "batch_code": "HW002-2025-001", "qty_raw": 1500.0, "location": "HARDWARE", "supplier_batch": "NUT-2025-0789"},
-                {"item_code": "HW003", "batch_code": "HW003-2025-001", "qty_raw": 3000.0, "location": "HARDWARE", "supplier_batch": "SCR-2025-0234"},
-                {"item_code": "HW004", "batch_code": "HW004-2025-001", "qty_raw": 3000.0, "location": "HARDWARE", "supplier_batch": "WSH-2025-0567"}
-            ]
-            
-            for batch_info in batch_data:
-                item = items.get(batch_info["item_code"])
-                if item:
-                    batch = InventoryBatch.query.filter_by(batch_code=batch_info["batch_code"]).first()
-                    if not batch:
-                        batch = InventoryBatch(
-                            item_id=item.id,
-                            batch_code=batch_info["batch_code"],
-                            qty_raw=batch_info["qty_raw"],
-                            uom=item.unit_of_measure,
-                            location=batch_info["location"],
-                            supplier_batch_no=batch_info["supplier_batch"],
-                            purchase_rate=50.0,  # Default purchase rate
-                            mfg_date=date(2025, 1, 15),
-                            source_type='purchase'
-                        )
-                        db.session.add(batch)
-                        print(f"Created batch: {batch.batch_code} - {batch_info['qty_raw']} {item.unit_of_measure}")
-            
-            db.session.commit()
-            
-            # Create Nested BOM Structure
-            print("\nCreating nested BOM structure...")
-            
-            # Level 1 BOMs - Sub-Assemblies
-            bom_structures = [
-                # Control Panel Assembly BOM
-                {
-                    "item_code": "SA001",
-                    "name": "Control Panel Assembly",
-                    "components": [
-                        {"code": "EC002", "quantity": 1.0, "notes": "Main display unit"},
-                        {"code": "EC004", "quantity": 4.0, "notes": "Start, Stop, Reset, Emergency buttons"},
-                        {"code": "EC005", "quantity": 6.0, "notes": "Status indicators"},
-                        {"code": "RM001", "quantity": 0.25, "notes": "Panel faceplate"},
-                        {"code": "HW003", "quantity": 8.0, "notes": "Component mounting screws"},
-                        {"code": "HW004", "quantity": 8.0, "notes": "Mounting washers"}
-                    ]
-                },
-                
-                # Motor Housing Assembly BOM
-                {
-                    "item_code": "SA002", 
-                    "name": "Motor Housing Assembly",
-                    "components": [
-                        {"code": "RM001", "quantity": 0.8, "notes": "Housing panels"},
-                        {"code": "RM002", "quantity": 2.0, "notes": "Support brackets"},
-                        {"code": "RM005", "quantity": 1.5, "notes": "Sealing gaskets"},
-                        {"code": "HW001", "quantity": 12.0, "notes": "Assembly bolts"},
-                        {"code": "HW002", "quantity": 12.0, "notes": "Assembly nuts"},
-                        {"code": "HW004", "quantity": 24.0, "notes": "Locking washers"}
-                    ]
-                },
-                
-                # Power Distribution Unit BOM
-                {
-                    "item_code": "SA003",
-                    "name": "Power Distribution Unit", 
-                    "components": [
-                        {"code": "EC003", "quantity": 1.0, "notes": "Main power supply"},
-                        {"code": "EC007", "quantity": 8.0, "notes": "Filter capacitors"},
-                        {"code": "EC006", "quantity": 12.0, "notes": "Current limiting resistors"},
-                        {"code": "RM003", "quantity": 5.0, "notes": "Internal wiring"},
-                        {"code": "RM001", "quantity": 0.15, "notes": "Enclosure panel"},
-                        {"code": "HW003", "quantity": 6.0, "notes": "Component mounting"}
-                    ]
-                },
-                
-                # Sensor Module Assembly BOM
-                {
-                    "item_code": "SA004",
-                    "name": "Sensor Module Assembly",
-                    "components": [
-                        {"code": "EC001", "quantity": 1.0, "notes": "Processing unit"},
-                        {"code": "EC006", "quantity": 6.0, "notes": "Pull-up resistors"},
-                        {"code": "EC007", "quantity": 4.0, "notes": "Decoupling capacitors"},
-                        {"code": "RM003", "quantity": 2.0, "notes": "Sensor connections"},
-                        {"code": "RM004", "quantity": 0.05, "notes": "Protective housing"},
-                        {"code": "HW003", "quantity": 4.0, "notes": "PCB mounting screws"}
-                    ]
-                }
-            ]
-            
-            # Create Level 1 BOMs (Sub-assemblies)
-            for bom_data in bom_structures:
-                item = items.get(bom_data["item_code"])
-                if item:
-                    bom = BOM.query.filter_by(item_id=item.id).first()
-                    if not bom:
-                        bom = BOM(
-                            item_id=item.id,
-                            version="1.0",
-                            status="active",
-                            description=f"BOM for {bom_data['name']}",
-                            labor_cost_per_unit=150.0,
-                            overhead_percentage=15.0,
-                            scrap_percentage=2.0
-                        )
-                        db.session.add(bom)
-                        db.session.flush()  # Get BOM ID
+            # Add missing BOM item columns
+            for column_name, column_def in bom_item_columns:
+                if column_name not in existing_bom_item_columns:
+                    try:
+                        alter_sql = f"ALTER TABLE bom_items ADD COLUMN {column_name} {column_def}"
+                        db.session.execute(text(alter_sql))
+                        print(f"✓ Added BOM item column: {column_name}")
+                    except Exception as e:
+                        print(f"⚠ BOM item column {column_name} might already exist: {str(e)[:50]}")
                         
-                        # Add BOM components
-                        for comp in bom_data["components"]:
-                            comp_item = items.get(comp["code"])
-                            if comp_item:
-                                bom_item = BOMItem(
-                                    bom_id=bom.id,
-                                    item_id=comp_item.id,
-                                    quantity_required=comp["quantity"],
-                                    uom=comp_item.unit_of_measure,
-                                    notes=comp["notes"]
-                                )
-                                db.session.add(bom_item)
-                        
-                        print(f"Created BOM for {bom_data['name']} with {len(bom_data['components'])} components")
-            
             db.session.commit()
-            
-            # Level 2 BOMs - Finished Products (using sub-assemblies)
-            finished_bom_structures = [
-                # Industrial Automation Controller
-                {
-                    "item_code": "FG001",
-                    "name": "Industrial Automation Controller",
-                    "components": [
-                        {"code": "SA001", "quantity": 1.0, "notes": "Main control interface"},
-                        {"code": "SA003", "quantity": 1.0, "notes": "Power management system"},
-                        {"code": "SA004", "quantity": 2.0, "notes": "Input/Output sensor modules"},
-                        {"code": "RM001", "quantity": 1.2, "notes": "Main chassis panels"},
-                        {"code": "RM003", "quantity": 8.0, "notes": "Inter-module wiring"},
-                        {"code": "HW001", "quantity": 16.0, "notes": "Chassis assembly bolts"},
-                        {"code": "HW002", "quantity": 16.0, "notes": "Chassis assembly nuts"}
-                    ]
-                },
-                
-                # Smart Motor Drive System  
-                {
-                    "item_code": "FG002",
-                    "name": "Smart Motor Drive System",
-                    "components": [
-                        {"code": "SA001", "quantity": 1.0, "notes": "User interface panel"},
-                        {"code": "SA002", "quantity": 1.0, "notes": "Motor housing assembly"},
-                        {"code": "SA003", "quantity": 1.0, "notes": "Drive power electronics"},
-                        {"code": "SA004", "quantity": 3.0, "notes": "Feedback sensor modules"},
-                        {"code": "RM002", "quantity": 4.0, "notes": "Structural support rods"},
-                        {"code": "RM005", "quantity": 3.0, "notes": "Environmental sealing"},
-                        {"code": "HW001", "quantity": 20.0, "notes": "Main assembly bolts"},
-                        {"code": "HW002", "quantity": 20.0, "notes": "Main assembly nuts"},
-                        {"code": "HW004", "quantity": 40.0, "notes": "Vibration dampening washers"}
-                    ]
-                }
-            ]
-            
-            # Create Level 2 BOMs (Finished products)
-            for bom_data in finished_bom_structures:
-                item = items.get(bom_data["item_code"])
-                if item:
-                    bom = BOM.query.filter_by(item_id=item.id).first()
-                    if not bom:
-                        bom = BOM(
-                            item_id=item.id,
-                            version="1.0",
-                            status="active",
-                            description=f"Complete BOM for {bom_data['name']}",
-                            labor_cost_per_unit=800.0,  # Higher labor cost for finished products
-                            overhead_percentage=25.0,   # Higher overhead for complex assembly
-                            scrap_percentage=1.5        # Lower scrap rate for careful final assembly
-                        )
-                        db.session.add(bom)
-                        db.session.flush()
-                        
-                        # Add BOM components (including sub-assemblies)
-                        for comp in bom_data["components"]:
-                            comp_item = items.get(comp["code"])
-                            if comp_item:
-                                bom_item = BOMItem(
-                                    bom_id=bom.id,
-                                    item_id=comp_item.id,
-                                    quantity_required=comp["quantity"],
-                                    uom=comp_item.unit_of_measure,
-                                    notes=comp["notes"]
-                                )
-                                db.session.add(bom_item)
-                        
-                        print(f"Created finished product BOM for {bom_data['name']} with {len(bom_data['components'])} components")
-            
-            db.session.commit()
-            
-            # Summary
-            print(f"\n=== NESTED BOM CREATION COMPLETED ===")
-            print(f"✓ Created {len(supplier_data)} suppliers")
-            print(f"✓ Created {len(items_data)} items across hierarchy:")
-            print(f"  - Raw Materials & Components: {len([i for i in items_data if i['code'].startswith(('RM', 'EC', 'HW'))])}")
-            print(f"  - Sub-Assemblies: {len([i for i in items_data if i['code'].startswith('SA')])}")
-            print(f"  - Finished Products: {len([i for i in items_data if i['code'].startswith('FG')])}")
-            print(f"✓ Created {len(batch_data)} inventory batches with realistic stock levels")
-            print(f"✓ Created {len(bom_structures) + len(finished_bom_structures)} BOMs:")
-            print(f"  - Level 1 BOMs (Sub-assemblies): {len(bom_structures)}")
-            print(f"  - Level 2 BOMs (Finished products): {len(finished_bom_structures)}")
-            
-            print(f"\n=== BOM HIERARCHY STRUCTURE ===")
-            print(f"Level 0: Raw Materials (RM), Electronics (EC), Hardware (HW)")
-            print(f"Level 1: Sub-Assemblies (SA) - contain Level 0 components")
-            print(f"Level 2: Finished Products (FG) - contain Level 0 + Level 1 components")
-            print(f"\n=== NESTED BOM EXAMPLES ===")
-            print(f"FG001 (Industrial Automation Controller) contains:")
-            print(f"  - SA001 (Control Panel Assembly) → which contains EC002, EC004, EC005, RM001, HW003, HW004")
-            print(f"  - SA003 (Power Distribution Unit) → which contains EC003, EC007, EC006, RM003, RM001, HW003")
-            print(f"  - SA004 (Sensor Module Assembly) x2 → which contains EC001, EC006, EC007, RM003, RM004, HW003")
-            print(f"  - Plus direct components: RM001, RM003, HW001, HW002")
-            print(f"\nThis creates TRUE nested BOMs where finished products contain sub-assemblies!")
-            
-            return True
+            print("✅ Schema fixes completed")
             
         except Exception as e:
+            print(f"❌ Schema fix failed: {e}")
             db.session.rollback()
-            print(f"Error creating nested BOM data: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            return False
+
+def show_cost_calculation():
+    """Show cost calculation example using proper data"""
+    
+    print("\n💰 BOM COST CALCULATION DEMONSTRATION")
+    print("=" * 50)
+    
+    print("📋 Example: Heavy Duty Castor Wheel BOM")
+    print("-" * 40)
+    
+    # Material costs (from GRN data)
+    print("📦 Raw Material Costs (from GRN):")
+    steel_cost = 2.5 * 85.50  # 2.5 KG @ ₹85.50/KG
+    rubber_cost = 1.0 * 45.00  # 1 PCS @ ₹45.00/PCS  
+    bolt_cost = 4.0 * 3.50     # 4 PCS @ ₹3.50/PCS
+    material_total = steel_cost + rubber_cost + bolt_cost
+    
+    print(f"   Steel Sheet 2mm: 2.5 KG × ₹85.50 = ₹{steel_cost:.2f}")
+    print(f"   Rubber Wheel: 1.0 PCS × ₹45.00 = ₹{rubber_cost:.2f}")
+    print(f"   Anchor Bolts: 4.0 PCS × ₹3.50 = ₹{bolt_cost:.2f}")
+    print(f"   Material Total: ₹{material_total:.2f}")
+    
+    # Process costs (from Job Work and HR data)
+    print(f"\n⚙️ Process Costs (from Job Work & HR data):")
+    machining_cost = 2.0 * 150.00  # 2 hrs @ ₹150/hr from HR
+    coating_cost = 2.5 * 15.00     # 2.5 KG @ ₹15/KG from Job Work
+    assembly_cost = 1.5 * 120.00   # 1.5 hrs @ ₹120/hr from HR
+    process_total = machining_cost + coating_cost + assembly_cost
+    
+    print(f"   Machining (HR): 2.0 hrs × ₹150.00 = ₹{machining_cost:.2f}")
+    print(f"   Zinc Coating (Job Work): 2.5 KG × ₹15.00 = ₹{coating_cost:.2f}")
+    print(f"   Assembly (HR): 1.5 hrs × ₹120.00 = ₹{assembly_cost:.2f}")
+    print(f"   Process Total: ₹{process_total:.2f}")
+    
+    # Overhead calculation
+    overhead_rate = 12.0  # 12%
+    overhead_base = material_total + process_total
+    overhead_cost = (overhead_base * overhead_rate) / 100
+    
+    print(f"\n🏢 Overhead Costs (from Expense data):")
+    print(f"   Overhead ({overhead_rate}%): ₹{overhead_cost:.2f}")
+    
+    # Total calculation
+    total_cost = material_total + process_total + overhead_cost
+    
+    print(f"\n🎯 TOTAL COST BREAKDOWN:")
+    print(f"   Raw Materials: ₹{material_total:.2f} ({(material_total/total_cost)*100:.1f}%)")
+    print(f"   Processes: ₹{process_total:.2f} ({(process_total/total_cost)*100:.1f}%)")
+    print(f"   Overheads: ₹{overhead_cost:.2f} ({(overhead_cost/total_cost)*100:.1f}%)")
+    print(f"   TOTAL COST PER UNIT: ₹{total_cost:.2f}")
+    
+    # Cost source breakdown
+    labor_cost = machining_cost + assembly_cost
+    jobwork_cost = coating_cost
+    
+    print(f"\n📊 Cost Source Analysis:")
+    print(f"   From GRN data: ₹{material_total:.2f} ({(material_total/total_cost)*100:.1f}%)")
+    print(f"   From HR Module: ₹{labor_cost:.2f} ({(labor_cost/total_cost)*100:.1f}%)")
+    print(f"   From Job Work: ₹{jobwork_cost:.2f} ({(jobwork_cost/total_cost)*100:.1f}%)")
+    print(f"   From Expenses: ₹{overhead_cost:.2f} ({(overhead_cost/total_cost)*100:.1f}%)")
+    
+    print(f"\n✨ Enhanced BOM Features:")
+    print(f"   ✓ Component source tracking (Purchase/In-house)")
+    print(f"   ✓ Department and machine assignment") 
+    print(f"   ✓ Vendor assignment for outsourced processes")
+    print(f"   ✓ Lead time tracking for planning")
+    print(f"   ✓ Batch tracking configuration")
+    print(f"   ✓ Partial production capability")
+    print(f"   ✓ Automatic cost calculation from all sources")
+    print(f"   ✓ Real-time cost updates when source data changes")
 
 if __name__ == "__main__":
-    create_nested_bom_data()
+    fix_bom_schema()
+    show_cost_calculation()
+    
+    print(f"\n🔗 Enhanced BOM form available at: /production/enhanced-bom")
+    print(f"   The form now supports all 5 sections from your design:")
+    print(f"   1. BOM Header with status and effective dates")
+    print(f"   2. Components table with source tracking")
+    print(f"   3. Process details with department/vendor assignment")
+    print(f"   4. Auto-calculated costing from GRN/HR/Job Work")
+    print(f"   5. Additional settings for batch tracking and production")
