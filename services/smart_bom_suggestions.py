@@ -81,10 +81,13 @@ class SmartBOMSuggestionService:
         # This gives users choice between individual purchases and consolidated bulk purchasing
         all_suggestions = optimized_suggestions + consolidated_purchase_suggestions
         
+        # Apply final deduplication to remove exact duplicates
+        final_suggestions = SmartBOMSuggestionService._final_deduplication(all_suggestions)
+        
         return {
             'has_shortages': len(shortages) > 0,
             'shortages': shortages,
-            'suggestions': all_suggestions,
+            'suggestions': final_suggestions,
             'total_shortage_items': len(shortages),
             'manufacturable_items': len([s for s in shortages if s.get('can_manufacture', False)]),
             'direct_purchase_items': len([s for s in shortages if not s.get('can_manufacture', False)])
@@ -413,6 +416,33 @@ class SmartBOMSuggestionService:
             purchase_suggestions.append(purchase_suggestion)
         
         return purchase_suggestions
+    
+    @staticmethod
+    def _final_deduplication(suggestions: List[Dict]) -> List[Dict]:
+        """
+        Final deduplication step to eliminate exact duplicates
+        """
+        seen_combinations = {}
+        deduplicated = []
+        
+        for suggestion in suggestions:
+            # Create unique identifier for each suggestion
+            item_name = suggestion.get('target_item_name', suggestion.get('target_item', 'Unknown'))
+            suggestion_type = suggestion.get('type', 'unknown')
+            
+            # For manufacturing suggestions, also consider producible quantity
+            if suggestion_type in ['partial_manufacturing_recommendation', 'manufacturing_recommendation']:
+                producible_qty = suggestion.get('producible_quantity', 0)
+                unique_key = f"{item_name}|{suggestion_type}|{producible_qty:.2f}"
+            else:
+                unique_key = f"{item_name}|{suggestion_type}"
+            
+            # Only add if we haven't seen this exact combination
+            if unique_key not in seen_combinations:
+                seen_combinations[unique_key] = True
+                deduplicated.append(suggestion)
+        
+        return deduplicated
     
     @staticmethod
     def _generate_optimization_notes(optimized_materials: List[Dict], usage_info: Dict = None) -> List[str]:
