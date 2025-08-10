@@ -485,6 +485,32 @@ def api_complete_production(production_id):
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@production_bp.route('/api/bom-data/<int:item_id>')
+@login_required
+def api_get_bom_data(item_id):
+    """Get BOM data for auto-populating production form fields"""
+    try:
+        # Find active BOM for the item
+        bom = BOM.query.filter_by(product_id=item_id, is_active=True).first()
+        
+        if not bom:
+            return jsonify({'success': False, 'message': 'No active BOM found for this item'})
+        
+        # Get item details
+        item = Item.query.get(item_id)
+        
+        return jsonify({
+            'success': True,
+            'bom': {
+                'output_quantity': bom.output_quantity,
+                'product_unit': item.unit_of_measure if item else None,
+                'bom_code': bom.bom_code
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
 @production_bp.route('/api/production/<int:production_id>/batch-consumption')
 @login_required
 def api_get_production_batch_consumption(production_id):
