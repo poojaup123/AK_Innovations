@@ -305,6 +305,93 @@
                     {% endfor %}
                 </div>
 
+                <!-- Manufacturing Process Workflow -->
+                {% if tree.bom.processes and tree.bom.processes|length > 0 %}
+                <div class="manufacturing-workflow mb-4">
+                    <div class="workflow-header bg-info text-white p-2 rounded-top">
+                        <h6 class="mb-0"><i class="fas fa-cogs"></i> Manufacturing Process Workflow</h6>
+                        <small>Intelligent Integrated Process Workflows: Automatically projected, Scrap Management and Labor Cost</small>
+                    </div>
+                    
+                    <!-- Process Summary Cards -->
+                    <div class="workflow-summary bg-light p-3">
+                        <div class="row">
+                            <div class="col-md-3 text-center">
+                                <div class="summary-card">
+                                    <h4 class="text-primary mb-0">{{ tree.bom.processes|length }}</h4>
+                                    <small class="text-muted">Manufacturing Steps</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <div class="summary-card">
+                                    {% set total_time = tree.bom.processes|sum(attribute='total_time_minutes') %}
+                                    <h4 class="text-info mb-0">{{ "%.1f"|format(total_time) }} min</h4>
+                                    <small class="text-muted">Total Process Time</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <div class="summary-card">
+                                    {% set total_process_cost = tree.bom.processes|sum(attribute='converted_cost_per_unit') %}
+                                    <h4 class="text-success mb-0">₹{{ "%.2f"|format(total_process_cost) }}</h4>
+                                    <small class="text-muted">Process Labor Cost (converted)</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <div class="summary-card">
+                                    {% set total_scrap = tree.bom.processes|sum(attribute='estimated_scrap_percent') or tree.bom.estimated_scrap_percent or 0 %}
+                                    <h4 class="text-warning mb-0">{{ "%.2f"|format(total_scrap) }}%</h4>
+                                    <small class="text-muted">Expected Scrap</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Process Details Table -->
+                    <div class="process-table">
+                        <table class="table table-sm table-striped mb-0">
+                            <thead class="bg-dark text-white">
+                                <tr>
+                                    <th>Step</th>
+                                    <th>Process Name</th>
+                                    <th>Department</th>
+                                    <th>Time/Unit</th>
+                                    <th>Cost/Unit</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for process in tree.bom.processes %}
+                                <tr>
+                                    <td class="text-center"><strong>{{ loop.index }}</strong></td>
+                                    <td>{{ process.process_name }}</td>
+                                    <td>{{ process.department or '-' }}</td>
+                                    <td>{{ "%.1f"|format(process.total_time_minutes or 0) }} min</td>
+                                    <td>
+                                        <strong>₹{{ "%.2f"|format(process.converted_cost_per_unit or 0) }}</strong>
+                                        {% if process.original_cost and process.original_unit %}
+                                            <br><small class="text-info">
+                                                <i class="fas fa-exchange-alt"></i> Original: ₹{{ "%.2f"|format(process.original_cost) }} per {{ process.original_unit }}
+                                            </small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if process.is_outsourced %}
+                                            <span class="badge badge-warning">Outsourced</span>
+                                        {% else %}
+                                            <span class="badge badge-success">In-house</span>
+                                        {% endif %}
+                                        {% if process.estimated_scrap_percent %}
+                                            <br><small class="text-danger">Scrap: {{ process.estimated_scrap_percent }}%</small>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- Cost Summary -->
                 {% if tree.bom.total_material_cost and tree.bom.total_material_cost > 0 %}
                 <div class="cost-summary">
