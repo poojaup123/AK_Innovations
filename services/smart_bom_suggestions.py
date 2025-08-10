@@ -77,33 +77,9 @@ class SmartBOMSuggestionService:
             optimized_suggestions, purchase_suggestions
         )
         
-        # Filter out material_procurement_recommendation suggestions that got consolidated
-        filtered_optimized_suggestions = []
-        for suggestion in optimized_suggestions:
-            if suggestion.get('type') == 'material_procurement_recommendation':
-                # Check if this suggestion has materials that are now consolidated
-                has_consolidated_materials = False
-                if suggestion.get('material_shortages'):
-                    for material in suggestion['material_shortages']:
-                        # Check if any material from consolidated suggestions matches this material
-                        for consolidated_suggestion in consolidated_purchase_suggestions:
-                            if consolidated_suggestion.get('type') == 'consolidated_purchase_recommendation':
-                                if consolidated_suggestion.get('raw_materials_required'):
-                                    for consolidated_material in consolidated_suggestion['raw_materials_required']:
-                                        if consolidated_material.get('material_id') == material.get('material_id'):
-                                            has_consolidated_materials = True
-                                            break
-                            if has_consolidated_materials:
-                                break
-                
-                # Only keep if not consolidated
-                if not has_consolidated_materials:
-                    filtered_optimized_suggestions.append(suggestion)
-            else:
-                # Keep all other suggestion types
-                filtered_optimized_suggestions.append(suggestion)
-        
-        all_suggestions = filtered_optimized_suggestions + consolidated_purchase_suggestions
+        # Keep all original suggestions AND add consolidated suggestions
+        # This gives users choice between individual purchases and consolidated bulk purchasing
+        all_suggestions = optimized_suggestions + consolidated_purchase_suggestions
         
         return {
             'has_shortages': len(shortages) > 0,
@@ -347,7 +323,7 @@ class SmartBOMSuggestionService:
                 procurement_suggestion = {
                     'type': 'material_procurement_recommendation',
                     'title': f"Purchase Additional Materials for {suggestion['target_item_name']} Production",
-                    'description': f"Purchase {len(material_shortages)} materials to satisfy remaining {(suggestion['target_quantity'] - max_producible):.1f} units",
+                    'description': f"Purchase {len(material_shortages)} materials to satisfy remaining {(suggestion['target_quantity'] - max_producible):.1f} units (Check consolidated options above for potential cost savings)",
                     'target_item': suggestion['target_item_name'],
                     'remaining_quantity': suggestion['target_quantity'] - max_producible,
                     'material_shortages': material_shortages,
@@ -507,7 +483,7 @@ class SmartBOMSuggestionService:
                     'type': 'consolidated_purchase_recommendation',
                     'priority': 'high',
                     'title': f'📦 Consolidated Purchase: {material_info["material_name"]} (Multiple Products)',
-                    'description': f'Purchase {material_info["total_shortage_qty"]:.1f} {material_info["unit"]} of {material_info["material_name"]} needed by {len(material_info["used_by_products"])} different products in one order',
+                    'description': f'Purchase {material_info["total_shortage_qty"]:.1f} {material_info["unit"]} of {material_info["material_name"]} needed by {len(material_info["used_by_products"])} different products in one consolidated order (Alternative to individual purchases below)',
                     'action_steps': [
                         f'🛒 Create consolidated Purchase Order for {material_info["total_shortage_qty"]:.1f} {material_info["unit"]} of {material_info["material_name"]}',
                         f'💡 This material supports {len(material_info["used_by_products"])} different production items',
