@@ -226,42 +226,7 @@
                             </div>
                         </div>
                         
-                        <!-- Scrap Tracking Section -->
-                        <div class="row">
-                            <div class="col-12 mb-2">
-                                <h6 class="text-muted"><i class="fas fa-recycle text-warning"></i> Scrap & Waste Tracking</h6>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                {{ form.scrap_quantity.label(class="form-label") }}
-                                <div class="input-group">
-                                    {{ form.scrap_quantity(class="form-control", placeholder="Weight-based scrap generated") }}
-                                    <span class="input-group-text text-muted">
-                                        <i class="fas fa-recycle"></i>
-                                    </span>
-                                </div>
-                                {% if form.scrap_quantity.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.scrap_quantity.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                                <small class="text-muted">Track scrap material generated during production</small>
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                {{ form.scrap_uom.label(class="form-label") }}
-                                {{ form.scrap_uom(class="form-select") }}
-                                {% if form.scrap_uom.errors %}
-                                    <div class="text-danger small">
-                                        {% for error in form.scrap_uom.errors %}
-                                            <div>{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                                <small class="text-muted">Typically measured in weight units (kg, g)</small>
-                            </div>
-                        </div>
+
                         
                         <div class="mb-3">
                             {{ form.notes.label(class="form-label") }}
