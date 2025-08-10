@@ -34,24 +34,24 @@
     </div>
 
     <!-- Tabbed Interface for Better Organization -->
-    <ul class="nav nav-tabs" id="bomTabs" role="tablist">
+    <ul class="nav nav-tabs flex-nowrap" id="bomTabs" role="tablist" style="overflow-x: auto;">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="basic-info-tab" data-bs-toggle="tab" data-bs-target="#basic-info" type="button" role="tab">
+            <button class="nav-link active text-nowrap" id="basic-info-tab" data-bs-toggle="tab" data-bs-target="#basic-info" type="button" role="tab">
                 <i class="fas fa-info-circle"></i> Basic Information
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="costing-tab" data-bs-toggle="tab" data-bs-target="#costing" type="button" role="tab">
+            <button class="nav-link text-nowrap" id="costing-tab" data-bs-toggle="tab" data-bs-target="#costing" type="button" role="tab">
                 <i class="fas fa-calculator"></i> Costing & Overhead
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="components-tab" data-bs-toggle="tab" data-bs-target="#components" type="button" role="tab">
+            <button class="nav-link text-nowrap" id="components-tab" data-bs-toggle="tab" data-bs-target="#components" type="button" role="tab">
                 <i class="fas fa-boxes"></i> Components {% if bom %}<span class="badge bg-primary">{{ bom.items|length }}</span>{% endif %}
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="processes-tab" data-bs-toggle="tab" data-bs-target="#processes" type="button" role="tab">
+            <button class="nav-link text-nowrap" id="processes-tab" data-bs-toggle="tab" data-bs-target="#processes" type="button" role="tab">
                 <i class="fas fa-cogs"></i> Manufacturing Processes {% if bom and bom.processes %}<span class="badge bg-info">{{ bom.processes|length }}</span>{% endif %}
             </button>
         </li>
