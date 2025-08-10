@@ -99,9 +99,15 @@
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-6 mb-3">
                                 {{ form.quantity_planned.label(class="form-label") }}
-                                {{ form.quantity_planned(class="form-control") }}
+                                <div class="input-group">
+                                    {{ form.quantity_planned(class="form-control", placeholder="Enter quantity to produce") }}
+                                    <span class="input-group-text" id="planned-unit-display">
+                                        <span id="unit-text">Select Item First</span>
+                                    </span>
+                                    {{ form.planned_uom(class="form-select d-none", id="planned_uom_hidden") }}
+                                </div>
                                 {% if form.quantity_planned.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.quantity_planned.errors %}
@@ -109,11 +115,6 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
-                            </div>
-                            
-                            <div class="col-md-3 mb-3">
-                                {{ form.planned_uom.label(class="form-label") }}
-                                {{ form.planned_uom(class="form-select") }}
                                 {% if form.planned_uom.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.planned_uom.errors %}
@@ -698,6 +699,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (itemSelect) {
         itemSelect.addEventListener('change', function() {
+            // Auto-populate unit from BOM when item is selected
+            if (this.value && this.value !== '0') {
+                fetchItemUnit(this.value);
+            }
+            
             // Only reload if the item actually changed to prevent infinite loops
             const urlParams = new URLSearchParams(window.location.search);
             const currentItemId = urlParams.get('item_id');
@@ -708,6 +714,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = currentUrl.toString();
             }
         });
+    }
+    
+    // Function to fetch item unit and auto-populate
+    function fetchItemUnit(itemId) {
+        fetch(`/production/api/item-unit/${itemId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.unit) {
+                    // Update the display unit
+                    const unitDisplay = document.getElementById('unit-text');
+                    const hiddenUnitField = document.getElementById('planned_uom_hidden');
+                    
+                    if (unitDisplay) {
+                        unitDisplay.textContent = data.unit;
+                    }
+                    
+                    // Set the hidden field value for form submission
+                    if (hiddenUnitField) {
+                        // Find matching option in the hidden select
+                        for (let option of hiddenUnitField.options) {
+                            if (option.text.toLowerCase().includes(data.unit.toLowerCase())) {
+                                hiddenUnitField.value = option.value;
+                                break;
+                            }
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.log('Item unit data not available');
+                const unitDisplay = document.getElementById('unit-text');
+                if (unitDisplay) {
+                    unitDisplay.textContent = 'Units';
+                }
+            });
     }
 });
 
@@ -760,6 +801,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Only set the value if it's different to prevent loops
         itemSelect.value = itemId;
         // Don't trigger change event since we're just syncing the dropdown
+    }
+    
+    // Auto-populate unit if an item is already selected
+    if (itemSelect && itemSelect.value && itemSelect.value !== '0') {
+        fetchItemUnit(itemSelect.value);
     }
 });
 </script>

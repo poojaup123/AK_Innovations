@@ -485,6 +485,24 @@ def api_complete_production(production_id):
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@production_bp.route('/api/item-unit/<int:item_id>')
+@login_required
+def api_get_item_unit(item_id):
+    """Get item unit for auto-populating planned unit field"""
+    try:
+        item = Item.query.get(item_id)
+        
+        if not item:
+            return jsonify({'success': False, 'message': 'Item not found'})
+        
+        return jsonify({
+            'success': True,
+            'unit': item.unit_of_measure or 'Pcs',
+            'item_name': item.name
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
 
 @production_bp.route('/api/production/<int:production_id>/batch-consumption')
 @login_required
