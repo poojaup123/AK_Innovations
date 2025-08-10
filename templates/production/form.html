@@ -288,8 +288,10 @@
                                 {% set planned_qty = 1 %}
                                 {% if production %}
                                     {% set planned_qty = production.quantity_planned %}
-                                {% elif form.quantity_planned.data %}
+                                {% elif form.quantity_planned.data and form.quantity_planned.data > 0 %}
                                     {% set planned_qty = form.quantity_planned.data %}
+                                {% else %}
+                                    {% set planned_qty = 1 %}
                                 {% endif %}
                                 {% set material_qty_per_output = bom_item.quantity_required or bom_item.qty_required %}
                                 {% set bom_output_qty = bom_items[0].bom.output_quantity if bom_items and bom_items[0].bom else 1.0 %}
@@ -321,7 +323,7 @@
                                             <span class="badge bg-success">✓ OK</span>
                                         {% else %}
                                             <span class="badge bg-danger">⚠ Short</span>
-                                            <br><small class="text-danger">{{ total_required - available }} short</small>
+                                            <br><small class="text-danger">{{ (total_required - available)|round(2) }} short</small>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -656,7 +658,7 @@ document.addEventListener('DOMContentLoaded', function() {
             bomRows.forEach(row => {
                 const perUnitCell = row.cells[1];
                 const availableCell = row.cells[2];
-                const statusCell = row.cells[3];
+                const statusCell = row.cells[4]; // Status is column 5 (index 4)
                 
                 if (perUnitCell && availableCell && statusCell) {
                     const perUnitText = perUnitCell.textContent.trim();
@@ -672,10 +674,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     const isSufficient = available >= totalRequired;
                     
                     // Update the "Need" text
-                    availableCell.innerHTML = availableCell.innerHTML.replace(
-                        /Need: [\d.]+/,
-                        `Need: ${totalRequired.toFixed(2)}`
-                    );
+                    const needElement = availableCell.querySelector('small');
+                    if (needElement) {
+                        needElement.textContent = `Need: ${totalRequired.toFixed(2)}`;
+                    }
                     
                     // Update row styling and status
                     if (isSufficient) {
