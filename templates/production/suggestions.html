@@ -59,12 +59,15 @@
                 <div class="row mt-4">
                     {% for suggestion in smart_suggestions %}
                         <div class="col-md-6 mb-3">
-                            <div class="card border-{{ 'success' if suggestion.type == 'manufacturing' else 'info' }}">
-                                <div class="card-header bg-{{ 'success' if suggestion.type == 'manufacturing' else 'info' }} text-white">
+                            <div class="card border-{{ 'warning' if 'consolidated' in suggestion.type else 'success' if suggestion.type == 'manufacturing' or 'manufacturing' in suggestion.type else 'info' }}">
+                                <div class="card-header bg-{{ 'warning' if 'consolidated' in suggestion.type else 'success' if suggestion.type == 'manufacturing' or 'manufacturing' in suggestion.type else 'info' }} text-white">
                                     <h6 class="mb-0">
-                                        <i class="fas fa-{{ 'cogs' if suggestion.type == 'manufacturing' or 'manufacturing' in suggestion.type else 'shopping-cart' }} me-2"></i>
+                                        <i class="fas fa-{{ 'shopping-cart' if 'consolidated' in suggestion.type else 'cogs' if suggestion.type == 'manufacturing' or 'manufacturing' in suggestion.type else 'shopping-cart' }} me-2"></i>
                                         {{ suggestion.title if suggestion.title else suggestion.type.title() + ' Suggestion' }}
                                         <span class="badge bg-light text-dark ms-2">{{ suggestion.priority }}</span>
+                                        {% if 'consolidated' in suggestion.type %}
+                                            <span class="badge bg-success ms-1">💰 Cost Savings</span>
+                                        {% endif %}
                                     </h6>
                                 </div>
                                 <div class="card-body">
@@ -79,6 +82,16 @@
                                                 {% if suggestion.get('bom_product_name') %}
                                                     <span class="text-muted">- {{ suggestion.bom_product_name }}</span>
                                                 {% endif %}
+                                            </small>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Consolidated Purchase Benefits -->
+                                    {% if 'consolidated' in suggestion.type and suggestion.get('consolidation_benefit') %}
+                                        <div class="alert alert-warning">
+                                            <small><strong>💡 Consolidation Benefits:</strong><br>
+                                                {{ suggestion.consolidation_benefit }}<br>
+                                                <strong>Cost savings through bulk purchasing and reduced shipping costs!</strong>
                                             </small>
                                         </div>
                                     {% endif %}

@@ -444,23 +444,27 @@ class SmartBOMSuggestionService:
         consolidated_suggestions = []
         
         for material_id, material_info in consolidated_materials.items():
-            if len(material_info['used_by_products']) > 1:  # Only consolidate if used by multiple products
-                # Create consolidated purchase suggestion
-                product_list = [f"{prod['product_name']} ({prod['quantity_needed']:.1f} {material_info['unit']})" 
-                              for prod in material_info['used_by_products']]
-                
+            # Always create suggestions, but highlight when it's consolidated vs single product
+            product_list = [f"{prod['product_name']} ({prod['quantity_needed']:.1f} {material_info['unit']})" 
+                          for prod in material_info['used_by_products']]
+            
+            is_consolidated = len(material_info['used_by_products']) > 1
+            
+            if is_consolidated:
+                # Create consolidated purchase suggestion for multiple products
                 consolidated_suggestion = {
                     'type': 'consolidated_purchase_recommendation',
                     'priority': 'high',
-                    'title': f'Consolidated Purchase: {material_info["material_name"]}',
-                    'description': f'Purchase {material_info["total_shortage_qty"]:.1f} {material_info["unit"]} of {material_info["material_name"]} for multiple products',
+                    'title': f'📦 Consolidated Purchase: {material_info["material_name"]} (Multiple Products)',
+                    'description': f'Purchase {material_info["total_shortage_qty"]:.1f} {material_info["unit"]} of {material_info["material_name"]} needed by {len(material_info["used_by_products"])} different products in one order',
                     'action_steps': [
-                        f'Create consolidated Purchase Order for {material_info["total_shortage_qty"]:.1f} {material_info["unit"]} of {material_info["material_name"]}',
-                        f'This material is needed for: {", ".join([prod["product_name"] for prod in material_info["used_by_products"]])}',
+                        f'🛒 Create consolidated Purchase Order for {material_info["total_shortage_qty"]:.1f} {material_info["unit"]} of {material_info["material_name"]}',
+                        f'💡 This material supports {len(material_info["used_by_products"])} different production items',
                         'Material breakdown by product:',
                         *[f'  • {prod_desc}' for prod_desc in product_list],
-                        'Contact supplier for bulk pricing discount',
-                        'Schedule delivery to support all manufacturing timelines'
+                        '💰 Contact supplier for bulk pricing discount (consolidated order)',
+                        '⏱️ Schedule delivery to support all manufacturing timelines',
+                        f'✅ Single purchase eliminates {len(material_info["used_by_products"]) - 1} separate purchase orders'
                     ],
                     'estimated_cost': material_info['estimated_cost'],
                     'estimated_time': '3-7 days (supplier dependent)',
