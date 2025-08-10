@@ -2249,8 +2249,8 @@ class BOM(db.Model):
         """Calculate total scrap percentage from all processes"""
         total_scrap = 0.0
         for process in self.processes:
-            if hasattr(process, 'estimated_scrap_percent') and process.estimated_scrap_percent:
-                total_scrap += process.estimated_scrap_percent
+            if hasattr(process, 'scrap_percentage') and process.scrap_percentage:
+                total_scrap += process.scrap_percentage
         
         # Add BOM-level scrap if specified
         if self.estimated_scrap_percent:
@@ -2506,25 +2506,7 @@ class BOM(db.Model):
     @property
     def total_process_cost_per_unit(self):
         """Calculate total process cost per unit across all steps"""
-        total_cost = 0.0
-        for process in self.processes:
-            # Get process-specific costs
-            labor_cost = process.labor_cost_per_unit or 0
-            direct_cost = process.converted_cost_per_unit or 0
-            
-            # Add both labor and direct process costs
-            total_cost += (labor_cost + direct_cost)
-        
-        return total_cost
-    
-    @property
-    def total_process_scrap_percent(self):
-        """Calculate total process-specific scrap percentage"""
-        total_scrap = 0.0
-        for process in self.processes:
-            if hasattr(process, 'estimated_scrap_percent') and process.estimated_scrap_percent:
-                total_scrap += process.estimated_scrap_percent
-        return total_scrap
+        return sum(process.labor_cost_per_unit for process in self.processes)
     
     @property
     def manufacturing_complexity(self):
