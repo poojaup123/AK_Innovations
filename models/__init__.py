@@ -188,9 +188,9 @@ class Supplier(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relationships - removed backrefs to prevent recursion
-    purchase_orders = db.relationship('PurchaseOrder', lazy=True)
-    sales_orders = db.relationship('SalesOrder', foreign_keys='SalesOrder.customer_id', lazy=True)
+    # Relationships
+    purchase_orders = db.relationship('PurchaseOrder', backref='supplier', lazy=True)
+    sales_orders = db.relationship('SalesOrder', backref='customer', foreign_keys='SalesOrder.customer_id', lazy=True)
     
     @property
     def is_supplier(self):
@@ -252,8 +252,8 @@ class ItemBatch(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    item = db.relationship('Item')
-    creator = db.relationship('User')
+    item = db.relationship('Item', backref='batches')
+    creator = db.relationship('User', backref='created_batches')
     
     @property
     def total_quantity(self):
@@ -705,10 +705,10 @@ class Item(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    purchase_order_items = db.relationship('PurchaseOrderItem', lazy=True)
+    purchase_order_items = db.relationship('PurchaseOrderItem', backref='item_ref', lazy=True)
     sales_order_items = db.relationship('SalesOrderItem', lazy=True)
     # Removed conflicting backref - BOMItem has its own 'item' relationship
-    item_type_obj = db.relationship('ItemType', lazy=True)
+    item_type_obj = db.relationship('ItemType', backref='items', lazy=True)
     
     @property
     def total_stock(self):
@@ -966,11 +966,11 @@ class PurchaseOrder(db.Model):
     inspected_at = db.Column(db.DateTime)
     
     # Relationships
-    items = db.relationship('PurchaseOrderItem', lazy=True, cascade='all, delete-orphan')
-    delivery_schedules = db.relationship('DeliverySchedule', lazy=True, cascade='all, delete-orphan')
-    creator = db.relationship('User', foreign_keys=[created_by])
-    inspector = db.relationship('User', foreign_keys=[inspected_by])
-    material_inspections = db.relationship('MaterialInspection', lazy=True, cascade='all, delete-orphan')
+    items = db.relationship('PurchaseOrderItem', backref='purchase_order', lazy=True, cascade='all, delete-orphan')
+    delivery_schedules = db.relationship('DeliverySchedule', backref='purchase_order', lazy=True, cascade='all, delete-orphan')
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_purchase_orders')
+    inspector = db.relationship('User', foreign_keys=[inspected_by], backref='inspected_purchase_orders')
+    material_inspections = db.relationship('MaterialInspection', backref='purchase_order', lazy=True, cascade='all, delete-orphan')
     
     # Accounting relationships
     supplier_account = db.relationship('Account', foreign_keys=[supplier_account_id])
@@ -1060,8 +1060,8 @@ class SalesOrder(db.Model):
     gst_amount = db.Column(db.Float, default=0.0)
     
     # Relationships
-    items = db.relationship('SalesOrderItem', lazy=True, cascade='all, delete-orphan')
-    creator = db.relationship('User')
+    items = db.relationship('SalesOrderItem', backref='sales_order', lazy=True, cascade='all, delete-orphan')
+    creator = db.relationship('User', backref='created_sales_orders')
     
     # Accounting relationships
     customer_account = db.relationship('Account', foreign_keys=[customer_account_id])
@@ -1108,8 +1108,8 @@ class Employee(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    salary_records = db.relationship('SalaryRecord', lazy=True, cascade='all, delete-orphan')
-    advances = db.relationship('EmployeeAdvance', lazy=True, cascade='all, delete-orphan')
+    salary_records = db.relationship('SalaryRecord', backref='employee', lazy=True, cascade='all, delete-orphan')
+    advances = db.relationship('EmployeeAdvance', backref='employee', lazy=True, cascade='all, delete-orphan')
     
     @staticmethod
     def generate_employee_code():
@@ -1140,7 +1140,7 @@ class JobWorkRate(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
     # Relationship
-    item = db.relationship('Item')
+    item = db.relationship('Item', backref='job_work_rates')
     
     def __repr__(self):
         return f'<JobWorkRate {self.item.name}: ₹{self.rate_per_unit}>'
@@ -1186,13 +1186,13 @@ class JobWork(db.Model):
     production_quantity = db.Column(db.Integer, nullable=True)  # Quantity to produce from BOM
     
     # Relationships
-    item = db.relationship('Item')
-    bom = db.relationship('BOM')
-    creator = db.relationship('User', foreign_keys=[created_by])
-    inspector = db.relationship('User', foreign_keys=[inspected_by])
-    processes = db.relationship('JobWorkProcess', lazy=True, cascade='all, delete-orphan')
-    team_assignments = db.relationship('JobWorkTeamAssignment', lazy=True, cascade='all, delete-orphan')
-    grn_receipts = db.relationship('GRN', lazy=True)
+    item = db.relationship('Item', backref='job_works')
+    bom = db.relationship('BOM', backref='job_works')
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_job_works')
+    inspector = db.relationship('User', foreign_keys=[inspected_by], backref='inspected_job_works')
+    processes = db.relationship('JobWorkProcess', backref='job_work', lazy=True, cascade='all, delete-orphan')
+    team_assignments = db.relationship('JobWorkTeamAssignment', backref='job_work', lazy=True, cascade='all, delete-orphan')
+    grn_receipts = db.relationship('GRN', backref='job_work', lazy=True)
     
     @property
     def total_cost(self):
@@ -1499,8 +1499,8 @@ class JobWorkTeamAssignment(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships  
-    employee = db.relationship('Employee')
-    assigner = db.relationship('User')
+    employee = db.relationship('Employee', backref='team_assignments')
+    assigner = db.relationship('User', backref='team_assignments_created')
     
     # Unique constraint to prevent duplicate assignments
     __table_args__ = (db.UniqueConstraint('job_work_id', 'employee_id', name='unique_job_employee'),)
@@ -1622,8 +1622,8 @@ class JobWorkProcess(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    output_item = db.relationship('Item', foreign_keys=[output_item_id])
-    team_lead = db.relationship('Employee', foreign_keys=[team_lead_id])
+    output_item = db.relationship('Item', foreign_keys=[output_item_id], backref='processes_output')
+    team_lead = db.relationship('Employee', foreign_keys=[team_lead_id], backref='processes_led')
     
     @property
     def process_cost(self):
@@ -1829,14 +1829,14 @@ class JobWorkBatch(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    job_work = db.relationship('JobWork')
-    process = db.relationship('JobWorkProcess')
-    input_batch = db.relationship('ItemBatch', foreign_keys=[input_batch_id])
-    output_batch = db.relationship('ItemBatch', foreign_keys=[output_batch_id])
+    job_work = db.relationship('JobWork', backref='jobwork_batch_records')
+    process = db.relationship('JobWorkProcess', backref='process_batch_records')
+    input_batch = db.relationship('ItemBatch', foreign_keys=[input_batch_id], backref='jobwork_issues')
+    output_batch = db.relationship('ItemBatch', foreign_keys=[output_batch_id], backref='jobwork_returns')
     input_item = db.relationship('Item', foreign_keys=[input_item_id])
     output_item = db.relationship('Item', foreign_keys=[output_item_id])
-    creator = db.relationship('User', foreign_keys=[created_by])
-    inspector = db.relationship('User', foreign_keys=[inspected_by])
+    creator = db.relationship('User', foreign_keys=[created_by], backref='jobwork_batches_created')
+    inspector = db.relationship('User', foreign_keys=[inspected_by], backref='jobwork_batches_inspected')
     
     @property
     def yield_percentage(self):
@@ -1947,8 +1947,8 @@ class ProductionBatch(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    material_batch = db.relationship('ItemBatch', foreign_keys=[material_batch_id])
-    bom_item = db.relationship('BOMItem', foreign_keys=[bom_item_id])
+    material_batch = db.relationship('ItemBatch', foreign_keys=[material_batch_id], backref='production_consumptions')
+    bom_item = db.relationship('BOMItem', foreign_keys=[bom_item_id], backref='production_batch_usages')
     
     @property
     def material_name(self):
@@ -1999,12 +1999,12 @@ class Production(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    produced_item = db.relationship('Item')
-    creator = db.relationship('User', foreign_keys=[created_by])
-    operator = db.relationship('User', foreign_keys=[operator_id])
-    output_batch = db.relationship('ItemBatch', foreign_keys=[output_batch_id])
-    bom = db.relationship('BOM', foreign_keys=[bom_id])
-    quality_issues = db.relationship('QualityIssue', lazy=True, cascade='all, delete-orphan')
+    produced_item = db.relationship('Item', backref='productions')
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_productions')
+    operator = db.relationship('User', foreign_keys=[operator_id], backref='operated_productions')
+    output_batch = db.relationship('ItemBatch', foreign_keys=[output_batch_id], backref='production_source')
+    bom = db.relationship('BOM', foreign_keys=[bom_id], backref='productions_using_bom')
+    quality_issues = db.relationship('QualityIssue', backref='production', lazy=True, cascade='all, delete-orphan')
     # production_batches relationship added at end of file
     
     @property
@@ -2077,43 +2077,96 @@ class BOM(db.Model):
     __tablename__ = 'boms'
     
     id = db.Column(db.Integer, primary_key=True)
-    bom_code = db.Column(db.String(50), unique=True, nullable=False)
+    bom_code = db.Column(db.String(50), unique=True, nullable=False)  # Unique BOM identifier
     product_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
-    output_quantity = db.Column(db.Float, default=1.0)
-    output_uom_id = db.Column(db.Integer, db.ForeignKey('units_of_measure.id'))
+    output_uom_id = db.Column(db.Integer, db.ForeignKey('units_of_measure.id'), nullable=True)  # Output unit of measure
+    version = db.Column(db.String(20), default='1.0')
+    status = db.Column(db.String(20), default='active')  # active, inactive, draft
+    is_active = db.Column(db.Boolean, default=True)  # Keep for backward compatibility
+    output_quantity = db.Column(db.Float, default=1.0)  # How many units this BOM produces (e.g., 1 sheet = 400 pieces)
+    unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit for cost conversions (kg, g, etc.)
+    unit_weight_uom = db.Column(db.String(10), default='kg')  # Unit of measure for unit weight
+    estimated_scrap_percent = db.Column(db.Float, default=0.0)  # Overall expected scrap percentage
+    scrap_quantity = db.Column(db.Float, default=0.0)  # Expected scrap quantity per unit produced
+    scrap_uom = db.Column(db.String(20), default='kg')  # Unit of measure for scrap (typically weight-based)
+    scrap_value_recovery_percent = db.Column(db.Float, default=15.0)  # Percentage of original material value recoverable from scrap
+    description = db.Column(db.Text)  # BOM description
+    remarks = db.Column(db.Text)  # Additional remarks
+    
+    # Labor and Overhead costs
     labor_cost_per_unit = db.Column(db.Float, default=0.0)
     overhead_cost_per_unit = db.Column(db.Float, default=0.0)
-    markup_percentage = db.Column(db.Float, default=0.0)
-    is_active = db.Column(db.Boolean, default=True)
+    labor_hours_per_unit = db.Column(db.Float, default=0.0)
+    labor_rate_per_hour = db.Column(db.Float, default=0.0)
+    overhead_percentage = db.Column(db.Float, default=0.0)  # Percentage of material cost
+    freight_cost_per_unit = db.Column(db.Float, default=0.0)  # Transportation/freight cost per unit (optional)
+    freight_unit_type = db.Column(db.String(20), default='per_piece')  # per_piece, per_kg, per_box, per_carton
+    markup_percentage = db.Column(db.Float, default=0.0)  # Markup percentage for profit margin
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    @property
-    def total_material_cost(self):
-        """Simple material cost calculation without recursion"""
-        return 0.0  # Simplified to prevent recursion
-    
-    @property
-    def total_cost_per_unit(self):
-        """Total cost including all components"""
-        return (self.labor_cost_per_unit or 0) + (self.overhead_cost_per_unit or 0)
-
-    
-    # Additional fields for comprehensive BOM management
-    version = db.Column(db.String(20), default='1.0')
-    status = db.Column(db.String(20), default='active')
-    description = db.Column(db.Text)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     
-    # Multi-level BOM support - simplified fields only
-    parent_bom_id = db.Column(db.Integer, db.ForeignKey('boms.id'), nullable=True)
-    bom_level = db.Column(db.Integer, default=0)
+    # Multi-level BOM support fields
+    parent_bom_id = db.Column(db.Integer, db.ForeignKey('boms.id'), nullable=True)  # Parent BOM if this is a sub-BOM
+    bom_level = db.Column(db.Integer, default=0)  # BOM hierarchy level (0 = top level, 1 = sub-BOM, etc.)
+    is_phantom_bom = db.Column(db.Boolean, default=False)  # Phantom BOM (intermediate product not stocked)
+    intermediate_product = db.Column(db.Boolean, default=False)  # This BOM produces intermediate products for other BOMs
     
-    # Simplified relationships
-    product = db.relationship('Item')
+    # Relationships
+    product = db.relationship('Item', backref='boms')
     output_uom = db.relationship('UnitOfMeasure', foreign_keys=[output_uom_id])
-    items = db.relationship('BOMItem', lazy=True, cascade='all, delete-orphan')
+    items = db.relationship('BOMItem', backref='bom', lazy=True, cascade='all, delete-orphan')
+    processes = db.relationship('BOMProcess', backref='bom', lazy=True, cascade='all, delete-orphan')
     creator = db.relationship('User', foreign_keys=[created_by])
+    
+    # Multi-level BOM relationships
+    parent_bom = db.relationship('BOM', remote_side=[id], backref='sub_boms')
+    
+    # Relationship to track which BOMs use this BOM's output as input
+    dependent_boms = db.relationship('BOMItem', 
+                                   primaryjoin='BOM.product_id == BOMItem.material_id',
+                                   foreign_keys='BOMItem.material_id',
+                                   backref='source_bom',
+                                   viewonly=True)
+    
+    @property
+    def total_material_cost(self):
+        """Calculate total material cost for one unit including nested BOM costs"""
+        total_cost = 0.0
+        
+        for item in self.items:
+            material = item.material or item.item
+            if material:
+                # Check if this material has its own BOM (nested BOM)
+                material_bom = BOM.query.filter_by(product_id=material.id, is_active=True).first()
+                
+                if material_bom:
+                    # Use only the material cost for this material (recursive material cost only, exclude labor/overhead)
+                    # Always apply output_quantity conversion for accurate per-unit costing
+                    base_cost = material_bom.total_material_cost  # Use material cost only, not total_cost_per_unit
+                    if material_bom.output_quantity and material_bom.output_quantity > 0:
+                        material_cost = base_cost / material_bom.output_quantity
+                    else:
+                        material_cost = base_cost
+                else:
+                    # Use the unit cost from inventory
+                    material_cost = item.unit_cost or 0
+                
+                # Calculate total cost for this item including scrap adjustment
+                required_qty = item.qty_required or item.quantity_required or 0
+                
+                # Apply scrap adjustment if scrap percentage is defined
+                if self.estimated_scrap_percent and self.estimated_scrap_percent > 0:
+                    # Increase material requirement to account for scrap
+                    scrap_multiplier = 1 + (self.estimated_scrap_percent / 100)
+                    adjusted_qty = required_qty * scrap_multiplier
+                else:
+                    adjusted_qty = required_qty
+                
+                total_cost += adjusted_qty * material_cost
+        
+        return total_cost
     
     def auto_calculate_output_quantity(self):
         """Automatically calculate output quantity based on material conversion ratios"""
@@ -2822,13 +2875,59 @@ class BOMItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     bom_id = db.Column(db.Integer, db.ForeignKey('boms.id'), nullable=False)
     material_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
-    quantity_required = db.Column(db.Float, nullable=False, default=0.0)
+    qty_required = db.Column(db.Float, nullable=False)
+    uom_id = db.Column(db.Integer, db.ForeignKey('units_of_measure.id'), nullable=False)  # UOM for this BOM item
+    unit = db.Column(db.String(20), nullable=False, default='pcs')  # Keep for backward compatibility
     unit_cost = db.Column(db.Float, default=0.0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    scrap_percent = db.Column(db.Float, default=0.0)  # Expected scrap percentage for this material
+    process_step = db.Column(db.Integer, default=1)  # Which process step this material is used in
+    process_name = db.Column(db.String(100))  # Process where this material is used
+    is_critical = db.Column(db.Boolean, default=False)  # Critical material flag
+    substitute_materials = db.Column(db.Text)  # JSON string of substitute material IDs
+    default_supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=True)  # Default supplier
+    unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
+    total_weight = db.Column(db.Float, default=0.0)  # Total weight (qty × unit_weight)
+    remarks = db.Column(db.Text)  # Additional remarks
+    
+    # Legacy fields for backward compatibility
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)  # Keep for backward compatibility
+    quantity_required = db.Column(db.Float, nullable=True)  # Keep for backward compatibility
+    
+    # Relationships
+    material = db.relationship('Item', foreign_keys=[material_id], backref='bom_material_components')
+    item = db.relationship('Item', foreign_keys=[item_id], backref='legacy_bom_items')  # Keep for backward compatibility
+    uom = db.relationship('UnitOfMeasure', foreign_keys=[uom_id])
+    default_supplier = db.relationship('Supplier', foreign_keys=[default_supplier_id])
+    
+    def __init__(self, **kwargs):
+        super(BOMItem, self).__init__(**kwargs)
+        
+        # Handle backward compatibility
+        if self.item_id and not self.material_id:
+            self.material_id = self.item_id
+        if self.quantity_required and not self.qty_required:
+            self.qty_required = self.quantity_required
+            
+        # Auto-populate unit cost from item's unit price if not provided
+        if self.unit_cost == 0.0:
+            material_id = self.material_id or self.item_id
+            if material_id:
+                item = Item.query.get(material_id)
+                if item and item.unit_price:
+                    self.unit_cost = item.unit_price
     
     @property
     def total_cost(self):
-        return (self.quantity_required or 0) * (self.unit_cost or 0)
+        """Calculate total cost for this BOM item"""
+        return self.qty_required * self.unit_cost
+    
+    @property
+    def effective_quantity(self):
+        """Calculate effective quantity including scrap"""
+        base_qty = self.qty_required or self.quantity_required or 0
+        if self.scrap_percent > 0:
+            return base_qty * (1 + self.scrap_percent / 100)
+        return base_qty
 
 class QualityIssue(db.Model):
     __tablename__ = 'quality_issues'
@@ -2858,9 +2957,9 @@ class QualityIssue(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    item = db.relationship('Item')
-    detector = db.relationship('User', foreign_keys=[detected_by])
-    assignee = db.relationship('User', foreign_keys=[assigned_to])
+    item = db.relationship('Item', backref='quality_issues')
+    detector = db.relationship('User', foreign_keys=[detected_by], backref='detected_issues')
+    assignee = db.relationship('User', foreign_keys=[assigned_to], backref='assigned_issues')
 
 class QualityControlLog(db.Model):
     __tablename__ = 'quality_control_logs'
@@ -2883,8 +2982,8 @@ class QualityControlLog(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    production_ref = db.relationship('Production')
-    inspector = db.relationship('User')
+    production_ref = db.relationship('Production', backref='quality_logs')
+    inspector = db.relationship('User', backref='quality_inspections')
 
 class NotificationSettings(db.Model):
     __tablename__ = 'notification_settings'
@@ -2929,7 +3028,7 @@ class DeliverySchedule(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    item = db.relationship('Item')
+    item = db.relationship('Item', backref='delivery_schedules')
 
 class MaterialInspection(db.Model):
     __tablename__ = 'material_inspections'
@@ -2967,9 +3066,9 @@ class MaterialInspection(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    item = db.relationship('Item')
-    inspector = db.relationship('User')
-    job_work = db.relationship('JobWork')
+    item = db.relationship('Item', backref='material_inspections')
+    inspector = db.relationship('User', backref='material_inspections')
+    job_work = db.relationship('JobWork', backref='material_inspections')
 
 class FactoryExpense(db.Model):
     __tablename__ = 'factory_expenses'
@@ -3024,9 +3123,9 @@ class FactoryExpense(db.Model):
     voucher_id = db.Column(db.Integer, nullable=True)  # Link to accounting voucher
     
     # Relationships
-    requested_by = db.relationship('User', foreign_keys=[requested_by_id])
-    approved_by = db.relationship('User', foreign_keys=[approved_by_id])
-    child_expenses = db.relationship('FactoryExpense')
+    requested_by = db.relationship('User', foreign_keys=[requested_by_id], backref='requested_expenses')
+    approved_by = db.relationship('User', foreign_keys=[approved_by_id], backref='approved_expenses')
+    child_expenses = db.relationship('FactoryExpense', backref=db.backref('parent_expense', remote_side=[id]))
     
     @classmethod
     def generate_expense_number(cls):
@@ -3119,8 +3218,8 @@ class SalaryRecord(db.Model):
     approved_at = db.Column(db.DateTime)
     
     # Relationships
-    creator = db.relationship('User', foreign_keys=[created_by])
-    approver = db.relationship('User', foreign_keys=[approved_by])
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_salary_records')
+    approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_salary_records')
     
     @staticmethod
     def generate_salary_number():
@@ -3220,8 +3319,8 @@ class EmployeeAdvance(db.Model):
     approved_at = db.Column(db.DateTime)
     
     # Relationships
-    requester = db.relationship('User', foreign_keys=[requested_by])
-    approver = db.relationship('User', foreign_keys=[approved_by])
+    requester = db.relationship('User', foreign_keys=[requested_by], backref='requested_advances')
+    approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_advances')
     
     @staticmethod
     def generate_advance_number():
@@ -3266,8 +3365,8 @@ class EmployeeAttendance(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    employee = db.relationship('Employee')
-    marker = db.relationship('User')
+    employee = db.relationship('Employee', backref='attendance_records')
+    marker = db.relationship('User', backref='marked_attendance')
     
     # Unique constraint to prevent duplicate attendance for same day
     __table_args__ = (db.UniqueConstraint('employee_id', 'attendance_date', name='unique_employee_date'),)
@@ -3361,9 +3460,9 @@ class DailyJobWorkEntry(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    job_work = db.relationship('JobWork')
-    logger = db.relationship('User', foreign_keys='DailyJobWorkEntry.logged_by')
-    inspector = db.relationship('User', foreign_keys='DailyJobWorkEntry.inspected_by')
+    job_work = db.relationship('JobWork', backref='daily_entries')
+    logger = db.relationship('User', foreign_keys='DailyJobWorkEntry.logged_by', backref='logged_daily_work')
+    inspector = db.relationship('User', foreign_keys='DailyJobWorkEntry.inspected_by', backref='inspected_daily_entries')
     
     # Unique constraint to prevent duplicate entries for same worker/job/date
     __table_args__ = (db.UniqueConstraint('job_work_id', 'worker_name', 'work_date', name='unique_worker_job_date'),)
@@ -3393,4 +3492,4 @@ class DailyJobWorkEntry(db.Model):
         return f'<DailyJobWorkEntry {self.worker_name} - {self.job_work.job_number} - {self.work_date}>'
 
 # Add Production-ProductionBatch relationship at the end after all models are defined
-Production.production_batches = db.relationship('ProductionBatch', lazy=True, cascade='all, delete-orphan')
+Production.production_batches = db.relationship('ProductionBatch', backref='production', lazy=True, cascade='all, delete-orphan')
