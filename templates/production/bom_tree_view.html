@@ -308,13 +308,28 @@
                 <!-- Cost Summary -->
                 {% if tree.bom.total_material_cost and tree.bom.total_material_cost > 0 %}
                 <div class="cost-summary">
-                    <i class="fas fa-calculator"></i> 
+                    <i class="fas fa-calculator"></i> <strong>Cost Breakdown (Per Unit):</strong><br>
                     {% set material_cost_per_unit = tree.bom.total_material_cost / (tree.bom.output_quantity or 1.0) %}
+                    {% set labor_cost_per_unit = (tree.bom.labor_cost_per_unit or 0) / (tree.bom.output_quantity or 1.0) %}
+                    {% set process_cost_per_unit = tree.bom.processes|sum(attribute='converted_cost_per_unit') if tree.bom.processes else 0 %}
+                    {% set overhead_cost_per_unit = (tree.bom.overhead_cost_per_unit or 0) / (tree.bom.output_quantity or 1.0) %}
                     {% set total_cost_per_unit = tree.bom.total_cost_per_unit / (tree.bom.output_quantity or 1.0) %}
-                    <strong>Material Cost: ₹{{ "%.2f"|format(material_cost_per_unit) }}</strong>
-                    {% if tree.bom.total_cost_per_unit and tree.bom.total_cost_per_unit != tree.bom.total_material_cost %}
-                        | Total with Overhead: ₹{{ "%.2f"|format(total_cost_per_unit) }}
+                    
+                    <span class="text-primary">📦 Material Cost: ₹{{ "%.2f"|format(material_cost_per_unit) }}</span><br>
+                    {% if process_cost_per_unit > 0 %}
+                        <span class="text-info">⚙️ Process Costs: ₹{{ "%.2f"|format(process_cost_per_unit) }}</span><br>
                     {% endif %}
+                    {% if labor_cost_per_unit > 0 %}
+                        <span class="text-warning">👷 Labor Cost: ₹{{ "%.2f"|format(labor_cost_per_unit) }}</span><br>
+                    {% endif %}
+                    {% if overhead_cost_per_unit > 0 %}
+                        <span class="text-secondary">🏭 Overhead: ₹{{ "%.2f"|format(overhead_cost_per_unit) }}</span><br>
+                    {% endif %}
+                    {% if tree.bom.estimated_scrap_percent and tree.bom.estimated_scrap_percent > 0 %}
+                        <span class="text-danger">♻️ Scrap Allowance: {{ tree.bom.estimated_scrap_percent }}%</span><br>
+                    {% endif %}
+                    <hr style="margin: 0.5rem 0;">
+                    <strong class="text-success">💰 Total Cost: ₹{{ "%.2f"|format(total_cost_per_unit) }}</strong>
                 </div>
                 {% endif %}
 
