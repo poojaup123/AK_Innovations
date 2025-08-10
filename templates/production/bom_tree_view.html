@@ -337,7 +337,7 @@
                                 {% if material_bom and material_bom.processes %}
                                     {% for sub_process in material_bom.processes %}
                                         {% if sub_process.converted_cost_per_unit > 0 %}
-                                            {% set sub_cost_per_unit = (sub_process.converted_cost_per_unit / (material_bom.output_quantity or 1.0)) * (item.qty_required or item.quantity_required or 0) %}
+                                            {% set sub_cost_per_unit = sub_process.converted_cost_per_unit * (item.qty_required or item.quantity_required or 0) %}
                                             <span class="text-muted" style="margin-left: 1rem;">├─ {{ material.name }} {{ sub_process.process_name }}: ₹{{ "%.4f"|format(sub_cost_per_unit) }}</span><br>
                                         {% endif %}
                                     {% endfor %}
