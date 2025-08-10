@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+
+{% block title %}Partial Production Planning - Factory Management System{% endblock %}
+
+{% block head %}
+<style>
+.partial-production-container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.requirements-preview {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.material-requirement {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+}
+
+.scaling-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.cost-breakdown {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.component-type-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
+    margin-left: 10px;
+}
+
+.type-raw-material { background: #e3f2fd; color: #1976d2; }
+.type-sub-assembly { background: #f3e5f5; color: #7b1fa2; }
+.type-phantom-bom { background: #fff3e0; color: #f57c00; }
+.type-packing { background: #e8f5e8; color: #388e3c; }
+.type-consumable { background: #fce4ec; color: #c2185b; }
+
+.critical-material {
+    border-left: 4px solid #dc3545;
+}
+
+.materials-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.materials-table th,
+.materials-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.materials-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+}
+
+.materials-table tr:hover {
+    background: #f8f9fa;
+}
+
+.qty-comparison {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    font-size: 0.9em;
+}
+
+.qty-standard {
+    color: #6c757d;
+}
+
+.qty-partial {
+    color: #0d6efd;
+    font-weight: 600;
+}
+
+.arrow-right {
+    color: #28a745;
+    font-weight: bold;
+}
+
+@media (max-width: 768px) {
+    .qty-comparison {
+        flex-direction: column;
+        gap: 5px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="partial-production-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-dark">
+            <i class="fas fa-calculator me-2"></i>Partial Production Planning
+        </h2>
+        <div>
+            <a href="{{ url_for('production.enhanced_bom') }}" class="btn btn-outline-primary me-2">
+                <i class="fas fa-plus me-1"></i>New Enhanced BOM
+            </a>
+            <a href="{{ url_for('production.bom_list') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-list me-1"></i>View All BOMs
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Production Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="partialProductionForm">
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            {{ form.bom_id.label(class="form-label") }}
+                            {{ form.bom_id(class="form-select", id="bomSelect") }}
+                            <div class="form-text">Only BOMs with partial production enabled are shown</div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.target_quantity.label(class="form-label") }}
+                            {{ form.target_quantity(class="form-control", id="targetQuantity") }}
+                            <div class="form-text">Enter the desired production quantity</div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.production_date.label(class="form-label") }}
+                            {{ form.production_date(class="form-control", type="date", value=today_date) }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.priority.label(class="form-label") }}
+                            {{ form.priority(class="form-select") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.reason.label(class="form-label") }}
+                            {{ form.reason(class="form-control", rows="3", placeholder="Explain why partial production is needed") }}
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.ignore_material_shortage() }}
+                                {{ form.ignore_material_shortage.label(class="form-check-label") }}
+                            </div>
+                            <div class="form-check">
+                                {{ form.use_substitute_materials() }}
+                                {{ form.use_substitute_materials.label(class="form-check-label") }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control", rows="2") }}
+                        </div>
+
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-success btn-lg", id="submitButton", disabled=true) }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="requirements-preview" id="requirementsPreview" style="display: none;">
+                <h5><i class="fas fa-chart-pie me-2"></i>Production Requirements Preview</h5>
+                
+                <div class="scaling-info" id="scalingInfo">
+                    <div class="row">
+                        <div class="col-6">
+                            <small>Standard Output</small>
+                            <div class="h6" id="standardOutput">-</div>
+                        </div>
+                        <div class="col-6">
+                            <small>Target Output</small>
+                            <div class="h6" id="targetOutput">-</div>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small>Scaling Factor</small>
+                        <div class="h5" id="scalingFactor">-</div>
+                    </div>
+                </div>
+
+                <div id="materialsList">
+                    <h6>Material Requirements</h6>
+                    <table class="materials-table">
+                        <thead>
+                            <tr>
+                                <th>Material</th>
+                                <th>Type</th>
+                                <th>Quantity</th>
+                                <th>Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody id="materialsTableBody">
+                            <!-- Materials will be populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="cost-breakdown" id="costBreakdown">
+                    <h6><i class="fas fa-rupee-sign me-2"></i>Cost Summary</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Material Cost:</span>
+                        <span id="materialCost">₹0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Labor Cost:</span>
+                        <span id="laborCost">₹0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-top pt-2">
+                        <strong>Total Cost:</strong>
+                        <strong id="totalCost">₹0.00</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div id="validationErrors" class="alert alert-danger" style="display: none;">
+                <h6><i class="fas fa-exclamation-triangle me-2"></i>Validation Issues</h6>
+                <ul id="errorsList"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const bomSelect = document.getElementById('bomSelect');
+    const targetQuantity = document.getElementById('targetQuantity');
+    const requirementsPreview = document.getElementById('requirementsPreview');
+    const validationErrors = document.getElementById('validationErrors');
+    const submitButton = document.getElementById('submitButton');
+    
+    let debounceTimer;
+    
+    function updatePreview() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            const bomId = bomSelect.value;
+            const quantity = parseFloat(targetQuantity.value);
+            
+            if (!bomId || bomId === '0' || !quantity || quantity <= 0) {
+                requirementsPreview.style.display = 'none';
+                validationErrors.style.display = 'none';
+                submitButton.disabled = true;
+                return;
+            }
+            
+            // Call API to get partial production preview
+            fetch('{{ url_for("production.api_partial_production_preview") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    bom_id: bomId,
+                    target_quantity: quantity
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showValidationError(data.error);
+                } else {
+                    showRequirementsPreview(data.requirements);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showValidationError('Failed to load preview. Please try again.');
+            });
+        }, 500);
+    }
+    
+    function showRequirementsPreview(requirements) {
+        validationErrors.style.display = 'none';
+        requirementsPreview.style.display = 'block';
+        submitButton.disabled = false;
+        
+        // Update scaling info
+        document.getElementById('targetOutput').textContent = requirements.target_quantity;
+        document.getElementById('scalingFactor').textContent = requirements.scaling_factor.toFixed(4);
+        
+        // Update materials table
+        const tableBody = document.getElementById('materialsTableBody');
+        tableBody.innerHTML = '';
+        
+        let totalMaterialCost = 0;
+        
+        requirements.materials.forEach(material => {
+            totalMaterialCost += material.total_cost;
+            
+            const row = document.createElement('tr');
+            if (material.is_critical) {
+                row.classList.add('critical-material');
+            }
+            
+            row.innerHTML = `
+                <td>
+                    <strong>${material.name}</strong>
+                    <small class="text-muted d-block">${material.code}</small>
+                    ${material.is_critical ? '<span class="badge bg-danger badge-sm">Critical</span>' : ''}
+                </td>
+                <td>
+                    <span class="component-type-badge type-${material.component_type.replace('_', '-')}">
+                        ${material.component_type.replace('_', ' ').toUpperCase()}
+                    </span>
+                </td>
+                <td>
+                    <div class="qty-comparison">
+                        <span class="qty-standard">${material.standard_qty} ${material.unit}</span>
+                        <span class="arrow-right">→</span>
+                        <span class="qty-partial">${material.partial_qty.toFixed(3)} ${material.unit}</span>
+                    </div>
+                </td>
+                <td>
+                    <div>₹${material.total_cost.toFixed(2)}</div>
+                    <small class="text-muted">@ ₹${material.unit_cost.toFixed(2)}/${material.unit}</small>
+                </td>
+            `;
+            
+            tableBody.appendChild(row);
+        });
+        
+        // Update cost summary
+        document.getElementById('materialCost').textContent = `₹${totalMaterialCost.toFixed(2)}`;
+        document.getElementById('laborCost').textContent = `₹${requirements.labor_cost.toFixed(2)}`;
+        document.getElementById('totalCost').textContent = `₹${requirements.total_cost.toFixed(2)}`;
+    }
+    
+    function showValidationError(message) {
+        requirementsPreview.style.display = 'none';
+        validationErrors.style.display = 'block';
+        submitButton.disabled = true;
+        
+        const errorsList = document.getElementById('errorsList');
+        errorsList.innerHTML = `<li>${message}</li>`;
+    }
+    
+    // Event listeners
+    bomSelect.addEventListener('change', updatePreview);
+    targetQuantity.addEventListener('input', updatePreview);
+    
+    // Initial update
+    updatePreview();
+});
+</script>
+{% endblock %}

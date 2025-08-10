@@ -2113,6 +2113,12 @@ class BOM(db.Model):
     is_phantom_bom = db.Column(db.Boolean, default=False)  # Phantom BOM (intermediate product not stocked)
     intermediate_product = db.Column(db.Boolean, default=False)  # This BOM produces intermediate products for other BOMs
     
+    # Enhanced BOM Features
+    allow_partial_production = db.Column(db.Boolean, default=True)  # Allow incomplete production runs
+    allow_substitute_items = db.Column(db.Boolean, default=False)  # Allow alternative materials when primary unavailable
+    auto_create_job_work = db.Column(db.Boolean, default=False)  # Automatically generate job work orders from BOM
+    auto_batch_assignment = db.Column(db.Boolean, default=True)  # Smart batch number generation
+    
     # Relationships
     product = db.relationship('Item', backref='boms')
     output_uom = db.relationship('UnitOfMeasure', foreign_keys=[output_uom_id])
@@ -2383,6 +2389,67 @@ class BOM(db.Model):
             total_labor_cost += self.labor_cost_per_unit
         
         return total_labor_cost
+    
+    def calculate_partial_production_requirements(self, target_quantity):
+        """Calculate material requirements for partial production"""
+        if not self.allow_partial_production:
+            return None
+        
+        # Calculate scaling factor
+        standard_output = self.output_quantity or 1.0
+        scaling_factor = target_quantity / standard_output
+        
+        partial_requirements = {
+            'target_quantity': target_quantity,
+            'scaling_factor': scaling_factor,
+            'materials': [],
+            'labor_cost': self.total_labor_cost_per_unit * scaling_factor,
+            'total_cost': 0.0
+        }
+        
+        # Calculate material requirements
+        for bom_item in self.items:
+            material = bom_item.material or bom_item.item
+            if material:
+                required_qty = (bom_item.qty_required or bom_item.quantity_required or 0) * scaling_factor
+                item_cost = required_qty * bom_item.unit_cost
+                
+                partial_requirements['materials'].append({
+                    'material': material,
+                    'standard_qty': bom_item.qty_required or bom_item.quantity_required or 0,
+                    'partial_qty': required_qty,
+                    'unit': bom_item.unit,
+                    'unit_cost': bom_item.unit_cost,
+                    'total_cost': item_cost,
+                    'component_type': bom_item.component_type,
+                    'is_critical': bom_item.is_critical
+                })
+                
+                partial_requirements['total_cost'] += item_cost
+        
+        partial_requirements['total_cost'] += partial_requirements['labor_cost']
+        return partial_requirements
+    
+    def validate_partial_production(self, target_quantity):
+        """Validate if partial production is feasible"""
+        if not self.allow_partial_production:
+            return False, "Partial production not allowed for this BOM"
+        
+        standard_output = self.output_quantity or 1.0
+        if target_quantity > standard_output:
+            return False, f"Target quantity ({target_quantity}) exceeds standard output ({standard_output})"
+        
+        if target_quantity <= 0:
+            return False, "Target quantity must be greater than zero"
+        
+        # Check critical materials availability
+        requirements = self.calculate_partial_production_requirements(target_quantity)
+        for material_req in requirements['materials']:
+            if material_req['is_critical']:
+                # Add inventory check logic here if needed
+                pass
+        
+        return True, "Partial production is feasible"
 
     @property
     def total_cost_per_unit(self):
@@ -2779,6 +2846,12 @@ class BOMProcess(db.Model):
     cost_unit = db.Column(db.String(20), default='per_unit')  # Cost unit (per_unit, per_kg, per_meter, etc.)
     estimated_scrap_percent = db.Column(db.Float, default=0.0)  # Expected scrap percentage for this process
     quality_check_required = db.Column(db.Boolean, default=False)  # Quality check after this step
+    
+    # Enhanced Process Management
+    lead_time_days = db.Column(db.Float, default=1.0)  # Lead time in days for this process
+    machine_setup_time = db.Column(db.Float, default=0.0)  # Machine setup time in minutes
+    process_priority = db.Column(db.Integer, default=1)  # Priority level (1=high, 5=low)
+    operator_skill_required = db.Column(db.String(20), default='basic')  # basic, intermediate, advanced, expert
     parallel_processes = db.Column(db.Text)  # JSON list of processes that can run in parallel
     predecessor_processes = db.Column(db.Text)  # JSON list of required predecessor processes
     
@@ -2887,6 +2960,12 @@ class BOMItem(db.Model):
     default_supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=True)  # Default supplier
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     total_weight = db.Column(db.Float, default=0.0)  # Total weight (qty × unit_weight)
+    
+    # Component Type Classification
+    component_type = db.Column(db.String(20), default='raw_material')  # raw_material, sub_assembly, phantom_bom, packing, consumable
+    is_phantom = db.Column(db.Boolean, default=False)  # Phantom component (not stocked)
+    is_packing_material = db.Column(db.Boolean, default=False)  # Packing material flag
+    
     remarks = db.Column(db.Text)  # Additional remarks
     
     # Legacy fields for backward compatibility
