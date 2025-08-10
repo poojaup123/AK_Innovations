@@ -314,7 +314,7 @@
                     {% set material_cost_per_unit = tree.bom.total_material_cost / (tree.bom.output_quantity or 1.0) %}
                     {% set comprehensive_labor_cost = tree.bom.total_labor_cost_per_unit %}
                     {% set overhead_cost_per_unit = tree.bom.overhead_cost_per_unit or 0 %}
-                    {% set total_cost_per_unit = tree.bom.total_cost_per_unit / (tree.bom.output_quantity or 1.0) %}
+                    {% set total_cost_per_unit = material_cost_per_unit + comprehensive_labor_cost + overhead_cost_per_unit %}
                     
                     <span class="text-primary">📦 Material Cost: ₹{{ "%.2f"|format(material_cost_per_unit) }}</span><br>
                     {% if comprehensive_labor_cost > 0 %}
