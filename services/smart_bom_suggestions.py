@@ -130,6 +130,8 @@ class SmartBOMSuggestionService:
             bom_output_qty = item_bom.output_quantity or 1.0
             
             # Calculate how much raw material needed for the shortage quantity
+            # BOM output quantity tells us how many final products one BOM run produces
+            # So raw_material_needed = (final_products_wanted / products_per_bom_run) * material_per_bom_run
             raw_material_needed = (required_qty / bom_output_qty) * material_qty_per_unit
             raw_material_available = SmartBOMSuggestionService._get_available_quantity(raw_material)
             
@@ -342,7 +344,34 @@ class SmartBOMSuggestionService:
             # Add all generated suggestions for this item
             optimized_suggestions.extend(suggestions_to_add)
         
-        return optimized_suggestions
+        # Deduplicate suggestions more effectively
+        seen_suggestions = {}
+        deduplicated_suggestions = []
+        
+        for suggestion in optimized_suggestions:
+            # Create a unique key based on item name and suggestion type
+            item_name = suggestion.get('target_item_name', '')
+            suggestion_type = suggestion.get('type', '')
+            unique_key = f"{item_name}|{suggestion_type}"
+            
+            # Only add if we haven't seen this exact combination
+            if unique_key not in seen_suggestions:
+                seen_suggestions[unique_key] = suggestion
+                deduplicated_suggestions.append(suggestion)
+            else:
+                # If we have seen it, keep the one with higher producible quantity
+                existing = seen_suggestions[unique_key]
+                current_qty = suggestion.get('producible_quantity', 0)
+                existing_qty = existing.get('producible_quantity', 0)
+                
+                if current_qty > existing_qty:
+                    # Replace with better suggestion
+                    seen_suggestions[unique_key] = suggestion
+                    # Remove the old one and add the new one
+                    deduplicated_suggestions = [s for s in deduplicated_suggestions if s != existing]
+                    deduplicated_suggestions.append(suggestion)
+        
+        return deduplicated_suggestions
     
     @staticmethod
     def _generate_purchase_suggestions(direct_material_shortages: List[Dict]) -> List[Dict]:
