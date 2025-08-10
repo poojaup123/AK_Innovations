@@ -2124,15 +2124,28 @@ class BOM(db.Model):
     parent_bom = db.relationship('BOM', remote_side=[id], backref='sub_boms')
     
     # Relationship to track which BOMs use this BOM's output as input
-    dependent_boms = db.relationship('BOMItem', 
-                                   primaryjoin='BOM.product_id == BOMItem.material_id',
-                                   foreign_keys='BOMItem.material_id',
-                                   backref='source_bom',
-                                   viewonly=True)
+    # Temporarily disabled to prevent recursion issues
+    # dependent_boms = db.relationship('BOMItem', 
+    #                                primaryjoin='BOM.product_id == BOMItem.material_id',
+    #                                foreign_keys='BOMItem.material_id',
+    #                                backref='source_bom',
+    #                                viewonly=True)
     
     @property
     def total_material_cost(self):
         """Calculate total material cost for one unit including nested BOM costs"""
+        return self._calculate_material_cost(visited_boms=set())
+    
+    def _calculate_material_cost(self, visited_boms=None):
+        """Calculate material cost with circular reference protection"""
+        if visited_boms is None:
+            visited_boms = set()
+        
+        # Prevent infinite recursion by tracking visited BOMs
+        if self.id in visited_boms:
+            return 0.0
+        
+        visited_boms.add(self.id)
         total_cost = 0.0
         
         for item in self.items:
@@ -2144,7 +2157,7 @@ class BOM(db.Model):
                 if material_bom:
                     # Use only the material cost for this material (recursive material cost only, exclude labor/overhead)
                     # Always apply output_quantity conversion for accurate per-unit costing
-                    base_cost = material_bom.total_material_cost  # Use material cost only, not total_cost_per_unit
+                    base_cost = material_bom._calculate_material_cost(visited_boms=visited_boms.copy())
                     if material_bom.output_quantity and material_bom.output_quantity > 0:
                         material_cost = base_cost / material_bom.output_quantity
                     else:
@@ -2166,6 +2179,8 @@ class BOM(db.Model):
                 
                 total_cost += adjusted_qty * material_cost
         
+        # Remove this BOM from visited set when returning
+        visited_boms.discard(self.id)
         return total_cost
     
     def auto_calculate_output_quantity(self):
