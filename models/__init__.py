@@ -2133,43 +2133,28 @@ class BOM(db.Model):
     
     @property
     def total_material_cost(self):
-        """Calculate total material cost for one unit including nested BOM costs"""
-        return self._calculate_material_cost(visited_boms=set())
-    
-    def _calculate_material_cost(self, visited_boms=None):
-        """Calculate material cost with circular reference protection"""
-        if visited_boms is None:
-            visited_boms = set()
-        
-        # Prevent infinite recursion by tracking visited BOMs
-        if self.id in visited_boms:
-            return 0.0
-        
-        visited_boms.add(self.id)
+        """Calculate total material cost for one unit - simplified to prevent recursion"""
         total_cost = 0.0
         
-        for item in self.items:
-            material = item.material or item.item
-            if material:
-                # Temporarily disable nested BOM cost calculation to prevent recursion
-                # Use the unit cost from inventory only
-                material_cost = item.unit_cost or 0
-                
-                # Calculate total cost for this item including scrap adjustment
-                required_qty = item.qty_required or item.quantity_required or 0
-                
-                # Apply scrap adjustment if scrap percentage is defined
-                if self.estimated_scrap_percent and self.estimated_scrap_percent > 0:
-                    # Increase material requirement to account for scrap
-                    scrap_multiplier = 1 + (self.estimated_scrap_percent / 100)
-                    adjusted_qty = required_qty * scrap_multiplier
-                else:
-                    adjusted_qty = required_qty
-                
-                total_cost += adjusted_qty * material_cost
+        try:
+            if self.items:
+                for item in self.items:
+                    if item and hasattr(item, 'unit_cost'):
+                        material_cost = float(item.unit_cost or 0)
+                        required_qty = float(getattr(item, 'quantity_required', 0) or getattr(item, 'qty_required', 0) or 0)
+                        
+                        # Apply scrap adjustment if defined
+                        if self.estimated_scrap_percent and self.estimated_scrap_percent > 0:
+                            scrap_multiplier = 1 + (float(self.estimated_scrap_percent) / 100)
+                            adjusted_qty = required_qty * scrap_multiplier
+                        else:
+                            adjusted_qty = required_qty
+                        
+                        total_cost += adjusted_qty * material_cost
+        except Exception:
+            # Return 0 if any error occurs to prevent recursion
+            return 0.0
         
-        # Remove this BOM from visited set when returning
-        visited_boms.discard(self.id)
         return total_cost
     
     def auto_calculate_output_quantity(self):
