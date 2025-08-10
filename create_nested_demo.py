@@ -1,109 +1,120 @@
 #!/usr/bin/env python3
 """
-Create sample nested BOM data to demonstrate the nested BOM functionality
+Create nested demo data showing cost calculation from existing data
 """
 
-from app import app, db
-from models import Item, BOM, BOMItem
-from datetime import datetime
+import sys
+import os
+from datetime import datetime, date
 
-def create_nested_bom_demo():
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from app import app
+from models import *
+
+def show_cost_calculation_demo():
+    """Show how costs are calculated from existing data in the system"""
+    
     with app.app_context():
-        try:
-            # Get existing items
-            castor_wheel = Item.query.filter_by(name='castor wheel').first()
-            mounted_plate = Item.query.filter_by(name='Mounted Plate').first()
-            ms_sheet = Item.query.filter_by(name='Ms sheet').first()
-            bearing = Item.query.filter_by(name='Bearing Balls').first()
-            
-            if not all([castor_wheel, mounted_plate, ms_sheet]):
-                print("Required items not found")
-                return
-            
-            # 1. Create/Update BOM for Mounted Plate (sub-component)
-            mounted_plate_bom = BOM.query.filter_by(product_id=mounted_plate.id, is_active=True).first()
-            if not mounted_plate_bom:
-                mounted_plate_bom = BOM(
-                    bom_code='BOM-MOUNTED-PLATE-001',
-                    product_id=mounted_plate.id,
-                    status='active',
-                    is_active=True,
-                    output_quantity=1.0,
-                    description='BOM for Mounted Plate assembly',
-                    labor_cost_per_unit=25.0,
-                    overhead_cost_per_unit=10.0
-                )
-                db.session.add(mounted_plate_bom)
-                db.session.flush()  # Get the ID
+        print("🏭 BOM Cost Calculation Demo from Real Data")
+        print("=" * 60)
+        
+        # Show existing data in system
+        print("📊 Current System Data:")
+        
+        # Count existing records
+        items_count = Item.query.count()
+        boms_count = BOM.query.count()
+        bom_items_count = BOMItem.query.count()
+        suppliers_count = Supplier.query.count()
+        departments_count = Department.query.count()
+        
+        print(f"   Items: {items_count}")
+        print(f"   BOMs: {boms_count}")
+        print(f"   BOM Items: {bom_items_count}")
+        print(f"   Suppliers: {suppliers_count}")
+        print(f"   Departments: {departments_count}")
+        
+        if boms_count > 0:
+            print("\n📋 Existing BOMs:")
+            boms = BOM.query.limit(3).all()
+            for bom in boms:
+                print(f"   • {bom.bom_code}: {bom.product.name if bom.product else 'No Product'}")
                 
-                # Add components to Mounted Plate BOM
-                if ms_sheet:
-                    bom_item1 = BOMItem(
-                        bom_id=mounted_plate_bom.id,
-                        item_id=ms_sheet.id,
-                        quantity_required=0.8,
-                        unit='kg',
-                        unit_cost=55.0,
-                        remarks='Main plate material'
-                    )
-                    db.session.add(bom_item1)
+                # Show BOM items with costs
+                bom_items = BOMItem.query.filter_by(bom_id=bom.id).limit(5).all()
+                total_material_cost = 0
                 
-                if bearing:
-                    bom_item2 = BOMItem(
-                        bom_id=mounted_plate_bom.id,
-                        item_id=bearing.id,
-                        quantity_required=4.0,
-                        unit='Pcs',
-                        unit_cost=12.50,
-                        remarks='Corner mounting bearings'
-                    )
-                    db.session.add(bom_item2)
+                for item in bom_items:
+                    line_cost = item.qty_required * (item.unit_cost or 0)
+                    total_material_cost += line_cost
+                    print(f"     - {item.material.name}: {item.qty_required} × ₹{item.unit_cost or 0:.2f} = ₹{line_cost:.2f}")
                 
-                print(f"Created BOM for Mounted Plate: {mounted_plate_bom.bom_code}")
-            
-            # 2. Create/Update BOM for Castor Wheel (parent assembly)
-            castor_bom = BOM.query.filter_by(product_id=castor_wheel.id, is_active=True).first()
-            if castor_bom:
-                # Check if mounted plate is already a component
-                existing_component = BOMItem.query.filter_by(
-                    bom_id=castor_bom.id, 
-                    item_id=mounted_plate.id
-                ).first()
+                # Show processes if any
+                processes = BOMProcess.query.filter_by(bom_id=bom.id).all()
+                total_process_cost = 0
                 
-                if not existing_component:
-                    # Add mounted plate as a component with nested BOM
-                    nested_component = BOMItem(
-                        bom_id=castor_bom.id,
-                        item_id=mounted_plate.id,
-                        quantity_required=1.0,
-                        unit='Pcs',
-                        unit_cost=125.0,
-                        remarks='Sub-assembly with own BOM'
-                    )
-                    db.session.add(nested_component)
-                    print(f"Added Mounted Plate to Castor Wheel BOM - this will show nested BOM functionality")
-            
-            db.session.commit()
-            
-            # Verify the setup
-            print("\n=== Nested BOM Setup Complete ===")
-            print(f"Mounted Plate BOM ID: {mounted_plate_bom.id if mounted_plate_bom else 'None'}")
-            print(f"Mounted Plate active_bom: {mounted_plate.active_bom is not None}")
-            
-            if castor_bom:
-                print(f"Castor Wheel BOM: {castor_bom.bom_code}")
-                for item in castor_bom.items:
-                    has_sub_bom = item.item.active_bom is not None
-                    print(f"  - {item.item.name}: {item.quantity_required} {item.unit} [Sub-BOM: {has_sub_bom}]")
-            
-            print("\nNow when you edit the Castor Wheel BOM, you should see:")
-            print("1. 'Has Sub-BOM' badge next to Mounted Plate in the dropdown")
-            print("2. Expandable sub-BOM section when Mounted Plate is added")
-            print("3. View/Edit sub-BOM buttons")
-            
-        except Exception as e:
-            print(f"Error: {e}")
-            db.session.rollback()
+                if processes:
+                    print(f"     Process Costs:")
+                    for process in processes:
+                        process_cost = process.cost_per_unit or 0
+                        total_process_cost += process_cost
+                        process_type = "Outsourced" if process.is_outsourced else "In-house"
+                        print(f"     - {process.process_name} ({process_type}): ₹{process_cost:.2f}")
+                
+                # Calculate overhead (12%)
+                overhead_cost = (total_material_cost + total_process_cost) * 0.12
+                total_cost = total_material_cost + total_process_cost + overhead_cost
+                
+                print(f"     Total Material: ₹{total_material_cost:.2f}")
+                print(f"     Total Process: ₹{total_process_cost:.2f}")
+                print(f"     Overhead (12%): ₹{overhead_cost:.2f}")
+                print(f"     TOTAL COST: ₹{total_cost:.2f}")
+                print()
+        
+        # Show the conceptual calculation
+        print("💰 COST CALCULATION METHODOLOGY")
+        print("=" * 40)
+        
+        print("1. 📦 Raw Material Costs (from GRN):")
+        print("   • System pulls latest unit rates from GRN entries")
+        print("   • Multiplies by quantity required in BOM")
+        print("   • Automatic updates when new GRNs are received")
+        
+        print("\n2. ⚙️ Process Costs:")
+        print("   • In-house processes: Labor rates from HR Module")
+        print("   • Outsourced processes: Rates from Job Work Forms")
+        print("   • Multiplied by estimated hours or per-unit rates")
+        
+        print("\n3. 🏢 Overhead Costs:")
+        print("   • Calculated as percentage of material + process costs")
+        print("   • Based on expense data from accounting module")
+        print("   • Configurable percentage per product category")
+        
+        print("\n4. 🔄 Real-time Updates:")
+        print("   • Costs recalculate when source data changes")
+        print("   • GRN updates → Material cost changes")
+        print("   • HR updates → Labor cost changes") 
+        print("   • Job Work updates → Outsourcing cost changes")
+        
+        print(f"\n✨ Example Calculation for Heavy Duty Castor Wheel:")
+        print(f"   Raw Materials:  ₹272.75 (Steel ₹213.75 + Rubber ₹45.00 + Bolts ₹14.00)")
+        print(f"   Job Work:       ₹37.50  (Zinc coating 2.5kg × ₹15/kg)")
+        print(f"   Labor:          ₹480.00 (Machining 2h × ₹150 + Assembly 1.5h × ₹120)")
+        print(f"   Overheads:      ₹94.83  (12% of ₹790.25)")
+        print(f"   TOTAL COST:     ₹885.08")
+        
+        print(f"\n🌟 Enhanced BOM Features Available:")
+        print(f"   ✓ Component source tracking (In-house vs Purchase)")
+        print(f"   ✓ Department and machine assignment")
+        print(f"   ✓ Vendor assignment for outsourced processes")
+        print(f"   ✓ Lead time tracking")
+        print(f"   ✓ Batch tracking configuration")
+        print(f"   ✓ Partial production capability")
+        print(f"   ✓ Automatic cost calculation")
+        print(f"   ✓ Real-time cost updates")
+        
+        print(f"\n🔗 Try the Enhanced BOM Form at: /production/enhanced-bom")
 
 if __name__ == "__main__":
-    create_nested_bom_demo()
+    show_cost_calculation_demo()
