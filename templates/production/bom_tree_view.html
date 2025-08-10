@@ -660,25 +660,44 @@ function showProductionPlan(productId, productName, event) {
     }
 
     // Get real BOM cost data from the page
-    let materialCost = 'Calculating...';
-    let totalCost = 'Calculating...';
+    let materialCost = 'No costs specified';
+    let laborCost = 'Not specified';
+    let totalCost = 'No costs specified';
     
-    // Try to extract actual cost from BOM display
-    const costElements = document.querySelectorAll('.cost-summary, .tree-cost');
-    for (let element of costElements) {
+    // Extract material costs from BOM display
+    const materialCostElements = document.querySelectorAll('.cost-summary, .tree-cost');
+    for (let element of materialCostElements) {
         const text = element.textContent || '';
         const costMatch = text.match(/₹([\d,]+\.?\d*)/);
         if (costMatch) {
             materialCost = `₹${costMatch[1]}`;
-            totalCost = materialCost; // For now, total equals material cost
             break;
         }
     }
     
-    // If no cost found, show that costs need to be calculated
-    if (materialCost === 'Calculating...') {
-        materialCost = 'No costs specified';
-        totalCost = 'No costs specified';
+    // Extract labor costs from nested BOM data
+    let totalLaborCost = 0;
+    const allText = document.body.textContent || '';
+    const laborMatches = allText.match(/Labor Cost \(not included\):\s*₹([\d,]+\.?\d*)/gi);
+    if (laborMatches) {
+        for (let match of laborMatches) {
+            const laborValue = match.match(/₹([\d,]+\.?\d*)/);
+            if (laborValue) {
+                totalLaborCost += parseFloat(laborValue[1]);
+            }
+        }
+        if (totalLaborCost > 0) {
+            laborCost = `₹${totalLaborCost.toFixed(2)}`;
+        }
+    }
+    
+    // Calculate total cost if we have both material and labor
+    if (materialCost !== 'No costs specified' && laborCost !== 'Not specified') {
+        const matCostNum = parseFloat(materialCost.replace('₹', ''));
+        const labCostNum = parseFloat(laborCost.replace('₹', ''));
+        totalCost = `₹${(matCostNum + labCostNum).toFixed(2)}`;
+    } else if (materialCost !== 'No costs specified') {
+        totalCost = materialCost;
     }
 
     // Simulated production plan response
@@ -759,7 +778,7 @@ function showProductionPlan(productId, productName, event) {
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between">
                                     <span>Labour Cost</span>
-                                    <span class="text-muted">Not specified</span>
+                                    <span class="text-muted">${laborCost}</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between">
                                     <span>Packing Cost</span>
