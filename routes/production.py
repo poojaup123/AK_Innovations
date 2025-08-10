@@ -473,98 +473,16 @@ def api_complete_production(production_id):
                     notes=f"Production completed - {production.production_number}"
                 )
         
-        # Auto-trigger next production BOMs if enabled
-        next_production_triggers = None
-        if production.bom and production.bom.auto_trigger_next_bom:
-            from services.bom_planner import BOMPlanner
-            planner = BOMPlanner()
-            next_production_triggers = planner.trigger_next_production_bom(
-                production.bom.id, 
-                quantity_good
-            )
-            
-            # Auto-create phantom productions if recommended
-            if next_production_triggers.get('next_recommendations'):
-                for recommendation in next_production_triggers['next_recommendations']:
-                    if recommendation.get('auto_create_production'):
-                        auto_production = Production(
-                            production_number=f"AUTO-{recommendation['bom_code']}-{datetime.now().strftime('%Y%m%d%H%M%S')}",
-                            bom_id=recommendation['bom_id'],
-                            quantity_planned=recommendation['suggested_qty'],
-                            status='planned',
-                            priority='high',
-                            created_at=datetime.utcnow(),
-                            notes=f"Auto-triggered from completed production {production.production_number}"
-                        )
-                        db.session.add(auto_production)
-        
         db.session.commit()
         
-        response_data = {
+        return jsonify({
             'success': True,
             'message': f'Production {production.production_number} completed successfully',
             'output_batch_id': production.output_batch_id
-        }
-        
-        # Add trigger information if available
-        if next_production_triggers and next_production_triggers.get('trigger_enabled'):
-            response_data['auto_triggers'] = {
-                'total_dependencies': next_production_triggers.get('total_dependencies', 0),
-                'next_recommendations': next_production_triggers.get('next_recommendations', [])
-            }
-        
-        return jsonify(response_data)
+        })
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@production_bp.route('/api/production/<int:production_id>/packing-analysis', methods=['GET'])
-@login_required
-def api_get_packing_analysis(production_id):
-    """Get packing material requirements for a production"""
-    try:
-        production = Production.query.get_or_404(production_id)
-        
-        from services.bom_planner import BOMPlanner
-        planner = BOMPlanner()
-        
-        packing_analysis = planner.analyze_packing_requirements(
-            production.produced_item.id,
-            production.quantity_planned
-        )
-        
-        return jsonify({
-            'success': True,
-            'production_number': production.production_number,
-            'packing_analysis': packing_analysis
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@production_bp.route('/api/production/<int:production_id>/comprehensive-plan', methods=['GET'])
-@login_required
-def api_get_comprehensive_production_plan(production_id):
-    """Get comprehensive production plan including sub-assemblies and packing"""
-    try:
-        production = Production.query.get_or_404(production_id)
-        
-        from services.bom_planner import BOMPlanner
-        planner = BOMPlanner()
-        
-        comprehensive_plan = planner.create_comprehensive_production_plan(
-            production.produced_item.id,
-            production.quantity_planned
-        )
-        
-        return jsonify({
-            'success': True,
-            'production_number': production.production_number,
-            'comprehensive_plan': comprehensive_plan
-        })
-        
-    except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @production_bp.route('/api/production/<int:production_id>/batch-consumption')

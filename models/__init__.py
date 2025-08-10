@@ -2113,12 +2113,6 @@ class BOM(db.Model):
     is_phantom_bom = db.Column(db.Boolean, default=False)  # Phantom BOM (intermediate product not stocked)
     intermediate_product = db.Column(db.Boolean, default=False)  # This BOM produces intermediate products for other BOMs
     
-    # Packing and Production Flow Enhancement
-    is_packing_bom = db.Column(db.Boolean, default=False)  # This BOM represents packaging operations
-    packaging_level = db.Column(db.Integer, default=0)  # 0=product, 1=primary pack, 2=secondary pack, etc.
-    auto_trigger_next_bom = db.Column(db.Boolean, default=False)  # Auto trigger dependent BOMs when completed
-    next_bom_trigger_qty = db.Column(db.Float, default=1.0)  # Quantity threshold to trigger next BOM
-    
     # Relationships
     product = db.relationship('Item', backref='boms')
     output_uom = db.relationship('UnitOfMeasure', foreign_keys=[output_uom_id])
@@ -2894,12 +2888,6 @@ class BOMItem(db.Model):
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     total_weight = db.Column(db.Float, default=0.0)  # Total weight (qty × unit_weight)
     remarks = db.Column(db.Text)  # Additional remarks
-    
-    # Packing and Production Flow Enhancement
-    is_packaging_material = db.Column(db.Boolean, default=False)  # This item is packaging material (bags, cartons, etc.)
-    packaging_type = db.Column(db.String(50), nullable=True)  # 'primary', 'secondary', 'tertiary' packaging
-    consumption_trigger = db.Column(db.String(20), default='per_unit')  # 'per_unit', 'per_batch', 'per_lot'
-    packaging_capacity = db.Column(db.Float, default=1.0)  # How many product units this packaging can hold
     
     # Legacy fields for backward compatibility
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)  # Keep for backward compatibility
