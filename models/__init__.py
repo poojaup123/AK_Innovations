@@ -2351,12 +2351,49 @@ class BOM(db.Model):
             return "Very Complex"
     
     @property
+    def total_labor_cost_per_unit(self):
+        """Calculate comprehensive labor cost including all process costs from this BOM and all sub-BOMs"""
+        total_labor_cost = 0.0
+        
+        # Add process costs from current BOM
+        for process in self.processes:
+            total_labor_cost += process.converted_cost_per_unit or 0.0
+        
+        # Add process costs from all sub-BOMs
+        for bom_item in self.items:
+            material = bom_item.material or bom_item.item
+            if material:
+                # Check if this material has its own BOM
+                material_bom = BOM.query.filter_by(product_id=material.id, is_active=True).first()
+                if material_bom:
+                    # Calculate required quantity
+                    required_qty = bom_item.qty_required or bom_item.quantity_required or 0
+                    
+                    # Get sub-BOM process costs per unit
+                    sub_bom_labor_per_unit = 0.0
+                    for sub_process in material_bom.processes:
+                        sub_bom_labor_per_unit += sub_process.converted_cost_per_unit or 0.0
+                    
+                    # Convert to per-unit cost based on sub-BOM output quantity
+                    if material_bom.output_quantity and material_bom.output_quantity > 0:
+                        sub_bom_labor_per_unit = sub_bom_labor_per_unit / material_bom.output_quantity
+                    
+                    # Add to total (multiply by quantity required in this BOM)
+                    total_labor_cost += sub_bom_labor_per_unit * required_qty
+        
+        # Add manual labor cost if specified
+        if self.labor_cost_per_unit and self.labor_cost_per_unit > 0:
+            total_labor_cost += self.labor_cost_per_unit
+        
+        return total_labor_cost
+
+    @property
     def total_cost_per_unit(self):
         """Calculate total cost per unit including materials, labor, overhead, freight, and markup"""
         material_cost = self.total_material_cost
         
-        # Use calculated labor cost from processes if available
-        labor_cost = self.calculated_labor_cost_per_unit
+        # Use comprehensive labor cost from all processes and sub-BOMs
+        labor_cost = self.total_labor_cost_per_unit
         
         overhead_cost = self.overhead_cost_per_unit or 0
         freight_cost = self.calculated_freight_cost_per_unit

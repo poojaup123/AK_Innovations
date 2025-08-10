@@ -310,22 +310,38 @@
                 <div class="cost-summary">
                     <i class="fas fa-calculator"></i> <strong>Cost Breakdown (Per Unit):</strong><br>
                     {% set material_cost_per_unit = tree.bom.total_material_cost / (tree.bom.output_quantity or 1.0) %}
-                    {% set labor_cost_per_unit = (tree.bom.labor_cost_per_unit or 0) / (tree.bom.output_quantity or 1.0) %}
-                    {% set process_cost_per_unit = 0 %}
-                    {% if tree.bom.processes %}
-                        {% for process in tree.bom.processes %}
-                            {% set process_cost_per_unit = process_cost_per_unit + (process.converted_cost_per_unit or 0) %}
-                        {% endfor %}
-                    {% endif %}
+                    {% set comprehensive_labor_cost = tree.bom.total_labor_cost_per_unit / (tree.bom.output_quantity or 1.0) %}
                     {% set overhead_cost_per_unit = (tree.bom.overhead_cost_per_unit or 0) / (tree.bom.output_quantity or 1.0) %}
                     {% set total_cost_per_unit = tree.bom.total_cost_per_unit / (tree.bom.output_quantity or 1.0) %}
                     
                     <span class="text-primary">📦 Material Cost: ₹{{ "%.2f"|format(material_cost_per_unit) }}</span><br>
-                    {% if process_cost_per_unit > 0 %}
-                        <span class="text-info">⚙️ Process Costs: ₹{{ "%.2f"|format(process_cost_per_unit) }}</span><br>
-                    {% endif %}
-                    {% if labor_cost_per_unit > 0 %}
-                        <span class="text-warning">👷 Labor Cost: ₹{{ "%.2f"|format(labor_cost_per_unit) }}</span><br>
+                    {% if comprehensive_labor_cost > 0 %}
+                        <span class="text-warning">👷 Labor Cost (All Processes): ₹{{ "%.2f"|format(comprehensive_labor_cost) }}</span><br>
+                        
+                        <!-- Show detailed breakdown of labor costs -->
+                        {% if tree.bom.processes %}
+                            {% for process in tree.bom.processes %}
+                                {% if process.converted_cost_per_unit > 0 %}
+                                    <span class="text-muted" style="margin-left: 1rem;">├─ {{ process.process_name }}: ₹{{ "%.3f"|format(process.converted_cost_per_unit / (tree.bom.output_quantity or 1.0)) }}</span><br>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                        
+                        <!-- Show sub-BOM process costs -->
+                        {% for item in tree.bom.items %}
+                            {% set material = item.material or item.item %}
+                            {% if material %}
+                                {% set material_bom = material.boms|selectattr('is_active')|first if material.boms else none %}
+                                {% if material_bom and material_bom.processes %}
+                                    {% for sub_process in material_bom.processes %}
+                                        {% if sub_process.converted_cost_per_unit > 0 %}
+                                            {% set sub_cost_per_unit = (sub_process.converted_cost_per_unit / (material_bom.output_quantity or 1.0)) * (item.qty_required or item.quantity_required or 0) %}
+                                            <span class="text-muted" style="margin-left: 1rem;">├─ {{ material.name }} {{ sub_process.process_name }}: ₹{{ "%.3f"|format(sub_cost_per_unit) }}</span><br>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
                     {% endif %}
                     {% if overhead_cost_per_unit > 0 %}
                         <span class="text-secondary">🏭 Overhead: ₹{{ "%.2f"|format(overhead_cost_per_unit) }}</span><br>
