@@ -97,6 +97,7 @@ def create_app():
     from routes.packing import packing_bp
     from routes.tally_import import bp as tally_import_bp
     from routes.live_status import live_status_bp
+    from routes.job_cards import job_cards_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -123,13 +124,12 @@ def create_app():
     app.register_blueprint(tally_bp, url_prefix='/tally')
     app.register_blueprint(packing_bp, url_prefix='/packing')
     app.register_blueprint(tally_import_bp, url_prefix='/tally')
+    app.register_blueprint(job_cards_bp, url_prefix='/job-cards')
     
     from routes.daily_production import daily_production_bp
     app.register_blueprint(daily_production_bp)
     
-    # Register job cards blueprint
-    from routes.job_cards import job_cards_bp
-    app.register_blueprint(job_cards_bp, url_prefix='/job-cards')
+
     
     # Job Card Workflow Management
     from routes.job_card_workflow import job_card_workflow_bp
