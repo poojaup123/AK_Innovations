@@ -2120,8 +2120,8 @@ class BOM(db.Model):
     processes = db.relationship('BOMProcess', backref='bom', lazy=True, cascade='all, delete-orphan')
     creator = db.relationship('User', foreign_keys=[created_by])
     
-    # Multi-level BOM relationships
-    parent_bom = db.relationship('BOM', remote_side=[id], backref='sub_boms')
+    # Multi-level BOM relationships - temporarily simplified to prevent recursion
+    # parent_bom = db.relationship('BOM', remote_side=[id], backref='sub_boms')
     
     # Relationship to track which BOMs use this BOM's output as input
     # Temporarily disabled to prevent recursion issues
@@ -2151,20 +2151,9 @@ class BOM(db.Model):
         for item in self.items:
             material = item.material or item.item
             if material:
-                # Check if this material has its own BOM (nested BOM)
-                material_bom = BOM.query.filter_by(product_id=material.id, is_active=True).first()
-                
-                if material_bom:
-                    # Use only the material cost for this material (recursive material cost only, exclude labor/overhead)
-                    # Always apply output_quantity conversion for accurate per-unit costing
-                    base_cost = material_bom._calculate_material_cost(visited_boms=visited_boms.copy())
-                    if material_bom.output_quantity and material_bom.output_quantity > 0:
-                        material_cost = base_cost / material_bom.output_quantity
-                    else:
-                        material_cost = base_cost
-                else:
-                    # Use the unit cost from inventory
-                    material_cost = item.unit_cost or 0
+                # Temporarily disable nested BOM cost calculation to prevent recursion
+                # Use the unit cost from inventory only
+                material_cost = item.unit_cost or 0
                 
                 # Calculate total cost for this item including scrap adjustment
                 required_qty = item.qty_required or item.quantity_required or 0
