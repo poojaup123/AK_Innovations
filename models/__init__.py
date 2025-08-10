@@ -1105,6 +1105,7 @@ class Employee(db.Model):
     address = db.Column(db.Text)
     joining_date = db.Column(db.Date, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
+    skill_level = db.Column(db.String(50), default='Standard')  # Skill level: Basic, Standard, Advanced, Expert
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -2781,6 +2782,8 @@ class BOMProcess(db.Model):
     quality_check_required = db.Column(db.Boolean, default=False)  # Quality check after this step
     parallel_processes = db.Column(db.Text)  # JSON list of processes that can run in parallel
     predecessor_processes = db.Column(db.Text)  # JSON list of required predecessor processes
+    skill_level = db.Column(db.String(50), default='Standard')  # Required skill level: Basic, Standard, Advanced, Expert
+    machine_requirements = db.Column(db.Text)  # Machine/equipment requirements for this process
     
     # Process transformation fields
     input_product_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)  # Input product for this process

@@ -198,7 +198,7 @@ class SmartJobCardSuggestions:
             # Find suitable workers based on skill level
             suitable_workers = Employee.query.filter(
                 Employee.is_active == True,
-                Employee.skill_level == (process.skill_level or 'Standard')
+                Employee.skill_level == (getattr(process, 'skill_level', 'Standard') or 'Standard')
             ).all()
             
             assignments.append({
@@ -213,7 +213,7 @@ class SmartJobCardSuggestions:
                     }
                     for worker in suitable_workers[:3]  # Top 3 suggestions
                 ],
-                'machine_requirements': process.machine_requirements or 'Standard equipment',
+                'machine_requirements': getattr(process, 'machine_requirements', 'Standard equipment') or 'Standard equipment',
                 'workstation_suggestion': SmartJobCardSuggestions._suggest_workstation(process)
             })
         
