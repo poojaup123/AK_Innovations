@@ -203,7 +203,9 @@
                         {% if material.is_intermediate and material.intermediate_bom %}
                             <!-- This is an intermediate product with its own BOM -->
                             {% set is_phantom = material.intermediate_bom.bom.is_phantom_bom %}
-                            {% set intermediate_cost = material.intermediate_bom.bom.total_cost_per_unit %}
+                            {% set bom_total_cost = material.intermediate_bom.bom.total_cost_per_unit %}
+                            {% set output_qty = material.intermediate_bom.bom.output_quantity or 1.0 %}
+                            {% set per_unit_cost = bom_total_cost / output_qty if output_qty > 0 else bom_total_cost %}
                             <div class="tree-node {% if is_phantom %}phantom-bom{% endif %}">
                                 <span class="tree-connector">{{ connector }}</span>
                                 <span class="tree-material">{{ material.item.name }}</span>
@@ -212,8 +214,8 @@
                                     <span class="phantom-badge">(Phantom BOM)</span>
                                 {% endif %}
                                 <span class="tree-quantity">{{ material.quantity }} {{ material.unit }}</span>
-                                {% if intermediate_cost and intermediate_cost > 0 %}
-                                    <span class="tree-cost">@ ₹{{ "%.2f"|format(intermediate_cost) }}</span>
+                                {% if per_unit_cost and per_unit_cost > 0 %}
+                                    <span class="tree-cost">@ ₹{{ "%.2f"|format(per_unit_cost) }}</span>
                                 {% endif %}
                             </div>
                             
@@ -306,9 +308,11 @@
                 {% if tree.bom.total_material_cost and tree.bom.total_material_cost > 0 %}
                 <div class="cost-summary">
                     <i class="fas fa-calculator"></i> 
-                    <strong>Material Cost: ₹{{ "%.2f"|format(tree.bom.total_material_cost) }}</strong>
+                    {% set material_cost_per_unit = tree.bom.total_material_cost / (tree.bom.output_quantity or 1.0) %}
+                    {% set total_cost_per_unit = tree.bom.total_cost_per_unit / (tree.bom.output_quantity or 1.0) %}
+                    <strong>Material Cost: ₹{{ "%.2f"|format(material_cost_per_unit) }}</strong>
                     {% if tree.bom.total_cost_per_unit and tree.bom.total_cost_per_unit != tree.bom.total_material_cost %}
-                        | Total with Overhead: ₹{{ "%.2f"|format(tree.bom.total_cost_per_unit) }}
+                        | Total with Overhead: ₹{{ "%.2f"|format(total_cost_per_unit) }}
                     {% endif %}
                 </div>
                 {% endif %}
