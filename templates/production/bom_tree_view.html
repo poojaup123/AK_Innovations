@@ -659,6 +659,28 @@ function showProductionPlan(productId, productName, event) {
         }
     }
 
+    // Get real BOM cost data from the page
+    let materialCost = 'Calculating...';
+    let totalCost = 'Calculating...';
+    
+    // Try to extract actual cost from BOM display
+    const costElements = document.querySelectorAll('.cost-summary, .tree-cost');
+    for (let element of costElements) {
+        const text = element.textContent || '';
+        const costMatch = text.match(/₹([\d,]+\.?\d*)/);
+        if (costMatch) {
+            materialCost = `₹${costMatch[1]}`;
+            totalCost = materialCost; // For now, total equals material cost
+            break;
+        }
+    }
+    
+    // If no cost found, show that costs need to be calculated
+    if (materialCost === 'Calculating...') {
+        materialCost = 'No costs specified';
+        totalCost = 'No costs specified';
+    }
+
     // Simulated production plan response
     setTimeout(() => {
         const planHtml = `
@@ -675,7 +697,7 @@ function showProductionPlan(productId, productName, event) {
                             <div class="timeline-content">
                                 <h6>Step 1: Base Plate Production</h6>
                                 <p>Quantity Required: ${bomQuantity} units<br>
-                                Estimated Time: 2 days<br>
+                                Estimated Time: <span class="text-muted">Not specified</span><br>
                                 Status: <span class="badge bg-success">✓ Auto-Trigger Enabled</span></p>
                             </div>
                         </div>
@@ -685,7 +707,7 @@ function showProductionPlan(productId, productName, event) {
                             <div class="timeline-content">
                                 <h6>Step 2: Mounting Plate Assembly</h6>
                                 <p>Quantity Required: ${bomQuantity} units<br>
-                                Estimated Time: 1 day<br>
+                                Estimated Time: <span class="text-muted">Not specified</span><br>
                                 Status: <span class="badge bg-info">⚡ Auto-Triggered</span></p>
                             </div>
                         </div>
@@ -695,7 +717,7 @@ function showProductionPlan(productId, productName, event) {
                             <div class="timeline-content">
                                 <h6>Step 3: Final Assembly</h6>
                                 <p>Quantity Required: ${bomQuantity} units<br>
-                                Estimated Time: 1 day<br>
+                                Estimated Time: <span class="text-muted">Not specified</span><br>
                                 Status: <span class="badge bg-secondary">⏳ Pending</span></p>
                             </div>
                         </div>
@@ -705,7 +727,7 @@ function showProductionPlan(productId, productName, event) {
                             <div class="timeline-content">
                                 <h6>Step 4: Packing</h6>
                                 <p>Primary + Secondary Packaging<br>
-                                Estimated Time: 0.5 days<br>
+                                Estimated Time: <span class="text-muted">Not specified</span><br>
                                 Status: <span class="badge bg-warning">📦 Packing BOM</span></p>
                             </div>
                         </div>
@@ -725,7 +747,7 @@ function showProductionPlan(productId, productName, event) {
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between">
                                     <span>Estimated Days</span>
-                                    <span><strong>4.5</strong></span>
+                                    <span class="text-muted">Not specified</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between">
                                     <span>Auto-Triggers</span>
@@ -733,15 +755,15 @@ function showProductionPlan(productId, productName, event) {
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between">
                                     <span>Material Cost</span>
-                                    <span><strong>₹945.00</strong></span>
+                                    <span class="text-muted">${materialCost}</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between">
                                     <span>Packing Cost</span>
-                                    <span><strong>₹40.00</strong></span>
+                                    <span class="text-muted">No packing materials</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between bg-light">
                                     <span><strong>Total Cost</strong></span>
-                                    <span><strong>₹985.00</strong></span>
+                                    <span class="text-muted"><strong>${totalCost}</strong></span>
                                 </li>
                             </ul>
                         </div>
