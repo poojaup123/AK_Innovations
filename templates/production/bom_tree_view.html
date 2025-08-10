@@ -422,7 +422,7 @@
                     <button class="btn btn-info btn-sm" onclick="showPackingAnalysis({{ tree.product.id }}, '{{ tree.product.name }}')">
                         <i class="fas fa-box"></i> Packing Analysis
                     </button>
-                    <button class="btn btn-warning btn-sm" onclick="showProductionPlan({{ tree.product.id }}, '{{ tree.product.name }}')">
+                    <button class="btn btn-warning btn-sm" data-quantity="{{ tree.bom.output_quantity or 1.0 }}" onclick="showProductionPlan({{ tree.product.id }}, '{{ tree.product.name }}', event)">
                         <i class="fas fa-project-diagram"></i> Production Plan
                     </button>
                 </div>
@@ -598,7 +598,7 @@ function showPackingAnalysis(productId, productName) {
     }, 1500);
 }
 
-function showProductionPlan(productId, productName) {
+function showProductionPlan(productId, productName, event) {
     const modal = new bootstrap.Modal(document.getElementById('productionPlanModal'), {
         backdrop: false,
         keyboard: true
@@ -625,11 +625,45 @@ function showProductionPlan(productId, productName) {
         document.body.classList.remove('modal-open');
     }, 100);
     
+    // Get BOM quantity from the clicked button's data or from page content
+    let bomQuantity = 100; // Default fallback
+    
+    // First try to get the data-quantity attribute if available
+    const clickedButton = event?.target?.closest('button');
+    if (clickedButton && clickedButton.dataset.quantity) {
+        bomQuantity = parseFloat(clickedButton.dataset.quantity);
+    } else {
+        // Try to extract from BOM display in the current view
+        const bomInfoElements = document.querySelectorAll('.alert-info');
+        for (let element of bomInfoElements) {
+            const text = element.textContent || '';
+            const match = text.match(/Output Quantity:\s*(\d+\.?\d*)/i);
+            if (match) {
+                bomQuantity = parseFloat(match[1]);
+                break;
+            }
+        }
+        
+        // Also check for "360.0 units" pattern specifically
+        const allText = document.body.textContent || '';
+        const unitMatch = allText.match(/(\d+\.?\d*)\s*units/gi);
+        if (unitMatch) {
+            // Find the first meaningful quantity (not 100)
+            for (let match of unitMatch) {
+                const qty = parseFloat(match);
+                if (qty && qty !== 100) {
+                    bomQuantity = qty;
+                    break;
+                }
+            }
+        }
+    }
+
     // Simulated production plan response
     setTimeout(() => {
         const planHtml = `
             <div class="alert alert-primary">
-                <strong>Production Plan for 100 units of ${productName}</strong>
+                <strong>Production Plan for ${bomQuantity} units of ${productName}</strong>
             </div>
             
             <div class="row">
@@ -640,7 +674,7 @@ function showProductionPlan(productId, productName) {
                             <div class="timeline-marker bg-primary"></div>
                             <div class="timeline-content">
                                 <h6>Step 1: Base Plate Production</h6>
-                                <p>Quantity Required: 100 units<br>
+                                <p>Quantity Required: ${bomQuantity} units<br>
                                 Estimated Time: 2 days<br>
                                 Status: <span class="badge bg-success">✓ Auto-Trigger Enabled</span></p>
                             </div>
@@ -650,7 +684,7 @@ function showProductionPlan(productId, productName) {
                             <div class="timeline-marker bg-warning"></div>
                             <div class="timeline-content">
                                 <h6>Step 2: Mounting Plate Assembly</h6>
-                                <p>Quantity Required: 100 units<br>
+                                <p>Quantity Required: ${bomQuantity} units<br>
                                 Estimated Time: 1 day<br>
                                 Status: <span class="badge bg-info">⚡ Auto-Triggered</span></p>
                             </div>
@@ -660,7 +694,7 @@ function showProductionPlan(productId, productName) {
                             <div class="timeline-marker bg-success"></div>
                             <div class="timeline-content">
                                 <h6>Step 3: Final Assembly</h6>
-                                <p>Quantity Required: 100 units<br>
+                                <p>Quantity Required: ${bomQuantity} units<br>
                                 Estimated Time: 1 day<br>
                                 Status: <span class="badge bg-secondary">⏳ Pending</span></p>
                             </div>
