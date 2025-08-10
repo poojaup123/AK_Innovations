@@ -708,7 +708,7 @@ function showProductionPlan(productId, productName, event) {
                                 <h6>Step 2: Mounting Plate Assembly</h6>
                                 <p>Quantity Required: ${bomQuantity} units<br>
                                 Estimated Time: <span class="text-muted">Not specified</span><br>
-                                Status: <span class="badge bg-info">⚡ Auto-Triggered</span></p>
+                                Status: <span class="badge bg-secondary">⏳ Waiting for Step 1</span></p>
                             </div>
                         </div>
                         
@@ -718,7 +718,7 @@ function showProductionPlan(productId, productName, event) {
                                 <h6>Step 3: Final Assembly</h6>
                                 <p>Quantity Required: ${bomQuantity} units<br>
                                 Estimated Time: <span class="text-muted">Not specified</span><br>
-                                Status: <span class="badge bg-secondary">⏳ Pending</span></p>
+                                Status: <span class="badge bg-secondary">⏳ Waiting for Step 2</span></p>
                             </div>
                         </div>
                         
@@ -728,7 +728,7 @@ function showProductionPlan(productId, productName, event) {
                                 <h6>Step 4: Packing</h6>
                                 <p>Primary + Secondary Packaging<br>
                                 Estimated Time: <span class="text-muted">Not specified</span><br>
-                                Status: <span class="badge bg-warning">📦 Packing BOM</span></p>
+                                Status: <span class="badge bg-secondary">⏳ Waiting for Step 3</span></p>
                             </div>
                         </div>
                     </div>
@@ -756,6 +756,10 @@ function showProductionPlan(productId, productName, event) {
                                 <li class="list-group-item d-flex justify-content-between">
                                     <span>Material Cost</span>
                                     <span class="text-muted">${materialCost}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Labour Cost</span>
+                                    <span class="text-muted">Not specified</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between">
                                     <span>Packing Cost</span>
