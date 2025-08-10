@@ -29,6 +29,21 @@ class EnhancedBOMItemForm(FlaskForm):
     process_step = IntegerField('Process Step', default=1)
     process_name = StringField('Process Name', validators=[Length(max=100)])
     default_supplier_id = SelectField('Default Supplier', coerce=int, validators=[Optional()])
+    
+    # Missing fields from user BOM design requirements
+    component_source = SelectField('Source',
+                                 choices=[
+                                     ('purchase', 'Purchase'),
+                                     ('in_house', 'In-house'),
+                                     ('outsourced', 'Outsourced')
+                                 ],
+                                 default='purchase')
+    
+    batch_tracking_required = BooleanField('Batch Tracking Required', default=True)
+    assigned_department_id = SelectField('Assigned Department', coerce=int, validators=[Optional()])
+    assigned_machine_id = SelectField('Assigned Machine', coerce=int, validators=[Optional()])
+    assigned_vendor_id = SelectField('Assigned Vendor', coerce=int, validators=[Optional()])
+    
     remarks = TextAreaField('Remarks')
     
     def __init__(self, *args, **kwargs):
@@ -52,8 +67,25 @@ class EnhancedBOMItemForm(FlaskForm):
         try:
             suppliers = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
             self.default_supplier_id.choices = [(0, '-- Select Supplier --')] + [(supplier.id, supplier.name) for supplier in suppliers]
+            self.assigned_vendor_id.choices = [(0, '-- Select Vendor --')] + [(supplier.id, supplier.name) for supplier in suppliers if supplier.partner_type in ['vendor', 'supplier']]
         except:
             self.default_supplier_id.choices = [(0, '-- No Suppliers Available --')]
+            self.assigned_vendor_id.choices = [(0, '-- No Vendors Available --')]
+        
+        # Populate Department choices
+        try:
+            from models import Department
+            departments = Department.query.filter_by(is_active=True).order_by(Department.name).all()
+            self.assigned_department_id.choices = [(0, '-- Select Department --')] + [(dept.id, dept.name) for dept in departments]
+        except:
+            self.assigned_department_id.choices = [(0, '-- No Departments Available --')]
+        
+        # Populate Machine choices (from Items that are machines/tools)
+        try:
+            machines = Item.query.filter(Item.item_type.in_(['machine', 'tool', 'equipment'])).order_by(Item.name).all()
+            self.assigned_machine_id.choices = [(0, '-- Select Machine --')] + [(machine.id, f"{machine.name} ({machine.code})") for machine in machines]
+        except:
+            self.assigned_machine_id.choices = [(0, '-- No Machines Available --')]
 
 class EnhancedBOMProcessForm(FlaskForm):
     """Enhanced BOM Process form with lead time and vendor assignment"""
@@ -119,12 +151,28 @@ class EnhancedBOMProcessForm(FlaskForm):
             self.vendor_id.choices = [(0, '-- No Vendors Available --')]
 
 class EnhancedBOMForm(FlaskForm):
-    """Enhanced BOM form with partial production and advanced settings"""
-    # Basic Information
+    """Enhanced BOM form with partial production and advanced settings from user design requirements"""
+    # Section 1: BOM Header (from user design requirements)
     bom_code = StringField('BOM Code', validators=[DataRequired(), Length(max=50)])
-    product_id = SelectField('Product', coerce=int, validators=[DataRequired()])
-    version = StringField('Version', validators=[Length(max=20)], default='1.0')
+    product_id = SelectField('Product Name', coerce=int, validators=[DataRequired()])
+    output_uom_id = SelectField('UOM', coerce=int, validators=[DataRequired()])
+    output_quantity = FloatField('Quantity per BOM', validators=[DataRequired(), NumberRange(min=0.01)], default=1.0)
+    is_phantom_bom = BooleanField('Phantom BOM?')
+    version = StringField('Version', validators=[DataRequired(), Length(max=20)], default='1.0')
+    effective_date = StringField('Effective Date', validators=[DataRequired()])
+    bom_status = SelectField('Status',
+                           choices=[
+                               ('draft', 'Draft'),
+                               ('active', 'Active'),
+                               ('obsolete', 'Obsolete')
+                           ],
+                           default='draft')
     description = TextAreaField('Description')
+    
+    # Section 5: Additional Settings (from user design requirements)
+    lead_time_days = FloatField('Lead Time (days)', validators=[NumberRange(min=0)], default=1.0)
+    auto_cost_calculation = BooleanField('Auto-calculate Costs from GRN/Job Work/HR', default=True)
+    batch_tracking_enabled = BooleanField('Enable Batch Tracking', default=True)
     
     # Production Settings
     output_quantity = FloatField('Output Quantity', validators=[DataRequired(), NumberRange(min=0.01)], default=1.0)

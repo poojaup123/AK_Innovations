@@ -2113,11 +2113,25 @@ class BOM(db.Model):
     is_phantom_bom = db.Column(db.Boolean, default=False)  # Phantom BOM (intermediate product not stocked)
     intermediate_product = db.Column(db.Boolean, default=False)  # This BOM produces intermediate products for other BOMs
     
-    # Enhanced BOM Features
+    # Enhanced BOM Features (from user design requirements)
     allow_partial_production = db.Column(db.Boolean, default=True)  # Allow incomplete production runs
     allow_substitute_items = db.Column(db.Boolean, default=False)  # Allow alternative materials when primary unavailable
     auto_create_job_work = db.Column(db.Boolean, default=False)  # Automatically generate job work orders from BOM
     auto_batch_assignment = db.Column(db.Boolean, default=True)  # Smart batch number generation
+    
+    # Missing fields from user BOM design requirements
+    effective_date = db.Column(db.Date, default=datetime.utcnow().date)  # BOM validity start date
+    bom_status = db.Column(db.String(20), default='draft')  # draft, active, obsolete (enhanced status)
+    
+    # Enhanced classification
+    component_type = db.Column(db.String(30), default='raw_material')  # raw_material, sub_assembly, phantom_bom, packing_material, consumable
+    
+    # Lead time tracking
+    lead_time_days = db.Column(db.Float, default=1.0)  # Overall BOM lead time in days
+    
+    # Additional settings from user requirements
+    auto_cost_calculation = db.Column(db.Boolean, default=True)  # Auto-calculate costs from GRN, job work, HR
+    batch_tracking_enabled = db.Column(db.Boolean, default=True)  # Enable batch tracking for this BOM
     
     # Relationships
     product = db.relationship('Item', backref='boms')
@@ -2961,10 +2975,19 @@ class BOMItem(db.Model):
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     total_weight = db.Column(db.Float, default=0.0)  # Total weight (qty × unit_weight)
     
-    # Component Type Classification
+    # Component Type Classification (from user BOM design requirements)
     component_type = db.Column(db.String(20), default='raw_material')  # raw_material, sub_assembly, phantom_bom, packing, consumable
     is_phantom = db.Column(db.Boolean, default=False)  # Phantom component (not stocked)
     is_packing_material = db.Column(db.Boolean, default=False)  # Packing material flag
+    
+    # Missing fields from user BOM design requirements
+    component_source = db.Column(db.String(20), default='purchase')  # purchase, in_house, outsourced
+    batch_tracking_required = db.Column(db.Boolean, default=True)  # Enable batch tracking for this component
+    
+    # Process assignment for components (from user design requirements)
+    assigned_department_id = db.Column(db.Integer, db.ForeignKey('departments.id'), nullable=True)  # Department for processing
+    assigned_machine_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)  # Machine/tool for processing
+    assigned_vendor_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=True)  # Vendor for outsourced components
     
     remarks = db.Column(db.Text)  # Additional remarks
     
@@ -2977,6 +3000,11 @@ class BOMItem(db.Model):
     item = db.relationship('Item', foreign_keys=[item_id], backref='legacy_bom_items')  # Keep for backward compatibility
     uom = db.relationship('UnitOfMeasure', foreign_keys=[uom_id])
     default_supplier = db.relationship('Supplier', foreign_keys=[default_supplier_id])
+    
+    # New relationships for enhanced BOM features
+    assigned_department = db.relationship('Department', foreign_keys=[assigned_department_id])
+    assigned_machine = db.relationship('Item', foreign_keys=[assigned_machine_id])
+    assigned_vendor = db.relationship('Supplier', foreign_keys=[assigned_vendor_id])
     
     def __init__(self, **kwargs):
         super(BOMItem, self).__init__(**kwargs)
