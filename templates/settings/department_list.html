@@ -100,7 +100,7 @@
                                     <a href="{{ url_for('department.toggle_status', id=dept.id) }}" 
                                        class="btn btn-outline-{{ 'warning' if dept.is_active else 'success' }}"
                                        title="{{ 'Deactivate' if dept.is_active else 'Activate' }}"
-                                       onclick="return confirm('Are you sure you want to {{ 'deactivate' if dept.is_active else 'activate' }} this department?')">
+                                       onclick="return confirm('Are you sure you want to {{ \'deactivate\' if dept.is_active else \'activate\' }} this department?')">
                                         <i class="fas fa-{{ 'eye-slash' if dept.is_active else 'eye' }}"></i>
                                     </a>
                                     {% if not dept.is_active %}

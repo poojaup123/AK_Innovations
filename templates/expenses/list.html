@@ -56,15 +56,15 @@
                     <label class="form-label">To Date</label>
                     <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-outline-primary me-2">
+                <div class="col-md-3 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-outline-primary">
                         <i class="fas fa-filter me-1"></i>Filter
                     </button>
                     <a href="{{ url_for('expenses.expense_list') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-times"></i>
                     </a>
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
+                <div class="col-md-1 d-flex align-items-end">
                     <div class="text-end">
                         <small class="text-muted">Total Amount:</small><br>
                         <strong class="text-primary">₹{{ "%.2f"|format(total_amount) }}</strong>

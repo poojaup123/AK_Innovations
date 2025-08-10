@@ -186,7 +186,7 @@
                                         </div>
                                         {% endif %}
                                         {% if current_user.role == 'admin' and po.status != 'cancelled' %}
-                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="changePoStatus({{ po.id }}, 'cancelled')" title="Cancel PO">
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="changePoStatus('{{ po.id }}', 'cancelled')" title="Cancel PO">
                                             <i class="fas fa-ban"></i> Cancel
                                         </button>
                                         {% endif %}
