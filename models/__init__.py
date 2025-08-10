@@ -2105,6 +2105,16 @@ class BOM(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     
+    # Multi-level BOM support - simplified fields only
+    parent_bom_id = db.Column(db.Integer, db.ForeignKey('boms.id'), nullable=True)
+    bom_level = db.Column(db.Integer, default=0)
+    
+    # Simplified relationships
+    product = db.relationship('Item')
+    output_uom = db.relationship('UnitOfMeasure', foreign_keys=[output_uom_id])
+    items = db.relationship('BOMItem', lazy=True, cascade='all, delete-orphan')
+    creator = db.relationship('User', foreign_keys=[created_by])
+    
     def auto_calculate_output_quantity(self):
         """Automatically calculate output quantity based on material conversion ratios"""
         # This method can be extended to automatically detect conversion ratios
