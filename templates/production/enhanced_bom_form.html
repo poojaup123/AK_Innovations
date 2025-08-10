@@ -399,55 +399,7 @@
             </div>
         </div>
 
-        <!-- Enhanced Features Section -->
-        <div class="bom-section">
-            <h4 class="section-header">
-                <i class="fas fa-magic me-2"></i>Enhanced Features
-            </h4>
-            <div class="section-content">
-                <div class="feature-toggle">
-                    <h6 class="mb-3">Production Settings</h6>
-                    <div class="toggle-group">
-                        <div class="toggle-item">
-                            {{ form.allow_partial_production() }}
-                            {{ form.allow_partial_production.label() }}
-                            <i class="fas fa-info-circle text-muted ms-1" title="Allow incomplete production runs with proportional material calculations"></i>
-                        </div>
-                        <div class="toggle-item">
-                            {{ form.allow_substitute_items() }}
-                            {{ form.allow_substitute_items.label() }}
-                            <i class="fas fa-info-circle text-muted ms-1" title="Use alternative materials when primary materials are unavailable"></i>
-                        </div>
-                        <div class="toggle-item">
-                            {{ form.auto_create_job_work() }}
-                            {{ form.auto_create_job_work.label() }}
-                            <i class="fas fa-info-circle text-muted ms-1" title="Automatically generate job work orders based on BOM processes"></i>
-                        </div>
-                        <div class="toggle-item">
-                            {{ form.auto_batch_assignment() }}
-                            {{ form.auto_batch_assignment.label() }}
-                            <i class="fas fa-info-circle text-muted ms-1" title="Smart batch number generation and tracking"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="feature-toggle">
-                    <h6 class="mb-3">BOM Type</h6>
-                    <div class="toggle-group">
-                        <div class="toggle-item">
-                            {{ form.is_phantom_bom() }}
-                            {{ form.is_phantom_bom.label() }}
-                            <i class="fas fa-info-circle text-muted ms-1" title="Phantom BOMs are not stocked but used for production planning"></i>
-                        </div>
-                        <div class="toggle-item">
-                            {{ form.intermediate_product() }}
-                            {{ form.intermediate_product.label() }}
-                            <i class="fas fa-info-circle text-muted ms-1" title="This BOM produces intermediate products for other BOMs"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Removed duplicate Enhanced Features section - now integrated into Section 5 above -->
 
         <!-- Partial Production Calculator -->
         <div class="bom-section" id="partialProductionSection" style="display: none;">
@@ -797,8 +749,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Material management
     let materialCounter = 0;
     
-    document.getElementById('addMaterialBtn').addEventListener('click', function() {
-        const template = document.getElementById('materialRowTemplate');
+    const addMaterialBtn = document.getElementById('addMaterialBtn');
+    if (addMaterialBtn) {
+        addMaterialBtn.addEventListener('click', function() {
+            const template = document.getElementById('materialRowTemplate');
         const clone = template.content.cloneNode(true);
         
         // Update form field names with counter
@@ -824,7 +778,8 @@ document.addEventListener('DOMContentLoaded', function() {
         materialCounter++;
         
         updateCostSummary();
-    });
+        });
+    }
     
     // Cost calculation
     function updateCostSummary() {
@@ -858,7 +813,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Initialize with one material row
-    document.getElementById('addMaterialBtn').click();
+    if (addMaterialBtn) {
+        addMaterialBtn.click();
+    }
 });
 </script>
 {% endblock %}

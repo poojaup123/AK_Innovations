@@ -174,9 +174,7 @@ class EnhancedBOMForm(FlaskForm):
     auto_cost_calculation = BooleanField('Auto-calculate Costs from GRN/Job Work/HR', default=True)
     batch_tracking_enabled = BooleanField('Enable Batch Tracking', default=True)
     
-    # Production Settings
-    output_quantity = FloatField('Output Quantity', validators=[DataRequired(), NumberRange(min=0.01)], default=1.0)
-    output_uom_id = SelectField('Output UOM', coerce=int, validators=[Optional()])
+    # Removed duplicate Production Settings - already defined in Section 1
     unit_weight = FloatField('Unit Weight (kg)', validators=[NumberRange(min=0)], default=0.0)
     unit_weight_uom = SelectField('Weight UOM', 
                                  choices=[
@@ -193,8 +191,7 @@ class EnhancedBOMForm(FlaskForm):
     auto_create_job_work = BooleanField('Auto-create Job Work Orders', default=False)
     auto_batch_assignment = BooleanField('Smart Batch Assignment', default=True)
     
-    # BOM Type
-    is_phantom_bom = BooleanField('Phantom BOM')
+    # BOM Type (removed duplicate is_phantom_bom - already defined in Section 1)
     intermediate_product = BooleanField('Intermediate Product')
     
     # Cost Settings
