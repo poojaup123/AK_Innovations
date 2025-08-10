@@ -712,7 +712,7 @@ def add_production():
             
             # Auto-generate job cards if BOM exists and has processes
             job_card_count = 0
-            if selected_bom and selected_bom.processes:
+            if active_bom and active_bom.processes:
                 try:
                     job_card_count = ProductionService.auto_generate_job_cards_from_bom(production.id)
                     print(f"Auto-generated {job_card_count} job cards from BOM")
