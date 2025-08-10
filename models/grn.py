@@ -47,7 +47,8 @@ class GRN(db.Model):
     def source_document(self):
         """Get the source document (either job work or purchase order)"""
         if self.job_work_id:
-            return self.job_work
+            from models import JobWork
+            return JobWork.query.get(self.job_work_id)
         elif self.purchase_order_id:
             return self.purchase_order
         return None
@@ -69,17 +70,29 @@ class GRN(db.Model):
     @property
     def total_quantity_received(self):
         """Calculate total quantity received across all line items"""
-        return sum(item.quantity_received for item in self.line_items)
+        try:
+            items = list(self.line_items) if self.line_items else []
+            return sum(item.quantity_received for item in items)
+        except:
+            return 0
     
     @property
     def total_quantity_passed(self):
         """Calculate total quantity passed inspection"""
-        return sum(item.quantity_passed for item in self.line_items)
+        try:
+            items = list(self.line_items) if self.line_items else []
+            return sum(item.quantity_passed for item in items)
+        except:
+            return 0
     
     @property
     def total_quantity_rejected(self):
         """Calculate total quantity rejected during inspection"""
-        return sum(item.quantity_rejected for item in self.line_items)
+        try:
+            items = list(self.line_items) if self.line_items else []
+            return sum(item.quantity_rejected for item in items)
+        except:
+            return 0
     
     @property
     def acceptance_rate(self):
@@ -92,20 +105,28 @@ class GRN(db.Model):
     @property
     def is_fully_inspected(self):
         """Check if all received items have been inspected"""
-        return all(item.inspection_status in ['passed', 'rejected', 'partial'] for item in self.line_items)
+        try:
+            items = list(self.line_items) if self.line_items else []
+            return all(item.inspection_status in ['passed', 'rejected', 'partial'] for item in items)
+        except:
+            return False
     
     @property
     def total_amount(self):
         """Calculate total amount from all line items"""
-        if not self.line_items:
+        try:
+            items = list(self.line_items) if self.line_items else []
+            if not items:
+                return 0
+            
+            total = 0
+            for item in items:
+                qty = float(item.quantity_received or 0)
+                rate = float(item.rate_per_unit or 0)
+                total += qty * rate
+            return total
+        except:
             return 0
-        
-        total = 0
-        for item in self.line_items:
-            qty = float(item.quantity_received or 0)
-            rate = float(item.rate_per_unit or 0)
-            total += qty * rate
-        return total
 
     def __repr__(self):
         return f'<GRN {self.grn_number}>'
@@ -153,7 +174,7 @@ class GRNLineItem(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    grn = db.relationship('GRN')
+    grn = db.relationship('GRN', overlaps="grn_parent,line_items")
     item = db.relationship('Item', backref='grn_line_items')
     
     @property

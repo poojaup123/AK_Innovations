@@ -122,12 +122,12 @@ class User(UserMixin, db.Model):
             existing.granted_by = granted_by_user_id
             existing.granted_at = datetime.utcnow()
         else:
-            user_permission = UserPermission(
-                user_id=self.id,
-                permission_id=permission.id,
-                granted=True,
-                granted_by=granted_by_user_id
-            )
+            user_permission = UserPermission()
+            user_permission.user_id = self.id
+            user_permission.permission_id = permission.id
+            user_permission.granted = True
+            user_permission.granted_by = granted_by_user_id
+            user_permission.granted_at = datetime.utcnow()
             db.session.add(user_permission)
         
         return True
@@ -530,16 +530,15 @@ class ItemBatch(db.Model):
         output_batch_number = f"{output_batch_prefix}-{self.batch_number}-{timestamp}"
         
         # Create new batch for output item
-        output_batch = ItemBatch(
-            item_id=output_item_id,
-            batch_number=output_batch_number,
-            qty_finished=output_quantity,
-            manufacture_date=datetime.now().date(),
-            storage_location=self.storage_location,
-            quality_status='pending_inspection',
-            created_by=self.created_by,
-            quality_notes=f"Produced from input batch: {self.batch_number}"
-        )
+        output_batch = ItemBatch()
+        output_batch.item_id = output_item_id
+        output_batch.batch_number = output_batch_number
+        output_batch.qty_finished = output_quantity
+        output_batch.manufacture_date = datetime.now().date()
+        output_batch.storage_location = self.storage_location
+        output_batch.quality_status = 'pending_inspection'
+        output_batch.created_by = self.created_by
+        output_batch.quality_notes = f"Produced from input batch: {self.batch_number}"
         
         return output_batch
     
@@ -1005,7 +1004,7 @@ class PurchaseOrderItem(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships  
-    item = db.relationship('Item')
+    item = db.relationship('Item', overlaps="item_ref,purchase_order_items")
     
     @property
     def calculated_total_weight(self):
@@ -1090,7 +1089,7 @@ class SalesOrderItem(db.Model):
     taxable_amount = db.Column(db.Float, default=0.0)  # Amount before GST
     
     # Relationships
-    item = db.relationship('Item')
+    item = db.relationship('Item', overlaps="sales_order_items")
 
 class Employee(db.Model):
     __tablename__ = 'employees'
@@ -1230,8 +1229,9 @@ class JobWork(db.Model):
             try:
                 # Calculate total expected output from all processes
                 total_expected = 0
-                for process in self.processes:
-                    if process.output_quantity:
+                processes = self.processes.all() if hasattr(self.processes, 'all') else []
+                for process in processes:
+                    if hasattr(process, 'output_quantity') and process.output_quantity:
                         total_expected += process.output_quantity
                 
                 if total_expected > 0:
@@ -1259,11 +1259,11 @@ class JobWork(db.Model):
         
         if self.work_type in ['multi_process', 'unified']:
             # For multi-process jobs, show expected output materials
-            processes = self.processes.all() if hasattr(self, 'processes') else []
+            processes = self.processes.all() if hasattr(self, 'processes') and hasattr(self.processes, 'all') else []
             if processes:
                 pending_items = []
                 for process in processes:
-                    if process.output_item_id and process.output_quantity:
+                    if hasattr(process, 'output_item_id') and hasattr(process, 'output_quantity') and process.output_item_id and process.output_quantity:
                         pending_items.append(f"{process.output_quantity} {process.output_item.unit_of_measure} {process.output_item.name}")
                 
                 if pending_items:
@@ -1332,7 +1332,8 @@ class JobWork(db.Model):
             try:
                 # Calculate total expected output from all processes
                 total_expected = 0
-                for process in self.processes:
+                processes = self.processes.all() if hasattr(self.processes, 'all') else []
+                for process in processes:
                     if process.output_quantity:
                         total_expected += process.output_quantity * (self.quantity_sent or 0)
                 
@@ -1910,15 +1911,14 @@ class JobWorkBatch(db.Model):
             
             # Create output batch if finished quantity > 0 and output item specified
             if finished_qty > 0 and self.output_item_id:
-                output_batch = ItemBatch(
-                    item_id=self.output_item_id,
-                    batch_number=f"{self.input_batch.batch_number}-{self.process_name}",
-                    qty_finished=finished_qty,
-                    qty_scrap=scrap_qty,
-                    manufacture_date=self.return_date,
-                    quality_status='good' if scrap_qty == 0 else 'mixed',
-                    created_by=self.created_by
-                )
+                output_batch = ItemBatch()
+                output_batch.item_id = self.output_item_id
+                output_batch.batch_number = f"{self.input_batch.batch_number}-{self.process_name}"
+                output_batch.qty_finished = finished_qty
+                output_batch.qty_scrap = scrap_qty
+                output_batch.manufacture_date = self.return_date
+                output_batch.quality_status = 'good' if scrap_qty == 0 else 'mixed'
+                output_batch.created_by = self.created_by
                 db.session.add(output_batch)
                 db.session.flush()
                 self.output_batch_id = output_batch.id
@@ -2053,17 +2053,16 @@ class Production(db.Model):
             batch_number = f"PROD-{self.production_number}-{self.production_date.strftime('%Y%m%d')}"
             
             # Create new batch for finished goods
-            output_batch = ItemBatch(
-                item_id=self.item_id,
-                batch_number=batch_number,
-                qty_finished=self.quantity_good,
-                qty_scrap=self.quantity_damaged,
-                total_quantity=self.quantity_good,
-                manufacture_date=self.production_date,
-                quality_status='good' if self.quality_control_passed else 'pending_inspection',
-                storage_location='Finished Goods',
-                created_by=self.created_by
-            )
+            output_batch = ItemBatch()
+            output_batch.item_id = self.item_id
+            output_batch.batch_number = batch_number
+            output_batch.qty_finished = self.quantity_good
+            output_batch.qty_scrap = self.quantity_damaged
+            output_batch.total_quantity = self.quantity_good
+            output_batch.manufacture_date = self.production_date
+            output_batch.quality_status = 'good' if self.quality_control_passed else 'pending_inspection'
+            output_batch.storage_location = 'Finished Goods'
+            output_batch.created_by = self.created_by
             
             db.session.add(output_batch)
             db.session.flush()

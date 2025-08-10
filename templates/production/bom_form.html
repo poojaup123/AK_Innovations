@@ -456,7 +456,7 @@
                                 <tr data-item-id="{{ bom_item.id }}" class="main-component-row">
                                     <td>
                                         <button class="btn btn-sm btn-outline-secondary expand-toggle" 
-                                                onclick="toggleComponentDetails({{ bom_item.id }})" 
+                                                onclick="toggleComponentDetails('{{ bom_item.id }}')" 
                                                 title="Expand/Collapse Details">
                                             <i class="fas fa-chevron-right" id="toggle-{{ bom_item.id }}"></i>
                                         </button>
@@ -529,13 +529,13 @@
                                             {% set item_bom = bom_item.item.active_bom %}
                                             {% if item_bom %}
                                                 <button class="btn btn-outline-info btn-sub-bom" 
-                                                        onclick="toggleSubBOM({{ bom_item.id }}, {{ item_bom.id }})" 
+                                                        onclick="toggleSubBOM('{{ bom_item.id }}', '{{ item_bom.id }}')" 
                                                         title="View/Edit Sub-BOM">
                                                     <i class="fas fa-sitemap"></i>
                                                 </button>
                                             {% else %}
                                                 <button class="btn btn-outline-secondary btn-create-bom" 
-                                                        onclick="createSubBOM({{ bom_item.id }}, {{ bom_item.item.id }})" 
+                                                        onclick="createSubBOM('{{ bom_item.id }}', '{{ bom_item.item.id }}')" 
                                                         title="Create Sub-BOM for this component">
                                                     <i class="fas fa-plus-square"></i>
                                                 </button>
@@ -627,7 +627,7 @@
                                                             <i class="fas fa-external-link-alt"></i> Edit
                                                         </a>
                                                         <button class="btn btn-sm btn-outline-dark" 
-                                                                onclick="refreshSubBOM({{ bom_item.id }}, {{ item_bom.id }})" 
+                                                                onclick="refreshSubBOM('{{ bom_item.id }}', '{{ item_bom.id }}')" 
                                                                 title="Refresh sub-BOM data">
                                                             <i class="fas fa-sync-alt"></i>
                                                         </button>
