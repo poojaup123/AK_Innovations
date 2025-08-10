@@ -444,12 +444,12 @@
 </div>
 
 <!-- Modal for Packing Analysis -->
-<div class="modal fade" id="packingAnalysisModal" tabindex="-1">
+<div class="modal fade" id="packingAnalysisModal" tabindex="-1" data-bs-backdrop="true" data-bs-keyboard="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">📦 Packing Analysis</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="packingAnalysisContent">
                 <div class="text-center">
@@ -457,23 +457,35 @@
                     <p>Loading packing analysis...</p>
                 </div>
             </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="optimizePackaging()">
+                    <i class="fas fa-cogs"></i> Optimize Packaging
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Modal for Production Plan -->
-<div class="modal fade" id="productionPlanModal" tabindex="-1">
+<div class="modal fade" id="productionPlanModal" tabindex="-1" data-bs-backdrop="true" data-bs-keyboard="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">🏭 Comprehensive Production Plan</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="productionPlanContent">
                 <div class="text-center">
                     <div class="spinner-border" role="status"></div>
                     <p>Creating production plan...</p>
                 </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="autoCreateProductions()">
+                    <i class="fas fa-rocket"></i> Auto-Create Productions
+                </button>
             </div>
         </div>
     </div>
@@ -676,7 +688,7 @@ function showProductionPlan(productId, productName) {
                     </div>
                     
                     <div class="mt-3">
-                        <button class="btn btn-success btn-sm w-100">
+                        <button class="btn btn-success btn-sm w-100" onclick="autoCreateProductions()">
                             <i class="fas fa-rocket"></i> Auto-Create Productions
                         </button>
                     </div>
@@ -687,6 +699,36 @@ function showProductionPlan(productId, productName) {
         document.getElementById('productionPlanContent').innerHTML = planHtml;
     }, 2000);
 }
+
+function autoCreateProductions() {
+    alert('Auto-Create Productions feature will generate sequential production orders based on the plan. This would integrate with your production system.');
+    // Close the modal after action
+    const modal = bootstrap.Modal.getInstance(document.getElementById('productionPlanModal'));
+    modal.hide();
+}
+
+function optimizePackaging() {
+    alert('Packaging optimization feature will analyze container utilization and suggest the most efficient packing arrangements.');
+    // Close the modal after action  
+    const modal = bootstrap.Modal.getInstance(document.getElementById('packingAnalysisModal'));
+    modal.hide();
+}
+
+// Ensure modals can be closed by clicking outside or pressing ESC
+document.addEventListener('DOMContentLoaded', function() {
+    // Enable dismissing modals by clicking backdrop
+    var modals = document.querySelectorAll('.modal');
+    modals.forEach(function(modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                const modalInstance = bootstrap.Modal.getInstance(modal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            }
+        });
+    });
+});
 </script>
 
 <style>
