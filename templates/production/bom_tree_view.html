@@ -444,7 +444,7 @@
 </div>
 
 <!-- Modal for Packing Analysis -->
-<div class="modal fade" id="packingAnalysisModal" tabindex="-1" data-bs-backdrop="true" data-bs-keyboard="true">
+<div class="modal fade" id="packingAnalysisModal" tabindex="-1" data-bs-backdrop="false" data-bs-keyboard="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -468,7 +468,7 @@
 </div>
 
 <!-- Modal for Production Plan -->
-<div class="modal fade" id="productionPlanModal" tabindex="-1" data-bs-backdrop="true" data-bs-keyboard="true">
+<div class="modal fade" id="productionPlanModal" tabindex="-1" data-bs-backdrop="false" data-bs-keyboard="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
@@ -493,7 +493,10 @@
 
 <script>
 function showPackingAnalysis(productId, productName) {
-    const modal = new bootstrap.Modal(document.getElementById('packingAnalysisModal'));
+    const modal = new bootstrap.Modal(document.getElementById('packingAnalysisModal'), {
+        backdrop: false,
+        keyboard: true
+    });
     document.querySelector('#packingAnalysisModal .modal-title').innerHTML = `📦 Packing Analysis - ${productName}`;
     
     // Show loading state
@@ -586,7 +589,10 @@ function showPackingAnalysis(productId, productName) {
 }
 
 function showProductionPlan(productId, productName) {
-    const modal = new bootstrap.Modal(document.getElementById('productionPlanModal'));
+    const modal = new bootstrap.Modal(document.getElementById('productionPlanModal'), {
+        backdrop: false,
+        keyboard: true
+    });
     document.querySelector('#productionPlanModal .modal-title').innerHTML = `🏭 Production Plan - ${productName}`;
     
     // Show loading state
@@ -714,20 +720,24 @@ function optimizePackaging() {
     modal.hide();
 }
 
-// Ensure modals can be closed by clicking outside or pressing ESC
+// Add some visual styling for non-backdrop modals
 document.addEventListener('DOMContentLoaded', function() {
-    // Enable dismissing modals by clicking backdrop
-    var modals = document.querySelectorAll('.modal');
-    modals.forEach(function(modal) {
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                const modalInstance = bootstrap.Modal.getInstance(modal);
-                if (modalInstance) {
-                    modalInstance.hide();
-                }
-            }
-        });
-    });
+    // Add custom styling for modals without backdrop
+    const style = document.createElement('style');
+    style.textContent = `
+        .modal.show {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        .modal-content {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 1px solid #dee2e6;
+        }
+        /* Make sure modals can be moved/dragged if needed */
+        .modal-header {
+            cursor: move;
+        }
+    `;
+    document.head.appendChild(style);
 });
 </script>
 
