@@ -195,10 +195,20 @@
                                         {% endif %}
                                         
                                         {% if suggestion.type == 'consolidated_purchase_recommendation' %}
-                                            <a href="{{ url_for('purchase.add_purchase_order') }}?from_suggestion=1&item_id={{ suggestion.get('item_details', {}).get('item_id', '') }}&quantity={{ suggestion.get('item_details', {}).get('shortage_qty', 0) }}&production_id={{ production.id }}" 
-                                               class="btn btn-warning btn-sm">
-                                                <i class="fas fa-boxes me-2"></i>Create Consolidated Purchase Order
-                                            </a>
+                                            {% set consolidated_materials = suggestion.get('raw_materials_required', []) %}
+                                            {% if consolidated_materials %}
+                                                {% set material_data = consolidated_materials | map(attribute='material_id') | join(',') %}
+                                                {% set quantity_data = consolidated_materials | map(attribute='shortage_qty') | join(',') %}
+                                                <a href="{{ url_for('purchase.add_purchase_order') }}?from_suggestion=1&production_id={{ production.id }}&materials={{ material_data }}&quantities={{ quantity_data }}&consolidated=true" 
+                                                   class="btn btn-warning btn-sm">
+                                                    <i class="fas fa-boxes me-2"></i>Create Consolidated Purchase Order
+                                                </a>
+                                            {% else %}
+                                                <a href="{{ url_for('purchase.add_purchase_order') }}?from_suggestion=1&item_id={{ suggestion.get('item_details', {}).get('item_id', '') }}&quantity={{ suggestion.get('item_details', {}).get('shortage_qty', 0) }}&production_id={{ production.id }}&consolidated=true" 
+                                                   class="btn btn-warning btn-sm">
+                                                    <i class="fas fa-boxes me-2"></i>Create Consolidated Purchase Order
+                                                </a>
+                                            {% endif %}
                                             {% if suggestion.get('consolidation_benefit') %}
                                                 <div class="mt-2">
                                                     <small class="text-muted">
