@@ -397,7 +397,7 @@
                 <div class="cost-summary">
                     <i class="fas fa-calculator"></i> <strong>Cost Breakdown (Per Unit):</strong><br>
                     {% set material_cost_per_unit = tree.bom.total_material_cost / (tree.bom.output_quantity or 1.0) %}
-                    {% set comprehensive_labor_cost = tree.bom.total_labor_cost_per_unit / (tree.bom.output_quantity or 1.0) %}
+                    {% set comprehensive_labor_cost = tree.bom.total_labor_cost_per_unit %}
                     {% set overhead_cost_per_unit = (tree.bom.overhead_cost_per_unit or 0) / (tree.bom.output_quantity or 1.0) %}
                     {% set total_cost_per_unit = tree.bom.total_cost_per_unit / (tree.bom.output_quantity or 1.0) %}
                     
@@ -409,7 +409,7 @@
                         {% if tree.bom.processes %}
                             {% for process in tree.bom.processes %}
                                 {% if process.converted_cost_per_unit > 0 %}
-                                    <span class="text-muted" style="margin-left: 1rem;">├─ {{ process.process_name }}: ₹{{ "%.4f"|format(process.converted_cost_per_unit / (tree.bom.output_quantity or 1.0)) }}</span><br>
+                                    <span class="text-muted" style="margin-left: 1rem;">├─ {{ process.process_name }}: ₹{{ "%.4f"|format(process.converted_cost_per_unit) }}</span><br>
                                 {% endif %}
                             {% endfor %}
                         {% endif %}
@@ -423,9 +423,7 @@
                                     {% for sub_process in material_bom.processes %}
                                         {% if sub_process.converted_cost_per_unit > 0 %}
                                             {% set sub_cost_per_unit = (sub_process.converted_cost_per_unit / (material_bom.output_quantity or 1.0)) * (item.qty_required or item.quantity_required or 0) %}
-                                            {% set sub_cost_total = sub_process.converted_cost_per_unit %}
-                                            <span class="text-muted" style="margin-left: 1rem;">├─ {{ material.name }} {{ sub_process.process_name }}: ₹{{ "%.4f"|format(sub_cost_per_unit) }} 
-                                            <small class="text-info">(₹{{ "%.3f"|format(sub_cost_total) }} ÷ {{ material_bom.output_quantity }})</small></span><br>
+                                            <span class="text-muted" style="margin-left: 1rem;">├─ {{ material.name }} {{ sub_process.process_name }}: ₹{{ "%.4f"|format(sub_cost_per_unit) }}</span><br>
                                         {% endif %}
                                     {% endfor %}
                                 {% endif %}
