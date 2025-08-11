@@ -1100,6 +1100,37 @@ def api_party_account(party_id):
         'balance': account.calculate_balance() if account else 0
     })
 
+@accounting_bp.route('/api/suppliers')
+@login_required
+def api_suppliers():
+    """Get all active suppliers for dropdown selection"""
+    try:
+        suppliers = Supplier.query.filter(
+            Supplier.partner_type.in_(['vendor', 'supplier', 'both']),
+            Supplier.is_active == True
+        ).all()
+        
+        suppliers_data = [{
+            'id': supplier.id,
+            'name': supplier.name,
+            'contact_person': supplier.contact_person or '',
+            'phone': supplier.phone or '',
+            'email': supplier.email or ''
+        } for supplier in suppliers]
+        
+        return jsonify({
+            'success': True,
+            'suppliers': suppliers_data,
+            'count': len(suppliers_data)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'suppliers': []
+        }), 500
+
 # Invoice Management Routes
 @accounting_bp.route('/invoices')
 @login_required

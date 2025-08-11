@@ -1003,35 +1003,35 @@ function startProcess(processName, stepNumber) {
 
 // Function to load vendors
 function loadVendors() {
-    // Try to fetch vendors from accounting API, fallback to static list
     fetch('/accounting/api/suppliers')
         .then(response => response.json())
         .then(data => {
-            const vendors = data.suppliers || data || [];
+            console.log('Vendors loaded:', data);
+            const vendors = data.suppliers || [];
             const vendorSelect = document.getElementById('vendorId');
             vendorSelect.innerHTML = '<option value="">Choose vendor...</option>';
             
-            vendors.forEach(vendor => {
-                // Handle different API response formats
-                const id = vendor.id || vendor.supplier_id;
-                const name = vendor.name || vendor.supplier_name;
-                if (id && name) {
+            if (vendors.length > 0) {
+                vendors.forEach(vendor => {
                     const option = document.createElement('option');
-                    option.value = id;
-                    option.textContent = name;
+                    option.value = vendor.id;
+                    option.textContent = `${vendor.name}${vendor.contact_person ? ' - ' + vendor.contact_person : ''}`;
                     vendorSelect.appendChild(option);
-                }
-            });
+                });
+            } else {
+                // Add a default option if no vendors found
+                const option = document.createElement('option');
+                option.value = "0";
+                option.textContent = "No vendors available - Add vendors in Suppliers section";
+                vendorSelect.appendChild(option);
+            }
         })
         .catch(error => {
             console.error('Error loading vendors:', error);
-            // Fallback to default vendors if API fails
             const vendorSelect = document.getElementById('vendorId');
             vendorSelect.innerHTML = `
                 <option value="">Choose vendor...</option>
-                <option value="1">ABC Manufacturing Co.</option>
-                <option value="2">XYZ Processing Ltd.</option>
-                <option value="3">Quick Zinc Works</option>
+                <option value="0">Error loading vendors - Please refresh the page</option>
             `;
         });
 }
