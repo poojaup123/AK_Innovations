@@ -314,77 +314,17 @@ def quick_daily_update():
 @production_bp.route('/list')
 @login_required
 def list_productions():
-    """List all production orders with hierarchical parent-child structure"""
     page = request.args.get('page', 1, type=int)
-    status_filter = request.args.get('status', '')
+    status_filter = request.args.get('status', '', type=str)
     
     query = Production.query
-    
     if status_filter:
-        query = query.filter(Production.status == status_filter)
+        query = query.filter_by(status=status_filter)
     
-    # Get all productions for hierarchical processing
-    all_productions = query.order_by(Production.created_at.desc()).all()
+    productions = query.order_by(Production.created_at.desc()).paginate(
+        page=page, per_page=20, error_out=False)
     
-    # Create hierarchical structure with job cards as children
-    hierarchical_productions = []
-    
-    for production in all_productions:
-        # Get job cards for this production
-        job_cards = JobCard.query.filter_by(production_id=production.id).all()
-        
-        # Calculate metrics
-        total_job_cards = len(job_cards)
-        completed_job_cards = len([jc for jc in job_cards if jc.status == 'completed'])
-        in_progress_job_cards = len([jc for jc in job_cards if jc.status == 'in_progress'])
-        outsourced_job_cards = len([jc for jc in job_cards if '-OUT-' in (jc.job_card_number or '')])
-        pending_grn_job_cards = len([jc for jc in job_cards if '-OUT-' in (jc.job_card_number or '') and not jc.grn_id])
-        
-        # Calculate progress percentage
-        progress_percentage = 0
-        if production.quantity_planned and production.quantity_planned > 0:
-            progress_percentage = ((production.quantity_produced or 0) / production.quantity_planned) * 100
-        
-        hierarchy = {
-            'parent': production,
-            'job_cards': job_cards,
-            'metrics': {
-                'total_job_cards': total_job_cards,
-                'completed_job_cards': completed_job_cards,
-                'in_progress_job_cards': in_progress_job_cards,
-                'outsourced_job_cards': outsourced_job_cards,
-                'pending_grn_job_cards': pending_grn_job_cards,
-                'progress_percentage': progress_percentage
-            }
-        }
-        hierarchical_productions.append(hierarchy)
-    
-    # Implement manual pagination for hierarchical data
-    per_page = 20
-    total = len(hierarchical_productions)
-    start = (page - 1) * per_page
-    end = start + per_page
-    productions_page = hierarchical_productions[start:end]
-    
-    # Create pagination object manually
-    from math import ceil
-    pagination = {
-        'items': productions_page,
-        'page': page,
-        'per_page': per_page,
-        'total': total,
-        'pages': ceil(total / per_page) if total > 0 else 1,
-        'has_prev': page > 1,
-        'has_next': page < ceil(total / per_page) if total > 0 else False,
-        'prev_num': page - 1 if page > 1 else None,
-        'next_num': page + 1 if page < ceil(total / per_page) else None
-    }
-    
-    return render_template('production/list.html', 
-                         hierarchical_productions=productions_page,
-                         pagination=pagination,
-                         total_productions=total,
-                         status_filter=status_filter)
+    return render_template('production/list.html', productions=productions, status_filter=status_filter)
 
 # Enhanced Batch Tracking API Endpoints for Production
 

@@ -30,287 +30,135 @@
     </div>
 
     <!-- Production Orders Table -->
-    {% if hierarchical_productions %}
-        <div class="card shadow">
-            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                <h6 class="m-0 font-weight-bold text-primary">Production Orders - Parent-Child Structure</h6>
-                <div class="dropdown no-arrow">
-                    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown">
-                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                    </a>
-                    <div class="dropdown-menu dropdown-menu-right shadow">
-                        <a class="dropdown-item" href="{{ url_for('job_cards.list_job_cards') }}">View All Job Cards</a>
-                        <a class="dropdown-item" href="#">Export Report</a>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body">
+    <div class="card">
+        <div class="card-body">
+            {% if productions.items %}
                 <div class="table-responsive">
-                    <table class="table table-hover" id="productionTable">
-                        <thead class="table-dark">
+                    <table class="table table-hover">
+                        <thead>
                             <tr>
-                                <th><i class="fas fa-expand-arrows-alt me-1"></i></th>
                                 <th>Production Number</th>
                                 <th>Product</th>
-                                <th>Quantities</th>
-                                <th>Progress</th>
-                                <th>Status</th>
-                                <th>Job Cards</th>
+                                <th>Planned Quantity</th>
+                                <th>Produced Quantity</th>
                                 <th>Production Date</th>
+                                <th>Status</th>
+                                <th>Created By</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for hierarchy in hierarchical_productions %}
-                                <!-- Parent Row -->
-                                <tr class="parent-row" style="cursor: pointer;" data-parent-id="{{ hierarchy.parent.id }}">
-                                    <td>
-                                        <i class="fas fa-chevron-right expand-icon" style="transition: transform 0.3s;" id="toggle-{{ hierarchy.parent.id }}"></i>
-                                    </td>
-                                    <td>
-                                        <strong class="text-primary">{{ hierarchy.parent.production_number }}</strong>
-                                        <br>
-                                        <small class="text-muted">Created: {{ hierarchy.parent.created_at.strftime('%d/%m/%Y') }}</small>
-                                        {% if hierarchy.metrics.total_job_cards > 0 %}
-                                            <br><span class="badge bg-info text-white">{{ hierarchy.metrics.total_job_cards }} job cards</span>
-                                        {% endif %}
-                                        {% if hierarchy.metrics.outsourced_job_cards > 0 %}
-                                            <span class="badge bg-warning text-white">{{ hierarchy.metrics.outsourced_job_cards }} outsourced</span>
-                                        {% endif %}
-                                        {% if hierarchy.metrics.pending_grn_job_cards > 0 %}
-                                            <span class="badge bg-danger text-white">{{ hierarchy.metrics.pending_grn_job_cards }} pending GRN</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold">{{ hierarchy.parent.produced_item.name if hierarchy.parent.produced_item else 'No Item' }}</div>
-                                        <small class="text-muted">{{ hierarchy.parent.produced_item.code if hierarchy.parent.produced_item else '' }}</small>
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold">Planned: {{ hierarchy.parent.quantity_planned or 0 }}</div>
-                                        <small class="text-success">Produced: {{ hierarchy.parent.quantity_produced or 0 }}</small>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="progress" style="width: 100px; height: 20px;">
-                                                <div class="progress-bar bg-success" role="progressbar" 
-                                                     style="width: {{ hierarchy.metrics.progress_percentage|round(1) }}%"
-                                                     aria-valuenow="{{ hierarchy.metrics.progress_percentage|round(1) }}" 
-                                                     aria-valuemin="0" aria-valuemax="100">
-                                                </div>
-                                            </div>
-                                            <span class="ms-2 small">{{ hierarchy.metrics.progress_percentage|round(1) }}%</span>
+                            {% for production in productions.items %}
+                            <tr>
+                                <td><strong>{{ production.production_number }}</strong></td>
+                                <td>{{ production.produced_item.name }}</td>
+                                <td>{{ production.quantity_planned }}</td>
+                                <td>{{ production.quantity_produced }}</td>
+                                <td>{{ production.production_date.strftime('%m/%d/%Y') }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if production.status == 'completed' else 'warning' if production.status == 'in_progress' else 'danger' if production.status == 'cancelled' else 'primary' }}">
+                                        {{ production.status.replace('_', ' ').title() }}
+                                    </span>
+                                </td>
+                                <td>{{ production.creator.username }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('production.edit_production', id=production.id) }}" class="btn btn-outline-primary btn-sm" title="Edit Production">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ url_for('job_card_management.production_job_cards', production_id=production.id) }}" class="btn btn-outline-success btn-sm" title="View Job Cards">
+                                            <i class="fas fa-tasks"></i>
+                                        </a>
+                                        <a href="{{ url_for('production.view_smart_suggestions', production_id=production.id) }}" class="btn btn-outline-info btn-sm" title="Smart Suggestions">
+                                            <i class="fas fa-lightbulb"></i>
+                                        </a>
+                                        {% if production.status != 'completed' %}
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                Status
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                {% if production.status == 'planned' %}
+                                                <li><a class="dropdown-item" href="{{ url_for('production.update_status', id=production.id, status='in_progress') }}">Start Production</a></li>
+                                                {% endif %}
+                                                <li><a class="dropdown-item" href="{{ url_for('production.update_status', id=production.id, status='completed') }}">Complete</a></li>
+                                            </ul>
                                         </div>
-                                    </td>
-                                    <td>
-                                        {% if hierarchy.parent.status == 'completed' %}
-                                        <span class="badge bg-success text-white">{{ hierarchy.parent.status.replace('_', ' ').title() }}</span>
-                                        {% elif hierarchy.parent.status == 'in_progress' %}
-                                        <span class="badge bg-warning text-white">{{ hierarchy.parent.status.replace('_', ' ').title() }}</span>
-                                        {% elif hierarchy.parent.status == 'cancelled' %}
-                                        <span class="badge bg-danger text-white">{{ hierarchy.parent.status.replace('_', ' ').title() }}</span>
-                                        {% else %}
-                                        <span class="badge bg-primary text-white">{{ hierarchy.parent.status.replace('_', ' ').title() }}</span>
                                         {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="small">
-                                            <div>Total: {{ hierarchy.metrics.total_job_cards }}</div>
-                                            <div class="text-success">Completed: {{ hierarchy.metrics.completed_job_cards }}</div>
-                                            <div class="text-warning">In Progress: {{ hierarchy.metrics.in_progress_job_cards }}</div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <small>{{ hierarchy.parent.production_date.strftime('%d/%m/%Y') if hierarchy.parent.production_date else 'Not Set' }}</small>
-                                    </td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <a href="{{ url_for('production.view', production_id=hierarchy.parent.id) }}" class="btn btn-outline-primary btn-xs" title="View Details">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a href="{{ url_for('production.edit_production', id=hierarchy.parent.id) }}" class="btn btn-outline-secondary btn-xs" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a href="{{ url_for('job_card_management.production_job_cards', production_id=hierarchy.parent.id) }}" class="btn btn-outline-success btn-xs" title="Job Cards">
-                                                <i class="fas fa-tasks"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-
-                                <!-- Child Rows (Job Cards) - Initially Hidden -->
-                                {% for job_card in hierarchy.job_cards %}
-                                <tr class="child-row" data-parent-id="{{ hierarchy.parent.id }}" style="display: none; background-color: #f8f9fc;">
-                                    <td></td>
-                                    <td style="padding-left: 30px;">
-                                        <strong>{{ job_card.job_card_number }}</strong>
-                                        <br>
-                                        {% if '-OUT-' in job_card.job_card_number %}
-                                            <small class="text-muted">Outsourced Job Card</small>
-                                        {% else %}
-                                            <small class="text-muted">In-House Job Card</small>
+                                        
+                                        <!-- Cancel and Delete Options -->
+                                        {% if production.status != 'completed' %}
+                                        <a href="{{ url_for('production.cancel_production', id=production.id) }}" class="btn btn-outline-warning btn-sm" title="Cancel Production" onclick="return confirm('Are you sure you want to cancel this production order?')">
+                                            <i class="fas fa-ban"></i>
+                                        </a>
                                         {% endif %}
-                                        {% if '-OUT-' in job_card.job_card_number and not job_card.grn_id %}
-                                            <br><span class="badge bg-danger text-white">Pending GRN</span>
+                                        
+                                        {% if production.status in ['planned', 'cancelled'] %}
+                                        <button type="button" class="btn btn-outline-danger btn-sm" title="Delete Production" onclick="if(confirm('Are you sure you want to delete this production order? This action cannot be undone and will remove all related job cards and data.')) { 
+                                            var form = document.createElement('form'); 
+                                            form.method = 'POST'; 
+                                            form.action = '{{ url_for('production.delete_production', id=production.id) }}'; 
+                                            document.body.appendChild(form); 
+                                            form.submit(); 
+                                        }">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                         {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold">{{ job_card.item.name if job_card.item else 'No Item' }}</div>
-                                        <small class="text-muted">{{ job_card.process_name or 'Sub-Process' }}</small>
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold">Target: {{ job_card.target_quantity or 0 }}</div>
-                                        <small class="text-success">Current: {{ job_card.current_quantity or 0 }}</small>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            {% set jc_progress = ((job_card.current_quantity or 0) / (job_card.target_quantity or 1)) * 100 %}
-                                            <div class="progress" style="width: 80px; height: 15px;">
-                                                <div class="progress-bar bg-info" role="progressbar" 
-                                                     style="width: {{ jc_progress|round(1) }}%"
-                                                     aria-valuenow="{{ jc_progress|round(1) }}" 
-                                                     aria-valuemin="0" aria-valuemax="100">
-                                                </div>
-                                            </div>
-                                            <span class="ms-1 small">{{ jc_progress|round(1) }}%</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        {% if job_card.status == 'completed' %}
-                                        <span class="badge bg-success text-white">{{ job_card.status.replace('_', ' ').title() }}</span>
-                                        {% elif job_card.status == 'in_progress' %}
-                                        <span class="badge bg-warning text-white">{{ job_card.status.replace('_', ' ').title() }}</span>
-                                        {% elif job_card.status == 'outsourced' %}
-                                        <span class="badge bg-info text-white">{{ job_card.status.replace('_', ' ').title() }}</span>
-                                        {% else %}
-                                        <span class="badge bg-secondary text-white">{{ job_card.status.replace('_', ' ').title() }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <small class="text-muted">
-                                            {% if job_card.assigned_worker %}
-                                                <i class="fas fa-user me-1"></i>{{ job_card.assigned_worker.name }}
-                                            {% elif job_card.assigned_vendor %}
-                                                <i class="fas fa-building me-1"></i>{{ job_card.assigned_vendor.name }}
-                                            {% else %}
-                                                <i class="fas fa-home me-1"></i>In-House
-                                            {% endif %}
-                                        </small>
-                                    </td>
-                                    <td>
-                                        {% if job_card.target_completion_date %}
-                                            <small>{{ job_card.target_completion_date.strftime('%d/%m/%Y') }}</small>
-                                        {% else %}
-                                            <small class="text-muted">Not Set</small>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-outline-primary btn-xs">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            {% if '-OUT-' in job_card.job_card_number and not job_card.grn_id %}
-                                                <a href="{{ url_for('grn_job_card.create_grn_for_job_card', job_card_id=job_card.id) }}" class="btn btn-warning btn-xs" title="Create GRN">
-                                                    <i class="fas fa-truck"></i>
-                                                </a>
-                                            {% else %}
-                                                <a href="{{ url_for('job_cards.update_daily_status', job_card_id=job_card.id) }}" class="btn btn-success btn-xs">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
+                                    </div>
+                                </td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
-            </div>
-        </div>
-    {% else %}
-        <div class="card shadow">
-            <div class="card-body text-center py-5">
-                <i class="fas fa-cogs fa-4x text-muted mb-3"></i>
-                <h4>No Production Orders Found</h4>
-                <p class="text-muted">Start by creating your first production order to begin manufacturing.</p>
-                <a href="{{ url_for('production.add_production') }}" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Create Production Order
-                </a>
-            </div>
-        </div>
-    {% endif %}
 
-    <!-- Pagination -->
-    {% if pagination and pagination.pages > 1 %}
-    <div class="row mt-4">
-        <div class="col-12">
-            <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-center">
-                    {% if pagination.has_prev %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('production.list_productions', page=pagination.prev_num, status=status_filter) }}">Previous</a>
-                        </li>
-                    {% endif %}
-                    
-                    {% for page_num in range(1, pagination.pages + 1) %}
-                        {% if page_num != pagination.page %}
+                <!-- Pagination -->
+                {% if productions.pages > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        {% if productions.has_prev %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('production.list_productions', page=page_num, status=status_filter) }}">{{ page_num }}</a>
-                            </li>
-                        {% else %}
-                            <li class="page-item active">
-                                <span class="page-link">{{ page_num }}</span>
+                                <a class="page-link" href="{{ url_for('production.list_productions', page=productions.prev_num, status=status_filter) }}">Previous</a>
                             </li>
                         {% endif %}
-                    {% endfor %}
-                    
-                    {% if pagination.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="{{ url_for('production.list_productions', page=pagination.next_num, status=status_filter) }}">Next</a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </nav>
+                        
+                        {% for page_num in productions.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != productions.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('production.list_productions', page=page_num, status=status_filter) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if productions.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('production.list_productions', page=productions.next_num, status=status_filter) }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                    <h5>No production orders found</h5>
+                    <p class="text-muted">Start by creating your first production order.</p>
+                    <a href="{{ url_for('production.add_production') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create First Production Order
+                    </a>
+                </div>
+            {% endif %}
         </div>
     </div>
-    {% endif %}
 </div>
-
-<script>
-function toggleChildren(parentId) {
-    const toggleIcon = document.getElementById('toggle-' + parentId);
-    const childRows = document.querySelectorAll(`[data-parent-id="${parentId}"].child-row`);
-    
-    const isExpanded = toggleIcon.style.transform === 'rotate(90deg)';
-    
-    if (isExpanded) {
-        // Collapse
-        toggleIcon.style.transform = 'rotate(0deg)';
-        childRows.forEach(row => {
-            row.style.display = 'none';
-        });
-    } else {
-        // Expand  
-        toggleIcon.style.transform = 'rotate(90deg)';
-        childRows.forEach(row => {
-            row.style.display = 'table-row';
-        });
-    }
-}
-
-// Initialize - keep all collapsed by default
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Page loaded, setting up toggle functionality...');
-    
-    // Set up click handlers for parent rows
-    document.querySelectorAll('.parent-row').forEach(row => {
-        row.addEventListener('click', function(e) {
-            if (e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON') {
-                const parentId = this.getAttribute('data-parent-id');
-                toggleChildren(parentId);
-            }
-        });
-    });
-});
-</script>
 {% endblock %}

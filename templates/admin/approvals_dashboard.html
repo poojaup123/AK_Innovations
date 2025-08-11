@@ -378,7 +378,8 @@ async function approveOrder(orderType, orderId) {
         const response = await fetch('{{ url_for("admin.approve_order") }}', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
             },
             body: JSON.stringify({
                 order_type: orderType,
@@ -409,7 +410,8 @@ async function rejectOrder(orderType, orderId) {
         const response = await fetch('{{ url_for("admin.reject_order") }}', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
             },
             body: JSON.stringify({
                 order_type: orderType,
