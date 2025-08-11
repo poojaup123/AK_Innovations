@@ -456,23 +456,27 @@ def update_daily_status(job_card_id):
     """Update daily status for a job card"""
     job_card = JobCard.query.get_or_404(job_card_id)
     
-    # Get BOM processes for this job card
+    # Get BOM processes for this job card - look for component-specific BOM
     bom_processes = []
-    if job_card.bom_item_id:
-        from models import BOMProcess
+    if job_card.item_id:
+        from models import BOMProcess, BOM
         try:
-            bom_id = job_card.bom_item.bom_id if job_card.bom_item else None
-            if bom_id:
-                bom_processes = BOMProcess.query.filter_by(bom_id=bom_id).order_by(BOMProcess.step_number).all()
-                print(f"DEBUG: Found {len(bom_processes)} BOM processes for job card {job_card_id}, BOM ID: {bom_id}")
+            # Find the BOM that has this component as its product
+            component_bom = BOM.query.filter_by(product_id=job_card.item_id, is_active=True).first()
+            print(f"DEBUG: Looking for BOM for item {job_card.item_id} ({job_card.item.name if job_card.item else 'Unknown'})")
+            
+            if component_bom:
+                print(f"DEBUG: Found component-specific BOM: {component_bom.bom_code} (ID: {component_bom.id})")
+                bom_processes = BOMProcess.query.filter_by(bom_id=component_bom.id).order_by(BOMProcess.step_number).all()
+                print(f"DEBUG: Found {len(bom_processes)} BOM processes for job card {job_card_id}, BOM ID: {component_bom.id}")
                 for bp in bom_processes:
                     print(f"  Process {bp.step_number}: {bp.process_name}")
             else:
-                print(f"DEBUG: No BOM ID found for job card {job_card_id}")
+                print(f"DEBUG: No component-specific BOM found for item {job_card.item_id}")
         except Exception as e:
             print(f"DEBUG: Error getting BOM processes: {e}")
     else:
-        print(f"DEBUG: Job card {job_card_id} has no bom_item_id")
+        print(f"DEBUG: Job card {job_card_id} has no item_id")
     
     # Vendors are handled in separate outsourcing workflow
     
