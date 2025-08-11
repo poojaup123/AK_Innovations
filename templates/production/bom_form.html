@@ -100,25 +100,8 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.estimated_scrap_percent.label(class="form-label") }}
-                                    {% if bom and bom.processes %}
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" 
-                                               value="{{ '%.2f'|format(bom.calculated_scrap_percent) }}" 
-                                               step="0.1" readonly>
-                                        <span class="input-group-text bg-warning text-dark" 
-                                              title="Automatically calculated from manufacturing processes">
-                                            <i class="fas fa-magic"></i>
-                                        </span>
-                                    </div>
-                                    <small class="text-warning">
-                                        <i class="fas fa-info-circle"></i> Calculated from {{ bom.processes|length }} manufacturing processes
-                                    </small>
-                                    <!-- Hidden field to store the calculated value for form submission -->
-                                    <input type="hidden" name="estimated_scrap_percent" value="{{ bom.calculated_scrap_percent }}">
-                                    {% else %}
                                     {{ form.estimated_scrap_percent(class="form-control", step="0.1") }}
                                     <small class="text-muted">Overall scrap percentage expected</small>
-                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -154,22 +137,10 @@
                                 <div class="mb-3">
                                     {{ form.unit_weight.label(class="form-label") }}
                                     <div class="input-group">
-                                        {{ form.unit_weight(class="form-control", step="0.001", 
-                                           placeholder=("Auto-filled from product inventory" if bom and bom.product and bom.product.unit_weight else "0.000")) }}
+                                        {{ form.unit_weight(class="form-control", step="0.001") }}
                                         {{ form.unit_weight_uom(class="form-select", style="max-width: 100px;") }}
-                                        {% if bom and bom.product and bom.product.unit_weight %}
-                                        <span class="input-group-text bg-success text-white" title="Auto-populated from product inventory">
-                                            <i class="fas fa-check"></i>
-                                        </span>
-                                        {% endif %}
                                     </div>
-                                    <small class="text-muted">
-                                        {% if bom and bom.product and bom.product.unit_weight %}
-                                        <i class="fas fa-info-circle text-success"></i> Auto-populated from {{ bom.product.code }} inventory ({{ bom.product.unit_weight }}kg)
-                                        {% else %}
-                                        Weight per unit for converting per kg costs to per unit costs
-                                        {% endif %}
-                                    </small>
+                                    <small class="text-muted">Weight per unit for converting per kg costs to per unit costs</small>
                                 </div>
                             </div>
                             <div class="col-md-6">

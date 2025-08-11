@@ -2321,12 +2321,8 @@ class BOM(db.Model):
         if not self.processes:
             return self.estimated_scrap_percent or 0.0
         
-        # Sum up scrap percentages from all processes that have scrap tracking enabled
-        total_process_scrap = 0.0
-        for process in self.processes:
-            if hasattr(process, 'enable_scrap_tracking') and process.enable_scrap_tracking and process.estimated_scrap_percent:
-                total_process_scrap += process.estimated_scrap_percent
-        
+        # Sum up scrap percentages from all processes
+        total_process_scrap = sum(process.estimated_scrap_percent or 0 for process in self.processes)
         return total_process_scrap if total_process_scrap > 0 else (self.estimated_scrap_percent or 0.0)
     
     @property
@@ -2784,9 +2780,6 @@ class BOMProcess(db.Model):
     cost_per_unit = db.Column(db.Float, default=0.0)  # Process cost per unit
     cost_unit = db.Column(db.String(20), default='per_unit')  # Cost unit (per_unit, per_kg, per_meter, etc.)
     estimated_scrap_percent = db.Column(db.Float, default=0.0)  # Expected scrap percentage for this process
-    scrap_weight = db.Column(db.Float, default=0.0)  # Expected scrap weight in kg for this process
-    enable_scrap_tracking = db.Column(db.Boolean, default=False)  # Enable scrap percentage tracking
-    enable_scrap_weight_tracking = db.Column(db.Boolean, default=False)  # Enable scrap weight tracking
     quality_check_required = db.Column(db.Boolean, default=False)  # Quality check after this step
     parallel_processes = db.Column(db.Text)  # JSON list of processes that can run in parallel
     predecessor_processes = db.Column(db.Text)  # JSON list of required predecessor processes

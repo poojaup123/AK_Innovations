@@ -48,13 +48,12 @@
                                         </div>
                                         
                                         <div class="row">
-                                            <div class="col-md-4">
+                                            <div class="col-md-6">
                                                 <div class="form-group mb-3">
                                                     <label class="form-label">Process Name</label>
-                                                    <select class="form-select process-name" name="processes[0][process_name]" required onchange="toggleScrapSection(0, this.value)">
+                                                    <select class="form-select process-name" name="processes[0][process_name]" required>
                                                         <option value="">Select Process</option>
                                                         <option value="Cutting">Cutting</option>
-                                                        <option value="Notching">Notching</option>
                                                         <option value="Bending">Bending</option>
                                                         <option value="Welding">Welding</option>
                                                         <option value="Zinc">Zinc Plating</option>
@@ -65,19 +64,10 @@
                                                     </select>
                                                 </div>
                                             </div>
-                                            <div class="col-md-4">
+                                            <div class="col-md-6">
                                                 <div class="form-group mb-3">
                                                     <label class="form-label">Sequence Number</label>
                                                     <input type="number" class="form-control step-number" name="processes[0][step_number]" value="1" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group mb-3">
-                                                    <label class="form-label">Unit Weight (kg)</label>
-                                                    <input type="number" step="0.001" class="form-control" 
-                                                           value="{{ bom.product.unit_weight if bom.product and bom.product.unit_weight else '0.000' }}" 
-                                                           readonly style="background-color: #f8f9fa;">
-                                                    <small class="text-muted">From BOM Basic Information</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -129,130 +119,9 @@
                                             <textarea class="form-control" name="processes[0][operation_description]" rows="2" placeholder="Detailed description of the operation"></textarea>
                                         </div>
                                         
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <div class="form-check mb-2">
-                                                    <input class="form-check-input" type="checkbox" name="processes[0][quality_check_required]" value="true">
-                                                    <label class="form-check-label">Quality Check Required</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Scrap Tracking Section -->
-                                        <div class="card mt-3" id="scrap_section_0" style="display: {% if edit_process and edit_process.process_name in ['Cutting', 'Notching'] %}block{% else %}none{% endif %};">
-                                            <div class="card-header bg-light">
-                                                <h6 class="mb-0"><i class="fas fa-recycle"></i> Scrap Tracking</h6>
-                                                <small class="text-muted">Only for Cutting and Notching processes</small>
-                                            </div>
-                                            <div class="card-body">
-                                                <div class="row">
-                                                    <div class="col-md-6">
-                                                        <div class="form-check mb-2">
-                                                            <input class="form-check-input scrap-tracking-checkbox" type="checkbox" name="processes[0][enable_scrap_tracking]" value="true" 
-                                                                   {% if edit_process and edit_process.enable_scrap_tracking %}checked{% endif %}
-                                                                   onchange="toggleScrapFields(this, 'scrap_percent_0')">
-                                                            <label class="form-check-label">Enable Scrap % Tracking</label>
-                                                        </div>
-                                                        <div class="form-group" id="scrap_percent_0" style="display: {% if edit_process and edit_process.enable_scrap_tracking %}block{% else %}none{% endif %};">
-                                                            <label class="form-label">Scrap Percentage (%)</label>
-                                                            <input type="number" step="0.1" class="form-control scrap-percent-input" 
-                                                                   name="processes[0][estimated_scrap_percent]" placeholder="e.g., 5.0"
-                                                                   {% if edit_process and edit_process.estimated_scrap_percent %}value="{{ edit_process.estimated_scrap_percent }}"{% endif %}
-                                                                   onchange="calculateScrapWeight(0)" oninput="calculateScrapWeight(0)" data-process-index="0">
-                                                            <small class="text-muted">Enter percentage to auto-calculate scrap weight</small>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <div class="form-check mb-2">
-                                                            <input class="form-check-input scrap-weight-checkbox" type="checkbox" name="processes[0][enable_scrap_weight_tracking]" value="true" 
-                                                                   {% if edit_process and edit_process.enable_scrap_weight_tracking %}checked{% endif %}
-                                                                   onchange="toggleScrapFields(this, 'scrap_weight_0')">
-                                                            <label class="form-check-label">Enable Scrap Weight Tracking</label>
-                                                        </div>
-                                                        <div class="form-group" id="scrap_weight_0" style="display: {% if edit_process and edit_process.enable_scrap_weight_tracking %}block{% else %}none{% endif %};">
-                                                            <label class="form-label">Scrap Weight (kg)</label>
-                                                            <input type="number" step="0.001" class="form-control scrap-weight-input" 
-                                                                   name="processes[0][scrap_weight]" placeholder="Auto-calculated"
-                                                                   {% if edit_process and edit_process.scrap_weight %}value="{{ edit_process.scrap_weight }}"{% endif %}
-                                                                   onchange="calculateScrapPercent(0)" data-process-index="0">
-                                                            <div class="calc-feedback mt-1"></div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <!-- Scrap Calculation Helper -->
-                                                <div class="row mt-3">
-                                                    <div class="col-md-12">
-                                                        <div class="alert alert-info">
-                                                            <h6><i class="fas fa-calculator"></i> Scrap Calculation Helper</h6>
-                                                            
-                                                            <!-- BOM Raw Materials Selector -->
-                                                            {% if raw_materials %}
-                                                            <div class="row mb-3">
-                                                                <div class="col-md-12">
-                                                                    <label class="form-label">Select Raw Material from BOM</label>
-                                                                    <select class="form-select bom-material-selector" data-process-index="0" onchange="loadBomMaterialData(0, this.value)">
-                                                                        <option value="">Manual Entry</option>
-                                                                        {% for material in raw_materials %}
-                                                                        <option value="{{ loop.index0 }}" 
-                                                                                data-weight="{{ material.weight_per_unit }}" 
-                                                                                data-quantity="{{ material.quantity_used }}"
-                                                                                data-total-weight="{{ material.total_weight }}"
-                                                                                data-code="{{ material.code }}">
-                                                                            {{ material.code }} - {{ material.name }} 
-                                                                            ({{ material.weight_per_unit }}kg/{{ material.unit }}, 
-                                                                            Used: {{ material.quantity_used }}{{ material.unit }}, 
-                                                                            Total: {{ material.total_weight }}kg)
-                                                                        </option>
-                                                                        {% endfor %}
-                                                                    </select>
-                                                                    <small class="text-muted">Auto-populate from BOM components or enter manually</small>
-                                                                </div>
-                                                            </div>
-                                                            {% endif %}
-                                                            
-                                                            <div class="row">
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">Input Material Weight/Unit (kg)</label>
-                                                                    <input type="number" step="0.001" class="form-control input-material-weight" 
-                                                                           placeholder="{% if raw_materials %}Auto-filled from BOM{% else %}e.g., 25.5{% endif %}" data-process-index="0"
-                                                                           {% if raw_materials %}value="{{ raw_materials|sum(attribute='total_weight') }}"{% endif %}
-                                                                           onchange="updateScrapCalculations(0)">
-                                                                    <small class="text-muted">
-                                                                        {% if raw_materials %}
-                                                                        <i class="fas fa-check text-success"></i> Auto-populated from BOM: {{ raw_materials|sum(attribute='total_weight') }}kg
-                                                                        {% else %}
-                                                                        Weight of raw material per unit
-                                                                        {% endif %}
-                                                                    </small>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">Units Made from Input</label>
-                                                                    <input type="number" class="form-control units-made" 
-                                                                           placeholder="e.g., {{ bom.output_quantity or 600 }}" data-process-index="0"
-                                                                           onchange="updateScrapCalculations(0)">
-                                                                    <small class="text-muted">{{ bom.product.name if bom.product else 'Products' }} per raw material</small>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">Output Unit Weight (kg)</label>
-                                                                    <input type="number" step="0.001" class="form-control output-unit-weight" 
-                                                                           placeholder="e.g., {{ bom.product.unit_weight if bom.product and bom.product.unit_weight else '0.042' }}" data-process-index="0"
-                                                                           onchange="updateScrapCalculations(0)"
-                                                                           {% if bom.product and bom.product.unit_weight %}value="{{ bom.product.unit_weight }}"{% endif %}>
-                                                                    <small class="text-muted">Weight of 1 {{ bom.product.name if bom.product else 'finished product' }}</small>
-                                                                </div>
-                                                            </div>
-                                                            <div class="row mt-2">
-                                                                <div class="col-md-12">
-                                                                    <small class="text-primary">
-                                                                        <strong>Formula:</strong> Scrap% = ((Input Weight - (Units Made × Output Unit Weight)) / Input Weight) × 100
-                                                                    </small>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="processes[0][quality_check_required]" value="true">
+                                            <label class="form-check-label">Quality Check Required</label>
                                         </div>
                                     </div>
                                 </div>
@@ -366,191 +235,6 @@
 
 {% block scripts %}
 <script>
-// Function to toggle scrap fields based on checkbox
-function toggleScrapFields(checkbox, targetId) {
-    const targetField = document.getElementById(targetId);
-    if (targetField) {
-        if (checkbox.checked) {
-            targetField.style.display = 'block';
-        } else {
-            targetField.style.display = 'none';
-            // Clear the input value when hiding
-            const input = targetField.querySelector('input');
-            if (input) {
-                input.value = '';
-            }
-        }
-    }
-}
-
-// Scrap calculation functions
-function updateScrapCalculations(processIndex) {
-    const inputWeight = parseFloat(document.querySelector(`[data-process-index="${processIndex}"].input-material-weight`).value) || 0;
-    const unitsMade = parseFloat(document.querySelector(`[data-process-index="${processIndex}"].units-made`).value) || 0;
-    const outputUnitWeight = parseFloat(document.querySelector(`[data-process-index="${processIndex}"].output-unit-weight`).value) || 0;
-    
-    if (inputWeight > 0 && unitsMade > 0 && outputUnitWeight > 0) {
-        // Calculate theoretical material usage
-        const theoreticalWeight = unitsMade * outputUnitWeight;
-        
-        // Calculate scrap weight and percentage
-        const scrapWeight = inputWeight - theoreticalWeight;
-        const scrapPercentage = (scrapWeight / inputWeight) * 100;
-        
-        // Update the scrap fields if they're enabled
-        const scrapPercentInput = document.querySelector(`[data-process-index="${processIndex}"].scrap-percent-input`);
-        const scrapWeightInput = document.querySelector(`[data-process-index="${processIndex}"].scrap-weight-input`);
-        
-        if (scrapPercentInput && scrapPercentage >= 0) {
-            scrapPercentInput.value = scrapPercentage.toFixed(2);
-        }
-        
-        if (scrapWeightInput && scrapWeight >= 0) {
-            scrapWeightInput.value = scrapWeight.toFixed(3);
-        }
-    }
-}
-
-function calculateScrapWeight(processIndex) {
-    const scrapPercent = parseFloat(document.querySelector(`[data-process-index="${processIndex}"].scrap-percent-input`).value) || 0;
-    let inputWeight = parseFloat(document.querySelector(`[data-process-index="${processIndex}"].input-material-weight`).value) || 0;
-    
-    // If no manual input weight, try to get from BOM material selector
-    if (inputWeight === 0) {
-        const materialSelector = document.querySelector(`#scrap_section_${processIndex} .bom-material-selector`);
-        if (materialSelector && materialSelector.value !== '') {
-            const selectedOption = materialSelector.options[materialSelector.selectedIndex];
-            if (selectedOption && selectedOption.dataset.totalWeight) {
-                inputWeight = parseFloat(selectedOption.dataset.totalWeight) || 0;
-            }
-        }
-    }
-    
-    // Use BOM unit weight as fallback
-    if (inputWeight === 0) {
-        const bomUnitWeight = {{ bom.unit_weight if bom.unit_weight else 0 }};
-        const bomOutputQty = {{ bom.output_quantity if bom.output_quantity else 1 }};
-        inputWeight = bomUnitWeight * bomOutputQty;
-    }
-    
-    if (scrapPercent > 0 && inputWeight > 0) {
-        const scrapWeight = (scrapPercent / 100) * inputWeight;
-        const scrapWeightInput = document.querySelector(`[data-process-index="${processIndex}"].scrap-weight-input`);
-        if (scrapWeightInput) {
-            scrapWeightInput.value = scrapWeight.toFixed(3);
-        }
-        
-        // Show calculation details
-        console.log(`Scrap calculation: ${inputWeight}kg × ${scrapPercent}% = ${scrapWeight.toFixed(3)}kg`);
-        
-        // Update any visual feedback elements
-        const calcDisplay = document.querySelector(`#scrap_section_${processIndex} .calc-feedback`);
-        if (calcDisplay) {
-            calcDisplay.innerHTML = `<small class="text-success"><i class="fas fa-calculator"></i> ${inputWeight}kg × ${scrapPercent}% = ${scrapWeight.toFixed(3)}kg</small>`;
-        }
-    }
-}
-
-function calculateScrapPercent(processIndex) {
-    const scrapWeight = parseFloat(document.querySelector(`[data-process-index="${processIndex}"].scrap-weight-input`).value) || 0;
-    const inputWeight = parseFloat(document.querySelector(`[data-process-index="${processIndex}"].input-material-weight`).value) || 0;
-    
-    if (scrapWeight > 0 && inputWeight > 0) {
-        const scrapPercent = (scrapWeight / inputWeight) * 100;
-        const scrapPercentInput = document.querySelector(`[data-process-index="${processIndex}"].scrap-percent-input`);
-        if (scrapPercentInput) {
-            scrapPercentInput.value = scrapPercent.toFixed(2);
-        }
-    }
-}
-
-// Function to show/hide scrap section based on process type
-function toggleScrapSection(processIndex, processName) {
-    const scrapSection = document.getElementById(`scrap_section_${processIndex}`);
-    const scrapGeneratingProcesses = ['Cutting', 'Notching'];
-    
-    if (scrapSection) {
-        if (scrapGeneratingProcesses.includes(processName)) {
-            scrapSection.style.display = 'block';
-        } else {
-            scrapSection.style.display = 'none';
-            // Clear scrap fields when hiding
-            const scrapCheckboxes = scrapSection.querySelectorAll('input[type="checkbox"]');
-            const scrapInputs = scrapSection.querySelectorAll('input[type="number"]');
-            
-            scrapCheckboxes.forEach(checkbox => {
-                checkbox.checked = false;
-            });
-            
-            scrapInputs.forEach(input => {
-                input.value = '';
-            });
-            
-            // Hide the scrap input fields
-            const scrapFields = scrapSection.querySelectorAll('[id^="scrap_percent_"], [id^="scrap_weight_"]');
-            scrapFields.forEach(field => {
-                field.style.display = 'none';
-            });
-        }
-    }
-}
-
-// Function to load BOM material data into scrap calculation helper
-function loadBomMaterialData(processIndex, materialIndex) {
-    if (materialIndex === '') {
-        // Manual entry - clear all fields
-        const container = document.querySelector(`[data-process-index="${processIndex}"]`).closest('.process-item');
-        const inputWeight = container.querySelector('.input-material-weight');
-        const unitsMade = container.querySelector('.units-made');
-        const outputWeight = container.querySelector('.output-unit-weight');
-        
-        if (inputWeight) inputWeight.value = '';
-        if (unitsMade) unitsMade.value = '';
-        if (outputWeight) outputWeight.value = '';
-        return;
-    }
-    
-    // Get the selected option
-    const selector = document.querySelector(`[data-process-index="${processIndex}"].bom-material-selector`);
-    const selectedOption = selector.options[parseInt(materialIndex) + 1]; // +1 because first option is "Manual Entry"
-    
-    if (selectedOption) {
-        const weight = selectedOption.getAttribute('data-weight');
-        const quantity = selectedOption.getAttribute('data-quantity');
-        const totalWeight = selectedOption.getAttribute('data-total-weight');
-        
-        // Find the scrap calculation fields in the same process
-        const container = document.querySelector(`[data-process-index="${processIndex}"]`).closest('.process-item');
-        const inputWeight = container.querySelector('.input-material-weight');
-        const unitsMade = container.querySelector('.units-made');
-        const outputWeight = container.querySelector('.output-unit-weight');
-        
-        // Auto-populate fields with BOM component data
-        if (inputWeight) inputWeight.value = weight;
-        if (unitsMade) unitsMade.value = {{ bom.output_quantity or 1 }};
-        
-        // Auto-populate output weight from BOM product or calculated from total material weight
-        if (outputWeight) {
-            {% if bom.product and bom.product.unit_weight %}
-            outputWeight.value = {{ bom.product.unit_weight }};
-            {% else %}
-            // Calculate from total weight divided by output quantity
-            const calculatedWeight = totalWeight / {{ bom.output_quantity or 1 }};
-            outputWeight.value = calculatedWeight.toFixed(3);
-            {% endif %}
-        }
-        
-        // Auto-populate input weight field for scrap calculations
-        if (inputWeight && totalWeight > 0) {
-            inputWeight.value = totalWeight.toFixed(3);
-        }
-        
-        // Trigger calculation update
-        updateScrapCalculations(processIndex);
-    }
-}
-</script>
-<script>
 let processCount = 1;
 
 document.getElementById('addProcessBtn').addEventListener('click', function() {
@@ -579,13 +263,12 @@ function createProcessItem(processNumber) {
         </div>
         
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="form-group mb-3">
                     <label class="form-label">Process Name</label>
-                    <select class="form-select process-name" name="processes[${index}][process_name]" required onchange="toggleScrapSection(${index}, this.value)">
+                    <select class="form-select process-name" name="processes[${index}][process_name]" required>
                         <option value="">Select Process</option>
                         <option value="Cutting">Cutting</option>
-                        <option value="Notching">Notching</option>
                         <option value="Bending">Bending</option>
                         <option value="Welding">Welding</option>
                         <option value="Zinc">Zinc Plating</option>
@@ -596,19 +279,10 @@ function createProcessItem(processNumber) {
                     </select>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="form-group mb-3">
                     <label class="form-label">Sequence Number</label>
                     <input type="number" class="form-control step-number" name="processes[${index}][step_number]" value="${processNumber}" required>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group mb-3">
-                    <label class="form-label">Unit Weight (kg)</label>
-                    <input type="number" step="0.001" class="form-control bom-unit-weight" 
-                           value="{{ bom.product.unit_weight if bom.product and bom.product.unit_weight else '0.000' }}" 
-                           readonly style="background-color: #f8f9fa;">
-                    <small class="text-muted">From BOM Basic Information</small>
                 </div>
             </div>
         </div>
@@ -660,103 +334,9 @@ function createProcessItem(processNumber) {
             <textarea class="form-control" name="processes[${index}][operation_description]" rows="2" placeholder="Detailed description of the operation"></textarea>
         </div>
         
-        <div class="row">
-            <div class="col-md-12">
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" name="processes[${index}][quality_check_required]" value="true">
-                    <label class="form-check-label">Quality Check Required</label>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Scrap Tracking Section -->
-        <div class="card mt-3" id="scrap_section_${index}" style="display: none;">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="fas fa-recycle"></i> Scrap Tracking</h6>
-                <small class="text-muted">Only for Cutting and Notching processes</small>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-check mb-2">
-                            <input class="form-check-input scrap-tracking-checkbox" type="checkbox" name="processes[${index}][enable_scrap_tracking]" value="true" 
-                                   onchange="toggleScrapFields(this, 'scrap_percent_${index}')">
-                            <label class="form-check-label">Enable Scrap % Tracking</label>
-                        </div>
-                        <div class="form-group" id="scrap_percent_${index}" style="display: none;">
-                            <label class="form-label">Scrap Percentage (%)</label>
-                            <input type="number" step="0.1" class="form-control scrap-percent-input" 
-                                   name="processes[${index}][estimated_scrap_percent]" placeholder="0.0"
-                                   onchange="calculateScrapWeight(${index})" data-process-index="${index}">
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-check mb-2">
-                            <input class="form-check-input scrap-weight-checkbox" type="checkbox" name="processes[${index}][enable_scrap_weight_tracking]" value="true" 
-                                   onchange="toggleScrapFields(this, 'scrap_weight_${index}')">
-                            <label class="form-check-label">Enable Scrap Weight Tracking</label>
-                        </div>
-                        <div class="form-group" id="scrap_weight_${index}" style="display: none;">
-                            <label class="form-label">Scrap Weight (kg)</label>
-                            <input type="number" step="0.001" class="form-control scrap-weight-input" 
-                                   name="processes[${index}][scrap_weight]" placeholder="0.000"
-                                   onchange="calculateScrapPercent(${index})" data-process-index="${index}">
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Scrap Calculation Helper for Dynamic Processes -->
-                <div class="row mt-3">
-                    <div class="col-md-12">
-                        <div class="alert alert-info">
-                            <h6><i class="fas fa-calculator"></i> Scrap Calculation Helper</h6>
-                            
-                            <!-- BOM Raw Materials Selector for Dynamic Processes -->
-                            <div class="row mb-3">
-                                <div class="col-md-12">
-                                    <label class="form-label">Select Raw Material from BOM</label>
-                                    <select class="form-select bom-material-selector" data-process-index="${index}" onchange="loadBomMaterialData(${index}, this.value)">
-                                        <option value="">Manual Entry</option>
-                                        ${bomMaterialOptions}
-                                    </select>
-                                    <small class="text-muted">Auto-populate from BOM components or enter manually</small>
-                                </div>
-                            </div>
-                            
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <label class="form-label">Input Material Weight/Unit (kg)</label>
-                                    <input type="number" step="0.001" class="form-control input-material-weight" 
-                                           placeholder="e.g., 25.5" data-process-index="${index}"
-                                           onchange="updateScrapCalculations(${index})">
-                                    <small class="text-muted">Weight of raw material per unit</small>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Units Made from Input</label>
-                                    <input type="number" class="form-control units-made" 
-                                           placeholder="e.g., 600" data-process-index="${index}"
-                                           onchange="updateScrapCalculations(${index})">
-                                    <small class="text-muted">Products per raw material</small>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Output Unit Weight (kg)</label>
-                                    <input type="number" step="0.001" class="form-control output-unit-weight" 
-                                           placeholder="e.g., 0.042" data-process-index="${index}"
-                                           onchange="updateScrapCalculations(${index})">
-                                    <small class="text-muted">Weight of 1 finished product</small>
-                                </div>
-                            </div>
-                            <div class="row mt-2">
-                                <div class="col-md-12">
-                                    <small class="text-primary">
-                                        <strong>Formula:</strong> Scrap% = ((Input Weight - (Units Made × Output Unit Weight)) / Input Weight) × 100
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="processes[${index}][quality_check_required]" value="true">
+            <label class="form-check-label">Quality Check Required</label>
         </div>
     `;
     
@@ -932,23 +512,8 @@ document.addEventListener('DOMContentLoaded', function() {
     firstProcess.querySelector('[name="processes[0][labor_rate_per_hour]"]').value = '{{ edit_process.labor_rate_per_hour or 0 }}';
     firstProcess.querySelector('[name="processes[0][cost_per_unit]"]').value = '{{ edit_process.cost_per_unit or 0 }}';
     firstProcess.querySelector('[name="processes[0][cost_unit]"]').value = '{{ edit_process.cost_unit or "per_unit" }}';
-    firstProcess.querySelector('[name="processes[0][quality_check_required]"]').checked = {{ 'true' if edit_process.quality_check_required else 'false' }};
     
-    // Show scrap section if this is a scrap-generating process (Cutting/Notching)
-    toggleScrapSection(0, '{{ edit_process.process_name }}');
-    
-    // Populate scrap tracking fields if enabled
-    {% if edit_process.enable_scrap_tracking %}
-    firstProcess.querySelector('[name="processes[0][enable_scrap_tracking]"]').checked = true;
-    toggleScrapFields(firstProcess.querySelector('[name="processes[0][enable_scrap_tracking]"]'), 'scrap_percent_0');
-    firstProcess.querySelector('[name="processes[0][estimated_scrap_percent]"]').value = '{{ edit_process.estimated_scrap_percent or 0 }}';
-    {% endif %}
-    
-    {% if edit_process.enable_scrap_weight_tracking %}
-    firstProcess.querySelector('[name="processes[0][enable_scrap_weight_tracking]"]').checked = true;
-    toggleScrapFields(firstProcess.querySelector('[name="processes[0][enable_scrap_weight_tracking]"]'), 'scrap_weight_0');
-    firstProcess.querySelector('[name="processes[0][scrap_weight]"]').value = '{{ edit_process.scrap_weight or 0 }}';
-    {% endif %}
+
     
     // Update the submit button text for editing
     document.querySelector('button[type="submit"]').innerHTML = '<i class="fas fa-save"></i> Update Process';

@@ -1209,14 +1209,7 @@ def edit_bom(id):
         form.status.data = bom.status
         form.is_active.data = bom.is_active
         form.output_quantity.data = bom.output_quantity
-        # Auto-populate unit weight from product inventory if not set
-        if not bom.unit_weight or bom.unit_weight == 0:
-            if bom.product and bom.product.unit_weight:
-                form.unit_weight.data = bom.product.unit_weight
-            else:
-                form.unit_weight.data = bom.unit_weight
-        else:
-            form.unit_weight.data = bom.unit_weight
+        form.unit_weight.data = bom.unit_weight
         form.unit_weight_uom.data = bom.unit_weight_uom
         form.estimated_scrap_percent.data = bom.estimated_scrap_percent
         form.scrap_quantity.data = bom.scrap_quantity
@@ -1268,13 +1261,7 @@ def edit_bom(id):
         bom.status = form.status.data
         bom.is_active = True if (form.status.data == 'active' or not form.status.data) else False
         bom.output_quantity = form.output_quantity.data or 1.0
-        # Auto-set unit weight from product if not provided
-        if form.unit_weight.data and form.unit_weight.data > 0:
-            bom.unit_weight = form.unit_weight.data
-        elif bom.product and bom.product.unit_weight:
-            bom.unit_weight = bom.product.unit_weight
-        else:
-            bom.unit_weight = 0.0
+        bom.unit_weight = form.unit_weight.data or 0.0
         bom.unit_weight_uom = form.unit_weight_uom.data or 'kg'
         bom.estimated_scrap_percent = form.estimated_scrap_percent.data or 0.0
         bom.scrap_weight = form.scrap_weight.data or 0.0
@@ -1843,12 +1830,6 @@ def add_multi_bom_process(bom_id):
                 edit_process.labor_rate_per_hour = float(form_data.get('processes[0][labor_rate_per_hour]') or 0)
                 edit_process.quality_check_required = form_data.get('processes[0][quality_check_required]') == 'true'
                 
-                # Scrap tracking fields
-                edit_process.enable_scrap_tracking = form_data.get('processes[0][enable_scrap_tracking]') == 'true'
-                edit_process.enable_scrap_weight_tracking = form_data.get('processes[0][enable_scrap_weight_tracking]') == 'true'
-                edit_process.estimated_scrap_percent = float(form_data.get('processes[0][estimated_scrap_percent]') or 0) if edit_process.enable_scrap_tracking else 0
-                edit_process.scrap_weight = float(form_data.get('processes[0][scrap_weight]') or 0) if edit_process.enable_scrap_weight_tracking else 0
-                
                 # Update transformation fields
                 edit_process.input_product_id = int(form_data.get('processes[0][input_product_id]') or 0) or None
                 edit_process.output_product_id = int(form_data.get('processes[0][output_product_id]') or 0) or None
@@ -1896,11 +1877,6 @@ def add_multi_bom_process(bom_id):
                         'cost_unit': form_data.get(f'processes[{index}][cost_unit]', 'per_unit'),
                         'labor_rate_per_hour': float(form_data.get(f'processes[{index}][labor_rate_per_hour]') or 0),
                         'quality_check_required': form_data.get(f'processes[{index}][quality_check_required]') == 'true',
-                        # Scrap tracking fields
-                        'enable_scrap_tracking': form_data.get(f'processes[{index}][enable_scrap_tracking]') == 'true',
-                        'enable_scrap_weight_tracking': form_data.get(f'processes[{index}][enable_scrap_weight_tracking]') == 'true',
-                        'estimated_scrap_percent': float(form_data.get(f'processes[{index}][estimated_scrap_percent]') or 0),
-                        'scrap_weight': float(form_data.get(f'processes[{index}][scrap_weight]') or 0),
                         # Transformation fields
                         'input_product_id': int(form_data.get(f'processes[{index}][input_product_id]') or 0) or None,
                         'output_product_id': int(form_data.get(f'processes[{index}][output_product_id]') or 0) or None,
@@ -1930,11 +1906,6 @@ def add_multi_bom_process(bom_id):
                         cost_unit=process_data['cost_unit'],
                         labor_rate_per_hour=process_data['labor_rate_per_hour'], 
                         quality_check_required=process_data['quality_check_required'],
-                        # Scrap tracking fields
-                        enable_scrap_tracking=process_data['enable_scrap_tracking'],
-                        enable_scrap_weight_tracking=process_data['enable_scrap_weight_tracking'],
-                        estimated_scrap_percent=process_data['estimated_scrap_percent'] if process_data['enable_scrap_tracking'] else 0,
-                        scrap_weight=process_data['scrap_weight'] if process_data['enable_scrap_weight_tracking'] else 0,
                         # Transformation fields
                         input_product_id=process_data['input_product_id'],
                         output_product_id=process_data['output_product_id'],
@@ -1963,25 +1934,6 @@ def add_multi_bom_process(bom_id):
     # Get available items for transformation dropdowns
     available_items = Item.query.order_by(Item.name).all()
     
-    # Get BOM raw materials for scrap calculation helper
-    raw_materials = []
-    if bom.items:
-        for bom_item in bom.items:
-            # Fetch unit weight from inventory (material's actual unit weight)
-            material = bom_item.material
-            if material and material.unit_weight:
-                # Calculate total weight used for this material in the BOM
-                total_material_weight = material.unit_weight * bom_item.qty_required
-                raw_materials.append({
-                    'name': material.name,
-                    'code': material.code,
-                    'weight_per_unit': material.unit_weight,  # From inventory
-                    'quantity_used': bom_item.qty_required,   # Quantity used in BOM
-                    'unit': bom_item.unit,
-                    'total_weight': total_material_weight,
-                    'bom_item_id': bom_item.id
-                })
-    
     # Determine the title based on whether we're editing or adding
     if edit_process:
         title = f'Edit Process: {edit_process.process_name} - {bom.bom_code}'
@@ -1992,7 +1944,6 @@ def add_multi_bom_process(bom_id):
                          bom=bom,
                          form=form,
                          available_items=available_items,
-                         raw_materials=raw_materials,
                          edit_process=edit_process,
                          title=title)
 
