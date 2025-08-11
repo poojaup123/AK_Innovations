@@ -146,38 +146,54 @@
 
     <!-- Job Cards Table -->
     {% if hierarchical_job_cards %}
-        <div class="card">
-            <div class="card-body p-0">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Job Cards Management - Parent-Child Structure</h6>
+                <div class="dropdown no-arrow">
+                    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right shadow">
+                        <a class="dropdown-item" href="{{ url_for('production.list_productions') }}">View All Productions</a>
+                        <a class="dropdown-item" href="#">Export Report</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover job-cards-table compact-table mb-0">
-                        <thead>
+                    <table class="table table-hover" id="jobCardsTable">
+                        <thead class="table-dark">
                             <tr>
-                                <th style="width: 18%;">Job Card Number</th>
-                                <th style="width: 15%;">Production Order</th>
-                                <th style="width: 13%;">Item/Process</th>
-                                <th style="width: 10%;">Status</th>
-                                <th style="width: 12%;">Progress</th>
-                                <th style="width: 10%;">Quantities</th>
-                                <th style="width: 10%;">Assignment</th>
-                                <th style="width: 8%;">Target Date</th>
-                                <th style="width: 4%;">Actions</th>
+                                <th><i class="fas fa-expand-arrows-alt me-1"></i></th>
+                                <th>Job Card Number</th>
+                                <th>Production Order</th>
+                                <th>Item/Process</th>
+                                <th>Status</th>
+                                <th>Progress</th>
+                                <th>Quantities</th>
+                                <th>Assignment</th>
+                                <th>Target Date</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for hierarchy in hierarchical_job_cards %}
                                 <!-- Parent Row -->
-                                <tr class="parent-row" data-parent-id="{{ hierarchy.parent.id }}" onclick="toggleChildren({{ hierarchy.parent.id }})">
+                                <tr class="parent-row" style="cursor: pointer;" data-parent-id="{{ hierarchy.parent.id }}">
                                     <td>
-                                        <i class="fas fa-chevron-right toggle-icon me-2" id="toggle-{{ hierarchy.parent.id }}"></i>
-                                        <strong>{{ hierarchy.parent.job_card_number }}</strong>
+                                        <i class="fas fa-chevron-right expand-icon" style="transition: transform 0.3s;" id="toggle-{{ hierarchy.parent.id }}"></i>
+                                    </td>
+                                    <td>
+                                        <strong class="text-primary">{{ hierarchy.parent.job_card_number }}</strong>
+                                        <br>
                                         {% if hierarchy.metrics.child_count > 0 %}
-                                            <span class="badge bg-info metrics-badge ms-2">{{ hierarchy.metrics.child_count }} children</span>
+                                            <small class="text-muted">{{ hierarchy.metrics.child_count }} children</small>
                                         {% endif %}
                                         {% if hierarchy.metrics.outsourced_count > 0 %}
-                                            <span class="badge bg-warning metrics-badge">{{ hierarchy.metrics.outsourced_count }} outsourced</span>
+                                            <br><span class="badge bg-warning text-white">{{ hierarchy.metrics.outsourced_count }} outsourced</span>
                                         {% endif %}
                                         {% if hierarchy.metrics.pending_grn_count > 0 %}
-                                            <span class="badge bg-danger metrics-badge">{{ hierarchy.metrics.pending_grn_count }} pending GRN</span>
+                                            <span class="badge bg-danger text-white">{{ hierarchy.metrics.pending_grn_count }} pending GRN</span>
                                         {% endif %}
                                     </td>
                                     <td>
@@ -199,9 +215,15 @@
                                         <small class="text-muted">{{ hierarchy.parent.process_name or 'General Production' }}</small>
                                     </td>
                                     <td>
-                                        <span class="badge status-badge bg-{{ 'success' if hierarchy.parent.status == 'completed' else 'warning' if hierarchy.parent.status == 'in_progress' else 'primary' }}">
-                                            {{ hierarchy.parent.status.replace('_', ' ').title() }}
-                                        </span>
+                                        {% if hierarchy.parent.status == 'completed' %}
+                                        <span class="badge bg-success text-white">{{ hierarchy.parent.status.replace('_', ' ').title() }}</span>
+                                        {% elif hierarchy.parent.status == 'in_progress' %}
+                                        <span class="badge bg-warning text-white">{{ hierarchy.parent.status.replace('_', ' ').title() }}</span>
+                                        {% elif hierarchy.parent.status == 'outsourced' %}
+                                        <span class="badge bg-info text-white">{{ hierarchy.parent.status.replace('_', ' ').title() }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary text-white">{{ hierarchy.parent.status.replace('_', ' ').title() }}</span>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
@@ -249,14 +271,18 @@
 
                                 <!-- Child Rows (Initially Hidden) -->
                                 {% for child in hierarchy.children %}
-                                <tr class="child-row" data-parent="{{ hierarchy.parent.id }}" style="display: none;">
-                                    <td>
-                                        {{ child.job_card_number }}
+                                <tr class="child-row" data-parent-id="{{ hierarchy.parent.id }}" style="display: none; background-color: #f8f9fc;">
+                                    <td></td>
+                                    <td style="padding-left: 30px;">
+                                        <strong>{{ child.job_card_number }}</strong>
+                                        <br>
                                         {% if '-OUT-' in child.job_card_number %}
-                                            <span class="badge bg-warning metrics-badge ms-2">Outsourced</span>
+                                            <small class="text-muted">Outsourced Process</small>
+                                        {% else %}
+                                            <small class="text-muted">In-House Process</small>
                                         {% endif %}
                                         {% if '-OUT-' in child.job_card_number and not child.grn_id %}
-                                            <span class="badge bg-danger metrics-badge">Pending GRN</span>
+                                            <br><span class="badge bg-danger text-white">Pending GRN</span>
                                         {% endif %}
                                     </td>
                                     <td>
@@ -275,9 +301,15 @@
                                         <small class="text-muted">{{ child.process_name or 'Sub-Process' }}</small>
                                     </td>
                                     <td>
-                                        <span class="badge status-badge bg-{{ 'success' if child.status == 'completed' else 'warning' if child.status == 'in_progress' else 'info' if child.status == 'outsourced' else 'primary' }}">
-                                            {{ child.status.replace('_', ' ').title() }}
-                                        </span>
+                                        {% if child.status == 'completed' %}
+                                        <span class="badge bg-success text-white">{{ child.status.replace('_', ' ').title() }}</span>
+                                        {% elif child.status == 'in_progress' %}
+                                        <span class="badge bg-warning text-white">{{ child.status.replace('_', ' ').title() }}</span>
+                                        {% elif child.status == 'outsourced' %}
+                                        <span class="badge bg-info text-white">{{ child.status.replace('_', ' ').title() }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary text-white">{{ child.status.replace('_', ' ').title() }}</span>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
@@ -340,7 +372,7 @@
             </div>
         </div>
     {% else %}
-        <div class="card">
+        <div class="card shadow">
             <div class="card-body text-center py-5">
                 <i class="fas fa-tasks fa-4x text-muted mb-3"></i>
                 <h4>No Job Cards Found</h4>
@@ -356,22 +388,19 @@
 <script>
 function toggleChildren(parentId) {
     const toggleIcon = document.getElementById('toggle-' + parentId);
-    const parentRow = document.querySelector(`[data-parent-id="${parentId}"]`);
-    const childRows = document.querySelectorAll(`[data-parent="${parentId}"]`);
+    const childRows = document.querySelectorAll(`[data-parent-id="${parentId}"].child-row`);
     
-    const isExpanded = toggleIcon.classList.contains('expanded');
+    const isExpanded = toggleIcon.style.transform === 'rotate(90deg)';
     
     if (isExpanded) {
         // Collapse
-        toggleIcon.classList.remove('expanded');
-        parentRow.classList.remove('expanded');
+        toggleIcon.style.transform = 'rotate(0deg)';
         childRows.forEach(row => {
             row.style.display = 'none';
         });
     } else {
-        // Expand
-        toggleIcon.classList.add('expanded');
-        parentRow.classList.add('expanded');
+        // Expand  
+        toggleIcon.style.transform = 'rotate(90deg)';
         childRows.forEach(row => {
             row.style.display = 'table-row';
         });
