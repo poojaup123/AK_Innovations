@@ -565,10 +565,35 @@ function updateTotalQuantities() {
     
     // Check if we have any process quantities
     if (completedQuantities.length > 0) {
-        // For now, use the last completed process (final step determines total output)
-        // TODO: Integrate with GRN system to get actual received quantities for outsourced processes
-        totalCompleted = Math.max(...completedQuantities); // Use the highest as it represents final output
-        totalGood = goodQuantities.length > 0 ? Math.max(...goodQuantities) : 0;
+        // Find the final process output considering both in-house and outsourced
+        // For outsourced processes, include GRN received quantities
+        let finalProcessQuantities = [];
+        
+        {% if bom_processes %}
+        {% for process in bom_processes %}
+        const process{{ process.id }}Checkbox = document.getElementById('process_{{ process.id }}');
+        if (process{{ process.id }}Checkbox && process{{ process.id }}Checkbox.checked) {
+            {% if grn_data.get(process.id) and grn_data[process.id].is_outsourced %}
+            // For outsourced processes, consider GRN received quantity
+            const grnReceived = {{ grn_data[process.id].total_received }};
+            if (grnReceived > 0) {
+                finalProcessQuantities.push(grnReceived);
+            }
+            {% else %}
+            // For in-house processes, use entered quantity
+            const qtyCompleted = parseFloat(document.getElementById('qty_process_{{ process.id }}').value) || 0;
+            if (qtyCompleted > 0) {
+                finalProcessQuantities.push(qtyCompleted);
+            }
+            {% endif %}
+        }
+        {% endfor %}
+        {% endif %}
+        
+        // Total completed = minimum of all processes (bottleneck principle)
+        // This ensures we don't overstate production when some processes are incomplete
+        totalCompleted = finalProcessQuantities.length > 0 ? Math.min(...finalProcessQuantities) : 0;
+        totalGood = goodQuantities.length > 0 ? Math.min(...goodQuantities) : 0;
     }
     
     // Update the main form fields

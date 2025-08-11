@@ -461,7 +461,8 @@ def update_daily_status(job_card_id):
     grn_data = {}  # Store GRN data for outsourced processes
     
     if job_card.item_id:
-        from models import BOMProcess, BOM, GRN, GRNItem
+        from models import BOMProcess, BOM
+        from models.grn import GRN, GRNLineItem
         try:
             # Find the BOM that has this component as its product
             component_bom = BOM.query.filter_by(product_id=job_card.item_id, is_active=True).first()
@@ -476,22 +477,38 @@ def update_daily_status(job_card_id):
                 for bp in bom_processes:
                     print(f"  Process {bp.step_number}: {bp.process_name}")
                     if bp.is_outsourced and bp.vendor_id:
-                        # Look for GRN entries for this job card and process
-                        grn_items = GRNItem.query.join(GRN).filter(
-                            GRN.supplier_id == bp.vendor_id,
-                            GRNItem.item_id == job_card.item_id,
-                            GRN.reference_number.like(f'%{job_card.job_card_number}%')
+                        print(f"    Process is outsourced to vendor ID: {bp.vendor_id}")
+                        
+                        # Look for GRN entries that reference this job card number
+                        # GRN line items should contain the job card's item with reference to this job card
+                        grn_line_items = db.session.query(GRNLineItem).join(GRN).filter(
+                            GRNLineItem.item_id == job_card.item_id,
+                            db.or_(
+                                GRN.remarks.like(f'%{job_card.job_card_number}%'),
+                                GRN.delivery_note.like(f'%{job_card.job_card_number}%')
+                            ),
+                            GRN.status.in_(['received', 'inspected', 'completed'])
                         ).all()
                         
-                        total_received = sum(item.quantity_received for item in grn_items)
+                        total_received = sum(item.quantity_received for item in grn_line_items)
                         if total_received > 0:
                             grn_data[bp.id] = {
                                 'process_name': bp.process_name,
                                 'vendor_name': bp.vendor.name if bp.vendor else 'Unknown',
                                 'total_received': total_received,
-                                'grn_count': len(grn_items)
+                                'grn_count': len(grn_line_items),
+                                'is_outsourced': True
                             }
-                            print(f"    Found {total_received} pieces received via {len(grn_items)} GRN(s) for outsourced {bp.process_name}")
+                            print(f"    Found {total_received} pieces received via {len(grn_line_items)} GRN line item(s) for outsourced {bp.process_name}")
+                        else:
+                            # Mark as outsourced but no GRN received yet
+                            grn_data[bp.id] = {
+                                'process_name': bp.process_name,
+                                'vendor_name': bp.vendor.name if bp.vendor else 'Unknown',
+                                'total_received': 0,
+                                'grn_count': 0,
+                                'is_outsourced': True
+                            }
             else:
                 print(f"DEBUG: No component-specific BOM found for item {job_card.item_id}")
         except Exception as e:
