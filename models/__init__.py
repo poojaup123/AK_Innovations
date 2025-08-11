@@ -2151,8 +2151,8 @@ class BOM(db.Model):
                     else:
                         material_cost = base_cost
                 else:
-                    # Use the unit cost from inventory
-                    material_cost = item.unit_price or 0
+                    # Use the unit cost from inventory through the material relationship
+                    material_cost = material.unit_price or 0
                 
                 # Calculate total cost for this item including scrap adjustment
                 required_qty = item.qty_required or item.quantity_required or 0
