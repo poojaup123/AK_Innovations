@@ -808,15 +808,30 @@ document.addEventListener('DOMContentLoaded', function() {
 // Global modal cleanup to prevent black overlay issues
 document.addEventListener('DOMContentLoaded', function() {
     // Clean up any stuck modal backdrops on page load
-    const backdrops = document.querySelectorAll('.modal-backdrop');
-    backdrops.forEach(backdrop => backdrop.remove());
-    document.body.classList.remove('modal-open');
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
+    forceCleanupModals();
+    
+    // Set up click listener for backdrop clicks
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal-backdrop')) {
+            e.preventDefault();
+            e.stopPropagation();
+            forceCleanupModals();
+        }
+    });
+    
+    // Cleanup on escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            forceCleanupModals();
+        }
+    });
 });
 
 // Function to outsource a process
 function outsourceProcess(processName, stepNumber) {
+    // Clean up any existing modals first
+    forceCleanupModals();
+    
     document.getElementById('processName').value = processName;
     document.getElementById('processDisplay').value = processName;
     document.getElementById('stepNumber').value = stepNumber;
@@ -829,8 +844,17 @@ function outsourceProcess(processName, stepNumber) {
     // Load vendors dynamically
     loadVendors();
     
-    // Show modal
-    new bootstrap.Modal(document.getElementById('outsourcingModal')).show();
+    // Show modal with proper cleanup setup
+    const modalElement = document.getElementById('outsourcingModal');
+    const modal = new bootstrap.Modal(modalElement, {
+        backdrop: 'static',
+        keyboard: false
+    });
+    
+    // Set up proper cleanup listeners
+    modalElement.addEventListener('hidden.bs.modal', forceCleanupModals, { once: true });
+    
+    modal.show();
 }
 
 // Function to start a process in-house
@@ -865,19 +889,39 @@ function submitOutsourcing() {
 
 // Function to properly close modal and clean up backdrop
 function closeModal() {
-    const modal = bootstrap.Modal.getInstance(document.getElementById('outsourcingModal'));
+    const modalElement = document.getElementById('outsourcingModal');
+    const modal = bootstrap.Modal.getInstance(modalElement);
     if (modal) {
         modal.hide();
     }
     
-    // Force remove any stuck backdrops
-    setTimeout(() => {
-        const backdrops = document.querySelectorAll('.modal-backdrop');
-        backdrops.forEach(backdrop => backdrop.remove());
-        document.body.classList.remove('modal-open');
-        document.body.style.overflow = '';
-        document.body.style.paddingRight = '';
-    }, 300);
+    // Immediate cleanup
+    forceCleanupModals();
+}
+
+// Aggressive modal cleanup function
+function forceCleanupModals() {
+    // Remove all modal backdrops
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => {
+        backdrop.remove();
+    });
+    
+    // Reset body classes and styles
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    
+    // Hide all modals
+    const allModals = document.querySelectorAll('.modal');
+    allModals.forEach(modal => {
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+        modal.removeAttribute('aria-modal');
+    });
+    
+    console.log('Forced modal cleanup completed');
 }
 </script>
 
