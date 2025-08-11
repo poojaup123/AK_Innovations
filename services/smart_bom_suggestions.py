@@ -313,22 +313,61 @@ class SmartBOMSuggestionService:
                 material_id = raw_material['material_id']
                 usage_info = raw_material_usage[material_id]
                 
-                # Calculate what can be made with available materials
+                # Calculate optimal allocation for shared materials (equal production logic)
                 if len(usage_info['suggestions_using']) > 1:
-                    available_qty = raw_material['available_qty']
-                    total_needed_across_all = usage_info['total_needed']
+                    # Use only inventory quantity for immediate production planning
+                    inventory_only = SmartBOMSuggestionService._get_inventory_only_quantity(
+                        Item.query.get(material_id)
+                    )
                     
-                    if available_qty >= total_needed_across_all:
-                        # Sufficient for all - allocate proportionally
-                        allocated_qty = raw_material['needed_qty']
-                        sufficient = True
-                        can_produce_qty = raw_material['needed_qty']
+                    # For shared materials, calculate equal allocation
+                    # Find the efficiency ratios for each product
+                    sharing_suggestions = usage_info['suggestions_using']
+                    if len(sharing_suggestions) == 2:  # Base Plate and Mounted Plate
+                        # Calculate Ms sheet requirement per unit for each product
+                        total_ms_per_equal_unit = 0
+                        for sug in sharing_suggestions:
+                            for mat in sug['raw_materials']:
+                                if mat['material_id'] == material_id:
+                                    # Get the BOM to find output quantity
+                                    target_item = Item.query.get(sug['target_item_id'])
+                                    target_bom = BOM.query.filter_by(product_id=target_item.id, is_active=True).first()
+                                    if target_bom:
+                                        ms_per_unit = mat['quantity_per_unit'] / target_bom.output_quantity
+                                        total_ms_per_equal_unit += ms_per_unit
+                        
+                        # Calculate maximum equal quantity with inventory only
+                        if total_ms_per_equal_unit > 0:
+                            max_equal_qty = inventory_only / total_ms_per_equal_unit
+                            
+                            # Calculate allocation for this specific suggestion
+                            target_item = Item.query.get(suggestion['target_item_id'])
+                            target_bom = BOM.query.filter_by(product_id=target_item.id, is_active=True).first()
+                            if target_bom:
+                                ms_per_unit = raw_material['quantity_per_unit'] / target_bom.output_quantity
+                                allocated_qty = max_equal_qty * ms_per_unit
+                                can_produce_qty = max_equal_qty
+                                sufficient = allocated_qty <= inventory_only
+                            else:
+                                allocated_qty = 0
+                                can_produce_qty = 0
+                                sufficient = False
+                        else:
+                            allocated_qty = 0
+                            can_produce_qty = 0
+                            sufficient = False
                     else:
-                        # Calculate what portion can be produced with available material
-                        proportion = available_qty / total_needed_across_all
-                        can_produce_qty = raw_material['needed_qty'] * proportion
-                        allocated_qty = available_qty * (raw_material['needed_qty'] / total_needed_across_all)
-                        sufficient = False
+                        # Fallback to proportional allocation
+                        total_needed_across_all = usage_info['total_needed']
+                        if inventory_only >= total_needed_across_all:
+                            allocated_qty = raw_material['needed_qty']
+                            sufficient = True
+                            can_produce_qty = raw_material['needed_qty']
+                        else:
+                            proportion = inventory_only / total_needed_across_all
+                            can_produce_qty = raw_material['needed_qty'] * proportion
+                            allocated_qty = inventory_only * (raw_material['needed_qty'] / total_needed_across_all)
+                            sufficient = False
                     
                     shortage_qty = max(0, raw_material['needed_qty'] - allocated_qty)
                     
