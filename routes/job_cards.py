@@ -273,88 +273,78 @@ def create_sub_bom_job_cards(production_id):
             if sub_bom:
                 print(f"Creating job cards for sub-BOM: {sub_bom.bom_code} ({bom_item.item.name})")
                 
-                # Check if sub-BOM has defined processes
+                # Create single consolidated job card for all processes in sub-BOM
+                planned_qty = production.quantity_planned * bom_item.quantity_required
+                job_card_number = JobCard.generate_job_card_number(
+                    f"{production.production_number}-{bom_item.item.code}", 
+                    1
+                )
+                
+                # Build comprehensive process description with all sub-BOM processes
                 if hasattr(sub_bom, 'processes') and sub_bom.processes:
-                    # Create job cards for each process in the sub-BOM
-                    for process_seq, bom_process in enumerate(sub_bom.processes, 1):
-                        # Calculate quantities: production qty × master BOM requirement
-                        planned_qty = production.quantity_planned * bom_item.quantity_required
-                        
-                        # Generate unique job card number
-                        job_card_number = JobCard.generate_job_card_number(
-                            f"{production.production_number}-{bom_item.item.code}", 
-                            process_seq
-                        )
-                        
-                        # Calculate target date based on sequence
-                        target_date = current_date + timedelta(days=master_sequence + process_seq)
-                        
-                        job_card = JobCard(
-                            job_card_number=job_card_number,
-                            production_id=production_id,
-                            item_id=bom_item.item_id,  # The component being manufactured
-                            bom_id=sub_bom.id,  # Reference to the sub-BOM
-                            process_name=bom_process.process_name,
-                            process_sequence=process_seq,
-                            operation_description=f"{bom_process.process_name} process for {bom_item.item.name} (Sub-BOM: {sub_bom.bom_code})",
-                            planned_quantity=planned_qty,
-                            setup_time_minutes=bom_process.setup_time_minutes or 30,
-                            run_time_minutes=bom_process.run_time_minutes or 60,
-                            target_completion_date=target_date,
-                            priority='medium',
-                            estimated_cost=planned_qty * (bom_item.unit_cost or 0),
-                            production_notes=f"Manufacturing {bom_item.item.name} using sub-BOM {sub_bom.bom_code}",
-                            created_by_id=current_user.id
-                        )
-                        
-                        db.session.add(job_card)
-                        created_cards.append({
-                            'job_card_number': job_card_number,
-                            'component': bom_item.item.name,
-                            'process': bom_process.process_name,
-                            'quantity': planned_qty
-                        })
+                    # Create detailed process sequence description
+                    process_names = [proc.process_name for proc in sub_bom.processes]
+                    process_sequence = " → ".join(process_names)
+                    
+                    # Calculate total time from all processes
+                    total_setup_time = sum(proc.setup_time_minutes or 0 for proc in sub_bom.processes)
+                    total_run_time = sum(proc.run_time_minutes or 0 for proc in sub_bom.processes)
+                    
+                    # Build detailed operation description
+                    operation_details = f"Complete manufacturing of {bom_item.item.name} through all processes:\n"
+                    for i, proc in enumerate(sub_bom.processes, 1):
+                        operation_details += f"Step {i}: {proc.process_name}"
+                        if proc.operation_description:
+                            operation_details += f" - {proc.operation_description}"
+                        operation_details += "\n"
+                    operation_details += f"Sub-BOM Reference: {sub_bom.bom_code}"
+                    
+                    process_name_display = f"Multi-Process: {process_sequence}"
                 else:
-                    # Sub-BOM has no processes - create single manufacturing job card
-                    planned_qty = production.quantity_planned * bom_item.quantity_required
-                    job_card_number = JobCard.generate_job_card_number(
-                        f"{production.production_number}-{bom_item.item.code}", 
-                        1
-                    )
-                    
-                    # Generate intelligent process name
-                    process_name = _generate_process_name_for_component(bom_item)
-                    
-                    job_card = JobCard(
-                        job_card_number=job_card_number,
-                        production_id=production_id,
-                        item_id=bom_item.item_id,
-                        bom_id=sub_bom.id,
-                        process_name=process_name,
-                        process_sequence=1,
-                        operation_description=f"Complete manufacturing of {bom_item.item.name} as per sub-BOM {sub_bom.bom_code}",
-                        planned_quantity=planned_qty,
-                        target_completion_date=current_date + timedelta(days=master_sequence),
-                        priority='medium',
-                        estimated_cost=planned_qty * (bom_item.unit_cost or 0),
-                        created_by_id=current_user.id
-                    )
-                    
-                    db.session.add(job_card)
-                    created_cards.append({
-                        'job_card_number': job_card_number,
-                        'component': bom_item.item.name,
-                        'process': process_name,
-                        'quantity': planned_qty
-                    })
+                    # Fallback for sub-BOM without defined processes
+                    process_name_display = _generate_process_name_for_component(bom_item)
+                    total_setup_time = 30
+                    total_run_time = 60
+                    operation_details = f"Complete manufacturing of {bom_item.item.name} as per sub-BOM {sub_bom.bom_code}"
+                
+                # Calculate target date
+                target_date = current_date + timedelta(days=master_sequence)
+                
+                job_card = JobCard(
+                    job_card_number=job_card_number,
+                    production_id=production_id,
+                    item_id=bom_item.item_id,  # The component being manufactured
+                    bom_id=sub_bom.id,  # Reference to the sub-BOM
+                    process_name=process_name_display,
+                    process_sequence=master_sequence,
+                    operation_description=operation_details,
+                    planned_quantity=planned_qty,
+                    setup_time_minutes=total_setup_time,
+                    run_time_minutes=total_run_time,
+                    target_completion_date=target_date,
+                    priority='medium',
+                    estimated_cost=planned_qty * (bom_item.unit_cost or 0),
+                    production_notes=f"Consolidated job card for all {len(sub_bom.processes) if hasattr(sub_bom, 'processes') else 1} processes in {bom_item.item.name} manufacturing",
+                    created_by_id=current_user.id
+                )
+                
+                db.session.add(job_card)
+                created_cards.append({
+                    'job_card_number': job_card_number,
+                    'component': bom_item.item.name,
+                    'process': process_name_display,
+                    'quantity': planned_qty,
+                    'total_processes': len(sub_bom.processes) if hasattr(sub_bom, 'processes') and sub_bom.processes else 1
+                })
         
         if created_cards:
             db.session.commit()
             
             # Create summary message
-            summary = "Sub-BOM job cards created:\n"
+            summary = "Consolidated sub-BOM job cards created:\n"
             for card in created_cards:
-                summary += f"• {card['job_card_number']}: {card['component']} - {card['process']} ({card['quantity']} units)\n"
+                processes_info = f" ({card['total_processes']} processes)" if card.get('total_processes', 1) > 1 else ""
+                summary += f"• {card['job_card_number']}: {card['component']} - {card['process']}{processes_info} ({card['quantity']} units)\n"
             
             flash(f'Successfully created {len(created_cards)} job cards for sub-BOMs', 'success')
             return redirect(url_for('job_cards.list_job_cards'))

@@ -237,7 +237,7 @@
                     {% if bom_items %}
                     <a href="{{ url_for('job_cards.create_sub_bom_job_cards', production_id=production.id) }}" 
                        class="btn btn-warning me-2" 
-                       onclick="return confirm('Create job cards for all sub-BOMs in this production? This will create individual process job cards for Base Plate and Mounted Plate manufacturing.');">
+                       onclick="return confirm('Create consolidated job cards for all sub-BOMs? This will create 2 comprehensive job cards: Base Plate (Cutting→Bending→Zinc) and Mounted Plate (Cutting→Bending→Zinc), allowing you to track all processes from single forms.');">
                         <i class="fas fa-tasks"></i> Create Sub-BOM Job Cards
                     </a>
                     {% endif %}
