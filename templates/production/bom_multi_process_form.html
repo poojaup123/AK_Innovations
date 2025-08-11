@@ -210,9 +210,9 @@
                                                                 <div class="col-md-4">
                                                                     <label class="form-label">Output Unit Weight (kg)</label>
                                                                     <input type="number" step="0.001" class="form-control output-unit-weight" 
-                                                                           placeholder="e.g., {{ bom.product.weight_per_unit if bom.product and bom.product.weight_per_unit else '0.042' }}" data-process-index="0"
+                                                                           placeholder="e.g., {{ bom.product.unit_weight if bom.product and bom.product.unit_weight else '0.042' }}" data-process-index="0"
                                                                            onchange="updateScrapCalculations(0)"
-                                                                           {% if bom.product and bom.product.weight_per_unit %}value="{{ bom.product.weight_per_unit }}"{% endif %}>
+                                                                           {% if bom.product and bom.product.unit_weight %}value="{{ bom.product.unit_weight }}"{% endif %}>
                                                                     <small class="text-muted">Weight of 1 {{ bom.product.name if bom.product else 'finished product' }}</small>
                                                                 </div>
                                                             </div>
@@ -475,8 +475,8 @@ function loadBomMaterialData(processIndex, materialIndex) {
         // Auto-populate fields
         if (inputWeight) inputWeight.value = weight;
         if (unitsMade) unitsMade.value = {{ bom.output_quantity or 'quantity' }};
-        if (outputWeight && {{ bom.product.weight_per_unit if bom.product and bom.product.weight_per_unit else 'false' }}) {
-            outputWeight.value = {{ bom.product.weight_per_unit if bom.product and bom.product.weight_per_unit else '""' }};
+        if (outputWeight && {{ bom.product.unit_weight if bom.product and bom.product.unit_weight else 'false' }}) {
+            outputWeight.value = {{ bom.product.unit_weight if bom.product and bom.product.unit_weight else '""' }};
         }
         
         // Trigger calculation update
