@@ -243,8 +243,8 @@
                                 {% for process in processes %}
                                 <tr>
                                     <td>
-                                        <a href="{{ url_for('jobwork.detail', id=process.job_work.id) }}" class="text-decoration-none">
-                                            {{ process.job_work.job_number }}
+                                        <a href="{{ url_for('job_cards.view_job_card', id=process.id) }}" class="text-decoration-none">
+                                            {{ process.job_card_number }}
                                         </a>
                                     </td>
                                     <td>
@@ -263,7 +263,7 @@
                                         </span>
                                     </td>
                                     <td>
-                                        {% set progress = ((process.output_quantity or 0) / (process.job_work.quantity or 1) * 100) %}
+                                        {% set progress = ((process.quantity_completed or 0) / (process.quantity_planned or 1) * 100) %}
                                         <div class="progress" style="height: 20px;">
                                             <div class="progress-bar" role="progressbar" style="width: {{ progress }}%">
                                                 {{ progress|round(1) }}%
@@ -271,19 +271,19 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-{{ 'success' if process.job_work.work_type == 'in_house' else 'warning' }}">
-                                            {{ process.job_work.work_type|replace('_', ' ')|title }}
+                                        <span class="badge bg-{{ 'warning' if '-OUT-' in process.job_card_number else 'success' }}">
+                                            {{ 'Outsourced' if '-OUT-' in process.job_card_number else 'In-House' }}
                                         </span>
                                     </td>
                                     <td>
-                                        {% if process.job_work.work_type == 'outsourced' %}
-                                            {{ process.job_work.supplier.name if process.job_work.supplier else 'Not Assigned' }}
+                                        {% if '-OUT-' in process.job_card_number %}
+                                            {{ process.assigned_vendor.name if process.assigned_vendor else 'Not Assigned' }}
                                         {% else %}
-                                            {{ process.job_work.department.name if process.job_work.department else 'Internal' }}
+                                            {{ process.production.item.name if process.production else 'Internal' }}
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% set time_diff = (moment().utc() - process.updated_at).total_seconds() / 3600 %}
+                                        {% set time_diff = (moment().utc() - process.created_at).total_seconds() / 3600 %}
                                         <small class="text-muted">
                                             {% if time_diff < 1 %}
                                                 {{ (time_diff * 60)|round }}m
@@ -295,20 +295,20 @@
                                         </small>
                                     </td>
                                     <td>
-                                        {% if process.expected_completion_date %}
-                                            <small class="text-muted">{{ process.expected_completion_date.strftime('%d/%m') }}</small>
+                                        {% if process.target_completion_date %}
+                                            <small class="text-muted">{{ process.target_completion_date.strftime('%d/%m') }}</small>
                                         {% else %}
                                             <small class="text-muted">Not Set</small>
                                         {% endif %}
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('jobwork.detail', id=process.job_work.id) }}" 
+                                            <a href="{{ url_for('job_cards.view_job_card', id=process.id) }}" 
                                                class="btn btn-outline-primary btn-sm">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             <button class="btn btn-outline-success btn-sm" 
-                                                    onclick="updateProcessStatus({{ process.id }}, 'completed')">
+                                                    onclick="updateJobCardStatus({{ process.id }}, 'completed')">
                                                 <i class="fas fa-check"></i>
                                             </button>
                                         </div>

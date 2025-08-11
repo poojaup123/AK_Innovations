@@ -34,19 +34,21 @@ def process_dashboard():
     # Use active job cards instead of processes for the template
     processes = active_job_cards
     
-    # Get advanced intelligence analytics
+    # Get advanced intelligence analytics with better error handling
     try:
         intelligence = ManufacturingIntelligence()
         bottleneck_analysis = intelligence.analyze_process_bottlenecks()
         material_flow = intelligence.get_real_time_material_flow()
         
-        # Get active alerts
+        # Get active alerts with safer import
+        active_alerts = []
         try:
             active_alerts = ManufacturingAlert.query.filter_by(status='active').order_by(
                 ManufacturingAlert.severity.desc(),
                 ManufacturingAlert.created_at.desc()
             ).limit(10).all()
-        except:
+        except Exception as alert_error:
+            print(f"Alert query failed: {alert_error}")
             active_alerts = []
             
         # Enhanced statistics combining both views
@@ -58,9 +60,10 @@ def process_dashboard():
         }
         
     except Exception as e:
+        print(f"Intelligence analysis failed: {e}")
         # Fallback to basic view if intelligence features fail
-        bottleneck_analysis = {}
-        material_flow = {}
+        bottleneck_analysis = {'processes': [], 'processes_with_bottlenecks': 0}
+        material_flow = {'flow_velocity': {'recent_completions': 0}}
         active_alerts = []
         enhanced_stats = basic_stats
     
