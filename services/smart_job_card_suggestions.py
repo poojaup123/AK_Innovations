@@ -70,8 +70,8 @@ class SmartJobCardSuggestions:
                     'item_name': item.item.name,
                     'item_code': item.item.code,
                     'quantity_required': item.quantity_required,
-                    'unit_cost': getattr(item.item, 'unit_cost', None) or getattr(item.item, 'cost_per_unit', None) or 0,
-                    'total_cost': (item.quantity_required * (getattr(item.item, 'unit_cost', None) or getattr(item.item, 'cost_per_unit', None) or 0)),
+                    'unit_cost': getattr(item.item, 'unit_price', None) or getattr(item.item, 'cost_per_unit', None) or 0,
+                    'total_cost': (item.quantity_required * (getattr(item.item, 'unit_price', None) or getattr(item.item, 'cost_per_unit', None) or 0)),
                     'category': getattr(item.item, 'category', None) or 'General'
                 }
                 for item in bom_items
@@ -317,7 +317,7 @@ class SmartJobCardSuggestions:
         processes = BOMProcess.query.filter_by(bom_id=bom.id).all()
         
         material_cost = sum(
-            (item.quantity_required * production_quantity * (item.item.unit_cost or 0))
+            (item.quantity_required * production_quantity * (item.item.unit_price or 0))
             for item in bom_items
         )
         
@@ -411,7 +411,7 @@ class SmartJobCardSuggestions:
             'material_requirements': [{
                 'item_name': production.produced_item.name,
                 'quantity_required': production.quantity_planned,
-                'unit_cost': getattr(production.produced_item, 'unit_cost', None) or getattr(production.produced_item, 'cost_per_unit', None) or 0
+                'unit_cost': getattr(production.produced_item, 'unit_price', None) or getattr(production.produced_item, 'cost_per_unit', None) or 0
             }]
         }
     

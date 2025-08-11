@@ -138,21 +138,33 @@ def create_job_card(production_id=None):
             form.item_id.data = target_item_id
             target_item = Item.query.get(target_item_id)
             if target_item:
-                # Get quantity from BOM for this specific item
+                # For BOM-based job cards, the target item is the PRODUCT to be manufactured
                 if bom_id:
                     bom = BOM.query.get(bom_id)
-                    if bom:
-                        bom_item = next((bi for bi in bom.items if bi.item_id == target_item_id), None)
-                        if bom_item:
-                            suggested_qty = bom_item.quantity_required * production.quantity_planned
-                            form.planned_quantity.data = suggested_qty
-                            production_item = Item.query.get(production.item_id)
-                            production_item_name = production_item.name if production_item else "Unknown Item"
-                            form.operation_description.data = f"Manufacturing {target_item.name} for {production_item_name}"
-                            
-                            # Set intelligent process name based on item type
-                            process_name = _generate_process_name_for_component(bom_item)
-                            form.process_name.data = process_name
+                    if bom and bom.product_id == target_item_id:
+                        # This is a job card to manufacture the BOM product
+                        suggested_qty = bom.output_quantity or production.quantity_planned
+                        form.planned_quantity.data = suggested_qty
+                        production_item = Item.query.get(production.item_id)
+                        production_item_name = production_item.name if production_item else "Unknown Item"
+                        form.operation_description.data = f"Manufacturing {target_item.name} for {production_item_name}"
+                        
+                        # Set process name based on the product being manufactured
+                        if 'plate' in target_item.name.lower():
+                            form.process_name.data = "Cutting & Forming"
+                        elif 'base' in target_item.name.lower():
+                            form.process_name.data = "Base Assembly"
+                        elif 'wheel' in target_item.name.lower() or 'caster' in target_item.name.lower():
+                            form.process_name.data = "Wheel Assembly"
+                        else:
+                            form.process_name.data = f"Manufacturing - {target_item.name}"
+                        
+                        # Set process sequence
+                        form.process_sequence.data = 1
+                        
+                        # Set default times
+                        form.setup_time_minutes.data = 30
+                        form.run_time_minutes.data = 60
         
         # Generate smart suggestions from production order and BOM
         from services.smart_job_card_suggestions import SmartJobCardSuggestions
