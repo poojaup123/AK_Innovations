@@ -2321,8 +2321,12 @@ class BOM(db.Model):
         if not self.processes:
             return self.estimated_scrap_percent or 0.0
         
-        # Sum up scrap percentages from all processes
-        total_process_scrap = sum(process.estimated_scrap_percent or 0 for process in self.processes)
+        # Sum up scrap percentages from all processes that have scrap tracking enabled
+        total_process_scrap = 0.0
+        for process in self.processes:
+            if hasattr(process, 'enable_scrap_tracking') and process.enable_scrap_tracking and process.estimated_scrap_percent:
+                total_process_scrap += process.estimated_scrap_percent
+        
         return total_process_scrap if total_process_scrap > 0 else (self.estimated_scrap_percent or 0.0)
     
     @property
