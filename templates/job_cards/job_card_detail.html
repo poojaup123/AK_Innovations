@@ -188,18 +188,32 @@
                                         <td>{{ step.description }}</td>
                                         <td>{{ step.estimated_time }}</td>
                                         <td>
-                                            {% if job_card.current_process_step == step.process %}
-                                                <span class="badge bg-warning">
-                                                    <i class="fas fa-play me-1"></i>Current
-                                                </span>
-                                            {% elif step.process in (job_card.processes_completed or '') %}
+                                            {% set process_completed = step.process in (job_card.processes_completed or '') %}
+                                            {% set is_current = job_card.current_process_step == step.process %}
+                                            {% set can_start = loop.index == 1 or routing_steps[loop.index0 - 1].process in (job_card.processes_completed or '') %}
+                                            
+                                            {% if process_completed %}
                                                 <span class="badge bg-success">
                                                     <i class="fas fa-check me-1"></i>Completed
                                                 </span>
+                                            {% elif is_current %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-play me-1"></i>In Progress
+                                                </span>
+                                            {% elif can_start %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-clock me-1"></i>Ready to Start
+                                                </span>
                                             {% else %}
                                                 <span class="badge bg-secondary">
-                                                    <i class="fas fa-clock me-1"></i>Pending
+                                                    <i class="fas fa-pause me-1"></i>Waiting for Previous
                                                 </span>
+                                            {% endif %}
+                                            
+                                            {% if not can_start and not process_completed and not is_current %}
+                                                <small class="d-block text-muted mt-1">
+                                                    Complete {{ routing_steps[loop.index0 - 1].process }} first
+                                                </small>
                                             {% endif %}
                                         </td>
                                         <td>
@@ -222,17 +236,29 @@
                                                         <i class="fas fa-external-link-alt me-1"></i>Outsource
                                                     </button>
                                                 {% else %}
-                                                    <!-- Pending process -->
-                                                    <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                            onclick="startProcess('{{ step.process }}', {{ loop.index }})"
-                                                            title="Start in-house production">
-                                                        <i class="fas fa-play me-1"></i>Start
-                                                    </button>
-                                                    <button type="button" class="btn btn-sm btn-outline-warning" 
-                                                            onclick="outsourceProcess('{{ step.process }}', {{ loop.index }})"
-                                                            title="Send to external vendor">
-                                                        <i class="fas fa-external-link-alt me-1"></i>Outsource
-                                                    </button>
+                                                    <!-- Pending process - check if can start -->
+                                                    {% set can_start = loop.index == 1 or routing_steps[loop.index0 - 1].process in (job_card.processes_completed or '') %}
+                                                    
+                                                    {% if can_start %}
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                                onclick="startProcess('{{ step.process }}', {{ loop.index }})"
+                                                                title="Start in-house production">
+                                                            <i class="fas fa-play me-1"></i>Start
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                                onclick="outsourceProcess('{{ step.process }}', {{ loop.index }})"
+                                                                title="Send to external vendor">
+                                                            <i class="fas fa-external-link-alt me-1"></i>Outsource
+                                                        </button>
+                                                    {% else %}
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled
+                                                                title="Complete {{ routing_steps[loop.index0 - 1].process }} first">
+                                                            <i class="fas fa-lock me-1"></i>Locked
+                                                        </button>
+                                                        <small class="text-muted d-block">
+                                                            Waiting for {{ routing_steps[loop.index0 - 1].process }}
+                                                        </small>
+                                                    {% endif %}
                                                 {% endif %}
                                             </div>
                                         </td>
