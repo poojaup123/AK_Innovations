@@ -616,10 +616,15 @@ def dashboard():
         })
     
     # Get pending outsourced job cards for the "Pending Material Receipt" sidebar
+    # Include job cards that either have parent_job_card_id OR have outsource_quantity > 0
     pending_job_cards = JobCard.query.filter(
-        JobCard.parent_job_card_id.isnot(None),
-        JobCard.outsource_quantity > 0,
-        JobCard.grn_id.is_(None)  # Only those without GRNs
+        or_(
+            and_(JobCard.parent_job_card_id.isnot(None), JobCard.outsource_quantity > 0),
+            and_(JobCard.job_type == 'outsourced', JobCard.outsource_quantity > 0),
+            JobCard.job_card_number.like('%-OUT-%')  # Pattern matching for outsourced job cards
+        ),
+        JobCard.grn_id.is_(None),  # Only those without GRNs
+        JobCard.status.in_(['planned', 'in_progress', 'outsourced', 'sent'])  # Active statuses
     ).order_by(JobCard.created_at.desc()).all()
     
     return render_template('grn/dashboard.html',
