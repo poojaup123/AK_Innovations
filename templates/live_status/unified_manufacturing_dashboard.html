@@ -279,7 +279,7 @@
                                         {% if '-OUT-' in process.job_card_number %}
                                             {{ process.assigned_vendor.name if process.assigned_vendor else 'Not Assigned' }}
                                         {% else %}
-                                            {{ process.production.item.name if process.production else 'Internal' }}
+                                            {{ process.item.name if process.item else 'Internal' }}
                                         {% endif %}
                                     </td>
                                     <td>
