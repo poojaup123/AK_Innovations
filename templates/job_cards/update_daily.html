@@ -59,27 +59,66 @@
                         <div class="row">
                             <!-- Production Details -->
                             <div class="col-md-6">
-                                <h6 class="text-primary mb-3"><i class="fas fa-cogs me-2"></i>Production Details</h6>
+                                <h6 class="text-primary mb-3"><i class="fas fa-chart-line me-2"></i>Production Summary</h6>
                                 
-                                <div class="mb-3">
-                                    {{ form.qty_completed_today.label(class="form-label") }}
-                                    {{ form.qty_completed_today(class="form-control") }}
-                                    <div class="form-text">Target: {{ "%.1f"|format(job_card.planned_quantity) }}</div>
+                                <!-- Total Summary (Auto-calculated from Process Routing) -->
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label small">Total Completed Today</label>
+                                        <div class="input-group input-group-sm">
+                                            {{ form.qty_completed_today(class="form-control", readonly=True, style="background-color: #f8f9fa;") }}
+                                            <span class="input-group-text small">{{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</span>
+                                        </div>
+                                        <small class="form-text text-muted">Auto-calculated from processes</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small">Total Good Quality</label>
+                                        <div class="input-group input-group-sm">
+                                            {{ form.qty_good_today(class="form-control", readonly=True, style="background-color: #f8f9fa;") }}
+                                            <span class="input-group-text small">{{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</span>
+                                        </div>
+                                        <small class="form-text text-muted">Sum of good from all processes</small>
+                                    </div>
                                 </div>
                                 
-                                <div class="mb-3">
-                                    {{ form.qty_good_today.label(class="form-label") }}
-                                    {{ form.qty_good_today(class="form-control") }}
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label small">Total Defective</label>
+                                        <div class="input-group input-group-sm">
+                                            {{ form.qty_defective_today(class="form-control", readonly=True, style="background-color: #f8f9fa;") }}
+                                            <span class="input-group-text small">{{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</span>
+                                        </div>
+                                        <small class="form-text text-muted">Sum from all processes</small>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small">Total Scrap</label>
+                                        <div class="input-group input-group-sm">
+                                            {{ form.qty_scrap_today(class="form-control", readonly=True, style="background-color: #f8f9fa;") }}
+                                            <span class="input-group-text small">{{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</span>
+                                        </div>
+                                        <small class="form-text text-muted">Sum from all processes</small>
+                                    </div>
                                 </div>
                                 
+                                <!-- Progress Indicator -->
                                 <div class="mb-3">
-                                    {{ form.qty_defective_today.label(class="form-label") }}
-                                    {{ form.qty_defective_today(class="form-control") }}
-                                </div>
-                                
-                                <div class="mb-3">
-                                    {{ form.qty_scrap_today.label(class="form-label") }}
-                                    {{ form.qty_scrap_today(class="form-control") }}
+                                    <label class="form-label small">Production Progress</label>
+                                    <div class="progress mb-2" style="height: 20px;">
+                                        <div class="progress-bar bg-success" id="progress_bar" style="width: 0%;">
+                                            <span class="small" id="progress_text">0%</span>
+                                        </div>
+                                    </div>
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <small class="text-muted">Target: {{ "%.0f"|format(job_card.planned_quantity) }}</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-success" id="completed_display">Completed: 0</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-info" id="remaining_display">Remaining: {{ "%.0f"|format(job_card.planned_quantity) }}</small>
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <!-- Batch Management - Automatic -->
@@ -502,12 +541,32 @@ function updateTotalQuantities() {
     if (defectiveField) defectiveField.value = totalDefective;
     if (scrapField) scrapField.value = totalScrap;
     
-    // Calculate efficiency
+    // Calculate efficiency and update progress
     const plannedQty = {{ job_card.planned_quantity }};
     const efficiency = plannedQty > 0 ? (totalCompleted / plannedQty * 100).toFixed(1) : 0;
     const efficiencyField = document.getElementById('efficiency_rate');
     if (efficiencyField) {
         efficiencyField.value = efficiency;
+    }
+    
+    // Update progress bar and displays
+    const progressBar = document.getElementById('progress_bar');
+    const progressText = document.getElementById('progress_text');
+    const completedDisplay = document.getElementById('completed_display');
+    const remainingDisplay = document.getElementById('remaining_display');
+    
+    if (progressBar && progressText) {
+        progressBar.style.width = Math.min(efficiency, 100) + '%';
+        progressText.textContent = efficiency + '%';
+    }
+    
+    if (completedDisplay) {
+        completedDisplay.textContent = 'Completed: ' + totalCompleted;
+    }
+    
+    if (remainingDisplay) {
+        const remaining = Math.max(0, plannedQty - totalCompleted);
+        remainingDisplay.textContent = 'Remaining: ' + remaining;
     }
 }
 
