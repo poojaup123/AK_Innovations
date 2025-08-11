@@ -811,6 +811,15 @@ def view_smart_suggestions(production_id):
     
     # Get existing job cards for this production to show "View" vs "Create" buttons
     existing_job_cards = JobCard.query.filter_by(production_id=production_id).all()
+    print(f"Found {len(existing_job_cards)} existing job cards:")
+    for jc in existing_job_cards:
+        print(f"  Job Card {jc.id}: item_id={jc.item_id}, number={jc.job_card_number}")
+    
+    # Debug suggestion target_item_id values
+    print("Checking suggestion target_item_id values:")
+    for i, suggestion in enumerate(smart_suggestions):
+        target_item_id = suggestion.get('target_item_id')
+        print(f"  Suggestion {i+1}: target_item_id={target_item_id} (type: {type(target_item_id)})")
     
     return render_template('production/suggestions.html',
                          production=production,
