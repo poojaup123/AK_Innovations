@@ -2,6 +2,44 @@
 
 {% block title %}{{ job_card.job_card_number }} - Job Card Details{% endblock %}
 
+{% block head %}
+{{ super() }}
+<style>
+/* Compact table styling for outsourced jobs */
+.table-sm th,
+.table-sm td {
+    padding: 0.4rem 0.5rem !important;
+    vertical-align: middle;
+    line-height: 1.2;
+}
+
+.badge-sm {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+}
+
+.btn-xs {
+    padding: 0.15rem 0.3rem;
+    font-size: 0.7rem;
+    line-height: 1.2;
+}
+
+.fs-7 {
+    font-size: 0.8rem;
+}
+
+.process-routing-table {
+    font-size: 0.9rem;
+}
+
+.process-routing-table th,
+.process-routing-table td {
+    padding: 0.5rem 0.3rem;
+    vertical-align: middle;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <!-- Header -->
@@ -389,38 +427,40 @@
                         <span class="badge bg-dark ms-2">{{ outsourced_jobs|length }} job(s)</span>
                     </h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-sm table-hover mb-0">
                             <thead class="table-dark">
-                                <tr>
-                                    <th>Job Card Number</th>
-                                    <th>Process</th>
-                                    <th>Vendor</th>
-                                    <th>Quantity</th>
-                                    <th>Status</th>
-                                    <th>Target Date</th>
-                                    <th>GRN Status</th>
-                                    <th>Actions</th>
+                                <tr style="height: 40px;">
+                                    <th class="align-middle" style="width: 18%;">Job Card Number</th>
+                                    <th class="align-middle" style="width: 12%;">Process</th>
+                                    <th class="align-middle" style="width: 20%;">Vendor</th>
+                                    <th class="align-middle" style="width: 12%;">Quantity</th>
+                                    <th class="align-middle" style="width: 12%;">Status</th>
+                                    <th class="align-middle" style="width: 12%;">Date</th>
+                                    <th class="align-middle" style="width: 8%;">Status</th>
+                                    <th class="align-middle" style="width: 6%;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for outsourced_job in outsourced_jobs %}
-                                <tr>
-                                    <td>
-                                        <span class="badge bg-warning text-dark">{{ outsourced_job.job_card_number }}</span>
+                                <tr style="height: 45px;">
+                                    <td class="align-middle">
+                                        <span class="badge bg-warning text-dark fs-7">{{ outsourced_job.job_card_number }}</span>
                                     </td>
-                                    <td>{{ outsourced_job.process_name }}</td>
-                                    <td>
+                                    <td class="align-middle">{{ outsourced_job.process_name }}</td>
+                                    <td class="align-middle">
                                         {% if outsourced_job.assigned_vendor %}
-                                            {{ outsourced_job.assigned_vendor.name }}
+                                            <small>{{ outsourced_job.assigned_vendor.name }}</small>
                                         {% else %}
-                                            <span class="text-muted">No vendor assigned</span>
+                                            <small class="text-muted">No vendor</small>
                                         {% endif %}
                                     </td>
-                                    <td>{{ "%.1f"|format(outsourced_job.planned_quantity) }} {{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</td>
-                                    <td>
-                                        <span class="badge 
+                                    <td class="align-middle">
+                                        <small>{{ "%.1f"|format(outsourced_job.planned_quantity) }} {{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</small>
+                                    </td>
+                                    <td class="align-middle">
+                                        <span class="badge badge-sm 
                                             {% if outsourced_job.status == 'completed' %}bg-success
                                             {% elif outsourced_job.status == 'in_progress' %}bg-primary
                                             {% elif outsourced_job.status == 'outsourced' %}bg-warning text-dark
@@ -428,39 +468,41 @@
                                             {{ outsourced_job.status.title() }}
                                         </span>
                                     </td>
-                                    <td>
+                                    <td class="align-middle">
                                         {% if outsourced_job.target_completion_date %}
-                                            {{ outsourced_job.target_completion_date.strftime('%Y-%m-%d') }}
+                                            <small>{{ outsourced_job.target_completion_date.strftime('%Y-%m-%d') }}</small>
                                             {% if outsourced_job.is_overdue %}
-                                                <span class="badge bg-danger ms-1">Overdue</span>
+                                                <br><span class="badge bg-danger badge-sm">Overdue</span>
                                             {% endif %}
                                         {% else %}
-                                            <span class="text-muted">-</span>
+                                            <small class="text-muted">-</small>
                                         {% endif %}
                                     </td>
-                                    <td>
+                                    <td class="align-middle">
                                         {% if outsourced_job.grn_id %}
-                                            <span class="badge bg-success">
-                                                <i class="fas fa-check me-1"></i>Received
+                                            <span class="badge bg-success badge-sm">
+                                                <i class="fas fa-check"></i> Received
                                             </span>
                                         {% else %}
-                                            <span class="badge bg-secondary">
-                                                <i class="fas fa-clock me-1"></i>Pending
+                                            <span class="badge bg-secondary badge-sm">
+                                                <i class="fas fa-clock"></i> Pending
                                             </span>
                                         {% endif %}
                                     </td>
-                                    <td>
-                                        <a href="{{ url_for('job_cards.view_job_card', id=outsourced_job.id) }}" 
-                                           class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        {% if not outsourced_job.grn_id %}
-                                        <button class="btn btn-sm btn-outline-success ms-1" 
-                                                onclick="createGRN({{ outsourced_job.id }})"
-                                                title="Create GRN for received work">
-                                            <i class="fas fa-truck"></i>
-                                        </button>
-                                        {% endif %}
+                                    <td class="align-middle">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('job_cards.view_job_card', id=outsourced_job.id) }}" 
+                                               class="btn btn-outline-primary btn-xs">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if not outsourced_job.grn_id %}
+                                            <button class="btn btn-outline-success btn-xs" 
+                                                    onclick="createGRN({{ outsourced_job.id }})"
+                                                    title="Create GRN">
+                                                <i class="fas fa-truck"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -468,37 +510,31 @@
                         </table>
                     </div>
                     
-                    <!-- Summary Row -->
-                    <div class="row mt-3">
-                        <div class="col-md-6">
-                            <div class="card bg-light">
-                                <div class="card-body p-3">
-                                    <h6 class="card-title">Outsourcing Summary</h6>
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <small class="text-muted">Total Sent:</small><br>
-                                            <strong>{{ "%.1f"|format(outsourced_jobs|sum(attribute='planned_quantity')) }} {{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</strong>
-                                        </div>
-                                        <div class="col-6">
-                                            <small class="text-muted">Received Back:</small><br>
-                                            <strong>{{ "%.1f"|format(outsourced_jobs|selectattr('grn_id')|sum(attribute='grn_received_quantity', start=0)) }} {{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</strong>
-                                        </div>
+                    <!-- Compact Summary Row -->
+                    <div class="bg-light p-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="mb-2">Outsourcing Summary</h6>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <small class="text-muted">Total Sent:</small><br>
+                                        <strong>{{ "%.1f"|format(outsourced_jobs|sum(attribute='planned_quantity')) }} {{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Received Back:</small><br>
+                                        <strong>{{ "%.1f"|format(outsourced_jobs|selectattr('grn_id')|sum(attribute='grn_received_quantity', start=0)) }} {{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</strong>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card bg-light">
-                                <div class="card-body p-3">
-                                    <h6 class="card-title">Vendor Distribution</h6>
-                                    {% set vendor_groups = outsourced_jobs|groupby('assigned_vendor.name') %}
-                                    {% for vendor_name, jobs in vendor_groups %}
-                                    <div class="d-flex justify-content-between">
-                                        <span>{{ vendor_name or 'Unassigned' }}:</span>
-                                        <span>{{ jobs|sum(attribute='planned_quantity') }} {{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</span>
-                                    </div>
-                                    {% endfor %}
+                            <div class="col-md-6">
+                                <h6 class="mb-2">Vendor Distribution</h6>
+                                {% set vendor_groups = outsourced_jobs|groupby('assigned_vendor.name') %}
+                                {% for vendor_name, jobs in vendor_groups %}
+                                <div class="d-flex justify-content-between">
+                                    <small>{{ vendor_name or 'Unassigned' }}:</small>
+                                    <small><strong>{{ jobs|sum(attribute='planned_quantity') }} {{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</strong></small>
                                 </div>
+                                {% endfor %}
                             </div>
                         </div>
                     </div>
