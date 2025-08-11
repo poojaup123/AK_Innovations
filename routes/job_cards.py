@@ -850,16 +850,14 @@ def create_outsourced_job_card(job_card_id):
             item_id=job_card.item_id,
             process_name=process_name,
             planned_quantity=outsource_quantity,
-            outsource_quantity=outsource_quantity,
             assigned_vendor_id=vendor_id,
-            outsource_process=process_name,
-            work_instructions=work_instructions,
-            special_instructions=special_requirements,
+            production_notes=work_instructions,
+            quality_notes=special_requirements,
+            job_type='outsourced',
             status='outsourced',
             parent_job_card_id=job_card_id,
             target_completion_date=datetime.strptime(expected_delivery, '%Y-%m-%d').date() if expected_delivery else None,
-            created_by_id=current_user.id,
-            created_at=datetime.utcnow()
+            created_by_id=current_user.id
         )
         
         db.session.add(outsourced_job_card)
