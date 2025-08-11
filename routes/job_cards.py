@@ -1058,21 +1058,23 @@ def generate_challan(job_card_id):
                 if production:
                     production_qty = production.quantity_planned or 1
             
-            # Try to find BOM for raw materials
+            # Try to find BOM for raw materials using correct field name
             from models import BOM, BOMItem
             try:
-                bom = BOM.query.filter_by(finished_good_id=job_card.item.id).first()
+                bom = BOM.query.filter_by(product_id=job_card.item.id).first()
                 if bom:
                     bom_items = BOMItem.query.filter_by(bom_id=bom.id).all()
                     materials = []
                     for bom_item in bom_items:
-                        # Calculate total raw material needed (BOM qty × production qty)
-                        total_qty = bom_item.quantity_required * production_qty
+                        # Calculate raw material needed based on BOM output quantity and production qty
+                        # BOM shows quantity per bom.output_quantity, scale for production_qty
+                        bom_output_qty = bom.output_quantity or 1
+                        total_qty = (bom_item.quantity_required * production_qty) / bom_output_qty
                         materials.append({
                             'item': bom_item.item,
                             'quantity_required': total_qty,
                             'batch_number': 'TBD',
-                            'remarks': f'Raw material to make {production_qty} {job_card.item.name}'
+                            'remarks': f'Raw material to make {int(production_qty):,} {job_card.item.name} (per BOM {bom.bom_code})'
                         })
                 else:
                     # For cutting process, show raw materials (MS sheets)
