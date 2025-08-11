@@ -861,40 +861,18 @@ function outsourceProcess(processName, stepNumber) {
     // Load vendors dynamically
     loadVendors();
     
-    // Show modal without Bootstrap backdrop to avoid issues
+    // Show modal with Bootstrap but disable backdrop
     const modalElement = document.getElementById('outsourcingModal');
     
-    // Clean up any existing instances
-    const existingModal = bootstrap.Modal.getInstance(modalElement);
-    if (existingModal) {
-        existingModal.dispose();
-    }
+    // Clean up any existing instances and backdrops
+    forceCleanupModals();
     
-    // Show modal with no backdrop to prevent overlay issues
-    modalElement.style.display = 'block';
-    modalElement.classList.add('show');
-    modalElement.setAttribute('aria-modal', 'true');
-    modalElement.removeAttribute('aria-hidden');
-    
-    // Add our own backdrop that we can control
-    const customBackdrop = document.createElement('div');
-    customBackdrop.className = 'custom-modal-backdrop';
-    customBackdrop.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 1040;
-    `;
-    document.body.appendChild(customBackdrop);
-    document.body.classList.add('modal-open');
-    
-    // Click backdrop to close
-    customBackdrop.addEventListener('click', function() {
-        closeModal();
+    const modal = new bootstrap.Modal(modalElement, {
+        backdrop: false,  // Disable Bootstrap backdrop
+        keyboard: true
     });
+    
+    modal.show();
 }
 
 // Function to start a process in-house
@@ -930,26 +908,14 @@ function submitOutsourcing() {
 // Function to properly close modal and clean up backdrop
 function closeModal() {
     const modalElement = document.getElementById('outsourcingModal');
+    const modal = bootstrap.Modal.getInstance(modalElement);
     
-    // Hide modal manually
-    modalElement.style.display = 'none';
-    modalElement.classList.remove('show');
-    modalElement.setAttribute('aria-hidden', 'true');
-    modalElement.removeAttribute('aria-modal');
-    
-    // Remove custom backdrop
-    const customBackdrop = document.querySelector('.custom-modal-backdrop');
-    if (customBackdrop) {
-        customBackdrop.remove();
+    if (modal) {
+        modal.hide();
     }
     
-    // Clean up body
-    document.body.classList.remove('modal-open');
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-    
-    // Force cleanup any Bootstrap backdrops too
-    forceCleanupModals();
+    // Force cleanup everything
+    setTimeout(forceCleanupModals, 100);
 }
 
 // Aggressive modal cleanup function
