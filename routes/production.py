@@ -1830,6 +1830,12 @@ def add_multi_bom_process(bom_id):
                 edit_process.labor_rate_per_hour = float(form_data.get('processes[0][labor_rate_per_hour]') or 0)
                 edit_process.quality_check_required = form_data.get('processes[0][quality_check_required]') == 'true'
                 
+                # Scrap tracking fields
+                edit_process.enable_scrap_tracking = form_data.get('processes[0][enable_scrap_tracking]') == 'true'
+                edit_process.enable_scrap_weight_tracking = form_data.get('processes[0][enable_scrap_weight_tracking]') == 'true'
+                edit_process.estimated_scrap_percent = float(form_data.get('processes[0][estimated_scrap_percent]') or 0) if edit_process.enable_scrap_tracking else 0
+                edit_process.scrap_weight = float(form_data.get('processes[0][scrap_weight]') or 0) if edit_process.enable_scrap_weight_tracking else 0
+                
                 # Update transformation fields
                 edit_process.input_product_id = int(form_data.get('processes[0][input_product_id]') or 0) or None
                 edit_process.output_product_id = int(form_data.get('processes[0][output_product_id]') or 0) or None
@@ -1877,6 +1883,11 @@ def add_multi_bom_process(bom_id):
                         'cost_unit': form_data.get(f'processes[{index}][cost_unit]', 'per_unit'),
                         'labor_rate_per_hour': float(form_data.get(f'processes[{index}][labor_rate_per_hour]') or 0),
                         'quality_check_required': form_data.get(f'processes[{index}][quality_check_required]') == 'true',
+                        # Scrap tracking fields
+                        'enable_scrap_tracking': form_data.get(f'processes[{index}][enable_scrap_tracking]') == 'true',
+                        'enable_scrap_weight_tracking': form_data.get(f'processes[{index}][enable_scrap_weight_tracking]') == 'true',
+                        'estimated_scrap_percent': float(form_data.get(f'processes[{index}][estimated_scrap_percent]') or 0),
+                        'scrap_weight': float(form_data.get(f'processes[{index}][scrap_weight]') or 0),
                         # Transformation fields
                         'input_product_id': int(form_data.get(f'processes[{index}][input_product_id]') or 0) or None,
                         'output_product_id': int(form_data.get(f'processes[{index}][output_product_id]') or 0) or None,
@@ -1906,6 +1917,11 @@ def add_multi_bom_process(bom_id):
                         cost_unit=process_data['cost_unit'],
                         labor_rate_per_hour=process_data['labor_rate_per_hour'], 
                         quality_check_required=process_data['quality_check_required'],
+                        # Scrap tracking fields
+                        enable_scrap_tracking=process_data['enable_scrap_tracking'],
+                        enable_scrap_weight_tracking=process_data['enable_scrap_weight_tracking'],
+                        estimated_scrap_percent=process_data['estimated_scrap_percent'] if process_data['enable_scrap_tracking'] else 0,
+                        scrap_weight=process_data['scrap_weight'] if process_data['enable_scrap_weight_tracking'] else 0,
                         # Transformation fields
                         input_product_id=process_data['input_product_id'],
                         output_product_id=process_data['output_product_id'],

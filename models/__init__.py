@@ -2780,6 +2780,9 @@ class BOMProcess(db.Model):
     cost_per_unit = db.Column(db.Float, default=0.0)  # Process cost per unit
     cost_unit = db.Column(db.String(20), default='per_unit')  # Cost unit (per_unit, per_kg, per_meter, etc.)
     estimated_scrap_percent = db.Column(db.Float, default=0.0)  # Expected scrap percentage for this process
+    scrap_weight = db.Column(db.Float, default=0.0)  # Expected scrap weight in kg for this process
+    enable_scrap_tracking = db.Column(db.Boolean, default=False)  # Enable scrap percentage tracking
+    enable_scrap_weight_tracking = db.Column(db.Boolean, default=False)  # Enable scrap weight tracking
     quality_check_required = db.Column(db.Boolean, default=False)  # Quality check after this step
     parallel_processes = db.Column(db.Text)  # JSON list of processes that can run in parallel
     predecessor_processes = db.Column(db.Text)  # JSON list of required predecessor processes

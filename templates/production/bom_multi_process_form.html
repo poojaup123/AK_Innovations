@@ -119,9 +119,46 @@
                                             <textarea class="form-control" name="processes[0][operation_description]" rows="2" placeholder="Detailed description of the operation"></textarea>
                                         </div>
                                         
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="processes[0][quality_check_required]" value="true">
-                                            <label class="form-check-label">Quality Check Required</label>
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" name="processes[0][quality_check_required]" value="true">
+                                                    <label class="form-check-label">Quality Check Required</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Scrap Tracking Section -->
+                                        <div class="card mt-3">
+                                            <div class="card-header bg-light">
+                                                <h6 class="mb-0"><i class="fas fa-recycle"></i> Scrap Tracking</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="form-check mb-2">
+                                                            <input class="form-check-input scrap-tracking-checkbox" type="checkbox" name="processes[0][enable_scrap_tracking]" value="true" 
+                                                                   onchange="toggleScrapFields(this, 'scrap_percent_0')">
+                                                            <label class="form-check-label">Enable Scrap % Tracking</label>
+                                                        </div>
+                                                        <div class="form-group" id="scrap_percent_0" style="display: none;">
+                                                            <label class="form-label">Scrap Percentage (%)</label>
+                                                            <input type="number" step="0.1" class="form-control" name="processes[0][estimated_scrap_percent]" placeholder="0.0">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-check mb-2">
+                                                            <input class="form-check-input scrap-weight-checkbox" type="checkbox" name="processes[0][enable_scrap_weight_tracking]" value="true" 
+                                                                   onchange="toggleScrapFields(this, 'scrap_weight_0')">
+                                                            <label class="form-check-label">Enable Scrap Weight Tracking</label>
+                                                        </div>
+                                                        <div class="form-group" id="scrap_weight_0" style="display: none;">
+                                                            <label class="form-label">Scrap Weight (kg)</label>
+                                                            <input type="number" step="0.001" class="form-control" name="processes[0][scrap_weight]" placeholder="0.000">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -235,6 +272,24 @@
 
 {% block scripts %}
 <script>
+// Function to toggle scrap fields based on checkbox
+function toggleScrapFields(checkbox, targetId) {
+    const targetField = document.getElementById(targetId);
+    if (targetField) {
+        if (checkbox.checked) {
+            targetField.style.display = 'block';
+        } else {
+            targetField.style.display = 'none';
+            // Clear the input value when hiding
+            const input = targetField.querySelector('input');
+            if (input) {
+                input.value = '';
+            }
+        }
+    }
+}
+</script>
+<script>
 let processCount = 1;
 
 document.getElementById('addProcessBtn').addEventListener('click', function() {
@@ -334,9 +389,46 @@ function createProcessItem(processNumber) {
             <textarea class="form-control" name="processes[${index}][operation_description]" rows="2" placeholder="Detailed description of the operation"></textarea>
         </div>
         
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="processes[${index}][quality_check_required]" value="true">
-            <label class="form-check-label">Quality Check Required</label>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="processes[${index}][quality_check_required]" value="true">
+                    <label class="form-check-label">Quality Check Required</label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Scrap Tracking Section -->
+        <div class="card mt-3">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="fas fa-recycle"></i> Scrap Tracking</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input scrap-tracking-checkbox" type="checkbox" name="processes[${index}][enable_scrap_tracking]" value="true" 
+                                   onchange="toggleScrapFields(this, 'scrap_percent_${index}')">
+                            <label class="form-check-label">Enable Scrap % Tracking</label>
+                        </div>
+                        <div class="form-group" id="scrap_percent_${index}" style="display: none;">
+                            <label class="form-label">Scrap Percentage (%)</label>
+                            <input type="number" step="0.1" class="form-control" name="processes[${index}][estimated_scrap_percent]" placeholder="0.0">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input scrap-weight-checkbox" type="checkbox" name="processes[${index}][enable_scrap_weight_tracking]" value="true" 
+                                   onchange="toggleScrapFields(this, 'scrap_weight_${index}')">
+                            <label class="form-check-label">Enable Scrap Weight Tracking</label>
+                        </div>
+                        <div class="form-group" id="scrap_weight_${index}" style="display: none;">
+                            <label class="form-label">Scrap Weight (kg)</label>
+                            <input type="number" step="0.001" class="form-control" name="processes[${index}][scrap_weight]" placeholder="0.000">
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
     
