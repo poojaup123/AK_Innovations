@@ -1047,7 +1047,26 @@ def generate_challan(job_card_id):
     materials = []
     try:
         materials = JobCardMaterial.query.filter_by(job_card_id=job_card_id).all()
-    except:
+        
+        # If no JobCardMaterial, try to get from BOM
+        if not materials and job_card.item:
+            from models import BOM, BOMItem
+            bom = BOM.query.filter_by(finished_good_id=job_card.item.id).first()
+            if bom:
+                bom_items = BOMItem.query.filter_by(bom_id=bom.id).all()
+                # Convert BOM items to material format for template
+                materials = []
+                for bom_item in bom_items:
+                    # Calculate total quantity needed (BOM quantity * job card quantity)
+                    total_quantity = bom_item.quantity_required * (job_card.quantity_planned or 1)
+                    materials.append({
+                        'item': bom_item.item,
+                        'quantity_required': total_quantity,
+                        'batch_number': 'TBD',
+                        'remarks': f'Raw material for {job_card.item.name}'
+                    })
+    except Exception as e:
+        print(f"Error getting materials: {e}")
         pass
     
     return render_template('job_cards/outsourced_challan.html', 
