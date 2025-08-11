@@ -167,100 +167,104 @@
                 <div class="card-body">
                     {% if routing_steps %}
                         <div class="table-responsive">
-                            <table class="table table-hover">
+                            <table class="table table-hover table-sm">
                                 <thead class="table-dark">
                                     <tr>
-                                        <th>Step</th>
-                                        <th>Process</th>
-                                        <th>Description</th>
-                                        <th>Est. Time (min)</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
+                                        <th style="width: 8%;">Step</th>
+                                        <th style="width: 18%;">Process</th>
+                                        <th style="width: 25%;">Description</th>
+                                        <th style="width: 12%;">Est. Time</th>
+                                        <th style="width: 20%;">Status</th>
+                                        <th style="width: 17%;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for step in routing_steps %}
-                                    <tr>
-                                        <td>
-                                            <span class="badge bg-primary rounded-pill">{{ step.step }}</span>
+                                    <tr style="vertical-align: middle;">
+                                        <td class="text-center">
+                                            <span class="badge bg-primary rounded-pill" style="font-size: 0.75rem;">{{ step.step }}</span>
                                         </td>
-                                        <td><strong>{{ step.process }}</strong></td>
-                                        <td>{{ step.description }}</td>
-                                        <td>{{ step.estimated_time }}</td>
+                                        <td><strong style="font-size: 0.875rem;">{{ step.process }}</strong></td>
+                                        <td style="font-size: 0.8rem;">{{ step.description }}</td>
+                                        <td class="text-center" style="font-size: 0.8rem;">{{ step.estimated_time }}</td>
                                         <td>
                                             {% set process_completed = step.process in (job_card.processes_completed or '') %}
                                             {% set is_current = job_card.current_process_step == step.process %}
                                             {% set can_start = loop.index == 1 or routing_steps[loop.index0 - 1].process in (job_card.processes_completed or '') %}
                                             
                                             {% if process_completed %}
-                                                <span class="badge bg-success">
+                                                <span class="badge bg-success" style="font-size: 0.7rem;">
                                                     <i class="fas fa-check me-1"></i>Completed
                                                 </span>
                                             {% elif is_current %}
-                                                <span class="badge bg-warning">
+                                                <span class="badge bg-warning" style="font-size: 0.7rem;">
                                                     <i class="fas fa-play me-1"></i>In Progress
                                                 </span>
                                             {% elif can_start %}
-                                                <span class="badge bg-info">
+                                                <span class="badge bg-info" style="font-size: 0.7rem;">
                                                     <i class="fas fa-clock me-1"></i>Ready to Start
                                                 </span>
                                             {% else %}
-                                                <span class="badge bg-secondary">
+                                                <span class="badge bg-secondary" style="font-size: 0.7rem;">
                                                     <i class="fas fa-pause me-1"></i>Waiting for Previous
                                                 </span>
                                             {% endif %}
                                             
                                             {% if not can_start and not process_completed and not is_current %}
-                                                <small class="d-block text-muted mt-1">
+                                                <small class="d-block text-muted" style="font-size: 0.65rem; margin-top: 2px;">
                                                     <i class="fas fa-arrow-left me-1"></i>Needs material from {{ routing_steps[loop.index0 - 1].process }}
                                                 </small>
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <div class="btn-group btn-group-sm" role="group">
-                                                {% if step.process in (job_card.processes_completed or '') %}
-                                                    <!-- Process already completed -->
-                                                    <button type="button" class="btn btn-sm btn-outline-info" disabled>
-                                                        <i class="fas fa-check me-1"></i>Completed
-                                                    </button>
-                                                {% elif job_card.current_process_step == step.process and job_card.status != 'completed' %}
-                                                    <!-- Current active process -->
-                                                    <button type="button" class="btn btn-sm btn-success" 
+                                            {% if step.process in (job_card.processes_completed or '') %}
+                                                <!-- Process already completed -->
+                                                <button type="button" class="btn btn-xs btn-outline-info" disabled style="font-size: 0.7rem; padding: 2px 8px;">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            {% elif job_card.current_process_step == step.process and job_card.status != 'completed' %}
+                                                <!-- Current active process -->
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <button type="button" class="btn btn-xs btn-success" 
                                                             onclick="markStepComplete('{{ step.process }}')"
-                                                            title="Mark as completed">
-                                                        <i class="fas fa-check me-1"></i>Complete
+                                                            title="Mark as completed" style="font-size: 0.7rem; padding: 2px 6px;">
+                                                        <i class="fas fa-check"></i>
                                                     </button>
-                                                    <button type="button" class="btn btn-sm btn-warning" 
+                                                    <button type="button" class="btn btn-xs btn-warning" 
                                                             onclick="outsourceProcess('{{ step.process }}', {{ loop.index }})"
-                                                            title="Send to external vendor">
-                                                        <i class="fas fa-external-link-alt me-1"></i>Outsource
+                                                            title="Send to external vendor" style="font-size: 0.7rem; padding: 2px 6px;">
+                                                        <i class="fas fa-external-link-alt"></i>
                                                     </button>
-                                                {% else %}
-                                                    <!-- Pending process - check if can start -->
-                                                    {% set can_start = loop.index == 1 or routing_steps[loop.index0 - 1].process in (job_card.processes_completed or '') %}
-                                                    
-                                                    {% if can_start %}
-                                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                </div>
+                                            {% else %}
+                                                <!-- Pending process - check if can start -->
+                                                {% set can_start = loop.index == 1 or routing_steps[loop.index0 - 1].process in (job_card.processes_completed or '') %}
+                                                
+                                                {% if can_start %}
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <button type="button" class="btn btn-xs btn-outline-primary" 
                                                                 onclick="startProcess('{{ step.process }}', {{ loop.index }})"
-                                                                title="Start in-house production">
-                                                            <i class="fas fa-play me-1"></i>Start
+                                                                title="Start in-house production" style="font-size: 0.7rem; padding: 2px 6px;">
+                                                            <i class="fas fa-play"></i>
                                                         </button>
-                                                        <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                        <button type="button" class="btn btn-xs btn-outline-warning" 
                                                                 onclick="outsourceProcess('{{ step.process }}', {{ loop.index }})"
-                                                                title="Send to external vendor">
-                                                            <i class="fas fa-external-link-alt me-1"></i>Outsource
+                                                                title="Send to external vendor" style="font-size: 0.7rem; padding: 2px 6px;">
+                                                            <i class="fas fa-external-link-alt"></i>
                                                         </button>
-                                                    {% else %}
-                                                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled
-                                                                title="Waiting for material from {{ routing_steps[loop.index0 - 1].process }}">
-                                                            <i class="fas fa-hourglass-half me-1"></i>Waiting for Material
+                                                    </div>
+                                                {% else %}
+                                                    <div class="text-center">
+                                                        <button type="button" class="btn btn-xs btn-outline-secondary" disabled
+                                                                title="Waiting for material from {{ routing_steps[loop.index0 - 1].process }}" style="font-size: 0.65rem; padding: 1px 4px;">
+                                                            <i class="fas fa-hourglass-half"></i>
                                                         </button>
-                                                        <small class="text-muted d-block">
-                                                            <i class="fas fa-truck me-1"></i>{{ routing_steps[loop.index0 - 1].process }} → {{ step.process }}
+                                                        <small class="text-muted d-block" style="font-size: 0.6rem;">
+                                                            {{ routing_steps[loop.index0 - 1].process }} → {{ step.process }}
                                                         </small>
-                                                    {% endif %}
+                                                    </div>
                                                 {% endif %}
-                                            </div>
+                                            {% endif %}
                                         </td>
                                     </tr>
                                     {% endfor %}
