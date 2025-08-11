@@ -697,26 +697,34 @@ def view_job_card(id):
             flash('No job cards found in the system.', 'warning')
             return redirect(url_for('job_cards.dashboard'))
     
-    # Get BOM processes for this job card
-    # Need to get processes from the COMPONENT's own BOM, not the parent BOM
+    # Get BOM processes for this job card - look for component-specific BOM
     routing_steps = []
     if job_card.item_id:
         from models import BOMProcess, BOM
         # Find the BOM that has this component as its product
-        component_bom = BOM.query.filter_by(product_id=job_card.item_id).first()
+        component_bom = BOM.query.filter_by(product_id=job_card.item_id, is_active=True).first()
+        print(f"DEBUG: Looking for BOM for item {job_card.item_id} ({job_card.item.name if job_card.item else 'Unknown'})")
+        
         if component_bom:
+            print(f"DEBUG: Found component-specific BOM: {component_bom.bom_code} (ID: {component_bom.id})")
             bom_processes = BOMProcess.query.filter_by(
                 bom_id=component_bom.id
             ).order_by(BOMProcess.step_number).all()
             
+            print(f"DEBUG: Found {len(bom_processes)} BOM processes for job card {id}, BOM ID: {component_bom.id}")
+            for process in bom_processes:
+                print(f"  Process {process.id}: {process.process_name}")
+            
             routing_steps = [{
                 'step': process.step_number,
                 'process': process.process_name,
-                'description': process.operation_description,
-                'est_time': (process.setup_time_minutes or 0) + (process.run_time_minutes or 0),
+                'description': process.operation_description or f'{process.process_name} operation',
+                'est_time': (process.setup_time_minutes or 0) + (process.run_time_minutes or 0) or 60,
                 'status': 'pending',  # Default status
                 'process_id': process.id
             } for process in bom_processes]
+        else:
+            print(f"DEBUG: No component-specific BOM found for item {job_card.item_id}")
     
     # Get recent daily reports
     daily_reports = JobCardDailyStatus.query.filter_by(
