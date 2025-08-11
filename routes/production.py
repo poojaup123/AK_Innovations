@@ -809,11 +809,15 @@ def view_smart_suggestions(production_id):
     else:
         flash('No active BOM found for this production item', 'warning')
     
+    # Get existing job cards for this production to show "View" vs "Create" buttons
+    existing_job_cards = JobCard.query.filter_by(production_id=production_id).all()
+    
     return render_template('production/suggestions.html',
                          production=production,
                          smart_suggestions=smart_suggestions,
                          smart_analysis=smart_analysis,
                          current_bom=current_active_bom,
+                         existing_job_cards=existing_job_cards,
                          title=f'Smart Suggestions - {production.production_number}')
 
 @production_bp.route('/generate-job-cards/<int:production_id>')
