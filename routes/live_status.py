@@ -13,20 +13,26 @@ def process_dashboard():
     from services.manufacturing_intelligence import ManufacturingIntelligence
     from models.intelligence import ManufacturingAlert
     
-    # Get all active job work processes
-    processes = JobWorkProcess.query.join(JobWork).filter(
-        JobWork.status.in_(['sent', 'partial_received'])
-    ).order_by(JobWorkProcess.updated_at.desc()).all()
+    # Get all active job cards (the current production system)
+    from models.job_card import JobCard
     
-    # Calculate basic statistics
+    all_job_cards = JobCard.query.all()
+    active_job_cards = JobCard.query.filter(
+        JobCard.status.in_(['planned', 'in_progress', 'outsourced', 'pending'])
+    ).order_by(JobCard.created_at.desc()).all()
+    
+    # Calculate basic statistics from job cards
     basic_stats = {
-        'total_processes': len(processes),
-        'pending': len([p for p in processes if p.status == 'pending']),
-        'in_progress': len([p for p in processes if p.status == 'in_progress']),
-        'completed': len([p for p in processes if p.status == 'completed']),
-        'on_hold': len([p for p in processes if p.status == 'on_hold']),
-        'delayed': len([p for p in processes if p.is_delayed])
+        'total_processes': len(all_job_cards),
+        'pending': len([jc for jc in all_job_cards if jc.status == 'planned']),
+        'in_progress': len([jc for jc in all_job_cards if jc.status in ['in_progress', 'outsourced']]),
+        'completed': len([jc for jc in all_job_cards if jc.status == 'completed']),
+        'on_hold': len([jc for jc in all_job_cards if jc.status == 'on_hold']),
+        'delayed': len([jc for jc in all_job_cards if jc.target_completion_date and jc.target_completion_date < datetime.now().date() and jc.status not in ['completed']])
     }
+    
+    # Use active job cards instead of processes for the template
+    processes = active_job_cards
     
     # Get advanced intelligence analytics
     try:

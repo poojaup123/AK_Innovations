@@ -37,17 +37,19 @@ class ManufacturingIntelligence:
             process_analysis = []
             
             for process_name in processes:
-                # Get active job work processes
-                active_processes = JobWorkProcess.query.join(JobWork).filter(
-                    JobWorkProcess.process_name == process_name,
-                    JobWork.created_at >= start_date,
-                    JobWorkProcess.status.in_(['pending', 'in_progress'])
+                # Get active job cards instead of job work processes
+                from models.job_card import JobCard
+                
+                active_processes = JobCard.query.filter(
+                    JobCard.process_name.ilike(f'%{process_name}%'),
+                    JobCard.created_at >= start_date,
+                    JobCard.status.in_(['planned', 'in_progress', 'outsourced'])
                 ).all()
                 
-                # Calculate metrics
+                # Calculate metrics from job cards
                 total_jobs = len(active_processes)
-                in_progress_jobs = len([p for p in active_processes if p.status == 'in_progress'])
-                pending_jobs = len([p for p in active_processes if p.status == 'pending'])
+                in_progress_jobs = len([p for p in active_processes if p.status in ['in_progress', 'outsourced']])
+                pending_jobs = len([p for p in active_processes if p.status == 'planned'])
                 
                 # Get efficiency metrics
                 efficiency_metrics = ProcessEfficiencyMetric.query.filter(
@@ -152,11 +154,13 @@ class ManufacturingIntelligence:
             finished_goods = db.session.query(func.sum(Item.qty_finished)).scalar() or 0
             finished_items_count = Item.query.filter(Item.qty_finished > 0).count()
             
-            # Active job works by status
+            # Active job cards by status (current production system)
+            from models.job_card import JobCard
+            
             job_work_flow = {}
-            job_statuses = ['sent', 'partial_received', 'completed']
+            job_statuses = ['planned', 'in_progress', 'outsourced', 'completed']
             for status in job_statuses:
-                count = JobWork.query.filter_by(status=status).count()
+                count = JobCard.query.filter_by(status=status).count()
                 job_work_flow[status] = count
             
             # Recent GRN activities (last 24 hours)

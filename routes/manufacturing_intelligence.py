@@ -38,9 +38,25 @@ def dashboard():
         except:
             active_alerts = []
         
-        # Dashboard statistics  
+        # Dashboard statistics using job cards
+        from models.job_card import JobCard
+        
+        # Get real job card counts
+        total_job_cards = JobCard.query.count()
+        pending_job_cards = JobCard.query.filter_by(status='planned').count()
+        in_progress_job_cards = JobCard.query.filter(JobCard.status.in_(['in_progress', 'outsourced'])).count()
+        completed_job_cards = JobCard.query.filter_by(status='completed').count()
+        
         stats = {
-            'total_processes': len(bottleneck_analysis.get('processes', [])),
+            'total_processes': total_job_cards,
+            'pending': pending_job_cards,
+            'in_progress': in_progress_job_cards,
+            'completed': completed_job_cards,
+            'on_hold': JobCard.query.filter_by(status='on_hold').count(),
+            'delayed': JobCard.query.filter(
+                JobCard.target_completion_date < datetime.now().date(),
+                JobCard.status.in_(['planned', 'in_progress', 'outsourced'])
+            ).count(),
             'active_bottlenecks': bottleneck_analysis.get('processes_with_bottlenecks', 0),
             'active_alerts': len(active_alerts),
             'material_flow_velocity': material_flow.get('flow_velocity', {}).get('recent_completions', 0) if isinstance(material_flow, dict) else 0
