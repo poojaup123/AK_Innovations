@@ -106,6 +106,7 @@
                                                         <th>PO Ordered</th>
                                                         <th>GRN Received</th>
                                                         <th>Allocated Qty</th>
+                                                        <th>Remaining Needed</th>
                                                         <th>Status</th>
                                                     </tr>
                                                 </thead>
@@ -160,6 +161,19 @@
                                                                 {% endif %}
                                                             </td>
                                                             <td>
+                                                                {% set remaining_needed = material.needed_qty - (material.get('po_status', {}).get('total_received', 0)) %}
+                                                                {% if remaining_needed > 0 %}
+                                                                    <span class="text-danger fw-bold">{{ "%.2f"|format(remaining_needed) }} {{ material.unit }}</span>
+                                                                    <br><small class="text-muted">
+                                                                        <i class="fas fa-exclamation-triangle"></i> Need to procure
+                                                                    </small>
+                                                                {% else %}
+                                                                    <span class="text-success">
+                                                                        <i class="fas fa-check-circle"></i> Sufficient
+                                                                    </span>
+                                                                {% endif %}
+                                                            </td>
+                                                            <td>
                                                                 <span class="badge bg-{{ 'success' if material.sufficient else 'warning' }}">
                                                                     {% if material.get('consolidated') %}
                                                                         Consolidated Purchase
@@ -178,7 +192,7 @@
                                                         </tr>
                                                         {% if material.get('used_by') %}
                                                             <tr class="bg-light">
-                                                                <td colspan="6">
+                                                                <td colspan="7">
                                                                     <small class="text-muted">
                                                                         <strong>Used by:</strong>
                                                                         {% for product in material.used_by %}
