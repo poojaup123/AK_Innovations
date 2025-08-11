@@ -679,7 +679,9 @@ class SmartBOMSuggestionService:
                         'unit_cost': material_info['unit_cost'],
                         'consolidated': True,
                         'used_by': material_info['used_by_products'],
-                        'po_status': SmartBOMSuggestionService._get_po_status_info(Item.query.get(material_id)) if Item.query.get(material_id) else {}
+                        'po_status': SmartBOMSuggestionService._get_po_status_info(Item.query.get(material_id)) if Item.query.get(material_id) else {},
+                        'total_allocated_qty': material_info.get('total_allocated_qty', 0),  # Total allocated across all products
+                        'is_shared_material': True  # Mark as shared for proper calculation
                     }],
                     'item_details': {
                         'item_id': material_id,

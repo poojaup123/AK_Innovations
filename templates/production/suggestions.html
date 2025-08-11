@@ -161,8 +161,21 @@
                                                                 {% endif %}
                                                             </td>
                                                             <td>
-                                                                {% if material.get('allocated_qty') is not none %}
-                                                                    {# Shared material - use allocated quantity #}
+                                                                {% if material.get('consolidated') or material.get('is_shared_material') %}
+                                                                    {# Consolidated/shared material - show total shortage #}
+                                                                    {% set shortage_qty = material.get('shortage_qty', material.needed_qty) %}
+                                                                    {% if shortage_qty > 0.01 %}
+                                                                        <span class="text-danger fw-bold">{{ "%.2f"|format(shortage_qty) }} {{ material.unit }}</span>
+                                                                        <br><small class="text-muted">
+                                                                            <i class="fas fa-exclamation-triangle"></i> Total needed across products
+                                                                        </small>
+                                                                    {% else %}
+                                                                        <span class="text-success">
+                                                                            <i class="fas fa-check-circle"></i> All products covered
+                                                                        </span>
+                                                                    {% endif %}
+                                                                {% elif material.get('allocated_qty') is not none %}
+                                                                    {# Individual shared material - use allocated quantity #}
                                                                     {% set remaining_needed = material.needed_qty - material.get('allocated_qty', 0) %}
                                                                     {% if remaining_needed > 0.01 %}
                                                                         <span class="text-danger fw-bold">{{ "%.2f"|format(remaining_needed) }} {{ material.unit }}</span>
