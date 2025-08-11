@@ -1209,7 +1209,14 @@ def edit_bom(id):
         form.status.data = bom.status
         form.is_active.data = bom.is_active
         form.output_quantity.data = bom.output_quantity
-        form.unit_weight.data = bom.unit_weight
+        # Auto-populate unit weight from product inventory if not set
+        if not bom.unit_weight or bom.unit_weight == 0:
+            if bom.product and bom.product.unit_weight:
+                form.unit_weight.data = bom.product.unit_weight
+            else:
+                form.unit_weight.data = bom.unit_weight
+        else:
+            form.unit_weight.data = bom.unit_weight
         form.unit_weight_uom.data = bom.unit_weight_uom
         form.estimated_scrap_percent.data = bom.estimated_scrap_percent
         form.scrap_quantity.data = bom.scrap_quantity
@@ -1261,7 +1268,13 @@ def edit_bom(id):
         bom.status = form.status.data
         bom.is_active = True if (form.status.data == 'active' or not form.status.data) else False
         bom.output_quantity = form.output_quantity.data or 1.0
-        bom.unit_weight = form.unit_weight.data or 0.0
+        # Auto-set unit weight from product if not provided
+        if form.unit_weight.data and form.unit_weight.data > 0:
+            bom.unit_weight = form.unit_weight.data
+        elif bom.product and bom.product.unit_weight:
+            bom.unit_weight = bom.product.unit_weight
+        else:
+            bom.unit_weight = 0.0
         bom.unit_weight_uom = form.unit_weight_uom.data or 'kg'
         bom.estimated_scrap_percent = form.estimated_scrap_percent.data or 0.0
         bom.scrap_weight = form.scrap_weight.data or 0.0

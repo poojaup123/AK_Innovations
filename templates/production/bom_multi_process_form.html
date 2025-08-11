@@ -489,11 +489,19 @@ function loadBomMaterialData(processIndex, materialIndex) {
         const unitsMade = container.querySelector('.units-made');
         const outputWeight = container.querySelector('.output-unit-weight');
         
-        // Auto-populate fields
+        // Auto-populate fields with BOM component data
         if (inputWeight) inputWeight.value = weight;
-        if (unitsMade) unitsMade.value = {{ bom.output_quantity or 'quantity' }};
-        if (outputWeight && {{ bom.product.unit_weight if bom.product and bom.product.unit_weight else 'false' }}) {
-            outputWeight.value = {{ bom.product.unit_weight if bom.product and bom.product.unit_weight else '""' }};
+        if (unitsMade) unitsMade.value = {{ bom.output_quantity or 1 }};
+        
+        // Auto-populate output weight from BOM product or calculated from total material weight
+        if (outputWeight) {
+            {% if bom.product and bom.product.unit_weight %}
+            outputWeight.value = {{ bom.product.unit_weight }};
+            {% else %}
+            // Calculate from total weight divided by output quantity
+            const calculatedWeight = totalWeight / {{ bom.output_quantity or 1 }};
+            outputWeight.value = calculatedWeight.toFixed(3);
+            {% endif %}
         }
         
         // Trigger calculation update
