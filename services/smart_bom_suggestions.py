@@ -329,12 +329,6 @@ class SmartBOMSuggestionService:
                     
                     shortage_qty = max(0, raw_material['needed_qty'] - allocated_qty)
                     
-                    # Calculate sheets consumed for Ms sheet materials  
-                    sheets_consumed = None
-                    if 'ms sheet' in raw_material.get('material_name', '').lower():
-                        # Calculate sheets consumed based on the allocated quantity for this production run
-                        sheets_consumed = allocated_qty
-                    
                     optimized_material = {
                         **raw_material,
                         'allocated_qty': allocated_qty,
@@ -342,8 +336,7 @@ class SmartBOMSuggestionService:
                         'shortage_qty': shortage_qty,
                         'sufficient': sufficient,
                         'shared_material': True,
-                        'sharing_info': f"Shared with {len(usage_info['suggestions_using']) - 1} other items",
-                        'sheets_consumed': sheets_consumed
+                        'sharing_info': f"Shared with {len(usage_info['suggestions_using']) - 1} other items"
                     }
                 else:
                     # Only one suggestion needs this material
@@ -352,20 +345,13 @@ class SmartBOMSuggestionService:
                     can_produce_qty = min(available_qty, needed_qty)
                     shortage_qty = max(0, needed_qty - available_qty)
                     
-                    # Calculate sheets consumed for Ms sheet materials
-                    sheets_consumed = None
-                    if 'ms sheet' in raw_material.get('material_name', '').lower():
-                        # Calculate sheets consumed based on the allocated quantity for this production run
-                        sheets_consumed = can_produce_qty
-                    
                     optimized_material = {
                         **raw_material,
                         'allocated_qty': can_produce_qty,
                         'can_produce_qty': can_produce_qty,
                         'shortage_qty': shortage_qty,
                         'sufficient': available_qty >= needed_qty,
-                        'shared_material': False,
-                        'sheets_consumed': sheets_consumed
+                        'shared_material': False
                     }
                 
                 if not optimized_material['sufficient']:
