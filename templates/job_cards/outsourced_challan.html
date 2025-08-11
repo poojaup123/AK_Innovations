@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outsourced Job Card Challan - {{ job_card.job_card_number }}</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 15px;
+            color: #333;
+            background: white;
+            font-size: 12px;
+        }
+        .challan-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border: 2px solid #333;
+        }
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .header h2 {
+            margin: 5px 0 0 0;
+            font-size: 18px;
+            font-weight: normal;
+        }
+        .challan-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+        }
+        .challan-info div {
+            font-weight: bold;
+        }
+        .section-header {
+            background: #34495e;
+            color: white;
+            padding: 10px 15px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .section-content {
+            padding: 15px;
+        }
+        .company-row {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+        .company-col {
+            flex: 1;
+            border: 1px solid #ddd;
+            padding: 15px;
+            background: #f9f9f9;
+        }
+        .company-col h4 {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+        .company-col p {
+            margin: 5px 0;
+            line-height: 1.4;
+        }
+        .job-details {
+            margin: 20px 0;
+        }
+        .job-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .detail-box {
+            border: 1px solid #ddd;
+            padding: 10px;
+            background: #f8f9fa;
+        }
+        .detail-box strong {
+            color: #2c3e50;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 11px;
+        }
+        table th {
+            background: #34495e;
+            color: white;
+            border: 1px solid #2c3e50;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: bold;
+        }
+        table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            vertical-align: top;
+        }
+        table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        .process-highlight {
+            background: #e8f4fd !important;
+            font-weight: bold;
+            color: #2980b9;
+        }
+        .footer {
+            background: #ecf0f1;
+            padding: 15px;
+            border-top: 2px solid #34495e;
+            margin-top: 30px;
+        }
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+        }
+        .signature-box {
+            text-align: center;
+            flex: 1;
+            margin: 0 20px;
+        }
+        .signature-line {
+            border-top: 1px solid #333;
+            margin-top: 50px;
+            padding-top: 5px;
+        }
+        .terms {
+            font-size: 10px;
+            color: #666;
+            margin-top: 20px;
+            line-height: 1.4;
+        }
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .print-button:hover {
+            background: #2980b9;
+        }
+        @media print {
+            .print-button {
+                display: none;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button" onclick="window.print()">🖨️ Print Challan</button>
+    
+    <div class="challan-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>OUTSOURCED JOB WORK CHALLAN</h1>
+            <h2>Material Delivery Note</h2>
+        </div>
+        
+        <!-- Challan Information -->
+        <div class="challan-info">
+            <div>
+                <strong>Challan No:</strong> {{ job_card.job_card_number }}-CH<br>
+                <strong>Date:</strong> {{ moment().format('DD/MM/YYYY') }}
+            </div>
+            <div style="text-align: right;">
+                <strong>Job Card:</strong> {{ job_card.job_card_number }}<br>
+                <strong>Process:</strong> <span class="process-highlight">{{ job_card.process_name or 'N/A' }}</span>
+            </div>
+        </div>
+        
+        <!-- Company Information -->
+        <div class="section-header">🏭 COMPANY INFORMATION</div>
+        <div class="section-content">
+            <div class="company-row">
+                <div class="company-col">
+                    <h4>From (Our Company)</h4>
+                    {% if company_settings %}
+                        <p><strong>{{ company_settings.company_name or 'Your Company Name' }}</strong></p>
+                        <p>{{ company_settings.address or 'Company Address' }}</p>
+                        <p>{{ company_settings.city or 'City' }} - {{ company_settings.pincode or 'PIN' }}</p>
+                        <p><strong>Phone:</strong> {{ company_settings.phone or 'Phone Number' }}</p>
+                        <p><strong>Email:</strong> {{ company_settings.email or 'email@company.com' }}</p>
+                        {% if company_settings.gstin %}
+                        <p><strong>GSTIN:</strong> {{ company_settings.gstin }}</p>
+                        {% endif %}
+                    {% else %}
+                        <p><strong>Your Company Name</strong></p>
+                        <p>Company Address</p>
+                        <p>City - PIN Code</p>
+                        <p><strong>Phone:</strong> Phone Number</p>
+                        <p><strong>Email:</strong> email@company.com</p>
+                    {% endif %}
+                </div>
+                
+                <div class="company-col">
+                    <h4>To (Vendor)</h4>
+                    {% if job_card.assigned_vendor %}
+                        <p><strong>{{ job_card.assigned_vendor.name }}</strong></p>
+                        <p>{{ job_card.assigned_vendor.address or 'Vendor Address' }}</p>
+                        <p>{{ job_card.assigned_vendor.city or 'City' }} - {{ job_card.assigned_vendor.pincode or 'PIN' }}</p>
+                        <p><strong>Contact:</strong> {{ job_card.assigned_vendor.contact_person or 'Contact Person' }}</p>
+                        <p><strong>Phone:</strong> {{ job_card.assigned_vendor.phone or 'Phone Number' }}</p>
+                        {% if job_card.assigned_vendor.gstin %}
+                        <p><strong>GSTIN:</strong> {{ job_card.assigned_vendor.gstin }}</p>
+                        {% endif %}
+                    {% else %}
+                        <p><strong>Vendor Name Not Assigned</strong></p>
+                        <p>Vendor Address</p>
+                        <p>City - PIN Code</p>
+                        <p><strong>Contact:</strong> Contact Person</p>
+                        <p><strong>Phone:</strong> Phone Number</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Job Details -->
+        <div class="section-header">📋 JOB DETAILS</div>
+        <div class="section-content">
+            <div class="job-details-grid">
+                <div class="detail-box">
+                    <strong>Item Name:</strong><br>
+                    {{ job_card.item.name if job_card.item else 'N/A' }}
+                </div>
+                <div class="detail-box">
+                    <strong>Process Required:</strong><br>
+                    <span class="process-highlight">{{ job_card.process_name or 'Not Specified' }}</span>
+                </div>
+                <div class="detail-box">
+                    <strong>Quantity Planned:</strong><br>
+                    {{ job_card.quantity_planned or 0 }} {{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'Pcs' }}
+                </div>
+                <div class="detail-box">
+                    <strong>Target Completion:</strong><br>
+                    {{ job_card.target_completion_date.strftime('%d/%m/%Y') if job_card.target_completion_date else 'Not Set' }}
+                </div>
+            </div>
+            
+            {% if job_card.special_instructions %}
+            <div class="detail-box" style="margin-top: 15px;">
+                <strong>Special Instructions:</strong><br>
+                {{ job_card.special_instructions }}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Materials Being Sent -->
+        <div class="section-header">📦 MATERIALS BEING SENT</div>
+        <div class="section-content">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">Sr.</th>
+                        <th style="width: 40%;">Material Description</th>
+                        <th style="width: 15%;">Quantity</th>
+                        <th style="width: 10%;">UOM</th>
+                        <th style="width: 15%;">Batch No.</th>
+                        <th style="width: 15%;">Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if materials %}
+                        {% for material in materials %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ material.item.name if material.item else 'N/A' }}</td>
+                            <td style="text-align: right;">{{ material.quantity_allocated or 0 }}</td>
+                            <td>{{ material.item.uom.abbreviation if material.item and material.item.uom else 'Pcs' }}</td>
+                            <td>{{ material.batch.batch_number if material.batch else '-' }}</td>
+                            <td>{{ material.notes or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Default row for main item -->
+                        <tr>
+                            <td>1</td>
+                            <td>{{ job_card.item.name if job_card.item else 'Material for Processing' }}</td>
+                            <td style="text-align: right;">{{ job_card.quantity_planned or 0 }}</td>
+                            <td>{{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'Pcs' }}</td>
+                            <td>-</td>
+                            <td>For {{ job_card.process_name or 'Processing' }}</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Terms and Conditions -->
+        <div class="section-header">📝 TERMS & CONDITIONS</div>
+        <div class="section-content">
+            <div class="terms">
+                <p><strong>1. Delivery & Return:</strong> Processed materials should be returned within the agreed timeframe along with this challan.</p>
+                <p><strong>2. Quality Standards:</strong> All work should meet the specified quality standards. Rejected items will be returned at vendor's cost.</p>
+                <p><strong>3. Material Responsibility:</strong> Vendor is responsible for the safe custody of materials until return.</p>
+                <p><strong>4. Process Compliance:</strong> All processes should be carried out as per technical specifications.</p>
+                <p><strong>5. Documentation:</strong> This challan should accompany the materials during transport and return.</p>
+            </div>
+        </div>
+        
+        <!-- Signatures -->
+        <div class="signature-section">
+            <div class="signature-box">
+                <div class="signature-line">
+                    <strong>Prepared By</strong><br>
+                    {{ current_user.username if current_user else 'System' }}<br>
+                    Date: {{ moment().format('DD/MM/YYYY') }}
+                </div>
+            </div>
+            
+            <div class="signature-box">
+                <div class="signature-line">
+                    <strong>Authorized By</strong><br>
+                    <br><br>
+                    Date: ___________
+                </div>
+            </div>
+            
+            <div class="signature-box">
+                <div class="signature-line">
+                    <strong>Vendor Acknowledgment</strong><br>
+                    <br><br>
+                    Date: ___________
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p style="text-align: center; margin: 0; font-weight: bold; color: #2c3e50;">
+                This is a computer-generated challan for {{ job_card.job_card_number }}
+            </p>
+            <p style="text-align: center; margin: 5px 0 0 0; font-size: 10px; color: #666;">
+                Generated on {{ moment().format('DD/MM/YYYY HH:mm:ss') }}
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // Auto-format current date/time
+        function formatDate(date) {
+            return date.toLocaleDateString('en-GB');
+        }
+        
+        function formatDateTime(date) {
+            return date.toLocaleDateString('en-GB') + ' ' + 
+                   date.toLocaleTimeString('en-GB', {hour12: false});
+        }
+        
+        // Replace moment() calls with actual dates
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            const dateElements = document.querySelectorAll('script');
+            
+            // Update challan date
+            const challanDate = document.querySelector('.challan-info div strong');
+            if (challanDate && challanDate.textContent.includes('Date:')) {
+                challanDate.parentNode.innerHTML = challanDate.parentNode.innerHTML
+                    .replace('{{ moment().format(\'DD/MM/YYYY\') }}', formatDate(now));
+            }
+            
+            // Update generated date
+            const footerDate = document.querySelector('.footer p:last-child');
+            if (footerDate) {
+                footerDate.innerHTML = footerDate.innerHTML
+                    .replace('{{ moment().format(\'DD/MM/YYYY HH:mm:ss\') }}', formatDateTime(now));
+            }
+        });
+    </script>
+</body>
+</html>

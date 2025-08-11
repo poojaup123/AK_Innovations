@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, make_response
 from flask_login import login_required, current_user
 from models import db, Production, Item, BOM, BOMItem, Employee, Supplier
 from models.job_card import JobCard, JobCardDailyStatus, JobCardMaterial
@@ -1024,3 +1024,33 @@ def quick_update():
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
+
+@job_cards_bp.route('/generate-challan/<int:job_card_id>')
+@login_required
+def generate_challan(job_card_id):
+    """Generate Job Card Challan PDF for Outsourced Job Cards"""
+    job_card = JobCard.query.get_or_404(job_card_id)
+    
+    # Only allow challan generation for outsourced job cards
+    if '-OUT-' not in job_card.job_card_number:
+        flash('Challan can only be generated for outsourced job cards', 'error')
+        return redirect(url_for('job_cards.view_job_card', id=job_card_id))
+    
+    # Get company settings for sender information
+    try:
+        from models import CompanySettings
+        company_settings = CompanySettings.query.first()
+    except:
+        company_settings = None
+    
+    # Get job card materials for the challan
+    materials = []
+    try:
+        materials = JobCardMaterial.query.filter_by(job_card_id=job_card_id).all()
+    except:
+        pass
+    
+    return render_template('job_cards/outsourced_challan.html', 
+                         job_card=job_card, 
+                         company_settings=company_settings,
+                         materials=materials)

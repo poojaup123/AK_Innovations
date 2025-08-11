@@ -379,6 +379,9 @@
                                 <a href="{{ url_for('admin.reject_job_card', job_card_id=job_card.id) }}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Reject {{ job_card.job_card_number }}?')">
                                     <i class="fas fa-times"></i> Reject
                                 </a>
+                                <a href="{{ url_for('job_cards.generate_challan', job_card_id=job_card.id) }}" class="btn btn-outline-info btn-sm" title="Generate Challan" target="_blank">
+                                    <i class="fas fa-file-alt"></i> Challan
+                                </a>
                                 {% if not job_card.grn_id %}
                                 <a href="{{ url_for('grn_job_card.create_grn_for_job_card', job_card_id=job_card.id) }}" class="btn btn-outline-warning btn-sm" title="Create GRN">
                                     <i class="fas fa-truck"></i> GRN
