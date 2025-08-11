@@ -3,8 +3,9 @@ Smart BOM-based Material Suggestion Service
 Analyzes nested BOM structures to provide intelligent suggestions when materials are short
 """
 
-from models import BOM, BOMItem, Item
+from models import BOM, BOMItem, Item, PurchaseOrder, PurchaseOrderItem
 from models.batch import InventoryBatch
+from models.grn import GRN, GRNLineItem
 from app import db
 from sqlalchemy import func
 from typing import List, Dict, Tuple, Optional
@@ -38,16 +39,24 @@ class SmartBOMSuggestionService:
             if available_qty < required_qty:
                 shortage_qty = required_qty - available_qty
                 
-                # Basic shortage info
+                # Get PO status information for this item
+                inventory_qty = SmartBOMSuggestionService._get_inventory_only_quantity(item)
+                pending_po_qty = SmartBOMSuggestionService._get_pending_po_quantity(item)
+                po_status = SmartBOMSuggestionService._get_po_status_info(item)
+                
+                # Basic shortage info with PO context
                 shortage_info = {
                     'item_id': item.id,
                     'item_code': item.code,
                     'item_name': item.name,
                     'required_qty': required_qty,
                     'available_qty': available_qty,
+                    'inventory_qty': inventory_qty,
+                    'pending_po_qty': pending_po_qty,
                     'shortage_qty': shortage_qty,
                     'unit': item.unit_of_measure,
-                    'item_type': getattr(item, 'item_type', 'material')
+                    'item_type': getattr(item, 'item_type', 'material'),
+                    'po_status': po_status
                 }
                 
                 # Check if this item can be manufactured (has its own BOM)
@@ -95,21 +104,90 @@ class SmartBOMSuggestionService:
     
     @staticmethod
     def _get_available_quantity(item: Item) -> float:
-        """Get total available quantity for an item across all inventory states and batches"""
-        # Item-level quantities
-        available_qty = 0
-        if hasattr(item, 'qty_raw') and hasattr(item, 'qty_finished'):
-            available_qty = (item.qty_raw or 0) + (item.qty_finished or 0)
-        else:
-            available_qty = item.current_stock or 0
-        
-        # Batch-level quantities (use higher value)
-        # Use actual InventoryBatch fields: qty_raw, qty_finished, qty_wip
+        """Get total available quantity for an item across all inventory states, batches, and pending POs"""
+        # Current inventory
         batch_qty = db.session.query(
             func.sum(InventoryBatch.qty_raw + InventoryBatch.qty_finished + InventoryBatch.qty_wip)
         ).filter_by(item_id=item.id).scalar() or 0
         
-        return max(available_qty, batch_qty)
+        # Pending quantities from Purchase Orders (ordered but not fully received)
+        pending_qty = SmartBOMSuggestionService._get_pending_po_quantity(item)
+        
+        return batch_qty + pending_qty
+    
+    @staticmethod
+    def _get_pending_po_quantity(item: Item) -> float:
+        """Get quantity of item that's ordered in POs but not yet received"""
+        # Get all PO items for this material
+        po_items = PurchaseOrderItem.query.filter_by(item_id=item.id).all()
+        
+        total_pending = 0
+        for po_item in po_items:
+            # Get the PO status
+            po = PurchaseOrder.query.get(po_item.purchase_order_id)
+            if po and po.status in ['sent', 'partial']:  # Active POs
+                ordered_qty = po_item.quantity_ordered or 0
+                
+                # Calculate how much has been received via GRNs
+                received_qty = 0
+                grns = GRN.query.filter_by(purchase_order_id=po.id).all()
+                for grn in grns:
+                    grn_items = GRNLineItem.query.filter_by(grn_id=grn.id, item_id=item.id).all()
+                    received_qty += sum(grn_item.quantity_received for grn_item in grn_items)
+                
+                # Pending = Ordered - Received
+                pending = max(0, ordered_qty - received_qty)
+                total_pending += pending
+        
+        return total_pending
+    
+    @staticmethod
+    def _get_inventory_only_quantity(item: Item) -> float:
+        """Get quantity available in inventory only (excluding pending POs)"""
+        batch_qty = db.session.query(
+            func.sum(InventoryBatch.qty_raw + InventoryBatch.qty_finished + InventoryBatch.qty_wip)
+        ).filter_by(item_id=item.id).scalar() or 0
+        return batch_qty
+    
+    @staticmethod
+    def _get_po_status_info(item: Item) -> Dict:
+        """Get detailed PO status information for an item"""
+        po_items = PurchaseOrderItem.query.filter_by(item_id=item.id).all()
+        
+        total_ordered = 0
+        total_received = 0
+        active_pos = []
+        
+        for po_item in po_items:
+            po = PurchaseOrder.query.get(po_item.purchase_order_id)
+            if po and po.status in ['sent', 'partial']:
+                ordered_qty = po_item.quantity_ordered or 0
+                total_ordered += ordered_qty
+                
+                # Calculate received quantity for this PO
+                received_qty = 0
+                grns = GRN.query.filter_by(purchase_order_id=po.id).all()
+                for grn in grns:
+                    grn_items = GRNLineItem.query.filter_by(grn_id=grn.id, item_id=item.id).all()
+                    received_qty += sum(grn_item.quantity_received for grn_item in grn_items)
+                
+                total_received += received_qty
+                
+                active_pos.append({
+                    'po_number': po.po_number,
+                    'ordered_qty': ordered_qty,
+                    'received_qty': received_qty,
+                    'pending_qty': max(0, ordered_qty - received_qty),
+                    'status': po.status
+                })
+        
+        return {
+            'has_active_pos': len(active_pos) > 0,
+            'total_ordered': total_ordered,
+            'total_received': total_received,
+            'total_pending': max(0, total_ordered - total_received),
+            'active_pos': active_pos
+        }
     
     @staticmethod
     def _analyze_manufacturing_options(item: Item, required_qty: float) -> Optional[Dict]:
@@ -322,8 +400,23 @@ class SmartBOMSuggestionService:
                 }
                 suggestions_to_add.append(partial_suggestion)
             
-            # Material procurement suggestion for shortage
+            # Material procurement suggestion for shortage (considering PO status)
             material_shortages = [mat for mat in optimized_raw_materials if mat['shortage_qty'] > 0]
+            if material_shortages:
+                # Check PO status for shortages - don't suggest purchase if sufficient POs exist
+                po_aware_shortages = []
+                for shortage in material_shortages:
+                    item = Item.query.get(shortage['item_id'])
+                    po_status = SmartBOMSuggestionService._get_po_status_info(item)
+                    
+                    # Only suggest purchase if pending PO quantity doesn't cover the shortage
+                    if po_status['total_pending'] < shortage['shortage_qty']:
+                        shortage['po_status'] = po_status
+                        shortage['actual_shortage'] = shortage['shortage_qty'] - po_status['total_pending']
+                        po_aware_shortages.append(shortage)
+                
+                material_shortages = po_aware_shortages
+                
             if material_shortages:
                 procurement_suggestion = {
                     'type': 'material_procurement_recommendation',
