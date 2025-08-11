@@ -292,11 +292,11 @@
                         {% for material in materials %}
                         <tr>
                             <td>{{ loop.index }}</td>
-                            <td>{{ material.item.name if material.item else 'N/A' }}</td>
-                            <td style="text-align: right;">{{ material.quantity_allocated or 0 }}</td>
-                            <td>{{ material.item.uom.abbreviation if material.item and material.item.uom else 'Pcs' }}</td>
-                            <td>{{ material.batch.batch_number if material.batch else '-' }}</td>
-                            <td>{{ material.notes or '-' }}</td>
+                            <td>{{ material.item.name if hasattr(material, 'item') and material.item else (material.get('item').name if isinstance(material, dict) and material.get('item') else 'N/A') }}</td>
+                            <td style="text-align: right;">{{ material.quantity_required if hasattr(material, 'quantity_required') else (material.get('quantity_required') if isinstance(material, dict) else (material.quantity_allocated or 0)) }}</td>
+                            <td>{{ material.item.uom.abbreviation if material.item and hasattr(material.item, 'uom') and material.item.uom else 'Pcs' }}</td>
+                            <td>{{ material.batch.batch_number if hasattr(material, 'batch') and material.batch else (material.get('batch_number', '-') if isinstance(material, dict) else '-') }}</td>
+                            <td>{{ material.notes if hasattr(material, 'notes') else (material.get('remarks', 'For Processing') if isinstance(material, dict) else '-') }}</td>
                         </tr>
                         {% endfor %}
                     {% else %}
