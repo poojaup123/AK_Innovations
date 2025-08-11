@@ -678,7 +678,8 @@ class SmartBOMSuggestionService:
                         'sufficient': False,
                         'unit_cost': material_info['unit_cost'],
                         'consolidated': True,
-                        'used_by': material_info['used_by_products']
+                        'used_by': material_info['used_by_products'],
+                        'po_status': SmartBOMSuggestionService._get_po_status_info(Item.query.get(material_id)) if Item.query.get(material_id) else {}
                     }],
                     'item_details': {
                         'item_id': material_id,
