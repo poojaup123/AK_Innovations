@@ -202,130 +202,130 @@
                 <div class="card-header">
                     <h5 class="mb-0"><i class="fas fa-route me-2"></i>Process Routing</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     {% if routing_steps %}
                         <div class="table-responsive">
-                            <table class="table table-hover table-sm">
+                            <table class="table table-sm table-hover mb-0">
                                 <thead class="table-dark">
-                                    <tr>
-                                        <th style="width: 6%;">Step</th>
-                                        <th style="width: 15%;">Process</th>
-                                        <th style="width: 20%;">Description</th>
-                                        <th style="width: 8%;">Est. Time</th>
-                                        <th style="width: 15%;">Status</th>
-                                        <th style="width: 8%;">Out. Sent</th>
-                                        <th style="width: 8%;">Out. Received</th>
-                                        <th style="width: 20%;">Actions</th>
+                                    <tr style="height: 40px;">
+                                        <th class="align-middle" style="width: 6%;">Step</th>
+                                        <th class="align-middle" style="width: 15%;">Process</th>
+                                        <th class="align-middle" style="width: 20%;">Description</th>
+                                        <th class="align-middle" style="width: 8%;">Est. Time</th>
+                                        <th class="align-middle" style="width: 15%;">Status</th>
+                                        <th class="align-middle" style="width: 8%;">Out. Sent</th>
+                                        <th class="align-middle" style="width: 8%;">Out. Received</th>
+                                        <th class="align-middle" style="width: 20%;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for step in routing_steps %}
-                                    <tr style="vertical-align: middle;">
-                                        <td class="text-center">
-                                            <span class="badge bg-primary rounded-pill" style="font-size: 0.75rem;">{{ step.step }}</span>
+                                    <tr style="height: 45px;">
+                                        <td class="align-middle text-center">
+                                            <span class="badge bg-primary rounded-pill fs-7">{{ step.step }}</span>
                                         </td>
-                                        <td><strong style="font-size: 0.875rem;">{{ step.process }}</strong></td>
-                                        <td style="font-size: 0.8rem;">{{ step.description }}</td>
-                                        <td class="text-center" style="font-size: 0.8rem;">{{ step.estimated_time }}</td>
-                                        <td>
+                                        <td class="align-middle"><strong class="fs-7">{{ step.process }}</strong></td>
+                                        <td class="align-middle"><small>{{ step.description }}</small></td>
+                                        <td class="align-middle text-center"><small>{{ step.estimated_time }}</small></td>
+                                        <td class="align-middle">
                                             {% set process_completed = step.process in (job_card.processes_completed or '') %}
                                             {% set is_current = job_card.current_process_step == step.process %}
                                             {% set can_start = loop.index == 1 or routing_steps[loop.index0 - 1].process in (job_card.processes_completed or '') %}
                                             
                                             {% if process_completed %}
-                                                <span class="badge bg-success" style="font-size: 0.7rem;">
-                                                    <i class="fas fa-check me-1"></i>Completed
+                                                <span class="badge bg-success badge-sm">
+                                                    <i class="fas fa-check"></i> Completed
                                                 </span>
                                             {% elif is_current %}
-                                                <span class="badge bg-warning" style="font-size: 0.7rem;">
-                                                    <i class="fas fa-play me-1"></i>In Progress
+                                                <span class="badge bg-warning badge-sm">
+                                                    <i class="fas fa-play"></i> In Progress
                                                 </span>
                                             {% elif can_start %}
-                                                <span class="badge bg-info" style="font-size: 0.7rem;">
-                                                    <i class="fas fa-clock me-1"></i>Ready to Start
+                                                <span class="badge bg-info badge-sm">
+                                                    <i class="fas fa-clock"></i> Ready to Start
                                                 </span>
                                             {% else %}
-                                                <span class="badge bg-secondary" style="font-size: 0.7rem;">
-                                                    <i class="fas fa-pause me-1"></i>Waiting for Previous
+                                                <span class="badge bg-secondary badge-sm">
+                                                    <i class="fas fa-pause"></i> Waiting for Previous
                                                 </span>
                                             {% endif %}
                                             
                                             {% if not can_start and not process_completed and not is_current %}
-                                                <small class="d-block text-muted" style="font-size: 0.65rem; margin-top: 2px;">
-                                                    <i class="fas fa-arrow-left me-1"></i>Needs material from {{ routing_steps[loop.index0 - 1].process }}
+                                                <br><small class="text-muted" style="font-size: 0.65rem;">
+                                                    <i class="fas fa-arrow-left"></i> Needs material from {{ routing_steps[loop.index0 - 1].process }}
                                                 </small>
                                             {% endif %}
                                         </td>
                                         
                                         <!-- Outsourced Quantity Sent -->
-                                        <td class="text-center" style="font-size: 0.75rem;">
+                                        <td class="align-middle text-center">
                                             {% set outsourced_cards = [] %}
-                                            {% for card in job_card.outsourced_job_cards or [] %}
-                                                {% if card.outsource_process == step.process %}
+                                            {% for card in job_card.child_job_cards or [] %}
+                                                {% if card.process_name == step.process and card.job_type == 'outsourced' %}
                                                     {% set _ = outsourced_cards.append(card) %}
                                                 {% endif %}
                                             {% endfor %}
                                             
                                             {% if outsourced_cards %}
-                                                {% set total_sent = outsourced_cards | sum(attribute='outsource_quantity') %}
-                                                <span class="badge bg-warning text-dark">{{ "%.1f"|format(total_sent) }}</span>
-                                                <small class="d-block text-muted" style="font-size: 0.6rem;">
+                                                {% set total_sent = outsourced_cards | sum(attribute='planned_quantity') %}
+                                                <span class="badge bg-warning text-dark badge-sm">{{ "%.1f"|format(total_sent) }}</span>
+                                                <br><small class="text-muted" style="font-size: 0.65rem;">
                                                     {{ outsourced_cards|length }} order{{ 's' if outsourced_cards|length > 1 else '' }}
                                                 </small>
                                             {% else %}
-                                                <span class="text-muted">-</span>
+                                                <small class="text-muted">-</small>
                                             {% endif %}
                                         </td>
                                         
                                         <!-- Outsourced Quantity Received (from GRN) -->
-                                        <td class="text-center" style="font-size: 0.75rem;">
+                                        <td class="align-middle text-center">
                                             {% if outsourced_cards %}
                                                 {% set total_received = 0 %}
                                                 {% for card in outsourced_cards %}
                                                     {% if card.grn_id %}
-                                                        {% set total_received = total_received + (card.outsource_quantity or 0) %}
+                                                        {% set total_received = total_received + (card.grn_received_quantity or card.planned_quantity or 0) %}
                                                     {% endif %}
                                                 {% endfor %}
                                                 
                                                 {% if total_received > 0 %}
-                                                    <span class="badge bg-success">{{ "%.1f"|format(total_received) }}</span>
-                                                    {% if total_received < (outsourced_cards | sum(attribute='outsource_quantity')) %}
-                                                        <small class="d-block text-warning" style="font-size: 0.6rem;">
+                                                    <span class="badge bg-success badge-sm">{{ "%.1f"|format(total_received) }}</span>
+                                                    {% if total_received < (outsourced_cards | sum(attribute='planned_quantity')) %}
+                                                        <br><small class="text-warning" style="font-size: 0.65rem;">
                                                             Partial
                                                         </small>
                                                     {% else %}
-                                                        <small class="d-block text-success" style="font-size: 0.6rem;">
+                                                        <br><small class="text-success" style="font-size: 0.65rem;">
                                                             Complete
                                                         </small>
                                                     {% endif %}
                                                 {% else %}
-                                                    <span class="badge bg-secondary">0.0</span>
-                                                    <small class="d-block text-muted" style="font-size: 0.6rem;">
+                                                    <span class="badge bg-secondary badge-sm">0.0</span>
+                                                    <br><small class="text-muted" style="font-size: 0.65rem;">
                                                         Pending
                                                     </small>
                                                 {% endif %}
                                             {% else %}
-                                                <span class="text-muted">-</span>
+                                                <small class="text-muted">-</small>
                                             {% endif %}
                                         </td>
                                         
-                                        <td>
+                                        <td class="align-middle text-center">
                                             {% if step.process in (job_card.processes_completed or '') %}
                                                 <!-- Process already completed -->
-                                                <button type="button" class="btn btn-xs btn-outline-info" disabled style="font-size: 0.7rem; padding: 2px 8px;">
+                                                <button type="button" class="btn btn-xs btn-outline-info" disabled>
                                                     <i class="fas fa-check"></i>
                                                 </button>
                                             {% elif job_card.current_process_step == step.process and job_card.status != 'completed' %}
                                                 <!-- Current active process -->
-                                                <div class="btn-group btn-group-sm" role="group">
+                                                <div class="btn-group btn-group-sm">
                                                     <button type="button" class="btn btn-xs btn-success" 
                                                             onclick="markStepComplete('{{ step.process }}')"
-                                                            title="Mark as completed" style="font-size: 0.7rem; padding: 2px 6px;">
+                                                            title="Mark as completed">
                                                         <i class="fas fa-check"></i>
                                                     </button>
                                                     <button type="button" class="btn btn-xs btn-warning" 
                                                             onclick="outsourceProcess('{{ step.process }}', {{ loop.index }})"
-                                                            title="Send to external vendor" style="font-size: 0.7rem; padding: 2px 6px;">
+                                                            title="Send to external vendor">
                                                         <i class="fas fa-external-link-alt"></i>
                                                     </button>
                                                 </div>
@@ -334,25 +334,25 @@
                                                 {% set can_start = loop.index == 1 or routing_steps[loop.index0 - 1].process in (job_card.processes_completed or '') %}
                                                 
                                                 {% if can_start %}
-                                                    <div class="btn-group btn-group-sm" role="group">
+                                                    <div class="btn-group btn-group-sm">
                                                         <button type="button" class="btn btn-xs btn-outline-primary" 
                                                                 onclick="startProcess('{{ step.process }}', {{ loop.index }})"
-                                                                title="Start in-house production" style="font-size: 0.7rem; padding: 2px 6px;">
+                                                                title="Start in-house production">
                                                             <i class="fas fa-play"></i>
                                                         </button>
                                                         <button type="button" class="btn btn-xs btn-outline-warning" 
                                                                 onclick="outsourceProcess('{{ step.process }}', {{ loop.index }})"
-                                                                title="Send to external vendor" style="font-size: 0.7rem; padding: 2px 6px;">
+                                                                title="Send to external vendor">
                                                             <i class="fas fa-external-link-alt"></i>
                                                         </button>
                                                     </div>
                                                 {% else %}
                                                     <div class="text-center">
                                                         <button type="button" class="btn btn-xs btn-outline-secondary" disabled
-                                                                title="Waiting for material from {{ routing_steps[loop.index0 - 1].process }}" style="font-size: 0.65rem; padding: 1px 4px;">
+                                                                title="Waiting for material from {{ routing_steps[loop.index0 - 1].process }}">
                                                             <i class="fas fa-hourglass-half"></i>
                                                         </button>
-                                                        <small class="text-muted d-block" style="font-size: 0.6rem;">
+                                                        <br><small class="text-muted" style="font-size: 0.6rem;">
                                                             {{ routing_steps[loop.index0 - 1].process }} → {{ step.process }}
                                                         </small>
                                                     </div>
