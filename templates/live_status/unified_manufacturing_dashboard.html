@@ -251,13 +251,13 @@
                                         <span class="badge bg-info">{{ process.process_name|title }}</span>
                                     </td>
                                     <td>
-                                        {% set status_class = {
-                                            'pending': 'secondary',
-                                            'in_progress': 'primary', 
-                                            'completed': 'success',
-                                            'on_hold': 'warning',
-                                            'delayed': 'danger'
-                                        }[process.status] or 'secondary' %}
+                                        {% set status_class = 'secondary' %}
+                                        {% if process.status == 'planned' %}{% set status_class = 'secondary' %}
+                                        {% elif process.status == 'in_progress' %}{% set status_class = 'primary' %}
+                                        {% elif process.status == 'outsourced' %}{% set status_class = 'warning' %}
+                                        {% elif process.status == 'completed' %}{% set status_class = 'success' %}
+                                        {% elif process.status == 'on_hold' %}{% set status_class = 'warning' %}
+                                        {% endif %}
                                         <span class="badge bg-{{ status_class }}">
                                             {{ process.status|replace('_', ' ')|title }}
                                         </span>
@@ -283,15 +283,8 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% set time_diff = (moment().utc() - process.created_at).total_seconds() / 3600 %}
                                         <small class="text-muted">
-                                            {% if time_diff < 1 %}
-                                                {{ (time_diff * 60)|round }}m
-                                            {% elif time_diff < 24 %}
-                                                {{ time_diff|round(1) }}h
-                                            {% else %}
-                                                {{ (time_diff / 24)|round(1) }}d
-                                            {% endif %}
+                                            {{ process.created_at.strftime('%d/%m %H:%M') if process.created_at else 'N/A' }}
                                         </small>
                                     </td>
                                     <td>
@@ -307,10 +300,10 @@
                                                class="btn btn-outline-primary btn-sm">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <button class="btn btn-outline-success btn-sm" 
-                                                    onclick="updateJobCardStatus({{ process.id }}, 'completed')">
+                                            <a href="{{ url_for('job_cards.daily_update', job_card_id=process.id) }}" 
+                                               class="btn btn-outline-success btn-sm">
                                                 <i class="fas fa-check"></i>
-                                            </button>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
