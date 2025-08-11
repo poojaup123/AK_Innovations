@@ -190,9 +190,13 @@
                                                                         {% for material in raw_materials %}
                                                                         <option value="{{ loop.index0 }}" 
                                                                                 data-weight="{{ material.weight_per_unit }}" 
-                                                                                data-quantity="{{ material.quantity }}"
-                                                                                data-total-weight="{{ material.total_weight }}">
-                                                                            {{ material.name }} ({{ material.weight_per_unit }}kg × {{ material.quantity }} {{ material.unit }})
+                                                                                data-quantity="{{ material.quantity_used }}"
+                                                                                data-total-weight="{{ material.total_weight }}"
+                                                                                data-code="{{ material.code }}">
+                                                                            {{ material.code }} - {{ material.name }} 
+                                                                            ({{ material.weight_per_unit }}kg/{{ material.unit }}, 
+                                                                            Used: {{ material.quantity_used }}{{ material.unit }}, 
+                                                                            Total: {{ material.total_weight }}kg)
                                                                         </option>
                                                                         {% endfor %}
                                                                     </select>
