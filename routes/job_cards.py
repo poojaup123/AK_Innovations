@@ -251,6 +251,122 @@ def create_job_card(production_id=None):
                          production=production, 
                          smart_suggestions=smart_suggestions)
 
+@job_cards_bp.route('/create-sub-bom-cards/<int:production_id>')
+@login_required
+def create_sub_bom_job_cards(production_id):
+    """Create job cards for all sub-BOMs within a master BOM"""
+    production = Production.query.get_or_404(production_id)
+    
+    if not production.bom:
+        flash('Production order must have a BOM to create sub-BOM job cards', 'warning')
+        return redirect(url_for('production.view_production', id=production_id))
+    
+    try:
+        created_cards = []
+        current_date = date.today()
+        
+        # Iterate through each component in the master BOM
+        for master_sequence, bom_item in enumerate(production.bom.items, 1):
+            # Check if this component has its own BOM (sub-BOM)
+            sub_bom = BOM.query.filter_by(product_id=bom_item.item_id, is_active=True).first()
+            
+            if sub_bom:
+                print(f"Creating job cards for sub-BOM: {sub_bom.bom_code} ({bom_item.item.name})")
+                
+                # Check if sub-BOM has defined processes
+                if hasattr(sub_bom, 'processes') and sub_bom.processes:
+                    # Create job cards for each process in the sub-BOM
+                    for process_seq, bom_process in enumerate(sub_bom.processes, 1):
+                        # Calculate quantities: production qty × master BOM requirement
+                        planned_qty = production.quantity_planned * bom_item.quantity_required
+                        
+                        # Generate unique job card number
+                        job_card_number = JobCard.generate_job_card_number(
+                            f"{production.production_number}-{bom_item.item.code}", 
+                            process_seq
+                        )
+                        
+                        # Calculate target date based on sequence
+                        target_date = current_date + timedelta(days=master_sequence + process_seq)
+                        
+                        job_card = JobCard(
+                            job_card_number=job_card_number,
+                            production_id=production_id,
+                            item_id=bom_item.item_id,  # The component being manufactured
+                            bom_id=sub_bom.id,  # Reference to the sub-BOM
+                            process_name=bom_process.process_name,
+                            process_sequence=process_seq,
+                            operation_description=f"{bom_process.process_name} process for {bom_item.item.name} (Sub-BOM: {sub_bom.bom_code})",
+                            planned_quantity=planned_qty,
+                            setup_time_minutes=bom_process.setup_time_minutes or 30,
+                            run_time_minutes=bom_process.run_time_minutes or 60,
+                            target_completion_date=target_date,
+                            priority='medium',
+                            estimated_cost=planned_qty * (bom_item.unit_cost or 0),
+                            production_notes=f"Manufacturing {bom_item.item.name} using sub-BOM {sub_bom.bom_code}",
+                            created_by_id=current_user.id
+                        )
+                        
+                        db.session.add(job_card)
+                        created_cards.append({
+                            'job_card_number': job_card_number,
+                            'component': bom_item.item.name,
+                            'process': bom_process.process_name,
+                            'quantity': planned_qty
+                        })
+                else:
+                    # Sub-BOM has no processes - create single manufacturing job card
+                    planned_qty = production.quantity_planned * bom_item.quantity_required
+                    job_card_number = JobCard.generate_job_card_number(
+                        f"{production.production_number}-{bom_item.item.code}", 
+                        1
+                    )
+                    
+                    # Generate intelligent process name
+                    process_name = _generate_process_name_for_component(bom_item)
+                    
+                    job_card = JobCard(
+                        job_card_number=job_card_number,
+                        production_id=production_id,
+                        item_id=bom_item.item_id,
+                        bom_id=sub_bom.id,
+                        process_name=process_name,
+                        process_sequence=1,
+                        operation_description=f"Complete manufacturing of {bom_item.item.name} as per sub-BOM {sub_bom.bom_code}",
+                        planned_quantity=planned_qty,
+                        target_completion_date=current_date + timedelta(days=master_sequence),
+                        priority='medium',
+                        estimated_cost=planned_qty * (bom_item.unit_cost or 0),
+                        created_by_id=current_user.id
+                    )
+                    
+                    db.session.add(job_card)
+                    created_cards.append({
+                        'job_card_number': job_card_number,
+                        'component': bom_item.item.name,
+                        'process': process_name,
+                        'quantity': planned_qty
+                    })
+        
+        if created_cards:
+            db.session.commit()
+            
+            # Create summary message
+            summary = "Sub-BOM job cards created:\n"
+            for card in created_cards:
+                summary += f"• {card['job_card_number']}: {card['component']} - {card['process']} ({card['quantity']} units)\n"
+            
+            flash(f'Successfully created {len(created_cards)} job cards for sub-BOMs', 'success')
+            return redirect(url_for('job_cards.list_job_cards'))
+        else:
+            flash('No sub-BOMs found in this production order', 'info')
+            return redirect(url_for('production.view_production', id=production_id))
+            
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error creating sub-BOM job cards: {str(e)}', 'danger')
+        return redirect(url_for('production.view_production', id=production_id))
+
 @job_cards_bp.route('/bulk-create/<int:production_id>')
 @login_required
 def bulk_create_from_bom(production_id):
