@@ -805,6 +805,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Global modal cleanup to prevent black overlay issues
+document.addEventListener('DOMContentLoaded', function() {
+    // Clean up any stuck modal backdrops on page load
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+});
+
 // Function to outsource a process
 function outsourceProcess(processName, stepNumber) {
     document.getElementById('processName').value = processName;
@@ -849,8 +859,25 @@ function submitOutsourcing() {
     const formData = new FormData(form);
     
     alert('Outsourcing request submitted! (Feature coming soon)');
-    bootstrap.Modal.getInstance(document.getElementById('outsourcingModal')).hide();
+    closeModal();
     // TODO: Implement actual outsourcing logic
+}
+
+// Function to properly close modal and clean up backdrop
+function closeModal() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('outsourcingModal'));
+    if (modal) {
+        modal.hide();
+    }
+    
+    // Force remove any stuck backdrops
+    setTimeout(() => {
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => backdrop.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    }, 300);
 }
 </script>
 
@@ -862,7 +889,7 @@ function submitOutsourcing() {
                 <h5 class="modal-title" id="outsourcingModalLabel">
                     <i class="fas fa-external-link-alt me-2"></i>Outsource Process
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" onclick="closeModal()" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="outsourcingForm">
@@ -912,7 +939,7 @@ function submitOutsourcing() {
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
                 <button type="button" class="btn btn-warning" onclick="submitOutsourcing()">
                     <i class="fas fa-external-link-alt me-1"></i>Outsource Process
                 </button>
