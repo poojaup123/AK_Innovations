@@ -873,6 +873,13 @@ function outsourceProcess(processName, stepNumber) {
     });
     
     modal.show();
+    
+    // Allow scrolling even when modal is open
+    setTimeout(() => {
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    }, 100);
 }
 
 // Function to start a process in-house
