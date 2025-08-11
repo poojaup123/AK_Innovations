@@ -292,7 +292,7 @@
                         {% for material in materials %}
                         <tr>
                             <td>{{ loop.index }}</td>
-                            <td>{{ material.item.name if material.item else (material['item'].name if material is mapping and 'item' in material else 'N/A') }}</td>
+                            <td>{{ material.item.name if material.item else (material['item_name'] if material is mapping and 'item_name' in material else 'N/A') }}</td>
                             <td style="text-align: right;">{{ material.quantity_required if material.quantity_required is defined else (material['quantity_required'] if material is mapping and 'quantity_required' in material else (material.quantity_allocated or 0)) }}</td>
                             <td>Pcs</td>
                             <td>{{ material.batch.batch_number if material.batch else (material['batch_number'] if material is mapping and 'batch_number' in material else 'TBD') }}</td>

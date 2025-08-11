@@ -1075,22 +1075,48 @@ def generate_challan(job_card_id):
                             'remarks': f'Raw material to make {production_qty} {job_card.item.name}'
                         })
                 else:
-                    # Fallback to showing the production item itself
+                    # For cutting process, show raw materials (MS sheets)
+                    if job_card.process_name and 'cut' in job_card.process_name.lower():
+                        # Calculate sheets needed (assuming 50 plates per sheet)
+                        plates_per_sheet = 50
+                        sheets_needed = (production_qty + plates_per_sheet - 1) // plates_per_sheet
+                        
+                        materials = [{
+                            'item': None,
+                            'item_name': 'MS Sheet (Raw Material)',
+                            'quantity_required': sheets_needed,
+                            'batch_number': 'TBD',
+                            'remarks': f'MS sheets to cut {int(production_qty):,} {job_card.item.name} ({plates_per_sheet} plates per sheet)'
+                        }]
+                    else:
+                        # For other processes, show the item being processed
+                        materials = [{
+                            'item': job_card.item,
+                            'quantity_required': production_qty,
+                            'batch_number': 'TBD',
+                            'remarks': f'Material for {job_card.process_name or "Processing"}'
+                        }]
+            except Exception as bom_error:
+                print(f"BOM lookup error: {bom_error}")
+                # For cutting process, show MS sheets
+                if job_card.process_name and 'cut' in job_card.process_name.lower():
+                    plates_per_sheet = 50
+                    sheets_needed = (production_qty + plates_per_sheet - 1) // plates_per_sheet
+                    
+                    materials = [{
+                        'item': None,
+                        'item_name': 'MS Sheet (Raw Material)',
+                        'quantity_required': sheets_needed,
+                        'batch_number': 'TBD',
+                        'remarks': f'MS sheets to cut {int(production_qty):,} {job_card.item.name} ({plates_per_sheet} plates per sheet)'
+                    }]
+                else:
                     materials = [{
                         'item': job_card.item,
                         'quantity_required': production_qty,
                         'batch_number': 'TBD',
                         'remarks': f'Material for {job_card.process_name or "Processing"}'
                     }]
-            except Exception as bom_error:
-                print(f"BOM lookup error: {bom_error}")
-                # Fallback material entry
-                materials = [{
-                    'item': job_card.item,
-                    'quantity_required': production_qty,
-                    'batch_number': 'TBD',
-                    'remarks': f'Material for {job_card.process_name or "Processing"}'
-                }]
     except Exception as e:
         print(f"Error getting materials: {e}")
         pass
