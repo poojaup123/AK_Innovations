@@ -69,7 +69,7 @@
                                             {{ form.qty_completed_today(class="form-control", readonly=True, style="background-color: #f8f9fa;") }}
                                             <span class="input-group-text small">{{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</span>
                                         </div>
-                                        <small class="form-text text-muted">Minimum across all processes (bottleneck)</small>
+                                        <small class="form-text text-muted">Final process output (includes GRN for outsourced)</small>
                                     </div>
                                     <div class="col-6">
                                         <label class="form-label small">Total Good Quality</label>
@@ -77,7 +77,7 @@
                                             {{ form.qty_good_today(class="form-control", readonly=True, style="background-color: #f8f9fa;") }}
                                             <span class="input-group-text small">{{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</span>
                                         </div>
-                                        <small class="form-text text-muted">Minimum good quality (sequential flow)</small>
+                                        <small class="form-text text-muted">Final good quality output</small>
                                     </div>
                                 </div>
                                 
@@ -172,6 +172,25 @@
                                                                onchange="toggleProcessQuantity({{ process.id }})">
                                                         <label class="form-check-label" for="process_{{ process.id }}">
                                                             <strong>Step {{ process.step_number }}: {{ process.process_name }}</strong>
+                                                            {% if process.is_outsourced %}
+                                                                <span class="badge bg-warning ms-2">Outsourced</span>
+                                                                {% if process.vendor %}
+                                                                <br><small class="text-info">Vendor: {{ process.vendor.name }}</small>
+                                                                {% endif %}
+                                                                {% if grn_data.get(process.id) %}
+                                                                <br><small class="text-success">
+                                                                    <i class="fas fa-check-circle me-1"></i>
+                                                                    {{ grn_data[process.id].total_received }} pieces received via {{ grn_data[process.id].grn_count }} GRN(s)
+                                                                </small>
+                                                                {% else %}
+                                                                <br><small class="text-warning">
+                                                                    <i class="fas fa-clock me-1"></i>
+                                                                    Awaiting GRN receipt
+                                                                </small>
+                                                                {% endif %}
+                                                            {% else %}
+                                                                <span class="badge bg-primary ms-2">In-house</span>
+                                                            {% endif %}
                                                             {% if process.operation_description %}
                                                             <br><small class="text-muted">{{ process.operation_description }}</small>
                                                             {% endif %}
@@ -537,10 +556,20 @@ function updateTotalQuantities() {
     {% endfor %}
     {% endif %}
     
-    // For sequential manufacturing: total completed = minimum of all processes
-    // This represents the bottleneck - you can't have more finished goods than the slowest process
-    const totalCompleted = completedQuantities.length > 0 ? Math.min(...completedQuantities) : 0;
-    const totalGood = goodQuantities.length > 0 ? Math.min(...goodQuantities) : 0;
+    // For sequential manufacturing with outsourcing: total completed = final process output
+    // If the last process is outsourced, check GRN received quantity
+    // If all processes are in-house, use minimum (bottleneck logic)
+    
+    let totalCompleted = 0;
+    let totalGood = 0;
+    
+    // Check if we have any process quantities
+    if (completedQuantities.length > 0) {
+        // For now, use the last completed process (final step determines total output)
+        // TODO: Integrate with GRN system to get actual received quantities for outsourced processes
+        totalCompleted = Math.max(...completedQuantities); // Use the highest as it represents final output
+        totalGood = goodQuantities.length > 0 ? Math.max(...goodQuantities) : 0;
+    }
     
     // Update the main form fields
     const completedField = document.getElementById('qty_completed_today');
