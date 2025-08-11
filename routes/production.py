@@ -1264,6 +1264,7 @@ def edit_bom(id):
         bom.unit_weight = form.unit_weight.data or 0.0
         bom.unit_weight_uom = form.unit_weight_uom.data or 'kg'
         bom.estimated_scrap_percent = form.estimated_scrap_percent.data or 0.0
+        bom.scrap_weight = form.scrap_weight.data or 0.0
         bom.scrap_quantity = form.scrap_quantity.data or 0.0
         bom.scrap_uom = form.scrap_uom.data or 'kg'
         bom.scrap_value_recovery_percent = form.scrap_value_recovery_percent.data or 15.0

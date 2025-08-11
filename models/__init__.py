@@ -2090,6 +2090,7 @@ class BOM(db.Model):
     estimated_scrap_percent = db.Column(db.Float, default=0.0)  # Overall expected scrap percentage
     scrap_quantity = db.Column(db.Float, default=0.0)  # Expected scrap quantity per unit produced
     scrap_uom = db.Column(db.String(20), default='kg')  # Unit of measure for scrap (typically weight-based)
+    scrap_weight = db.Column(db.Float, default=0.0)  # Dedicated scrap weight field in kg
     scrap_value_recovery_percent = db.Column(db.Float, default=15.0)  # Percentage of original material value recoverable from scrap
     description = db.Column(db.Text)  # BOM description
     remarks = db.Column(db.Text)  # Additional remarks

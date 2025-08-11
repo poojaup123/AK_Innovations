@@ -756,6 +756,8 @@ class BOMForm(FlaskForm):
     estimated_scrap_percent = FloatField('Overall Scrap %', validators=[Optional(), NumberRange(min=0, max=100)], default=0.0)
     scrap_quantity = FloatField('Expected Scrap Quantity per Unit', validators=[Optional(), NumberRange(min=0)], default=0.0,
                                render_kw={"placeholder": "Weight-based scrap expected per unit produced"})
+    scrap_weight = FloatField('Scrap Weight (kg)', validators=[Optional(), NumberRange(min=0)], default=0.0,
+                             render_kw={"placeholder": "Expected scrap weight in kg"})
     scrap_uom = SelectField('Scrap UOM', validators=[Optional()], choices=[], default='kg')
     scrap_value_recovery_percent = FloatField('Scrap Value Recovery %', validators=[Optional(), NumberRange(min=0, max=100)], default=15.0,
                                             render_kw={"placeholder": "Percentage of material value recoverable from scrap"})
