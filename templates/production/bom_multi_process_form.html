@@ -170,27 +170,50 @@
                                                     <div class="col-md-12">
                                                         <div class="alert alert-info">
                                                             <h6><i class="fas fa-calculator"></i> Scrap Calculation Helper</h6>
+                                                            
+                                                            <!-- BOM Raw Materials Selector -->
+                                                            {% if raw_materials %}
+                                                            <div class="row mb-3">
+                                                                <div class="col-md-12">
+                                                                    <label class="form-label">Select Raw Material from BOM</label>
+                                                                    <select class="form-select bom-material-selector" data-process-index="0" onchange="loadBomMaterialData(0, this.value)">
+                                                                        <option value="">Manual Entry</option>
+                                                                        {% for material in raw_materials %}
+                                                                        <option value="{{ loop.index0 }}" 
+                                                                                data-weight="{{ material.weight_per_unit }}" 
+                                                                                data-quantity="{{ material.quantity }}"
+                                                                                data-total-weight="{{ material.total_weight }}">
+                                                                            {{ material.name }} ({{ material.weight_per_unit }}kg × {{ material.quantity }} {{ material.unit }})
+                                                                        </option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                    <small class="text-muted">Auto-populate from BOM components or enter manually</small>
+                                                                </div>
+                                                            </div>
+                                                            {% endif %}
+                                                            
                                                             <div class="row">
                                                                 <div class="col-md-4">
                                                                     <label class="form-label">Input Material Weight/Unit (kg)</label>
                                                                     <input type="number" step="0.001" class="form-control input-material-weight" 
                                                                            placeholder="e.g., 25.5" data-process-index="0"
                                                                            onchange="updateScrapCalculations(0)">
-                                                                    <small class="text-muted">Weight of MS sheet per unit</small>
+                                                                    <small class="text-muted">Weight of raw material per unit</small>
                                                                 </div>
                                                                 <div class="col-md-4">
                                                                     <label class="form-label">Units Made from Input</label>
                                                                     <input type="number" class="form-control units-made" 
-                                                                           placeholder="e.g., 600" data-process-index="0"
+                                                                           placeholder="e.g., {{ bom.output_quantity or 600 }}" data-process-index="0"
                                                                            onchange="updateScrapCalculations(0)">
-                                                                    <small class="text-muted">Mounted Plates per MS sheet</small>
+                                                                    <small class="text-muted">{{ bom.product.name if bom.product else 'Products' }} per raw material</small>
                                                                 </div>
                                                                 <div class="col-md-4">
                                                                     <label class="form-label">Output Unit Weight (kg)</label>
                                                                     <input type="number" step="0.001" class="form-control output-unit-weight" 
-                                                                           placeholder="e.g., 0.042" data-process-index="0"
-                                                                           onchange="updateScrapCalculations(0)">
-                                                                    <small class="text-muted">Weight of 1 Mounted Plate</small>
+                                                                           placeholder="e.g., {{ bom.product.weight_per_unit if bom.product and bom.product.weight_per_unit else '0.042' }}" data-process-index="0"
+                                                                           onchange="updateScrapCalculations(0)"
+                                                                           {% if bom.product and bom.product.weight_per_unit %}value="{{ bom.product.weight_per_unit }}"{% endif %}>
+                                                                    <small class="text-muted">Weight of 1 {{ bom.product.name if bom.product else 'finished product' }}</small>
                                                                 </div>
                                                             </div>
                                                             <div class="row mt-2">
@@ -418,6 +441,48 @@ function toggleScrapSection(processIndex, processName) {
         }
     }
 }
+
+// Function to load BOM material data into scrap calculation helper
+function loadBomMaterialData(processIndex, materialIndex) {
+    if (materialIndex === '') {
+        // Manual entry - clear all fields
+        const container = document.querySelector(`[data-process-index="${processIndex}"]`).closest('.process-item');
+        const inputWeight = container.querySelector('.input-material-weight');
+        const unitsMade = container.querySelector('.units-made');
+        const outputWeight = container.querySelector('.output-unit-weight');
+        
+        if (inputWeight) inputWeight.value = '';
+        if (unitsMade) unitsMade.value = '';
+        if (outputWeight) outputWeight.value = '';
+        return;
+    }
+    
+    // Get the selected option
+    const selector = document.querySelector(`[data-process-index="${processIndex}"].bom-material-selector`);
+    const selectedOption = selector.options[parseInt(materialIndex) + 1]; // +1 because first option is "Manual Entry"
+    
+    if (selectedOption) {
+        const weight = selectedOption.getAttribute('data-weight');
+        const quantity = selectedOption.getAttribute('data-quantity');
+        const totalWeight = selectedOption.getAttribute('data-total-weight');
+        
+        // Find the scrap calculation fields in the same process
+        const container = document.querySelector(`[data-process-index="${processIndex}"]`).closest('.process-item');
+        const inputWeight = container.querySelector('.input-material-weight');
+        const unitsMade = container.querySelector('.units-made');
+        const outputWeight = container.querySelector('.output-unit-weight');
+        
+        // Auto-populate fields
+        if (inputWeight) inputWeight.value = weight;
+        if (unitsMade) unitsMade.value = {{ bom.output_quantity or 'quantity' }};
+        if (outputWeight && {{ bom.product.weight_per_unit if bom.product and bom.product.weight_per_unit else 'false' }}) {
+            outputWeight.value = {{ bom.product.weight_per_unit if bom.product and bom.product.weight_per_unit else '""' }};
+        }
+        
+        // Trigger calculation update
+        updateScrapCalculations(processIndex);
+    }
+}
 </script>
 <script>
 let processCount = 1;
@@ -570,27 +635,40 @@ function createProcessItem(processNumber) {
                     <div class="col-md-12">
                         <div class="alert alert-info">
                             <h6><i class="fas fa-calculator"></i> Scrap Calculation Helper</h6>
+                            
+                            <!-- BOM Raw Materials Selector for Dynamic Processes -->
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <label class="form-label">Select Raw Material from BOM</label>
+                                    <select class="form-select bom-material-selector" data-process-index="${index}" onchange="loadBomMaterialData(${index}, this.value)">
+                                        <option value="">Manual Entry</option>
+                                        ${bomMaterialOptions}
+                                    </select>
+                                    <small class="text-muted">Auto-populate from BOM components or enter manually</small>
+                                </div>
+                            </div>
+                            
                             <div class="row">
                                 <div class="col-md-4">
                                     <label class="form-label">Input Material Weight/Unit (kg)</label>
                                     <input type="number" step="0.001" class="form-control input-material-weight" 
                                            placeholder="e.g., 25.5" data-process-index="${index}"
                                            onchange="updateScrapCalculations(${index})">
-                                    <small class="text-muted">Weight of MS sheet per unit</small>
+                                    <small class="text-muted">Weight of raw material per unit</small>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Units Made from Input</label>
                                     <input type="number" class="form-control units-made" 
                                            placeholder="e.g., 600" data-process-index="${index}"
                                            onchange="updateScrapCalculations(${index})">
-                                    <small class="text-muted">Mounted Plates per MS sheet</small>
+                                    <small class="text-muted">Products per raw material</small>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Output Unit Weight (kg)</label>
                                     <input type="number" step="0.001" class="form-control output-unit-weight" 
                                            placeholder="e.g., 0.042" data-process-index="${index}"
                                            onchange="updateScrapCalculations(${index})">
-                                    <small class="text-muted">Weight of 1 Mounted Plate</small>
+                                    <small class="text-muted">Weight of 1 finished product</small>
                                 </div>
                             </div>
                             <div class="row mt-2">

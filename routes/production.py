@@ -1950,6 +1950,19 @@ def add_multi_bom_process(bom_id):
     # Get available items for transformation dropdowns
     available_items = Item.query.order_by(Item.name).all()
     
+    # Get BOM raw materials for scrap calculation helper
+    raw_materials = []
+    if bom.items:
+        for bom_item in bom.items:
+            if bom_item.material and bom_item.material.weight_per_unit:
+                raw_materials.append({
+                    'name': bom_item.material.name,
+                    'weight_per_unit': bom_item.material.weight_per_unit,
+                    'quantity': bom_item.quantity,
+                    'unit': bom_item.unit,
+                    'total_weight': bom_item.material.weight_per_unit * bom_item.quantity
+                })
+    
     # Determine the title based on whether we're editing or adding
     if edit_process:
         title = f'Edit Process: {edit_process.process_name} - {bom.bom_code}'
@@ -1960,6 +1973,7 @@ def add_multi_bom_process(bom_id):
                          bom=bom,
                          form=form,
                          available_items=available_items,
+                         raw_materials=raw_materials,
                          edit_process=edit_process,
                          title=title)
 
