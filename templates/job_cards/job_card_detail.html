@@ -170,12 +170,14 @@
                             <table class="table table-hover table-sm">
                                 <thead class="table-dark">
                                     <tr>
-                                        <th style="width: 8%;">Step</th>
-                                        <th style="width: 18%;">Process</th>
-                                        <th style="width: 25%;">Description</th>
-                                        <th style="width: 12%;">Est. Time</th>
-                                        <th style="width: 20%;">Status</th>
-                                        <th style="width: 17%;">Actions</th>
+                                        <th style="width: 6%;">Step</th>
+                                        <th style="width: 15%;">Process</th>
+                                        <th style="width: 20%;">Description</th>
+                                        <th style="width: 8%;">Est. Time</th>
+                                        <th style="width: 15%;">Status</th>
+                                        <th style="width: 8%;">Out. Sent</th>
+                                        <th style="width: 8%;">Out. Received</th>
+                                        <th style="width: 20%;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -216,6 +218,59 @@
                                                 </small>
                                             {% endif %}
                                         </td>
+                                        
+                                        <!-- Outsourced Quantity Sent -->
+                                        <td class="text-center" style="font-size: 0.75rem;">
+                                            {% set outsourced_cards = [] %}
+                                            {% for card in job_card.outsourced_job_cards or [] %}
+                                                {% if card.outsource_process == step.process %}
+                                                    {% set _ = outsourced_cards.append(card) %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            
+                                            {% if outsourced_cards %}
+                                                {% set total_sent = outsourced_cards | sum(attribute='outsource_quantity') %}
+                                                <span class="badge bg-warning text-dark">{{ "%.1f"|format(total_sent) }}</span>
+                                                <small class="d-block text-muted" style="font-size: 0.6rem;">
+                                                    {{ outsourced_cards|length }} order{{ 's' if outsourced_cards|length > 1 else '' }}
+                                                </small>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        
+                                        <!-- Outsourced Quantity Received (from GRN) -->
+                                        <td class="text-center" style="font-size: 0.75rem;">
+                                            {% if outsourced_cards %}
+                                                {% set total_received = 0 %}
+                                                {% for card in outsourced_cards %}
+                                                    {% if card.grn_id %}
+                                                        {% set total_received = total_received + (card.outsource_quantity or 0) %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                                
+                                                {% if total_received > 0 %}
+                                                    <span class="badge bg-success">{{ "%.1f"|format(total_received) }}</span>
+                                                    {% if total_received < (outsourced_cards | sum(attribute='outsource_quantity')) %}
+                                                        <small class="d-block text-warning" style="font-size: 0.6rem;">
+                                                            Partial
+                                                        </small>
+                                                    {% else %}
+                                                        <small class="d-block text-success" style="font-size: 0.6rem;">
+                                                            Complete
+                                                        </small>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="badge bg-secondary">0.0</span>
+                                                    <small class="d-block text-muted" style="font-size: 0.6rem;">
+                                                        Pending
+                                                    </small>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        
                                         <td>
                                             {% if step.process in (job_card.processes_completed or '') %}
                                                 <!-- Process already completed -->
