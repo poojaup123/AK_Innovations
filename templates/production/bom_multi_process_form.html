@@ -213,9 +213,16 @@
                                                                 <div class="col-md-4">
                                                                     <label class="form-label">Input Material Weight/Unit (kg)</label>
                                                                     <input type="number" step="0.001" class="form-control input-material-weight" 
-                                                                           placeholder="e.g., 25.5" data-process-index="0"
+                                                                           placeholder="{% if raw_materials %}Auto-filled from BOM{% else %}e.g., 25.5{% endif %}" data-process-index="0"
+                                                                           {% if raw_materials %}value="{{ raw_materials|sum(attribute='total_weight') }}"{% endif %}
                                                                            onchange="updateScrapCalculations(0)">
-                                                                    <small class="text-muted">Weight of raw material per unit</small>
+                                                                    <small class="text-muted">
+                                                                        {% if raw_materials %}
+                                                                        <i class="fas fa-check text-success"></i> Auto-populated from BOM: {{ raw_materials|sum(attribute='total_weight') }}kg
+                                                                        {% else %}
+                                                                        Weight of raw material per unit
+                                                                        {% endif %}
+                                                                    </small>
                                                                 </div>
                                                                 <div class="col-md-4">
                                                                     <label class="form-label">Units Made from Input</label>
@@ -404,7 +411,25 @@ function updateScrapCalculations(processIndex) {
 
 function calculateScrapWeight(processIndex) {
     const scrapPercent = parseFloat(document.querySelector(`[data-process-index="${processIndex}"].scrap-percent-input`).value) || 0;
-    const inputWeight = parseFloat(document.querySelector(`[data-process-index="${processIndex}"].input-material-weight`).value) || 0;
+    let inputWeight = parseFloat(document.querySelector(`[data-process-index="${processIndex}"].input-material-weight`).value) || 0;
+    
+    // If no manual input weight, try to get from BOM material selector
+    if (inputWeight === 0) {
+        const materialSelector = document.querySelector(`#scrap_section_${processIndex} .bom-material-selector`);
+        if (materialSelector && materialSelector.value !== '') {
+            const selectedOption = materialSelector.options[materialSelector.selectedIndex];
+            if (selectedOption && selectedOption.dataset.totalWeight) {
+                inputWeight = parseFloat(selectedOption.dataset.totalWeight) || 0;
+            }
+        }
+    }
+    
+    // Use BOM unit weight as fallback
+    if (inputWeight === 0) {
+        const bomUnitWeight = {{ bom.unit_weight if bom.unit_weight else 0 }};
+        const bomOutputQty = {{ bom.output_quantity if bom.output_quantity else 1 }};
+        inputWeight = bomUnitWeight * bomOutputQty;
+    }
     
     if (scrapPercent > 0 && inputWeight > 0) {
         const scrapWeight = (scrapPercent / 100) * inputWeight;
@@ -412,6 +437,9 @@ function calculateScrapWeight(processIndex) {
         if (scrapWeightInput) {
             scrapWeightInput.value = scrapWeight.toFixed(3);
         }
+        
+        // Show calculation details
+        console.log(`Scrap calculation: ${inputWeight}kg × ${scrapPercent}% = ${scrapWeight.toFixed(3)}kg`);
     }
 }
 
@@ -502,6 +530,11 @@ function loadBomMaterialData(processIndex, materialIndex) {
             const calculatedWeight = totalWeight / {{ bom.output_quantity or 1 }};
             outputWeight.value = calculatedWeight.toFixed(3);
             {% endif %}
+        }
+        
+        // Auto-populate input weight field for scrap calculations
+        if (inputWeight && totalWeight > 0) {
+            inputWeight.value = totalWeight.toFixed(3);
         }
         
         // Trigger calculation update
