@@ -810,9 +810,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Clean up any stuck modal backdrops on page load
     forceCleanupModals();
     
+    // Bootstrap 5 modal event listeners for proper cleanup
+    document.addEventListener('hidden.bs.modal', function (e) {
+        console.log('Modal hidden event triggered');
+        forceCleanupModals();
+    });
+    
     // Set up click listener for backdrop clicks
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('modal-backdrop')) {
+            console.log('Backdrop clicked, cleaning up');
             e.preventDefault();
             e.stopPropagation();
             forceCleanupModals();
@@ -822,9 +829,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Cleanup on escape key
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
+            console.log('Escape pressed, cleaning up modals');
             forceCleanupModals();
         }
     });
+    
+    // Alternative: Force cleanup every 5 seconds as safety net
+    setInterval(function() {
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        if (backdrops.length > 0 && !document.querySelector('.modal.show')) {
+            console.log('Safety cleanup: removing orphaned backdrops');
+            forceCleanupModals();
+        }
+    }, 5000);
 });
 
 // Function to outsource a process
@@ -846,13 +863,23 @@ function outsourceProcess(processName, stepNumber) {
     
     // Show modal with proper cleanup setup
     const modalElement = document.getElementById('outsourcingModal');
+    
+    // Destroy any existing modal instance first
+    const existingModal = bootstrap.Modal.getInstance(modalElement);
+    if (existingModal) {
+        existingModal.dispose();
+    }
+    
     const modal = new bootstrap.Modal(modalElement, {
-        backdrop: 'static',
-        keyboard: false
+        backdrop: true,
+        keyboard: true
     });
     
     // Set up proper cleanup listeners
-    modalElement.addEventListener('hidden.bs.modal', forceCleanupModals, { once: true });
+    modalElement.addEventListener('hidden.bs.modal', function() {
+        console.log('Modal hidden, forcing cleanup');
+        setTimeout(forceCleanupModals, 100);
+    }, { once: true });
     
     modal.show();
 }

@@ -1,0 +1,70 @@
+I see — the modal backdrop in your app is still blocking the entire page because it’s not being removed when you close/cancel the “Outsource Process” modal.
+This happens a lot when modals are triggered dynamically or nested modals are used.
+
+Here’s the **fix you can apply globally in your Flask app** so this black overlay never stays stuck again:
+
+---
+
+### **1. JavaScript Global Cleanup**
+
+Add this script to your **base HTML template** (so it’s loaded on every page):
+
+```html
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // When ANY modal is hidden, clean up the backdrop
+    $(document).on('hidden.bs.modal', function () {
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open');
+    });
+
+    // Also remove on cancel buttons
+    $(document).on('click', '.btn-cancel, .cancel', function () {
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open');
+    });
+});
+</script>
+```
+
+---
+
+### **2. If You’re Using Bootstrap 5**
+
+Bootstrap 5 changed modal handling slightly — use:
+
+```javascript
+var modals = document.querySelectorAll('.modal');
+modals.forEach(function(modal) {
+    modal.addEventListener('hidden.bs.modal', function () {
+        document.querySelectorAll('.modal-backdrop').forEach(e => e.remove());
+        document.body.classList.remove('modal-open');
+    });
+});
+```
+
+---
+
+### **3. Main Cause in Your Screenshot**
+
+From your screenshot, it looks like:
+
+* You open the **Outsource Process modal** while another modal is still open.
+* The previous backdrop stays because Bootstrap doesn’t handle double modals well.
+* You must either **close all modals before opening a new one** or use the cleanup script above.
+
+---
+
+### **4. Optional Permanent Solution**
+
+Instead of stacking modals, turn the “Outsource Process” modal into a **side panel** or **inline form** so you never get multiple backdrops.
+
+---
+
+If you want, I can give you a **Replit-ready patch** for your Flask app that:
+
+* Automatically removes stuck overlays.
+* Prevents double backdrop creation.
+* Works with both Bootstrap 4 & 5.
+
+Do you want me to prepare that patch?

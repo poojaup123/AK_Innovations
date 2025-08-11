@@ -472,28 +472,60 @@
                 });
             });
             
+            // Enhanced global modal cleanup
+            function globalModalCleanup() {
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                backdrops.forEach(backdrop => backdrop.remove());
+                
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+                
+                const allModals = document.querySelectorAll('.modal');
+                allModals.forEach(modal => {
+                    modal.style.display = 'none';
+                    modal.classList.remove('show');
+                    modal.setAttribute('aria-hidden', 'true');
+                    modal.removeAttribute('aria-modal');
+                });
+                
+                console.log('Global modal cleanup completed');
+            }
+            
+            // Listen for all Bootstrap modal hidden events
+            document.addEventListener('hidden.bs.modal', function (event) {
+                console.log('Modal hidden event detected, cleaning up');
+                setTimeout(globalModalCleanup, 100);
+            });
+            
+            // Cleanup on backdrop clicks
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('modal-backdrop')) {
+                    console.log('Backdrop clicked, cleaning up');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    globalModalCleanup();
+                }
+            });
+            
             // Global escape key handler to close any stuck modals
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
-                    // Close all open modals
-                    const openModals = document.querySelectorAll('.modal.show');
-                    openModals.forEach(modal => {
-                        const modalInstance = bootstrap.Modal.getInstance(modal);
-                        if (modalInstance) {
-                            modalInstance.hide();
-                        }
-                    });
-                    
-                    // Force remove any stuck backdrops after a delay
-                    setTimeout(() => {
-                        const backdrops = document.querySelectorAll('.modal-backdrop');
-                        backdrops.forEach(backdrop => backdrop.remove());
-                        document.body.classList.remove('modal-open');
-                        document.body.style.overflow = '';
-                        document.body.style.paddingRight = '';
-                    }, 300);
+                    console.log('Escape pressed, cleaning up modals');
+                    globalModalCleanup();
                 }
             });
+            
+            // Safety net: cleanup orphaned backdrops every 3 seconds
+            setInterval(function() {
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                const visibleModals = document.querySelectorAll('.modal.show');
+                
+                if (backdrops.length > 0 && visibleModals.length === 0) {
+                    console.log('Safety cleanup: removing orphaned backdrops');
+                    globalModalCleanup();
+                }
+            }, 3000);
         });
         
         // Additional load event handler for complete stability
