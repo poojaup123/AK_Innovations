@@ -1958,9 +1958,9 @@ def add_multi_bom_process(bom_id):
                 raw_materials.append({
                     'name': bom_item.material.name,
                     'weight_per_unit': bom_item.material.unit_weight,
-                    'quantity': bom_item.quantity,
+                    'quantity': bom_item.qty_required,
                     'unit': bom_item.unit,
-                    'total_weight': bom_item.material.unit_weight * bom_item.quantity
+                    'total_weight': bom_item.material.unit_weight * bom_item.qty_required
                 })
     
     # Determine the title based on whether we're editing or adding
