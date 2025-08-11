@@ -446,7 +446,7 @@ class SmartBOMSuggestionService:
                     'remaining_quantity': suggestion['target_quantity'] - max_producible,
                     'material_shortages': material_shortages,
                     'priority': 'high',
-                    'estimated_cost': sum(mat['shortage_qty'] * (mat.get('unit_cost', 0) or 0) for mat in material_shortages),
+                    'estimated_cost': sum(mat['shortage_qty'] * (mat.get('unit_price', 0) or 0) for mat in material_shortages),
                     'bom_id': suggestion.get('bom_id'),
                     'bom_product_name': suggestion.get('target_item_name'),
                     'action_steps': [
@@ -604,7 +604,7 @@ class SmartBOMSuggestionService:
                                     'total_shortage_qty': 0,
                                     'used_by_products': [],
                                     'estimated_cost': 0,
-                                    'unit_cost': material.get('unit_cost', 0)
+                                    'unit_cost': material.get('unit_price', 0)
                                 }
                             
                             consolidated_materials[material_id]['total_shortage_qty'] += shortage_qty
@@ -612,7 +612,7 @@ class SmartBOMSuggestionService:
                                 'product_name': suggestion.get('target_item_name', 'Unknown'),
                                 'quantity_needed': shortage_qty
                             })
-                            consolidated_materials[material_id]['estimated_cost'] += shortage_qty * material.get('unit_cost', 0)
+                            consolidated_materials[material_id]['estimated_cost'] += shortage_qty * material.get('unit_price', 0)
             
             # Also process material_shortages from material_procurement_recommendation suggestions
             if suggestion.get('type') == 'material_procurement_recommendation' and suggestion.get('material_shortages'):
@@ -629,7 +629,7 @@ class SmartBOMSuggestionService:
                                 'total_shortage_qty': 0,
                                 'used_by_products': [],
                                 'estimated_cost': 0,
-                                'unit_cost': material.get('unit_cost', 0)
+                                'unit_cost': material.get('unit_price', 0)
                             }
                         
                         consolidated_materials[material_id]['total_shortage_qty'] += shortage_qty
@@ -637,7 +637,7 @@ class SmartBOMSuggestionService:
                             'product_name': suggestion.get('target_item', 'Unknown'),
                             'quantity_needed': shortage_qty
                         })
-                        consolidated_materials[material_id]['estimated_cost'] += shortage_qty * material.get('unit_cost', 0)
+                        consolidated_materials[material_id]['estimated_cost'] += shortage_qty * material.get('unit_price', 0)
         
         # Create consolidated purchase suggestions
         consolidated_suggestions = []
@@ -676,7 +676,7 @@ class SmartBOMSuggestionService:
                         'shortage_qty': material_info['total_shortage_qty'],
                         'unit': material_info['unit'],
                         'sufficient': False,
-                        'unit_cost': material_info['unit_cost'],
+                        'unit_cost': material_info.get('unit_cost', 0),
                         'consolidated': True,
                         'used_by': material_info['used_by_products'],
                         'po_status': SmartBOMSuggestionService._get_po_status_info(Item.query.get(material_id)) if Item.query.get(material_id) else {},

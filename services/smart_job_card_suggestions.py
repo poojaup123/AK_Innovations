@@ -102,7 +102,7 @@ class SmartJobCardSuggestions:
             available_inventory = InventoryBatch.query.filter_by(
                 item_id=bom_item.item_id
             ).with_entities(
-                func.sum(InventoryBatch.qty_raw_material + InventoryBatch.qty_finished).label('total_available')
+                func.sum(InventoryBatch.qty_raw + InventoryBatch.qty_finished).label('total_available')
             ).scalar() or 0
             
             shortage = max(0, total_required - available_inventory)
@@ -116,10 +116,10 @@ class SmartJobCardSuggestions:
                 'available_inventory': available_inventory,
                 'shortage': shortage,
                 'need_procurement': shortage > 0,
-                'unit_cost': bom_item.item.unit_cost or 0,
-                'total_cost': total_required * (bom_item.item.unit_cost or 0),
-                'preferred_supplier': bom_item.item.preferred_supplier_id,
-                'uom': bom_item.item.base_uom or 'PCS'
+                'unit_cost': bom_item.item.unit_price or 0,
+                'total_cost': total_required * (bom_item.item.unit_price or 0),
+                'preferred_supplier': getattr(bom_item.item, 'preferred_supplier_id', None),
+                'uom': getattr(bom_item.item, 'base_uom', None) or bom_item.item.unit_of_measure or 'PCS'
             })
         
         return requirements
@@ -286,7 +286,7 @@ class SmartJobCardSuggestions:
             # Get current inventory levels
             current_inventory = db.session.query(
                 func.sum(
-                    InventoryBatch.qty_raw_material + 
+                    InventoryBatch.qty_raw + 
                     InventoryBatch.qty_finished
                 )
             ).filter_by(item_id=bom_item.item_id).scalar() or 0

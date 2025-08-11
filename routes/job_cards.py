@@ -123,9 +123,36 @@ def create_job_card(production_id=None):
     production = None
     smart_suggestions = None
     
+    # Handle query parameters from suggestions
+    from_suggestion = request.args.get('from_suggestion', type=bool)
+    bom_id = request.args.get('bom_id', type=int)
+    target_item_id = request.args.get('target_item_id', type=int)
+    suggestion_type = request.args.get('suggestion_type')
+    
     if production_id:
         production = Production.query.get_or_404(production_id)
         form.production_id.data = production_id
+        
+        # If coming from suggestion, use target item instead of production item
+        if from_suggestion and target_item_id:
+            form.item_id.data = target_item_id
+            target_item = Item.query.get(target_item_id)
+            if target_item:
+                # Get quantity from BOM for this specific item
+                if bom_id:
+                    bom = BOM.query.get(bom_id)
+                    if bom:
+                        bom_item = next((bi for bi in bom.items if bi.item_id == target_item_id), None)
+                        if bom_item:
+                            suggested_qty = bom_item.quantity_required * production.quantity_planned
+                            form.planned_quantity.data = suggested_qty
+                            production_item = Item.query.get(production.item_id)
+                            production_item_name = production_item.name if production_item else "Unknown Item"
+                            form.operation_description.data = f"Manufacturing {target_item.name} for {production_item_name}"
+                            
+                            # Set intelligent process name based on item type
+                            process_name = _generate_process_name_for_component(bom_item)
+                            form.process_name.data = process_name
         
         # Generate smart suggestions from production order and BOM
         from services.smart_job_card_suggestions import SmartJobCardSuggestions
@@ -137,9 +164,10 @@ def create_job_card(production_id=None):
         
         # Smart population based on BOM analysis
         if not smart_suggestions.get('error'):
-            # Pre-fill item details
-            form.item_id.data = production.item_id
-            form.planned_quantity.data = production.quantity_planned
+            # Pre-fill item details (only if not already set from suggestion)
+            if not from_suggestion:
+                form.item_id.data = production.item_id
+                form.planned_quantity.data = production.quantity_planned
             form.target_completion_date.data = getattr(production, 'target_completion_date', None) or (datetime.now().date() + timedelta(days=7))
             form.priority.data = getattr(production, 'priority', 'medium')
             
