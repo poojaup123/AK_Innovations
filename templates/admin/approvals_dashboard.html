@@ -155,30 +155,37 @@
                     <span class="badge bg-light text-dark">{{ pending_productions|length }} orders</span>
                 </div>
                 <div class="card-body p-0">
-                    {% for prod in pending_productions %}
-                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
-                        <div>
-                            <h6 class="mb-1">{{ prod.production_number }}</h6>
-                            <span class="badge bg-info">{{ prod.status.replace('_', ' ').title() }}</span>
-                            <div class="mt-2">
-                                <small class="text-muted">
-                                    {% if prod.item %}<strong>Item:</strong> {{ prod.item.name }}<br>{% endif %}
-                                    <strong>Quantity:</strong> {{ prod.quantity_planned or 0 }}<br>
-                                    <strong>Created:</strong> {{ prod.created_at.strftime('%d/%m/%Y') }}
-                                    {% if prod.created_by %}<br><strong>Created by:</strong> {{ prod.created_by.username }}{% endif %}
-                                </small>
+                    {% if pending_productions %}
+                        {% for prod in pending_productions %}
+                        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                            <div>
+                                <h6 class="mb-1">{{ prod.production_number }}</h6>
+                                <span class="badge bg-info">{{ prod.status.replace('_', ' ').title() }}</span>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        {% if prod.item %}<strong>Item:</strong> {{ prod.item.name }}<br>{% endif %}
+                                        <strong>Quantity:</strong> {{ prod.quantity_planned or 0 }}<br>
+                                        <strong>Created:</strong> {{ prod.created_at.strftime('%d/%m/%Y') }}
+                                        {% if prod.created_by %}<br><strong>Created by:</strong> {{ prod.created_by.username }}{% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="#" class="btn btn-success btn-sm" onclick="return confirm('Approve {{ prod.production_number }}?')">
+                                    <i class="fas fa-check"></i> Approve
+                                </a>
+                                <a href="#" class="btn btn-outline-danger btn-sm" onclick="return confirm('Reject {{ prod.production_number }}?')">
+                                    <i class="fas fa-times"></i> Reject
+                                </a>
                             </div>
                         </div>
-                        <div class="d-flex gap-2">
-                            <a href="#" class="btn btn-success btn-sm" onclick="return confirm('Approve {{ prod.production_number }}?')">
-                                <i class="fas fa-check"></i> Approve
-                            </a>
-                            <a href="#" class="btn btn-outline-danger btn-sm" onclick="return confirm('Reject {{ prod.production_number }}?')">
-                                <i class="fas fa-times"></i> Reject
-                            </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <p class="mb-0">No pending production orders requiring approval</p>
                         </div>
-                    </div>
-                    {% endfor %}
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -186,7 +193,6 @@
     {% endif %}
 
     <!-- Purchase Orders Section -->
-    {% if pending_pos %}
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
@@ -195,38 +201,43 @@
                     <span class="badge bg-dark text-light">{{ pending_pos|length }} orders</span>
                 </div>
                 <div class="card-body p-0">
-                    {% for po in pending_pos %}
-                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
-                        <div>
-                            <h6 class="mb-1">{{ po.po_number }}</h6>
-                            <span class="badge bg-warning text-dark">{{ po.status.replace('_', ' ').title() }}</span>
-                            <div class="mt-2">
-                                <small class="text-muted">
-                                    {% if po.supplier %}<strong>Supplier:</strong> {{ po.supplier.name }}<br>{% endif %}
-                                    <strong>Total:</strong> ₹{{ "%.2f"|format(po.total_amount or 0) }}<br>
-                                    <strong>Created:</strong> {{ po.created_at.strftime('%d/%m/%Y') }}
-                                    {% if po.prepared_by %}<br><strong>Prepared by:</strong> {{ po.prepared_by }}{% endif %}
-                                </small>
+                    {% if pending_pos %}
+                        {% for po in pending_pos %}
+                        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                            <div>
+                                <h6 class="mb-1">{{ po.po_number }}</h6>
+                                <span class="badge bg-warning text-dark">{{ po.status.replace('_', ' ').title() }}</span>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        {% if po.supplier %}<strong>Supplier:</strong> {{ po.supplier.name }}<br>{% endif %}
+                                        <strong>Total:</strong> ₹{{ "%.2f"|format(po.total_amount or 0) }}<br>
+                                        <strong>Created:</strong> {{ po.created_at.strftime('%d/%m/%Y') }}
+                                        {% if po.prepared_by %}<br><strong>Prepared by:</strong> {{ po.prepared_by }}{% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="#" class="btn btn-success btn-sm" onclick="return confirm('Approve {{ po.po_number }}?')">
+                                    <i class="fas fa-check"></i> Approve
+                                </a>
+                                <a href="#" class="btn btn-outline-danger btn-sm" onclick="return confirm('Reject {{ po.po_number }}?')">
+                                    <i class="fas fa-times"></i> Reject
+                                </a>
                             </div>
                         </div>
-                        <div class="d-flex gap-2">
-                            <a href="#" class="btn btn-success btn-sm" onclick="return confirm('Approve {{ po.po_number }}?')">
-                                <i class="fas fa-check"></i> Approve
-                            </a>
-                            <a href="#" class="btn btn-outline-danger btn-sm" onclick="return confirm('Reject {{ po.po_number }}?')">
-                                <i class="fas fa-times"></i> Reject
-                            </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <p class="mb-0">No pending purchase orders requiring approval</p>
                         </div>
-                    </div>
-                    {% endfor %}
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
-    {% endif %}
 
     <!-- Sales Orders Section -->
-    {% if pending_sales %}
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
@@ -235,37 +246,42 @@
                     <span class="badge bg-light text-dark">{{ pending_sales|length }} orders</span>
                 </div>
                 <div class="card-body p-0">
-                    {% for so in pending_sales %}
-                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
-                        <div>
-                            <h6 class="mb-1">{{ so.so_number }}</h6>
-                            <span class="badge bg-primary">{{ so.status.replace('_', ' ').title() }}</span>
-                            <div class="mt-2">
-                                <small class="text-muted">
-                                    {% if so.customer %}<strong>Customer:</strong> {{ so.customer.name }}<br>{% endif %}
-                                    <strong>Total:</strong> ₹{{ "%.2f"|format(so.total_amount or 0) }}<br>
-                                    <strong>Created:</strong> {{ so.created_at.strftime('%d/%m/%Y') }}
-                                </small>
+                    {% if pending_sales %}
+                        {% for so in pending_sales %}
+                        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                            <div>
+                                <h6 class="mb-1">{{ so.so_number }}</h6>
+                                <span class="badge bg-primary">{{ so.status.replace('_', ' ').title() }}</span>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        {% if so.customer %}<strong>Customer:</strong> {{ so.customer.name }}<br>{% endif %}
+                                        <strong>Total:</strong> ₹{{ "%.2f"|format(so.total_amount or 0) }}<br>
+                                        <strong>Created:</strong> {{ so.created_at.strftime('%d/%m/%Y') }}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="#" class="btn btn-success btn-sm" onclick="return confirm('Approve {{ so.so_number }}?')">
+                                    <i class="fas fa-check"></i> Approve
+                                </a>
+                                <a href="#" class="btn btn-outline-danger btn-sm" onclick="return confirm('Reject {{ so.so_number }}?')">
+                                    <i class="fas fa-times"></i> Reject
+                                </a>
                             </div>
                         </div>
-                        <div class="d-flex gap-2">
-                            <a href="#" class="btn btn-success btn-sm" onclick="return confirm('Approve {{ so.so_number }}?')">
-                                <i class="fas fa-check"></i> Approve
-                            </a>
-                            <a href="#" class="btn btn-outline-danger btn-sm" onclick="return confirm('Reject {{ so.so_number }}?')">
-                                <i class="fas fa-times"></i> Reject
-                            </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <p class="mb-0">No pending sales orders requiring approval</p>
                         </div>
-                    </div>
-                    {% endfor %}
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
-    {% endif %}
 
     <!-- Job Work Orders Section -->
-    {% if pending_jobwork %}
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
@@ -274,33 +290,39 @@
                     <span class="badge bg-light text-dark">{{ pending_jobwork|length }} orders</span>
                 </div>
                 <div class="card-body p-0">
-                    {% for jw in pending_jobwork %}
-                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
-                        <div>
-                            <h6 class="mb-1">{{ jw.jobwork_number }}</h6>
-                            <span class="badge bg-success">{{ jw.status.replace('_', ' ').title() }}</span>
-                            <div class="mt-2">
-                                <small class="text-muted">
-                                    {% if jw.vendor %}<strong>Vendor:</strong> {{ jw.vendor.name }}<br>{% endif %}
-                                    <strong>Created:</strong> {{ jw.created_at.strftime('%d/%m/%Y') }}
-                                </small>
+                    {% if pending_jobwork %}
+                        {% for jw in pending_jobwork %}
+                        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                            <div>
+                                <h6 class="mb-1">{{ jw.jobwork_number }}</h6>
+                                <span class="badge bg-success">{{ jw.status.replace('_', ' ').title() }}</span>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        {% if jw.vendor %}<strong>Vendor:</strong> {{ jw.vendor.name }}<br>{% endif %}
+                                        <strong>Created:</strong> {{ jw.created_at.strftime('%d/%m/%Y') }}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="#" class="btn btn-success btn-sm" onclick="return confirm('Approve {{ jw.jobwork_number }}?')">
+                                    <i class="fas fa-check"></i> Approve
+                                </a>
+                                <a href="#" class="btn btn-outline-danger btn-sm" onclick="return confirm('Reject {{ jw.jobwork_number }}?')">
+                                    <i class="fas fa-times"></i> Reject
+                                </a>
                             </div>
                         </div>
-                        <div class="d-flex gap-2">
-                            <a href="#" class="btn btn-success btn-sm" onclick="return confirm('Approve {{ jw.jobwork_number }}?')">
-                                <i class="fas fa-check"></i> Approve
-                            </a>
-                            <a href="#" class="btn btn-outline-danger btn-sm" onclick="return confirm('Reject {{ jw.jobwork_number }}?')">
-                                <i class="fas fa-times"></i> Reject
-                            </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <p class="mb-0">No pending job work orders requiring approval</p>
                         </div>
-                    </div>
-                    {% endfor %}
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
-    {% endif %}
 
     <!-- Recent Approvals -->
     {% if recent_approvals %}
