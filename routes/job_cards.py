@@ -1053,4 +1053,6 @@ def generate_challan(job_card_id):
     return render_template('job_cards/outsourced_challan.html', 
                          job_card=job_card, 
                          company_settings=company_settings,
-                         materials=materials)
+                         materials=materials,
+                         current_date=datetime.now().date(),
+                         current_datetime=datetime.now())
