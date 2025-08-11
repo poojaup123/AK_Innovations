@@ -112,6 +112,52 @@ def approvals_dashboard():
                          pending_expenses=pending_expenses,
                          recent_approvals=recent_approvals[:10])
 
+@admin_bp.route('/approve_job_card/<int:job_card_id>')
+@login_required  
+@admin_required
+def approve_job_card(job_card_id):
+    """Approve a job card"""
+    try:
+        from models import JobCard
+        job_card = JobCard.query.get_or_404(job_card_id)
+        
+        # Update job card status to approved
+        job_card.status = 'approved'
+        job_card.approved_by_id = current_user.id
+        job_card.approved_at = datetime.now()
+        
+        db.session.commit()
+        flash(f'Job Card {job_card.job_card_number} approved successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error approving job card: {str(e)}', 'error')
+    
+    return redirect(url_for('admin.approvals_dashboard'))
+
+@admin_bp.route('/reject_job_card/<int:job_card_id>')
+@login_required
+@admin_required  
+def reject_job_card(job_card_id):
+    """Reject a job card"""
+    try:
+        from models import JobCard
+        job_card = JobCard.query.get_or_404(job_card_id)
+        
+        # Update job card status to rejected
+        job_card.status = 'rejected'
+        job_card.approved_by_id = current_user.id
+        job_card.approved_at = datetime.now()
+        
+        db.session.commit()
+        flash(f'Job Card {job_card.job_card_number} rejected successfully!', 'warning')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error rejecting job card: {str(e)}', 'error')
+    
+    return redirect(url_for('admin.approvals_dashboard'))
+
 @admin_bp.route('/approval/approve', methods=['POST'])
 @login_required
 @admin_required
