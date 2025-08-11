@@ -69,7 +69,7 @@
                                             {{ form.qty_completed_today(class="form-control", readonly=True, style="background-color: #f8f9fa;") }}
                                             <span class="input-group-text small">{{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</span>
                                         </div>
-                                        <small class="form-text text-muted">Auto-calculated from processes</small>
+                                        <small class="form-text text-muted">Minimum across all processes (bottleneck)</small>
                                     </div>
                                     <div class="col-6">
                                         <label class="form-label small">Total Good Quality</label>
@@ -77,7 +77,7 @@
                                             {{ form.qty_good_today(class="form-control", readonly=True, style="background-color: #f8f9fa;") }}
                                             <span class="input-group-text small">{{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</span>
                                         </div>
-                                        <small class="form-text text-muted">Sum of good from all processes</small>
+                                        <small class="form-text text-muted">Minimum good quality (sequential flow)</small>
                                     </div>
                                 </div>
                                 
@@ -88,7 +88,7 @@
                                             {{ form.qty_defective_today(class="form-control", readonly=True, style="background-color: #f8f9fa;") }}
                                             <span class="input-group-text small">{{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</span>
                                         </div>
-                                        <small class="form-text text-muted">Sum from all processes</small>
+                                        <small class="form-text text-muted">Cumulative from all processes</small>
                                     </div>
                                     <div class="col-6">
                                         <label class="form-label small">Total Scrap</label>
@@ -96,7 +96,7 @@
                                             {{ form.qty_scrap_today(class="form-control", readonly=True, style="background-color: #f8f9fa;") }}
                                             <span class="input-group-text small">{{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</span>
                                         </div>
-                                        <small class="form-text text-muted">Sum from all processes</small>
+                                        <small class="form-text text-muted">Cumulative from all processes</small>
                                     </div>
                                 </div>
                                 
@@ -507,12 +507,12 @@ function toggleProcessQuantity(processId) {
 
 // Calculate total quantities from all selected processes
 function updateTotalQuantities() {
-    let totalCompleted = 0;
-    let totalGood = 0;
+    let completedQuantities = [];
+    let goodQuantities = [];
     let totalDefective = 0;
     let totalScrap = 0;
     
-    // Sum up quantities from all selected processes
+    // Collect quantities from all selected processes
     {% if bom_processes %}
     {% for process in bom_processes %}
     const process{{ process.id }}Checkbox = document.getElementById('process_{{ process.id }}');
@@ -522,13 +522,25 @@ function updateTotalQuantities() {
         const qtyDefective = parseFloat(document.getElementById('defective_process_{{ process.id }}').value) || 0;
         const qtyScrap = parseFloat(document.getElementById('scrap_process_{{ process.id }}').value) || 0;
         
-        totalCompleted += qtyCompleted;
-        totalGood += qtyGood;
+        // For sequential processes, track individual process completions
+        if (qtyCompleted > 0) {
+            completedQuantities.push(qtyCompleted);
+        }
+        if (qtyGood > 0) {
+            goodQuantities.push(qtyGood);
+        }
+        
+        // Defective and scrap are cumulative across all processes
         totalDefective += qtyDefective;
         totalScrap += qtyScrap;
     }
     {% endfor %}
     {% endif %}
+    
+    // For sequential manufacturing: total completed = minimum of all processes
+    // This represents the bottleneck - you can't have more finished goods than the slowest process
+    const totalCompleted = completedQuantities.length > 0 ? Math.min(...completedQuantities) : 0;
+    const totalGood = goodQuantities.length > 0 ? Math.min(...goodQuantities) : 0;
     
     // Update the main form fields
     const completedField = document.getElementById('qty_completed_today');
