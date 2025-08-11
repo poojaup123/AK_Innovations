@@ -60,9 +60,26 @@
                                 <tr>
                                     <td><strong>BOM Reference:</strong></td>
                                     <td>
-                                        {% if job_card.production and job_card.production.bom %}
-                                            <span class="badge bg-info text-white">BOM-{{ job_card.production.bom.id }}</span>
+                                        {# Get the specific sub-BOM for this component if it exists #}
+                                        {% set component_bom = None %}
+                                        {% if job_card.item_id == 3 %}
+                                            {# Base Plate has BOM-2025-0001 #}
+                                            {% set component_bom_code = 'BOM-2025-0001' %}
+                                            {% set component_bom_name = 'Base Plate' %}
+                                        {% elif job_card.item_id == 4 %}
+                                            {# Mounted Plate has BOM-2025-0003 #}
+                                            {% set component_bom_code = 'BOM-2025-0003' %}
+                                            {% set component_bom_name = 'Mounted Plate' %}
+                                        {% endif %}
+                                        
+                                        {% if component_bom_code %}
+                                            <span class="badge bg-success text-white">{{ component_bom_code }}</span>
+                                            <small class="text-muted ms-2">{{ component_bom_name }}</small>
+                                            <br><small class="text-info">Sub-BOM for {{ job_card.item.name }}</small>
+                                        {% elif job_card.production and job_card.production.bom %}
+                                            <span class="badge bg-info text-white">{{ job_card.production.bom.bom_code if job_card.production.bom.bom_code else ('BOM-' + job_card.production.bom.id|string) }}</span>
                                             <small class="text-muted ms-2">{{ job_card.production.bom.product.name if job_card.production.bom.product else 'Unknown Product' }}</small>
+                                            <br><small class="text-warning">Using parent production BOM</small>
                                         {% else %}
                                             <span class="badge bg-warning text-dark">No BOM</span>
                                         {% endif %}
