@@ -6,229 +6,90 @@ from models import Item, Supplier
 from models.grn import GRN, GRNLineItem, GRNWorkflowStatus
 from models.job_card import JobCard
 from forms_grn import GRNForm
-from services.bom_inventory_flow import BOMInventoryFlow
 import logging
 
 grn_job_card_bp = Blueprint('grn_job_card', __name__, url_prefix='/grn-job-card')
 
-@grn_job_card_bp.route('/quick-receive/<int:job_card_id>', methods=['GET', 'POST'])
-@login_required
-def quick_receive_job_card(job_card_id):
-    """Quick receive for outsourced job card - create GRN and receive in one step"""
-    job_card = JobCard.query.get_or_404(job_card_id)
-    
-    # Check if job card is eligible for quick receive
-    if job_card.grn_id:
-        flash('This job card already has a GRN created.', 'warning')
-        return redirect(url_for('grn.dashboard'))
-    
-    if not job_card.outsource_quantity or job_card.outsource_quantity <= 0:
-        flash('Invalid outsource quantity for quick receive.', 'error')
-        return redirect(url_for('grn.dashboard'))
-    
-    try:
-        # Generate GRN number
-        latest_grn = GRN.query.order_by(GRN.id.desc()).first()
-        next_number = 1 if not latest_grn else int(latest_grn.grn_number.split('-')[-1]) + 1
-        grn_number = f"GRN-JC-{date.today().year}-{str(next_number).zfill(4)}"
-        
-        # Create GRN automatically
-        grn = GRN(
-            grn_number=grn_number,
-            job_work_id=None,  # Not a traditional job work
-            purchase_order_id=None,  # Not a purchase order
-            received_date=date.today(),
-            received_by=current_user.id,
-            delivery_note=f"Quick receive for {job_card.job_card_number}",
-            inspection_required=False,  # Quick receive bypasses detailed inspection
-            status='received',
-            remarks=f"Quick received from {job_card.assigned_vendor.name if job_card.assigned_vendor else 'vendor'}"
-        )
-        
-        db.session.add(grn)
-        db.session.flush()  # Get the GRN ID
-        
-        # Create GRN line item for the specific BOM component, not the master product
-        component_item_id = job_card.item_id  # Default to job card item
-        component_item = job_card.item
-        
-        # If this job card has BOM item reference, use the actual component
-        if job_card.bom_item_id:
-            from models import BOMItem
-            bom_item = BOMItem.query.get(job_card.bom_item_id)
-            if bom_item and bom_item.item:
-                component_item_id = bom_item.item_id
-                component_item = bom_item.item
-        
-        if component_item:
-            line_item = GRNLineItem(
-                grn_id=grn.id,
-                item_id=component_item_id,  # Use the specific component, not master product
-                quantity_received=job_card.outsource_quantity,  # Quick receive assumes full quantity
-                quantity_passed=job_card.outsource_quantity,   # All passed for quick receive
-                quantity_rejected=0,
-                unit_of_measure=component_item.unit_of_measure if component_item else 'PCS',
-                inspection_status='passed',  # Quick receive auto-passes inspection
-                remarks=f"Quick received for outsourced {component_item.name} - Job Card: {job_card.job_card_number}"
-            )
-            db.session.add(line_item)
-        
-        # Update job card with GRN reference
-        job_card.grn_id = grn.id  # Link the job card to the created GRN
-        job_card.status = 'received'
-        # Also update the GRN remarks for tracking
-        grn.remarks = f"Quick received from {job_card.assigned_vendor.name if job_card.assigned_vendor else 'vendor'} - Job Card: {job_card.job_card_number}"
-        
-        db.session.commit()
-        
-        # Process BOM inventory flow updates
-        try:
-            inventory_success, inventory_message = BOMInventoryFlow.handle_outsourced_grn_receipt(
-                job_card.id, job_card.outsource_quantity
-            )
-            
-            if inventory_success:
-                flash(f'Quick receive completed successfully! GRN {grn.grn_number} created and inventory updated. {inventory_message}', 'success')
-            else:
-                flash(f'GRN {grn.grn_number} created successfully, but inventory update had issues: {inventory_message}', 'warning')
-                
-        except Exception as e:
-            logging.error(f'Error updating inventory for job card {job_card.id}: {str(e)}')
-            flash(f'GRN {grn.grn_number} created successfully, but inventory update failed: {str(e)}', 'warning')
-        
-        # Update production order with received quantities
-        try:
-            from services.production_update_service import ProductionUpdateService
-            
-            received_quantities = {
-                'total': job_card.outsource_quantity,
-                'good': job_card.outsource_quantity,  # Quick receive assumes all good
-                'defective': 0,
-                'scrap': 0
-            }
-            
-            ProductionUpdateService.update_production_on_job_card_receipt(
-                job_card.id, received_quantities
-            )
-            
-            logging.info(f'Production order updated for job card {job_card.job_card_number} receipt')
-            
-        except Exception as e:
-            logging.error(f'Error updating production order for job card {job_card.id}: {str(e)}')
-            # Don't fail the GRN creation for production update issues
-        
-        return redirect(url_for('grn.dashboard'))
-        
-    except Exception as e:
-        db.session.rollback()
-        logging.error(f'Error during quick receive for job card {job_card_id}: {str(e)}')
-        flash(f'Error during quick receive: {str(e)}', 'error')
-        return redirect(url_for('grn.dashboard'))
-
 @grn_job_card_bp.route('/create/<int:job_card_id>', methods=['GET', 'POST'])
 @login_required
 def create_grn_for_job_card(job_card_id):
-    """Create GRN for outsourced job card when work returns"""
+    """Create a new GRN for an outsourced job card"""
     job_card = JobCard.query.get_or_404(job_card_id)
     
-    # Verify this is an outsourced job card
-    if not job_card.parent_job_card_id or job_card.status != 'outsourced':
-        flash('GRN can only be created for outsourced job cards', 'error')
-        return redirect(url_for('job_cards.view_job_card', id=job_card_id))
-    
-    # Check if GRN already exists
     if job_card.grn_id:
-        flash('GRN already exists for this outsourced job card', 'warning')
+        flash('This job card already has a GRN created.', 'warning')
         return redirect(url_for('grn_job_card.view_grn_for_job_card', job_card_id=job_card_id))
+    
+    # Check if this is an outsourced job card
+    if not hasattr(job_card, 'job_type') or job_card.job_type != 'outsourced':
+        # Alternative check: see if it has outsource_quantity
+        if not hasattr(job_card, 'outsource_quantity') or not job_card.outsource_quantity:
+            flash('Only outsourced job cards can have GRNs created.', 'error')
+            return redirect(url_for('job_cards.view_job_card', id=job_card_id))
     
     form = GRNForm()
     
-    # Pre-populate supplier choices (vendor who did the outsourced work)
-    if job_card.assigned_vendor:
-        form.supplier_id.choices = [(job_card.assigned_vendor.id, job_card.assigned_vendor.name)]
-        form.supplier_id.default = job_card.assigned_vendor.id
+    # Pre-populate form with job card data
+    if not form.grn_number.data:
+        latest_grn = GRN.query.order_by(GRN.id.desc()).first()
+        next_number = 1 if not latest_grn else int(latest_grn.grn_number.split('-')[-1]) + 1
+        form.grn_number.data = f"GRN-JC-{date.today().year}-{str(next_number).zfill(4)}"
+    
+    if request.method == 'GET':
+        form.received_date.data = date.today()
+        form.delivery_note.data = f"Receipt for outsourced job card {job_card.job_card_number}"
+        form.remarks.data = f"Material received from {job_card.assigned_vendor.name if job_card.assigned_vendor else 'vendor'} for {job_card.process_name}"
     
     if form.validate_on_submit():
         try:
-            # Generate GRN number
-            latest_grn = GRN.query.order_by(GRN.id.desc()).first()
-            next_number = 1 if not latest_grn else int(latest_grn.grn_number.split('-')[-1]) + 1
-            grn_number = f"GRN-JC-{date.today().year}-{str(next_number).zfill(4)}"
+            # Create GRN
+            grn = GRN()
+            grn.grn_number = form.grn_number.data
+            grn.job_work_id = None
+            grn.purchase_order_id = None
+            grn.received_date = form.received_date.data
+            grn.received_by = current_user.id
+            grn.delivery_note = form.delivery_note.data
+            grn.transporter_name = form.transporter_name.data
+            grn.vehicle_number = form.vehicle_number.data
+            grn.inspection_required = form.inspection_required.data
+            grn.status = 'received'
+            grn.remarks = form.remarks.data
             
-            # Create GRN for job card outsourcing
-            grn = GRN(
-                grn_number=grn_number,
-                job_work_id=None,  # This is for outsourced job card, not traditional job work
-                purchase_order_id=None,
-                received_date=form.received_date.data,
-                received_by=current_user.id,
-                inspection_required=True,
-                status='received',
-                delivery_note=form.delivery_note.data,
-                transporter_name=form.transporter_name.data,
-                vehicle_number=form.vehicle_number.data,
-                remarks=f"Outsourced work return for Job Card: {job_card.job_card_number}"
-            )
             db.session.add(grn)
-            db.session.flush()  # Get GRN ID
+            db.session.flush()  # Get the GRN ID
             
-            # Create GRN line item for the specific BOM component, not the master product
-            component_item_id = job_card.item_id  # Default to job card item
-            component_item = job_card.item
-            
-            # If this job card has BOM item reference, use the actual component
-            if job_card.bom_item_id:
-                from models import BOMItem
-                bom_item = BOMItem.query.get(job_card.bom_item_id)
-                if bom_item and bom_item.item:
-                    component_item_id = bom_item.item_id
-                    component_item = bom_item.item
-            
-            # Create GRN line item for the outsourced work
-            grn_line_item = GRNLineItem(
-                grn_id=grn.id,
-                item_id=component_item_id,  # Use the specific component, not master product
-                quantity_received=form.quantity_received.data,
-                quantity_passed=form.quantity_received.data,  # Assume all passed initially
-                quantity_rejected=0.0,
-                unit_of_measure=component_item.unit_of_measure if component_item else 'PCS',
-                inspection_status='passed',
-                process_name=job_card.process_name,
-                process_stage='completed',
-                material_classification='semi_finished',  # Outsourced work is typically semi-finished
-                batch_number=f"BATCH-JC-{job_card.job_card_number}",
-                remarks=f"Received {component_item.name if component_item else 'component'} from {job_card.assigned_vendor.name if job_card.assigned_vendor else 'Vendor'}"
-            )
-            db.session.add(grn_line_item)
-            
-            # Create workflow status for GRN
-            workflow_status = GRNWorkflowStatus(
-                grn_id=grn.id,
-                material_received=True,
-                material_received_date=datetime.now()
-            )
-            db.session.add(workflow_status)
-            
-            # Link GRN to job card and update quantities
+            # Link job card to GRN
             job_card.grn_id = grn.id
-            job_card.grn_received_quantity = form.quantity_received.data
-            job_card.grn_received_date = form.received_date.data
-            job_card.status = 'received'  # Update status to received
+            job_card.status = 'completed'  # Mark job card as completed
+            
+            # Create GRN line item for the component
+            if job_card.item:
+                line_item = GRNLineItem()
+                line_item.grn_id = grn.id
+                line_item.item_id = job_card.item_id
+                line_item.quantity_received = job_card.planned_quantity
+                line_item.quantity_passed = job_card.planned_quantity
+                line_item.quantity_rejected = 0
+                line_item.unit_of_measure = job_card.item.unit_of_measure if job_card.item else 'PCS'
+                line_item.inspection_status = 'passed'
+                line_item.remarks = f"Received from outsourced process: {job_card.process_name}"
+                
+                db.session.add(line_item)
             
             db.session.commit()
             
-            flash(f'GRN {grn_number} created successfully for outsourced job card {job_card.job_card_number}', 'success')
+            flash(f'GRN {grn.grn_number} created successfully for job card {job_card.job_card_number}!', 'success')
             return redirect(url_for('grn_job_card.view_grn_for_job_card', job_card_id=job_card_id))
             
         except Exception as e:
             db.session.rollback()
             flash(f'Error creating GRN: {str(e)}', 'error')
-            logging.error(f"GRN creation error: {str(e)}")
     
-    return render_template('grn_job_card/create_grn.html', 
-                         form=form, 
-                         job_card=job_card,
-                         suggested_quantity=job_card.outsource_quantity)
+    return render_template('grn_job_card/create_grn.html',
+                         title='Create GRN for Outsourced Job Card',
+                         form=form,
+                         job_card=job_card)
 
 @grn_job_card_bp.route('/view/<int:job_card_id>')
 @login_required
@@ -245,80 +106,3 @@ def view_grn_for_job_card(job_card_id):
     return render_template('grn_job_card/view_grn.html', 
                          grn=grn, 
                          job_card=job_card)
-
-@grn_job_card_bp.route('/update-inspection/<int:job_card_id>', methods=['POST'])
-@login_required
-def update_inspection_status(job_card_id):
-    """Update inspection status for outsourced job card GRN"""
-    job_card = JobCard.query.get_or_404(job_card_id)
-    
-    if not job_card.grn_id:
-        return jsonify({'success': False, 'message': 'No GRN found'}), 400
-    
-    try:
-        grn = GRN.query.get(job_card.grn_id)
-        quantity_passed = float(request.json.get('quantity_passed', 0))
-        quantity_rejected = float(request.json.get('quantity_rejected', 0))
-        inspection_status = request.json.get('inspection_status', 'completed')
-        
-        # Update GRN line item
-        line_item = grn.line_items[0] if grn.line_items else None
-        if line_item:
-            line_item.quantity_passed = quantity_passed
-            line_item.quantity_rejected = quantity_rejected
-            line_item.inspection_status = inspection_status
-            
-            # Update GRN status
-            grn.inspection_status = inspection_status
-            grn.inspected_by = current_user.id
-            grn.inspected_at = datetime.now()
-            
-            if inspection_status == 'completed':
-                grn.status = 'completed'
-            
-            # Update job card received quantity (only passed quantity)
-            job_card.grn_received_quantity = quantity_passed
-            
-            db.session.commit()
-            
-            return jsonify({
-                'success': True, 
-                'message': f'Inspection updated - {quantity_passed} passed, {quantity_rejected} rejected'
-            })
-        
-        return jsonify({'success': False, 'message': 'GRN line item not found'}), 400
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@grn_job_card_bp.route('/dashboard')
-@login_required
-def outsourced_grn_dashboard():
-    """Dashboard for outsourced job card GRNs"""
-    # Get outsourced job cards with their GRN status
-    outsourced_jobs = JobCard.query.filter(
-        JobCard.parent_job_card_id.isnot(None),
-        JobCard.status.in_(['outsourced', 'received'])
-    ).order_by(JobCard.created_at.desc()).limit(20).all()
-    
-    # Statistics
-    stats = {
-        'total_outsourced': JobCard.query.filter(JobCard.parent_job_card_id.isnot(None)).count(),
-        'pending_grn': JobCard.query.filter(
-            JobCard.parent_job_card_id.isnot(None),
-            JobCard.grn_id.is_(None),
-            JobCard.status == 'outsourced'
-        ).count(),
-        'received': JobCard.query.filter(
-            JobCard.parent_job_card_id.isnot(None),
-            JobCard.grn_id.isnot(None)
-        ).count(),
-        'in_inspection': GRN.query.join(JobCard, GRN.id == JobCard.grn_id).filter(
-            GRN.inspection_status == 'pending'
-        ).count()
-    }
-    
-    return render_template('grn_job_card/dashboard.html', 
-                         outsourced_jobs=outsourced_jobs,
-                         stats=stats)

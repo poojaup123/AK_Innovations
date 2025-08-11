@@ -496,11 +496,17 @@
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             {% if not outsourced_job.grn_id %}
-                                            <button class="btn btn-outline-success btn-xs" 
-                                                    onclick="createGRN({{ outsourced_job.id }})"
-                                                    title="Create GRN">
+                                            <a href="{{ url_for('grn_job_card.create_grn_for_job_card', job_card_id=outsourced_job.id) }}" 
+                                               class="btn btn-outline-success btn-xs"
+                                               title="Create GRN">
                                                 <i class="fas fa-truck"></i>
-                                            </button>
+                                            </a>
+                                            {% else %}
+                                            <a href="{{ url_for('grn_job_card.view_grn_for_job_card', job_card_id=outsourced_job.id) }}" 
+                                               class="btn btn-outline-info btn-xs"
+                                               title="View GRN">
+                                                <i class="fas fa-receipt"></i>
+                                            </a>
                                             {% endif %}
                                         </div>
                                     </td>

@@ -1,56 +1,46 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block title %}Create GRN for Outsourced Job Card{% endblock %}
+{% block title %}Create GRN for Job Card{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <div class="row">
-        <div class="col-12">
-            <!-- Header -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2><i class="fas fa-truck-loading me-2"></i>Create GRN for Outsourced Work</h2>
-                    <p class="text-muted">Receive outsourced work back into inventory</p>
-                </div>
-                <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-1"></i>Back to Job Card
-                </a>
-            </div>
-
-            <!-- Job Card Information -->
-            <div class="card mb-4">
+        <div class="col-lg-8">
+            <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-clipboard me-2"></i>Job Card Details</h5>
+                    <h5 class="mb-0"><i class="fas fa-truck-loading me-2"></i>Create GRN for Outsourced Job Card</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <strong>Job Card Number:</strong> {{ job_card.job_card_number }}<br>
-                            <strong>Item:</strong> {{ job_card.item.name if job_card.item else 'N/A' }}<br>
-                            <strong>Process:</strong> {{ job_card.process_name }}<br>
-                            <strong>Outsourced Quantity:</strong> {{ "%.2f"|format(job_card.outsource_quantity or 0) }}
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Vendor:</strong> {{ job_card.assigned_vendor.name if job_card.assigned_vendor else 'N/A' }}<br>
-                            <strong>Status:</strong> 
-                            <span class="badge bg-warning">{{ job_card.status|title }}</span><br>
-                            <strong>Expected Return:</strong> {{ job_card.expected_return_date.strftime('%Y-%m-%d') if job_card.expected_return_date else 'Not set' }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- GRN Form -->
-            <form method="POST">
-                {{ form.hidden_tag() }}
-                
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>GRN Details</h5>
-                    </div>
-                    <div class="card-body">
+                    <!-- Job Card Information -->
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Job Card Details</h6>
                         <div class="row">
-                            <!-- Receipt Information -->
+                            <div class="col-md-6">
+                                <strong>Job Card:</strong> {{ job_card.job_card_number }}<br>
+                                <strong>Component:</strong> {{ job_card.item.name if job_card.item else 'Unknown' }}<br>
+                                <strong>Process:</strong> {{ job_card.process_name }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Vendor:</strong> {{ job_card.assigned_vendor.name if job_card.assigned_vendor else 'Not assigned' }}<br>
+                                <strong>Quantity:</strong> {{ "%.1f"|format(job_card.planned_quantity) }} {{ job_card.item.unit_of_measure if job_card.item else 'PCS' }}<br>
+                                <strong>Status:</strong> <span class="badge bg-warning">{{ job_card.status.title() }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.grn_number.label(class="form-label") }}
+                                    {{ form.grn_number(class="form-control", readonly=true) }}
+                                    {% for error in form.grn_number.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     {{ form.received_date.label(class="form-label") }}
@@ -59,97 +49,91 @@
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
                                 </div>
-                                
-                                <div class="mb-3">
-                                    {{ form.quantity_received.label(class="form-label") }}
-                                    {{ form.quantity_received(class="form-control", value=suggested_quantity) }}
-                                    <small class="form-text text-muted">Suggested: {{ "%.2f"|format(suggested_quantity) }} (Outsourced quantity)</small>
-                                    {% for error in form.quantity_received.errors %}
-                                        <div class="text-danger">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
                             </div>
-                            
-                            <!-- Transport Information -->
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.delivery_note.label(class="form-label") }}
+                            {{ form.delivery_note(class="form-control") }}
+                            {% for error in form.delivery_note.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.delivery_note.label(class="form-label") }}
-                                    {{ form.delivery_note(class="form-control") }}
-                                    {% for error in form.delivery_note.errors %}
+                                    {{ form.transporter_name.label(class="form-label") }}
+                                    {{ form.transporter_name(class="form-control") }}
+                                    {% for error in form.transporter_name.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
                                 </div>
-                                
-                                <div class="row">
-                                    <div class="col-6">
-                                        <div class="mb-3">
-                                            {{ form.transporter_name.label(class="form-label") }}
-                                            {{ form.transporter_name(class="form-control") }}
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="mb-3">
-                                            {{ form.vehicle_number.label(class="form-label") }}
-                                            {{ form.vehicle_number(class="form-control") }}
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
-                        </div>
-                        
-                        <!-- Quality Control -->
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="card bg-light">
-                                    <div class="card-body">
-                                        <h6><i class="fas fa-check-circle me-2"></i>Quality Control</h6>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" checked disabled>
-                                            <label class="form-check-label">
-                                                Inspection Required (Automatic for outsourced work)
-                                            </label>
-                                        </div>
-                                        <small class="text-muted">Quality inspection will be conducted after GRN creation</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Remarks -->
-                        <div class="row mt-3">
-                            <div class="col-12">
+                            <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label">Remarks</label>
-                                    <textarea class="form-control" name="remarks" rows="3" placeholder="Any additional notes about the received outsourced work...">{{ job_card.outsource_notes or '' }}</textarea>
+                                    {{ form.vehicle_number.label(class="form-label") }}
+                                    {{ form.vehicle_number(class="form-control") }}
+                                    {% for error in form.vehicle_number.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="card-footer">
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.inspection_required(class="form-check-input") }}
+                                {{ form.inspection_required.label(class="form-check-label") }}
+                            </div>
+                            {% for error in form.inspection_required.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.remarks.label(class="form-label") }}
+                            {{ form.remarks(class="form-control", rows="3") }}
+                            {% for error in form.remarks.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
                         <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-secondary">
-                                <i class="fas fa-times me-1"></i>Cancel
+                            <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Job Card
                             </a>
                             <button type="submit" class="btn btn-success">
-                                <i class="fas fa-truck-loading me-1"></i>Create GRN & Receive Work
+                                <i class="fas fa-save me-2"></i>Create GRN
                             </button>
                         </div>
-                    </div>
+                    </form>
                 </div>
-            </form>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-question-circle me-2"></i>GRN Information</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>What is a GRN?</strong></p>
+                    <p class="small text-muted">
+                        A Goods Receipt Note (GRN) records the receipt of materials from outsourced work. 
+                        Once created, it will update inventory levels and mark the job card as completed.
+                    </p>
+                    
+                    <p><strong>Next Steps:</strong></p>
+                    <ul class="small text-muted">
+                        <li>GRN will be created with the job card quantity</li>
+                        <li>Inventory will be updated automatically</li>
+                        <li>Job card status will change to "Completed"</li>
+                        <li>Material will be available for next process</li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 </div>
-
-<script>
-// Auto-fill current date
-document.addEventListener('DOMContentLoaded', function() {
-    const receivedDateInput = document.getElementById('received_date');
-    if (!receivedDateInput.value) {
-        const today = new Date().toISOString().split('T')[0];
-        receivedDateInput.value = today;
-    }
-});
-</script>
 {% endblock %}
