@@ -263,22 +263,26 @@
                                     <!-- Action Buttons -->
                                     <div class="mt-3">
                                         {% if suggestion.type == 'partial_manufacturing_recommendation' or suggestion.type == 'manufacturing' %}
-                                            {% set target_item_id = suggestion.get('target_item_id', '') %}
-                                            {% set existing_job_card = None %}
+                                            {% set target_item_id = suggestion.get('target_item_id') %}
+                                            {% set matching_job_card = None %}
+                                            
+                                            {# Find matching job card by item_id #}
                                             {% if target_item_id %}
                                                 {% for job_card in existing_job_cards %}
-                                                    {% if job_card.item_id == target_item_id and not existing_job_card %}
-                                                        {% set existing_job_card = job_card %}
+                                                    {% if job_card.item_id == target_item_id %}
+                                                        {% set matching_job_card = job_card %}
+                                                        <!-- Debug: Found match for item {{ target_item_id }} with job card {{ job_card.job_card_number }} -->
                                                     {% endif %}
                                                 {% endfor %}
                                             {% endif %}
                                             
-                                            {% if existing_job_card %}
-                                                <a href="/job-cards/view/{{ existing_job_card.id }}" 
+                                            {# Show View or Create button based on whether job card exists #}
+                                            {% if matching_job_card %}
+                                                <a href="/job-cards/view/{{ matching_job_card.id }}" 
                                                    class="btn btn-primary btn-sm" target="_blank">
                                                     <i class="fas fa-eye me-2"></i>View Job Card
                                                 </a>
-                                                <small class="text-muted d-block mt-1">{{ existing_job_card.job_card_number }}</small>
+                                                <small class="text-muted d-block mt-1">{{ matching_job_card.job_card_number }}</small>
                                             {% else %}
                                                 <a href="/job-cards/create/{{ production.id }}?from_suggestion=1&bom_id={{ suggestion.get('bom_id', '') }}&target_item_id={{ target_item_id }}&quantity={{ suggestion.get('target_quantity', 0) }}&v={{ range(1, 10000) | random }}" 
                                                    class="btn btn-success btn-sm" target="_blank">
