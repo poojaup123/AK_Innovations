@@ -8,6 +8,7 @@ from datetime import datetime, date, timedelta
 from utils import generate_production_number
 from sqlalchemy import func, or_
 import logging
+import json
 
 job_cards_bp = Blueprint('job_cards', __name__)
 
@@ -820,6 +821,105 @@ def list_job_cards():
     job_cards = query.order_by(JobCard.created_at.desc()).all()
     
     return render_template('job_cards/list.html', job_cards=job_cards)
+
+@job_cards_bp.route('/create-outsourced/<int:job_card_id>', methods=['POST'])
+@login_required
+def create_outsourced_job_card(job_card_id):
+    """Create outsourced job card via AJAX"""
+    try:
+        job_card = JobCard.query.get_or_404(job_card_id)
+        
+        # Get form data
+        vendor_id = request.form.get('vendorId')
+        process_name = request.form.get('processName')
+        outsource_quantity = float(request.form.get('outsourceQuantity', 0))
+        work_instructions = request.form.get('workInstructions', '')
+        special_requirements = request.form.get('specialRequirements', '')
+        expected_delivery = request.form.get('expectedDelivery')
+        
+        if not vendor_id or not process_name or outsource_quantity <= 0:
+            return jsonify({'success': False, 'message': 'Missing required fields'})
+        
+        vendor = Supplier.query.get_or_404(vendor_id)
+        
+        # Create outsourced job card
+        outsourced_count = JobCard.query.filter_by(parent_job_card_id=job_card_id).count()
+        outsourced_job_card = JobCard(
+            job_card_number=f"{job_card.job_card_number}-OUT-{outsourced_count + 1}",
+            production_id=job_card.production_id,
+            item_id=job_card.item_id,
+            process_name=process_name,
+            planned_quantity=outsource_quantity,
+            outsource_quantity=outsource_quantity,
+            assigned_vendor_id=vendor_id,
+            outsource_process=process_name,
+            work_instructions=work_instructions,
+            special_instructions=special_requirements,
+            status='outsourced',
+            parent_job_card_id=job_card_id,
+            target_completion_date=datetime.strptime(expected_delivery, '%Y-%m-%d').date() if expected_delivery else None,
+            created_by_id=current_user.id,
+            created_at=datetime.utcnow()
+        )
+        
+        db.session.add(outsourced_job_card)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Outsourced {outsource_quantity} units of {process_name} to {vendor.name}',
+            'outsourced_job_card_id': outsourced_job_card.id
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@job_cards_bp.route('/start-process/<int:job_card_id>', methods=['POST'])
+@login_required  
+def start_process(job_card_id):
+    """Start a process in-house"""
+    try:
+        job_card = JobCard.query.get_or_404(job_card_id)
+        process_name = request.form.get('process_name')
+        notes = request.form.get('notes', '')
+        
+        if not process_name:
+            flash('Process name is required', 'error')
+            return redirect(url_for('job_cards.view_job_card', id=job_card_id))
+        
+        # Update job card to start the process
+        job_card.current_process_step = process_name
+        job_card.status = 'in_progress'
+        job_card.actual_start_date = datetime.utcnow()
+        
+        # Add to processes_completed if not already there
+        if not job_card.processes_completed:
+            job_card.processes_completed = ''
+        
+        # Create daily status entry for starting the process
+        today_report = JobCardDailyStatus.get_today_report(job_card_id)
+        if not today_report:
+            today_report = JobCardDailyStatus(
+                job_card_id=job_card_id,
+                report_date=date.today(),
+                shift='day',
+                supervisor_id=current_user.id,
+                notes=f'Started process: {process_name}. {notes}' if notes else f'Started process: {process_name}',
+                created_by_id=current_user.id
+            )
+            db.session.add(today_report)
+        else:
+            today_report.notes = f'{today_report.notes or ""}\nStarted process: {process_name}. {notes}' if notes else f'{today_report.notes or ""}\nStarted process: {process_name}'
+        
+        db.session.commit()
+        flash(f'Process "{process_name}" started successfully', 'success')
+        return redirect(url_for('job_cards.view_job_card', id=job_card_id))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error starting process: {str(e)}', 'error')
+        return redirect(url_for('job_cards.view_job_card', id=job_card_id))
 
 @job_cards_bp.route('/production/<int:production_id>')
 @login_required

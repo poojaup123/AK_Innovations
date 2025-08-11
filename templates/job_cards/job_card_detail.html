@@ -970,21 +970,70 @@ function outsourceProcess(processName, stepNumber) {
 // Function to start a process in-house
 function startProcess(processName, stepNumber) {
     if (confirm(`Start in-house production for ${processName}?`)) {
-        alert('Process started in-house! (Feature coming soon)');
-        // TODO: Implement process status update
+        const notes = prompt('Add notes for starting this process (optional):');
+        
+        // Use form submission for process start
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("job_cards.start_process", job_card_id=job_card.id) }}';
+        
+        const processInput = document.createElement('input');
+        processInput.type = 'hidden';
+        processInput.name = 'process_name';
+        processInput.value = processName;
+        form.appendChild(processInput);
+        
+        const notesInput = document.createElement('input');
+        notesInput.type = 'hidden';
+        notesInput.name = 'notes';
+        notesInput.value = notes || '';
+        form.appendChild(notesInput);
+        
+        // Add CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+        form.appendChild(csrfInput);
+        
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 
 // Function to load vendors
 function loadVendors() {
-    // For now, add some sample vendors - this will be connected to the API later
-    const vendorSelect = document.getElementById('vendorId');
-    vendorSelect.innerHTML = `
-        <option value="">Choose vendor...</option>
-        <option value="1">ABC Manufacturing Co.</option>
-        <option value="2">XYZ Processing Ltd.</option>
-        <option value="3">Quick Zinc Works</option>
-    `;
+    // Try to fetch vendors from accounting API, fallback to static list
+    fetch('/accounting/api/suppliers')
+        .then(response => response.json())
+        .then(data => {
+            const vendors = data.suppliers || data || [];
+            const vendorSelect = document.getElementById('vendorId');
+            vendorSelect.innerHTML = '<option value="">Choose vendor...</option>';
+            
+            vendors.forEach(vendor => {
+                // Handle different API response formats
+                const id = vendor.id || vendor.supplier_id;
+                const name = vendor.name || vendor.supplier_name;
+                if (id && name) {
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = name;
+                    vendorSelect.appendChild(option);
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading vendors:', error);
+            // Fallback to default vendors if API fails
+            const vendorSelect = document.getElementById('vendorId');
+            vendorSelect.innerHTML = `
+                <option value="">Choose vendor...</option>
+                <option value="1">ABC Manufacturing Co.</option>
+                <option value="2">XYZ Processing Ltd.</option>
+                <option value="3">Quick Zinc Works</option>
+            `;
+        });
 }
 
 // Function to submit outsourcing request
@@ -992,9 +1041,53 @@ function submitOutsourcing() {
     const form = document.getElementById('outsourcingForm');
     const formData = new FormData(form);
     
-    alert('Outsourcing request submitted! (Feature coming soon)');
-    closeModal();
-    // TODO: Implement actual outsourcing logic
+    // Validate required fields
+    const vendorId = document.getElementById('vendorId').value;
+    const outsourceQuantity = document.getElementById('outsourceQuantity').value;
+    const expectedDelivery = document.getElementById('expectedDelivery').value;
+    
+    if (!vendorId) {
+        alert('Please select a vendor');
+        return;
+    }
+    
+    if (!outsourceQuantity || parseFloat(outsourceQuantity) <= 0) {
+        alert('Please enter a valid quantity to outsource');
+        return;
+    }
+    
+    if (!expectedDelivery) {
+        alert('Please select an expected delivery date');
+        return;
+    }
+    
+    // Add CSRF token
+    const csrfToken = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+    formData.append('csrf_token', csrfToken);
+    
+    // Submit the form
+    fetch('{{ url_for("job_cards.create_outsourced_job_card", job_card_id=job_card.id) }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Outsourcing request submitted successfully!');
+            closeModal();
+            // Reload the page to show updated outsourcing status
+            window.location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to submit outsourcing request'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to submit outsourcing request. Please try again.');
+    });
 }
 
 // Function to properly close modal and clean up backdrop
