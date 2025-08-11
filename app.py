@@ -217,6 +217,10 @@ def create_app():
     try:
         from routes.cost_calculation import cost_calculation_bp
         app.register_blueprint(cost_calculation_bp, url_prefix='/cost-calculation')
+        
+        # Register cost update triggers
+        from routes.cost_update_triggers import cost_triggers_bp
+        app.register_blueprint(cost_triggers_bp, url_prefix='/cost-triggers')
     except ImportError as e:
         print(f"Cost Calculation module import error: {e}")
     

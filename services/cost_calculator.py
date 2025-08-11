@@ -73,6 +73,17 @@ class BOMCostCalculator:
             
             # Update item's calculated cost
             total_cost = cost_breakdown['total_cost_per_unit']
+            old_cost = item.bom_calculated_cost or 0.0
+            
+            # Log cost change if significant
+            if abs(total_cost - old_cost) > 0.01:  # Only log if change > 1 paisa
+                self._log_cost_change(item, old_cost, total_cost, 'BOM recalculation')
+            
+            # Validate cost change
+            validation_result = self._validate_cost_change(item, old_cost, total_cost)
+            if not validation_result['is_valid']:
+                cost_breakdown['validation_warnings'] = validation_result['warnings']
+            
             item.bom_calculated_cost = total_cost
             item.last_cost_calculation = datetime.utcnow()
             item.cost_calculation_status = 'current'
@@ -504,3 +515,50 @@ def update_costs_after_rate_change(rate_id: int) -> List[Dict]:
 def analyze_cost_variance(item_id: int, actual_costs: Dict) -> Dict:
     """Convenience function for cost variance analysis"""
     return bom_cost_calculator.get_cost_variance_analysis(item_id, actual_costs)
+
+
+# Cost History and Validation Methods
+def _log_cost_change(self, item, old_cost, new_cost, reason):
+    """Log cost change for history tracking"""
+    try:
+        from models.cost_history import ItemCostHistory
+        ItemCostHistory.log_cost_change(
+            item_id=item.id,
+            old_cost=old_cost,
+            new_cost=new_cost,
+            reason=reason,
+            change_type='automatic'
+        )
+    except ImportError:
+        logger.warning("Cost history tracking not available")
+
+
+def _validate_cost_change(self, item, old_cost, new_cost):
+    """Validate cost change against business rules"""
+    try:
+        from models.cost_history import CostValidationRule
+        
+        rules = CostValidationRule.query.filter_by(is_active=True).all()
+        warnings = []
+        
+        for rule in rules:
+            is_valid, message = rule.validate_cost_change(item, old_cost, new_cost)
+            if not is_valid:
+                warnings.append({
+                    'rule': rule.rule_name,
+                    'message': message,
+                    'severity': 'warning'
+                })
+        
+        return {
+            'is_valid': len(warnings) == 0,
+            'warnings': warnings
+        }
+        
+    except ImportError:
+        return {'is_valid': True, 'warnings': []}
+
+
+# Add methods to BOMCostCalculator class
+BOMCostCalculator._log_cost_change = _log_cost_change
+BOMCostCalculator._validate_cost_change = _validate_cost_change

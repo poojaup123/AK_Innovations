@@ -11,6 +11,12 @@ from .uom import UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionL
 # Import permission models
 from .permissions import Permission, UserPermission
 
+# Import cost history models for comprehensive cost tracking
+try:
+    from .cost_history import ItemCostHistory, ProductionOrderCostFreeze, CostValidationRule
+except ImportError:
+    pass
+
 # Import custom report models
 from .custom_reports import CustomReport, CustomReportExecution
 
@@ -706,6 +712,12 @@ class Item(db.Model):
     cost_calculation_status = db.Column(db.String(20), default='current')  # current, outdated, error
     manual_cost_override = db.Column(db.Float)  # Manual override for hybrid mode
     overhead_percentage = db.Column(db.Float, default=0.0)  # Overhead percentage for cost calculation
+    
+    # Cost Freezing & History
+    cost_is_frozen = db.Column(db.Boolean, default=False)  # Lock cost for active production
+    frozen_cost = db.Column(db.Float)  # Frozen cost value
+    cost_frozen_at = db.Column(db.DateTime)  # When cost was frozen
+    scrap_allowance_percent = db.Column(db.Float, default=0.0)  # Expected material loss
     
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     weight_unit = db.Column(db.String(10), default='kg')  # Weight unit (kg, g, lbs, oz, ton)
