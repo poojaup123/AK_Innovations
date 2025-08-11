@@ -161,12 +161,12 @@
                                 <span class="badge bg-warning text-dark ms-2">{{ po.status.title() }}</span>
                             </div>
                             <div class="approval-actions">
-                                <button class="btn btn-success btn-sm" onclick="approveOrder('purchase', {{ po.id }})">
+                                <a href="#" class="btn btn-success btn-sm" onclick="return confirm('Approve this Purchase Order?')">
                                     <i class="fas fa-check"></i> Approve
-                                </button>
-                                <button class="btn btn-danger btn-sm" onclick="rejectOrder('purchase', {{ po.id }})">
+                                </a>
+                                <a href="#" class="btn btn-danger btn-sm" onclick="return confirm('Reject this Purchase Order?')">
                                     <i class="fas fa-times"></i> Reject
-                                </button>
+                                </a>
                             </div>
                         </div>
                         <div class="order-details">
@@ -204,12 +204,12 @@
                                 <span class="badge bg-info text-white ms-2">{{ prod.status.title() }}</span>
                             </div>
                             <div class="approval-actions">
-                                <button class="btn btn-success btn-sm" onclick="approveOrder('production', {{ prod.id }})">
+                                <a href="#" class="btn btn-success btn-sm" onclick="return confirm('Approve this Production Order?')">
                                     <i class="fas fa-check"></i> Approve
-                                </button>
-                                <button class="btn btn-danger btn-sm" onclick="rejectOrder('production', {{ prod.id }})">
+                                </a>
+                                <a href="#" class="btn btn-danger btn-sm" onclick="return confirm('Reject this Production Order?')">
                                     <i class="fas fa-times"></i> Reject
-                                </button>
+                                </a>
                             </div>
                         </div>
                         <div class="order-details">
@@ -247,12 +247,12 @@
                                 <span class="badge bg-primary text-white ms-2">{{ so.status.title() }}</span>
                             </div>
                             <div class="approval-actions">
-                                <button class="btn btn-success btn-sm" onclick="approveOrder('sales', {{ so.id }})">
+                                <a href="#" class="btn btn-success btn-sm" onclick="return confirm('Approve this Sales Order?')">
                                     <i class="fas fa-check"></i> Approve
-                                </button>
-                                <button class="btn btn-danger btn-sm" onclick="rejectOrder('sales', {{ so.id }})">
+                                </a>
+                                <a href="#" class="btn btn-danger btn-sm" onclick="return confirm('Reject this Sales Order?')">
                                     <i class="fas fa-times"></i> Reject
-                                </button>
+                                </a>
                             </div>
                         </div>
                         <div class="order-details">
@@ -287,12 +287,12 @@
                                 <span class="badge bg-success text-white ms-2">{{ jw.status.title() }}</span>
                             </div>
                             <div class="approval-actions">
-                                <button class="btn btn-success btn-sm" onclick="approveOrder('jobwork', {{ jw.id }})">
+                                <a href="#" class="btn btn-success btn-sm" onclick="return confirm('Approve this Job Work Order?')">
                                     <i class="fas fa-check"></i> Approve
-                                </button>
-                                <button class="btn btn-danger btn-sm" onclick="rejectOrder('jobwork', {{ jw.id }})">
+                                </a>
+                                <a href="#" class="btn btn-danger btn-sm" onclick="return confirm('Reject this Job Work Order?')">
                                     <i class="fas fa-times"></i> Reject
-                                </button>
+                                </a>
                             </div>
                         </div>
                         <div class="order-details">
@@ -369,71 +369,11 @@
 </div>
 
 <script>
-async function approveOrder(orderType, orderId) {
-    if (!confirm('Are you sure you want to approve this order?')) {
-        return;
-    }
-
-    try {
-        const response = await fetch('{{ url_for("admin.approve_order") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                order_type: orderType,
-                order_id: orderId,
-                comments: ''
-            })
-        });
-
-        const result = await response.json();
-        
-        if (result.success) {
-            location.reload();
-        } else {
-            alert('Error: ' + result.message);
-        }
-    } catch (error) {
-        alert('Error approving order: ' + error.message);
-    }
-}
-
-async function rejectOrder(orderType, orderId) {
-    const reason = prompt('Please provide a reason for rejection:');
-    if (!reason) {
-        return;
-    }
-
-    try {
-        const response = await fetch('{{ url_for("admin.reject_order") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                order_type: orderType,
-                order_id: orderId,
-                comments: reason
-            })
-        });
-
-        const result = await response.json();
-        
-        if (result.success) {
-            location.reload();
-        } else {
-            alert('Error: ' + result.message);
-        }
-    } catch (error) {
-        alert('Error rejecting order: ' + error.message);
-    }
-}
-
 function refreshDashboard() {
     location.reload();
 }
+
+// Placeholder for future AJAX functionality
+// Future enhancement: Add approve/reject AJAX calls with proper CSRF handling
 </script>
 {% endblock %}
