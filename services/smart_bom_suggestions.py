@@ -104,16 +104,13 @@ class SmartBOMSuggestionService:
     
     @staticmethod
     def _get_available_quantity(item: Item) -> float:
-        """Get total available quantity for an item across all inventory states, batches, and pending POs"""
-        # Current inventory
+        """Get available quantity for immediate production (inventory only, not including pending POs)"""
+        # Use only current inventory for production planning
         batch_qty = db.session.query(
             func.sum(InventoryBatch.qty_raw + InventoryBatch.qty_finished + InventoryBatch.qty_wip)
         ).filter_by(item_id=item.id).scalar() or 0
         
-        # Pending quantities from Purchase Orders (ordered but not fully received)
-        pending_qty = SmartBOMSuggestionService._get_pending_po_quantity(item)
-        
-        return batch_qty + pending_qty
+        return batch_qty
     
     @staticmethod
     def _get_pending_po_quantity(item: Item) -> float:
@@ -313,61 +310,22 @@ class SmartBOMSuggestionService:
                 material_id = raw_material['material_id']
                 usage_info = raw_material_usage[material_id]
                 
-                # Calculate optimal allocation for shared materials (equal production logic)
+                # Calculate allocation for shared materials 
                 if len(usage_info['suggestions_using']) > 1:
-                    # Use only inventory quantity for immediate production planning
-                    inventory_only = SmartBOMSuggestionService._get_inventory_only_quantity(
-                        Item.query.get(material_id)
-                    )
+                    available_qty = raw_material['available_qty']
+                    total_needed_across_all = usage_info['total_needed']
                     
-                    # For shared materials, calculate equal allocation
-                    # Find the efficiency ratios for each product
-                    sharing_suggestions = usage_info['suggestions_using']
-                    if len(sharing_suggestions) == 2:  # Base Plate and Mounted Plate
-                        # Calculate Ms sheet requirement per unit for each product
-                        total_ms_per_equal_unit = 0
-                        for sug in sharing_suggestions:
-                            for mat in sug['raw_materials']:
-                                if mat['material_id'] == material_id:
-                                    # Get the BOM to find output quantity
-                                    target_item = Item.query.get(sug['target_item_id'])
-                                    target_bom = BOM.query.filter_by(product_id=target_item.id, is_active=True).first()
-                                    if target_bom:
-                                        ms_per_unit = mat['quantity_per_unit'] / target_bom.output_quantity
-                                        total_ms_per_equal_unit += ms_per_unit
-                        
-                        # Calculate maximum equal quantity with inventory only
-                        if total_ms_per_equal_unit > 0:
-                            max_equal_qty = inventory_only / total_ms_per_equal_unit
-                            
-                            # Calculate allocation for this specific suggestion
-                            target_item = Item.query.get(suggestion['target_item_id'])
-                            target_bom = BOM.query.filter_by(product_id=target_item.id, is_active=True).first()
-                            if target_bom:
-                                ms_per_unit = raw_material['quantity_per_unit'] / target_bom.output_quantity
-                                allocated_qty = max_equal_qty * ms_per_unit
-                                can_produce_qty = max_equal_qty
-                                sufficient = allocated_qty <= inventory_only
-                            else:
-                                allocated_qty = 0
-                                can_produce_qty = 0
-                                sufficient = False
-                        else:
-                            allocated_qty = 0
-                            can_produce_qty = 0
-                            sufficient = False
+                    if available_qty >= total_needed_across_all:
+                        # Sufficient for all - allocate fully
+                        allocated_qty = raw_material['needed_qty']
+                        sufficient = True
+                        can_produce_qty = raw_material['needed_qty']
                     else:
-                        # Fallback to proportional allocation
-                        total_needed_across_all = usage_info['total_needed']
-                        if inventory_only >= total_needed_across_all:
-                            allocated_qty = raw_material['needed_qty']
-                            sufficient = True
-                            can_produce_qty = raw_material['needed_qty']
-                        else:
-                            proportion = inventory_only / total_needed_across_all
-                            can_produce_qty = raw_material['needed_qty'] * proportion
-                            allocated_qty = inventory_only * (raw_material['needed_qty'] / total_needed_across_all)
-                            sufficient = False
+                        # Calculate proportional allocation
+                        proportion = available_qty / total_needed_across_all
+                        can_produce_qty = raw_material['needed_qty'] * proportion
+                        allocated_qty = available_qty * (raw_material['needed_qty'] / total_needed_across_all)
+                        sufficient = False
                     
                     shortage_qty = max(0, raw_material['needed_qty'] - allocated_qty)
                     
@@ -413,11 +371,31 @@ class SmartBOMSuggestionService:
             
             # Partial production suggestion (if any amount can be produced)
             if max_producible > 0:
+                # Check pending PO information for context
+                pending_context = []
+                for material in optimized_raw_materials:
+                    material_id = material.get('material_id', material.get('item_id'))
+                    if material_id:
+                        item = Item.query.get(material_id)
+                        if item:
+                            po_status = SmartBOMSuggestionService._get_po_status_info(item)
+                            if po_status['total_pending'] > 0:
+                                pending_context.append(f"{po_status['total_pending']:.0f} {material.get('material_name', item.name)} pending delivery")
+                
+                action_steps = [
+                    f"Create job card for {max_producible:.1f} units using BOM: {suggestion.get('bom_code', 'N/A')}",
+                    f"Issue available raw materials (current inventory only)",
+                    f"Complete partial production: {max_producible:.1f} units"
+                ]
+                
+                if pending_context:
+                    action_steps.append(f"Additional production possible once pending materials arrive: {', '.join(pending_context)}")
+                
                 partial_suggestion = {
                     **suggestion,
                     'type': 'partial_manufacturing_recommendation',
-                    'title': f"Manufacture {max_producible:.1f} units of {suggestion['target_item_name']} (Partial Production)",
-                    'description': f"Produce {max_producible:.1f} out of {suggestion['target_quantity']:.1f} units using available materials",
+                    'title': f"Manufacture {max_producible:.0f} units of {suggestion['target_item_name']} (Current Inventory)",
+                    'description': f"Produce {max_producible:.0f} units using available inventory. Additional production possible once {', '.join(pending_context) if pending_context else 'pending materials arrive'}.",
                     'producible_quantity': max_producible,
                     'target_quantity': suggestion['target_quantity'],
                     'raw_materials_required': optimized_raw_materials,
@@ -430,12 +408,8 @@ class SmartBOMSuggestionService:
                     'bom_reference': suggestion.get('bom_code', 'N/A'),
                     'bom_id': suggestion.get('bom_id'),
                     'bom_product_name': suggestion.get('target_item_name'),
-                    'action_steps': [
-                        f"Create job card for {max_producible:.1f} units using BOM: {suggestion.get('bom_code', 'N/A')}",
-                        f"Issue available raw materials (partial quantities)",
-                        f"Complete partial production: {max_producible:.1f} units",
-                        f"Remaining needed: {(suggestion['target_quantity'] - max_producible):.1f} units"
-                    ]
+                    'action_steps': action_steps,
+                    'pending_materials': pending_context
                 }
                 suggestions_to_add.append(partial_suggestion)
             
@@ -445,8 +419,11 @@ class SmartBOMSuggestionService:
                 # Check PO status for shortages - don't suggest purchase if sufficient POs exist
                 po_aware_shortages = []
                 for shortage in material_shortages:
-                    item = Item.query.get(shortage['item_id'])
-                    po_status = SmartBOMSuggestionService._get_po_status_info(item)
+                    item = Item.query.get(shortage.get('material_id', shortage.get('item_id')))
+                    if item:
+                        po_status = SmartBOMSuggestionService._get_po_status_info(item)
+                    else:
+                        po_status = {'total_pending': 0}
                     
                     # Only suggest purchase if pending PO quantity doesn't cover the shortage
                     if po_status['total_pending'] < shortage['shortage_qty']:
