@@ -187,195 +187,163 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5><i class="fas fa-table me-2"></i>GRN Management - Parent-Child Structure</h5>
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-outline-primary" onclick="expandAllRows()">
-                            <i class="fas fa-expand-alt me-1"></i>Expand All
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary" onclick="collapseAllRows()">
-                            <i class="fas fa-compress-alt me-1"></i>Collapse All
-                        </button>
-                        <a href="{{ url_for('grn.list_grns') }}" class="btn btn-outline-info">
-                            <i class="fas fa-list me-1"></i>All GRNs
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Parent-Child GRN Structure</h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
                         </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow">
+                            <a class="dropdown-item" href="{{ url_for('grn.list_grns') }}">View All GRNs</a>
+                            <a class="dropdown-item" href="#">Export Report</a>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
                     {% if parent_child_data %}
                         <div class="table-responsive">
-                            <table class="table table-sm table-hover" id="parentChildTable">
-                                <thead class="table-dark sticky-top">
+                            <table class="table table-hover" id="parentChildTable">
+                                <thead class="table-dark">
                                     <tr>
-                                        <th width="40px"><i class="fas fa-chevron-right"></i></th>
-                                        <th width="180px">Document Number</th>
-                                        <th width="100px">Date</th>
-                                        <th width="150px">Vendor/Customer</th>
-                                        <th width="100px">Status</th>
-                                        <th width="80px">Total Qty</th>
-                                        <th width="80px">GRNs</th>
-                                        <th>Materials/Items</th>
-                                        <th width="120px">Received Qty</th>
-                                        <th width="100px">Inspection</th>
-                                        <th width="80px">Inventory</th>
-                                        <th width="180px">Actions</th>
+                                        <th><i class="fas fa-expand-arrows-alt me-1"></i></th>
+                                        <th>Order/Job Number</th>
+                                        <th>Date</th>
+                                        <th>Vendor/Customer</th>
+                                        <th>Status</th>
+                                        <th>Total Qty</th>
+                                        <th>GRN Count</th>
+                                        <th>Item Details</th>
+                                        <th>Quantities</th>
+                                        <th>GRN Status</th>
+                                        <th>Inspection</th>
+                                        <th>Inventory</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for parent in parent_child_data %}
                                     <!-- Parent Row -->
-                                    <tr class="parent-row border-bottom-2" 
-                                        style="cursor: pointer; background-color: #f8f9fa;" 
-                                        data-parent-id="{{ parent.parent_id }}"
-                                        onclick="toggleParentRow('{{ parent.parent_id }}')">
-                                        <td class="text-center">
-                                            <i class="fas fa-chevron-right expand-icon text-primary" 
-                                               style="transition: transform 0.3s;" 
-                                               id="icon-{{ parent.parent_id }}"></i>
+                                    <tr class="parent-row" style="cursor: pointer;" data-parent-id="{{ parent.parent_id }}">
+                                        <td>
+                                            <i class="fas fa-chevron-right expand-icon" style="transition: transform 0.3s;"></i>
                                         </td>
                                         <td>
-                                            <div class="d-flex align-items-center">
-                                                {% if parent.type == 'Purchase Order' %}
-                                                    <span class="badge bg-success me-2">PO</span>
-                                                {% elif parent.type == 'Job Work' %}
-                                                    <span class="badge bg-info me-2">JW</span>
-                                                {% elif parent.type == 'Outsourced Job Card' %}
-                                                    <span class="badge bg-warning me-2">JC</span>
-                                                {% endif %}
-                                                <div>
-                                                    <strong class="text-dark">{{ parent.parent_doc }}</strong>
-                                                    <br><small class="text-muted">{{ parent.type }}</small>
-                                                </div>
-                                            </div>
+                                            <strong class="text-primary">{{ parent.parent_doc }}</strong>
+                                            <br><small class="text-muted">{{ parent.type }}</small>
                                         </td>
-                                        <td><small>{{ parent.date.strftime('%d/%m/%Y') }}</small></td>
-                                        <td><small class="text-muted">{{ parent.vendor_customer }}</small></td>
+                                        <td>{{ parent.date.strftime('%d/%m/%Y') }}</td>
+                                        <td>{{ parent.vendor_customer }}</td>
                                         <td>
                                             {% if parent.status == 'Completed' %}
                                             <span class="badge bg-success">{{ parent.status }}</span>
                                             {% elif parent.status == 'Partial' %}
-                                            <span class="badge bg-warning text-dark">{{ parent.status }}</span>
+                                            <span class="badge bg-warning">{{ parent.status }}</span>
                                             {% elif parent.status == 'Pending GRN' %}
                                             <span class="badge bg-info">{{ parent.status }}</span>
                                             {% else %}
                                             <span class="badge bg-secondary">{{ parent.status }}</span>
                                             {% endif %}
                                         </td>
-                                        <td><strong>{{ parent.total_qty }}</strong></td>
+                                        <td>{{ parent.total_qty }}</td>
                                         <td>
                                             {% if parent.type == 'Outsourced Job Card' and parent.get('show_create_grn') %}
-                                                <span class="badge bg-warning text-dark">0</span>
+                                                <span class="badge bg-warning">Awaiting GRN</span>
                                             {% else %}
-                                                <span class="badge bg-primary">{{ parent.grn_count }}</span>
+                                                {{ parent.grn_count }} GRNs
+                                            {% endif %}
+                                        </td>
+                                        <td colspan="5" class="text-muted text-center">
+                                            {% if parent.type == 'Outsourced Job Card' and parent.get('show_create_grn') %}
+                                                <small class="text-info">No GRNs created yet</small>
+                                            {% else %}
+                                                <small><i class="fas fa-chevron-down"></i> Click to expand GRN details</small>
                                             {% endif %}
                                         </td>
                                         <td>
                                             {% if parent.type == 'Outsourced Job Card' and parent.get('show_create_grn') %}
-                                                <small class="text-muted">Awaiting GRN creation</small>
-                                            {% else %}
-                                                <small class="text-info"><i class="fas fa-chevron-down me-1"></i>{{ parent.grn_count }} GRN record(s)</small>
-                                            {% endif %}
-                                        </td>
-                                        <td>-</td>
-                                        <td>-</td>
-                                        <td>-</td>
-                                        <td>
-                                            {% if parent.type == 'Outsourced Job Card' and parent.get('show_create_grn') %}
-                                                <div class="btn-group btn-group-sm" role="group">
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ url_for('grn_job_card.quick_receive_job_card', job_card_id=parent['job_card_id']) }}" 
+                                                       class="btn btn-success btn-sm" title="Quick Receive">
+                                                        <i class="fas fa-bolt"></i> Quick Receive
+                                                    </a>
                                                     <a href="{{ url_for('grn_job_card.create_grn_for_job_card', job_card_id=parent['job_card_id']) }}" 
-                                                       class="btn btn-primary btn-sm" title="Start 3-Step GRN">
-                                                        <i class="fas fa-plus"></i> Start GRN
+                                                       class="btn btn-outline-primary btn-sm" title="Create Full GRN">
+                                                        <i class="fas fa-plus"></i> Create GRN
                                                     </a>
                                                 </div>
                                             {% else %}
-                                                <small class="text-muted">Click to expand</small>
+                                                <small class="text-muted">-</small>
                                             {% endif %}
                                         </td>
                                     </tr>
                                     
                                     <!-- Child GRN Rows (Initially Hidden) -->
                                     {% for grn in parent.child_grns %}
-                                    <tr class="child-row" 
-                                        data-parent-id="{{ parent.parent_id }}" 
-                                        style="display: none; background-color: #ffffff; border-left: 4px solid #007bff;">
+                                    <tr class="child-row" data-parent-id="{{ parent.parent_id }}" style="display: none; background-color: #f8f9fc;">
                                         <td></td>
-                                        <td style="padding-left: 25px;">
-                                            <div class="d-flex align-items-center">
-                                                <span class="badge bg-light text-dark me-2" style="font-size: 0.7em;">GRN</span>
-                                                <div>
-                                                    <strong class="text-primary">{{ grn.grn_number }}</strong>
-                                                    <br><small class="text-muted">{{ grn.grn_date.strftime('%d/%m/%Y') }}</small>
-                                                </div>
-                                            </div>
+                                        <td style="padding-left: 30px;">
+                                            <strong>{{ grn.grn_number }}</strong>
+                                            <br><small class="text-muted">{{ grn.source_type }}</small>
                                         </td>
-                                        <td><small>{{ grn.grn_date.strftime('%d/%m/%Y') }}</small></td>
-                                        <td><small class="text-muted">{{ grn.source_document }}</small></td>
+                                        <td>{{ grn.grn_date.strftime('%d/%m/%Y') }}</td>
+                                        <td>
+                                            <small class="text-muted">{{ grn.source_document }}</small>
+                                        </td>
                                         <td>
                                             {% if grn.status == 'Completed' %}
-                                            <span class="badge bg-success">{{ grn.status }}</span>
+                                            <span class="badge bg-success text-white">{{ grn.status }}</span>
                                             {% elif grn.status == 'Received' %}
-                                            <span class="badge bg-info">{{ grn.status }}</span>
-                                            {% elif grn.status == 'Draft' %}
-                                            <span class="badge bg-secondary">{{ grn.status }}</span>
+                                            <span class="badge bg-info text-white">{{ grn.status }}</span>
                                             {% else %}
-                                            <span class="badge bg-warning text-dark">{{ grn.status }}</span>
+                                            <span class="badge bg-secondary text-white">{{ grn.status }}</span>
                                             {% endif %}
                                         </td>
                                         <td>-</td>
                                         <td>-</td>
                                         <td>
-                                            <small class="text-muted">{{ grn.item_details[:50] }}{% if grn.item_details|length > 50 %}...{% endif %}</small>
+                                            <small class="text-muted">{{ grn.item_details }}</small>
                                         </td>
                                         <td>
                                             <small>
-                                                <span class="text-success"><strong>{{ grn.received_qty }}</strong></span>
+                                                <span class="text-success">Rec: {{ grn.received_qty }}</span>
                                                 {% if grn.scrap_qty > 0 %}
-                                                <br><span class="text-danger"><i class="fas fa-exclamation-triangle"></i> {{ grn.scrap_qty }}</span>
+                                                <br><span class="text-danger">Rej: {{ grn.scrap_qty }}</span>
                                                 {% endif %}
                                             </small>
                                         </td>
                                         <td>
-                                            {% if grn.inspection_status == 'Passed' %}
-                                            <span class="badge bg-success"><i class="fas fa-check"></i></span>
-                                            {% elif grn.inspection_status == 'Pending' %}
-                                            <span class="badge bg-warning text-dark"><i class="fas fa-clock"></i></span>
-                                            {% elif grn.inspection_status == 'Failed' %}
-                                            <span class="badge bg-danger"><i class="fas fa-times"></i></span>
+                                            {% if grn.status == 'Completed' %}
+                                            <span class="badge bg-success text-white">{{ grn.status }}</span>
+                                            {% elif grn.status == 'Received' %}
+                                            <span class="badge bg-info text-white">{{ grn.status }}</span>
                                             {% else %}
-                                            <span class="badge bg-secondary"><i class="fas fa-question"></i></span>
+                                            <span class="badge bg-secondary text-white">{{ grn.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if grn.inspection_status == 'Completed' %}
+                                            <span class="badge bg-success text-white">{{ grn.inspection_status }}</span>
+                                            {% elif grn.inspection_status == 'Pending' %}
+                                            <span class="badge bg-warning text-dark">{{ grn.inspection_status }}</span>
+                                            {% else %}
+                                            <span class="badge bg-info text-white">{{ grn.inspection_status }}</span>
                                             {% endif %}
                                         </td>
                                         <td>
                                             {% if grn.inventory_updated %}
-                                            <span class="badge bg-success"><i class="fas fa-check"></i></span>
+                                            <span class="badge bg-success text-white"><i class="fas fa-check"></i> Yes</span>
                                             {% else %}
-                                            <span class="badge bg-secondary"><i class="fas fa-times"></i></span>
+                                            <span class="badge bg-secondary text-white"><i class="fas fa-times"></i> No</span>
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <div class="btn-group btn-group-sm" role="group">
-                                                <a href="{{ url_for('grn.detail', grn_id=grn.grn_id) }}" 
-                                                   class="btn btn-outline-primary btn-sm" title="View GRN Details">
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('grn.detail', grn_id=grn.grn_id) }}" class="btn btn-outline-primary btn-sm" title="View Details">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                <div class="dropdown">
-                                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
-                                                            type="button" data-bs-toggle="dropdown" title="More Actions">
-                                                        <i class="fas fa-ellipsis-v"></i>
-                                                    </button>
-                                                    <ul class="dropdown-menu dropdown-menu-end">
-                                                        <li><a class="dropdown-item" href="{{ url_for('grn.view_grn_batches', grn_id=grn.grn_id) }}">
-                                                            <i class="fas fa-layer-group me-2"></i>View Batches
-                                                        </a></li>
-                                                        <li><a class="dropdown-item" href="{{ url_for('grn_workflow.view_workflow', grn_id=grn.grn_id) }}">
-                                                            <i class="fas fa-stream me-2"></i>View Workflow
-                                                        </a></li>
-                                                        <li><hr class="dropdown-divider"></li>
-                                                        <li><a class="dropdown-item" href="#">
-                                                            <i class="fas fa-download me-2"></i>Export PDF
-                                                        </a></li>
-                                                    </ul>
-                                                </div>
+                                                <a href="{{ url_for('grn.view_grn_batches', grn_id=grn.grn_id) }}" class="btn btn-outline-info btn-sm" title="View Batches">
+                                                    <i class="fas fa-layer-group"></i>
+                                                </a>
                                             </div>
                                         </td>
                                     </tr>
@@ -631,152 +599,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-// JavaScript for collapsible parent-child table
-function toggleParentRow(parentId) {
-    const childRows = document.querySelectorAll(`tr.child-row[data-parent-id="${parentId}"]`);
-    const expandIcon = document.getElementById(`icon-${parentId}`);
-    
-    let isExpanded = false;
-    childRows.forEach(row => {
-        if (row.style.display === 'none' || row.style.display === '') {
-            row.style.display = 'table-row';
-            isExpanded = true;
-        } else {
-            row.style.display = 'none';
-            isExpanded = false;
-        }
-    });
-    
-    // Rotate chevron icon
-    if (isExpanded) {
-        expandIcon.style.transform = 'rotate(90deg)';
-        expandIcon.classList.remove('fa-chevron-right');
-        expandIcon.classList.add('fa-chevron-down');
-    } else {
-        expandIcon.style.transform = 'rotate(0deg)';
-        expandIcon.classList.remove('fa-chevron-down');
-        expandIcon.classList.add('fa-chevron-right');
-    }
-}
-
-function expandAllRows() {
-    const allChildRows = document.querySelectorAll('tr.child-row');
-    const allIcons = document.querySelectorAll('.expand-icon');
-    
-    allChildRows.forEach(row => {
-        row.style.display = 'table-row';
-    });
-    
-    allIcons.forEach(icon => {
-        icon.style.transform = 'rotate(90deg)';
-        icon.classList.remove('fa-chevron-right');
-        icon.classList.add('fa-chevron-down');
-    });
-}
-
-function collapseAllRows() {
-    const allChildRows = document.querySelectorAll('tr.child-row');
-    const allIcons = document.querySelectorAll('.expand-icon');
-    
-    allChildRows.forEach(row => {
-        row.style.display = 'none';
-    });
-    
-    allIcons.forEach(icon => {
-        icon.style.transform = 'rotate(0deg)';
-        icon.classList.remove('fa-chevron-down');
-        icon.classList.add('fa-chevron-right');
-    });
-}
-
-// Initialize table functionality
-$(document).ready(function() {
-    // Initialize tooltips
-    $('[data-bs-toggle="tooltip"]').tooltip();
-    
-    // Smooth animations for table rows
-    $('.parent-row').hover(
-        function() {
-            $(this).css('background-color', '#e8f4f8');
-        },
-        function() {
-            $(this).css('background-color', '#f8f9fa');
-        }
-    );
-    
-    // Add loading state for action buttons
-    $('.btn').on('click', function() {
-        if (!$(this).hasClass('dropdown-toggle')) {
-            $(this).addClass('disabled');
-            const originalText = $(this).html();
-            $(this).html('<i class="fas fa-spinner fa-spin"></i> Loading...');
-            
-            // Re-enable after 3 seconds (fallback)
-            setTimeout(() => {
-                $(this).removeClass('disabled');
-                $(this).html(originalText);
-            }, 3000);
-        }
-    });
-});
-</script>
-
-<style>
-/* Enhanced styling for parent-child table */
-.parent-row:hover {
-    background-color: #e8f4f8 !important;
-    transition: background-color 0.3s ease;
-}
-
-.child-row {
-    transition: all 0.3s ease;
-}
-
-.child-row:hover {
-    background-color: #f0f8ff !important;
-}
-
-.expand-icon {
-    cursor: pointer;
-    font-size: 0.9em;
-}
-
-.table-dark th {
-    border-color: #495057;
-    font-weight: 600;
-    font-size: 0.85em;
-}
-
-.table-sm td {
-    padding: 0.4rem;
-    vertical-align: middle;
-}
-
-.badge {
-    font-size: 0.75em;
-}
-
-/* Better spacing for action buttons */
-.btn-group-sm .btn {
-    padding: 0.2rem 0.4rem;
-    font-size: 0.75rem;
-}
-
-/* Sticky header with better z-index */
-.sticky-top {
-    position: sticky;
-    top: 0;
-    z-index: 1020;
-}
-
-/* Border styling for child rows */
-.child-row {
-    border-left: 4px solid #007bff;
-    border-bottom: 1px solid #e9ecef;
-}
-</style>
 {% endblock %}
