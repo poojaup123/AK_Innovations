@@ -257,7 +257,7 @@
                 </div>
                 <div class="detail-box">
                     <strong>Quantity Planned:</strong><br>
-                    {{ job_card.quantity_planned or 0 }} {{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'Pcs' }}
+                    {{ job_card.quantity_planned or (job_card.production.quantity_planned if job_card.production else 1) }} Pcs
                 </div>
                 <div class="detail-box">
                     <strong>Target Completion:</strong><br>
