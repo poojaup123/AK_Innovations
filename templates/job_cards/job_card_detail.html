@@ -212,7 +212,7 @@
                                             
                                             {% if not can_start and not process_completed and not is_current %}
                                                 <small class="d-block text-muted mt-1">
-                                                    Complete {{ routing_steps[loop.index0 - 1].process }} first
+                                                    <i class="fas fa-arrow-left me-1"></i>Needs material from {{ routing_steps[loop.index0 - 1].process }}
                                                 </small>
                                             {% endif %}
                                         </td>
@@ -252,11 +252,11 @@
                                                         </button>
                                                     {% else %}
                                                         <button type="button" class="btn btn-sm btn-outline-secondary" disabled
-                                                                title="Complete {{ routing_steps[loop.index0 - 1].process }} first">
-                                                            <i class="fas fa-lock me-1"></i>Locked
+                                                                title="Waiting for material from {{ routing_steps[loop.index0 - 1].process }}">
+                                                            <i class="fas fa-hourglass-half me-1"></i>Waiting for Material
                                                         </button>
                                                         <small class="text-muted d-block">
-                                                            Waiting for {{ routing_steps[loop.index0 - 1].process }}
+                                                            <i class="fas fa-truck me-1"></i>{{ routing_steps[loop.index0 - 1].process }} → {{ step.process }}
                                                         </small>
                                                     {% endif %}
                                                 {% endif %}
