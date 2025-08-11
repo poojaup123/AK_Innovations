@@ -161,15 +161,16 @@
                                                                 {% endif %}
                                                             </td>
                                                             <td>
-                                                                {% set remaining_needed = material.needed_qty - (material.get('po_status', {}).get('total_received', 0)) %}
-                                                                {% if remaining_needed > 0 %}
+                                                                {% set allocated_qty = material.get('allocated_qty', material.needed_qty) %}
+                                                                {% set remaining_needed = material.needed_qty - allocated_qty %}
+                                                                {% if remaining_needed > 0.01 %}
                                                                     <span class="text-danger fw-bold">{{ "%.2f"|format(remaining_needed) }} {{ material.unit }}</span>
                                                                     <br><small class="text-muted">
                                                                         <i class="fas fa-exclamation-triangle"></i> Need to procure
                                                                     </small>
                                                                 {% else %}
                                                                     <span class="text-success">
-                                                                        <i class="fas fa-check-circle"></i> Sufficient
+                                                                        <i class="fas fa-check-circle"></i> Fully allocated
                                                                     </span>
                                                                 {% endif %}
                                                             </td>
