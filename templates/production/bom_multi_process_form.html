@@ -779,8 +779,23 @@ document.addEventListener('DOMContentLoaded', function() {
     firstProcess.querySelector('[name="processes[0][labor_rate_per_hour]"]').value = '{{ edit_process.labor_rate_per_hour or 0 }}';
     firstProcess.querySelector('[name="processes[0][cost_per_unit]"]').value = '{{ edit_process.cost_per_unit or 0 }}';
     firstProcess.querySelector('[name="processes[0][cost_unit]"]').value = '{{ edit_process.cost_unit or "per_unit" }}';
+    firstProcess.querySelector('[name="processes[0][quality_check_required]"]').checked = {{ 'true' if edit_process.quality_check_required else 'false' }};
     
-
+    // Show scrap section if this is a scrap-generating process (Cutting/Notching)
+    toggleScrapSection(0, '{{ edit_process.process_name }}');
+    
+    // Populate scrap tracking fields if enabled
+    {% if edit_process.enable_scrap_tracking %}
+    firstProcess.querySelector('[name="processes[0][enable_scrap_tracking]"]').checked = true;
+    toggleScrapFields(firstProcess.querySelector('[name="processes[0][enable_scrap_tracking]"]'), 'scrap_percent_0');
+    firstProcess.querySelector('[name="processes[0][estimated_scrap_percent]"]').value = '{{ edit_process.estimated_scrap_percent or 0 }}';
+    {% endif %}
+    
+    {% if edit_process.enable_scrap_weight_tracking %}
+    firstProcess.querySelector('[name="processes[0][enable_scrap_weight_tracking]"]').checked = true;
+    toggleScrapFields(firstProcess.querySelector('[name="processes[0][enable_scrap_weight_tracking]"]'), 'scrap_weight_0');
+    firstProcess.querySelector('[name="processes[0][scrap_weight]"]').value = '{{ edit_process.scrap_weight or 0 }}';
+    {% endif %}
     
     // Update the submit button text for editing
     document.querySelector('button[type="submit"]').innerHTML = '<i class="fas fa-save"></i> Update Process';
