@@ -156,9 +156,10 @@
                                                         <div class="form-group" id="scrap_percent_0" style="display: {% if edit_process and edit_process.enable_scrap_tracking %}block{% else %}none{% endif %};">
                                                             <label class="form-label">Scrap Percentage (%)</label>
                                                             <input type="number" step="0.1" class="form-control scrap-percent-input" 
-                                                                   name="processes[0][estimated_scrap_percent]" placeholder="0.0"
+                                                                   name="processes[0][estimated_scrap_percent]" placeholder="e.g., 5.0"
                                                                    {% if edit_process and edit_process.estimated_scrap_percent %}value="{{ edit_process.estimated_scrap_percent }}"{% endif %}
-                                                                   onchange="calculateScrapWeight(0)" data-process-index="0">
+                                                                   onchange="calculateScrapWeight(0)" oninput="calculateScrapWeight(0)" data-process-index="0">
+                                                            <small class="text-muted">Enter percentage to auto-calculate scrap weight</small>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">
@@ -171,9 +172,10 @@
                                                         <div class="form-group" id="scrap_weight_0" style="display: {% if edit_process and edit_process.enable_scrap_weight_tracking %}block{% else %}none{% endif %};">
                                                             <label class="form-label">Scrap Weight (kg)</label>
                                                             <input type="number" step="0.001" class="form-control scrap-weight-input" 
-                                                                   name="processes[0][scrap_weight]" placeholder="0.000"
+                                                                   name="processes[0][scrap_weight]" placeholder="Auto-calculated"
                                                                    {% if edit_process and edit_process.scrap_weight %}value="{{ edit_process.scrap_weight }}"{% endif %}
                                                                    onchange="calculateScrapPercent(0)" data-process-index="0">
+                                                            <div class="calc-feedback mt-1"></div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -440,6 +442,12 @@ function calculateScrapWeight(processIndex) {
         
         // Show calculation details
         console.log(`Scrap calculation: ${inputWeight}kg × ${scrapPercent}% = ${scrapWeight.toFixed(3)}kg`);
+        
+        // Update any visual feedback elements
+        const calcDisplay = document.querySelector(`#scrap_section_${processIndex} .calc-feedback`);
+        if (calcDisplay) {
+            calcDisplay.innerHTML = `<small class="text-success"><i class="fas fa-calculator"></i> ${inputWeight}kg × ${scrapPercent}% = ${scrapWeight.toFixed(3)}kg</small>`;
+        }
     }
 }
 
