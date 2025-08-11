@@ -352,10 +352,19 @@
                                             <a href="{{ url_for('job_cards.view_job_card', id=child.id) }}" class="btn btn-outline-primary btn-xs">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            {% if '-OUT-' in child.job_card_number and not child.grn_id %}
-                                                <a href="{{ url_for('grn_job_card.create_grn_for_job_card', job_card_id=child.id) }}" class="btn btn-warning btn-xs" title="Create GRN">
-                                                    <i class="fas fa-truck"></i>
+                                            {% if '-OUT-' in child.job_card_number %}
+                                                <!-- Challan Generation Button for Outsourced Job Cards -->
+                                                <a href="{{ url_for('job_cards.generate_outsourced_challan', job_card_id=child.id) }}" 
+                                                   class="btn btn-info btn-xs" 
+                                                   title="Generate Challan" 
+                                                   target="_blank">
+                                                    <i class="fas fa-file-alt"></i>
                                                 </a>
+                                                {% if not child.grn_id %}
+                                                    <a href="{{ url_for('grn_job_card.create_grn_for_job_card', job_card_id=child.id) }}" class="btn btn-warning btn-xs" title="Create GRN">
+                                                        <i class="fas fa-truck"></i>
+                                                    </a>
+                                                {% endif %}
                                             {% else %}
                                                 <a href="{{ url_for('job_cards.update_daily_status', job_card_id=child.id) }}" class="btn btn-success btn-xs">
                                                     <i class="fas fa-edit"></i>
