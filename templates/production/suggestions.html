@@ -267,9 +267,8 @@
                                             {% set existing_job_card = None %}
                                             {% if target_item_id %}
                                                 {% for job_card in existing_job_cards %}
-                                                    {% if job_card.item_id == target_item_id %}
+                                                    {% if job_card.item_id == target_item_id and not existing_job_card %}
                                                         {% set existing_job_card = job_card %}
-                                                        {% break %}
                                                     {% endif %}
                                                 {% endfor %}
                                             {% endif %}
