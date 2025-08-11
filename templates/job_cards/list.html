@@ -183,7 +183,7 @@
                                     <td>
                                         {% if hierarchy.parent.production %}
                                             <div class="fw-bold">
-                                                <a href="{{ url_for('production.detail', id=hierarchy.parent.production.id) }}" class="text-decoration-none">
+                                                <a href="{{ url_for('production.view', production_id=hierarchy.parent.production.id) }}" class="text-decoration-none">
                                                     {{ hierarchy.parent.production.production_number }}
                                                 </a>
                                             </div>
@@ -262,7 +262,7 @@
                                     <td>
                                         {% if child.production %}
                                             <div class="small">
-                                                <a href="{{ url_for('production.detail', id=child.production.id) }}" class="text-decoration-none text-muted">
+                                                <a href="{{ url_for('production.view', production_id=child.production.id) }}" class="text-decoration-none text-muted">
                                                     {{ child.production.production_number }}
                                                 </a>
                                             </div>
