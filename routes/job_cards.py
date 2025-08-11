@@ -1048,15 +1048,49 @@ def generate_challan(job_card_id):
     try:
         materials = JobCardMaterial.query.filter_by(job_card_id=job_card_id).all()
         
-        # If no JobCardMaterial, create a simple material entry based on the job card
+        # If no JobCardMaterial, get actual raw materials from BOM or production order
         if not materials and job_card.item:
-            # For now, show the item being processed as the material being sent
-            materials = [{
-                'item': job_card.item,
-                'quantity_required': job_card.quantity_planned or 1,
-                'batch_number': 'TBD',
-                'remarks': f'Raw material for {job_card.process_name or "Processing"}'
-            }]
+            # Get production quantity if available
+            production_qty = 1
+            if job_card.production_id:
+                from models import Production
+                production = Production.query.get(job_card.production_id)
+                if production:
+                    production_qty = production.quantity_planned or 1
+            
+            # Try to find BOM for raw materials
+            from models import BOM, BOMItem
+            try:
+                bom = BOM.query.filter_by(finished_good_id=job_card.item.id).first()
+                if bom:
+                    bom_items = BOMItem.query.filter_by(bom_id=bom.id).all()
+                    materials = []
+                    for bom_item in bom_items:
+                        # Calculate total raw material needed (BOM qty × production qty)
+                        total_qty = bom_item.quantity_required * production_qty
+                        materials.append({
+                            'item': bom_item.item,
+                            'quantity_required': total_qty,
+                            'batch_number': 'TBD',
+                            'remarks': f'Raw material to make {production_qty} {job_card.item.name}'
+                        })
+                else:
+                    # Fallback to showing the production item itself
+                    materials = [{
+                        'item': job_card.item,
+                        'quantity_required': production_qty,
+                        'batch_number': 'TBD',
+                        'remarks': f'Material for {job_card.process_name or "Processing"}'
+                    }]
+            except Exception as bom_error:
+                print(f"BOM lookup error: {bom_error}")
+                # Fallback material entry
+                materials = [{
+                    'item': job_card.item,
+                    'quantity_required': production_qty,
+                    'batch_number': 'TBD',
+                    'remarks': f'Material for {job_card.process_name or "Processing"}'
+                }]
     except Exception as e:
         print(f"Error getting materials: {e}")
         pass
