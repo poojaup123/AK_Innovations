@@ -60,6 +60,22 @@ def approvals_dashboard():
     except:
         pending_jobwork = []
     
+    # Get pending outsourced job cards that need approval
+    try:
+        from models import JobCard
+        pending_outsourced_job_cards = JobCard.query.filter(
+            and_(
+                JobCard.job_card_number.like('%-OUT-%'),
+                or_(
+                    JobCard.status == 'pending',
+                    JobCard.status == 'outsourced',
+                    JobCard.status == 'sent_to_vendor'
+                )
+            )
+        ).order_by(JobCard.created_at.desc()).all()
+    except:
+        pending_outsourced_job_cards = []
+    
     # Get pending expenses
     try:
         from models import FactoryExpense
@@ -92,6 +108,7 @@ def approvals_dashboard():
                          pending_productions=pending_productions,
                          pending_sales=pending_sales,
                          pending_jobwork=pending_jobwork,
+                         pending_outsourced_job_cards=pending_outsourced_job_cards,
                          pending_expenses=pending_expenses,
                          recent_approvals=recent_approvals[:10])
 
