@@ -133,6 +133,17 @@ def create_job_card(production_id=None):
         production = Production.query.get_or_404(production_id)
         form.production_id.data = production_id
         
+        # If coming from suggestion, check if job card already exists for this item/BOM
+        if from_suggestion and target_item_id:
+            existing_job_card = JobCard.query.filter_by(
+                production_id=production_id,
+                item_id=target_item_id
+            ).first()
+            
+            if existing_job_card:
+                flash(f'Job card {existing_job_card.job_card_number} already exists for {existing_job_card.item.name}', 'info')
+                return redirect(url_for('job_cards.view_job_card', id=existing_job_card.id))
+        
         # If coming from suggestion, use target item instead of production item
         if from_suggestion and target_item_id:
             form.item_id.data = target_item_id
