@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}Step 3: Inspection - {{ grn.grn_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Progress Indicator -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">3-Step GRN Workflow for Outsourced Job Cards</h5>
+                        <div class="progress" style="width: 300px; height: 8px;">
+                            <div class="progress-bar bg-success" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="badge bg-success me-2">✓ Step 1: GRN Created</span>
+                        <span class="badge bg-success me-2">✓ Step 2: Line Items Added</span>
+                        <span class="badge bg-primary">➤ Step 3: Final Inspection</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- GRN Summary -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-search me-2"></i>{{ grn.grn_number }} - Quality Inspection
+                        <span class="badge bg-dark ms-2">{{ grn.status.title() }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Job Card Information</h6>
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td><strong>Job Card:</strong></td>
+                                    <td>{{ job_card.job_card_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Process:</strong></td>
+                                    <td>{{ job_card.process_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Vendor:</strong></td>
+                                    <td>{{ job_card.assigned_vendor.name if job_card.assigned_vendor else 'Not assigned' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>GRN Information</h6>
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td><strong>Received Date:</strong></td>
+                                    <td>{{ grn.received_date.strftime('%Y-%m-%d') if grn.received_date else '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Inspector:</strong></td>
+                                    <td>{{ current_user.username }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Inspection Date:</strong></td>
+                                    <td>{{ datetime.now().strftime('%Y-%m-%d') }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inspection Items -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-clipboard-check me-2"></i>Inspection Results
+                        <small class="text-muted ms-2">(Step 3 of 3)</small>
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form id="inspectionForm">
+                        {% if grn.line_items %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Qty Received</th>
+                                        <th>Qty Passed</th>
+                                        <th>Qty Rejected</th>
+                                        <th>UOM</th>
+                                        <th>Inspection Status</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for line_item in grn.line_items %}
+                                    <tr data-line-item-id="{{ line_item.id }}">
+                                        <td>
+                                            <strong>{{ line_item.item.name if line_item.item else 'Unknown Item' }}</strong>
+                                            {% if line_item.item and line_item.item.item_code %}
+                                            <br><small class="text-muted">{{ line_item.item.item_code }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <strong class="text-primary">{{ "%.1f"|format(line_item.quantity_received) }}</strong>
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control quantity-passed" 
+                                                   step="0.1" min="0" max="{{ line_item.quantity_received }}"
+                                                   value="{{ line_item.quantity_passed or line_item.quantity_received }}"
+                                                   onchange="updateRejected(this)">
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control quantity-rejected" 
+                                                   step="0.1" min="0" max="{{ line_item.quantity_received }}"
+                                                   value="{{ line_item.quantity_rejected or 0 }}"
+                                                   readonly>
+                                        </td>
+                                        <td>{{ line_item.unit_of_measure }}</td>
+                                        <td>
+                                            <select class="form-select inspection-status">
+                                                <option value="passed" {% if line_item.inspection_status == 'passed' %}selected{% endif %}>Passed</option>
+                                                <option value="failed" {% if line_item.inspection_status == 'failed' %}selected{% endif %}>Failed</option>
+                                                <option value="partial" {% if line_item.inspection_status == 'partial' %}selected{% endif %}>Partial</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <textarea class="form-control inspection-notes" rows="2" 
+                                                      placeholder="Quality notes...">{{ line_item.inspection_notes or '' }}</textarea>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            No line items found. Please go back and add line items first.
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('grn_job_card.add_line_items', grn_id=grn.id) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Line Items
+                            </a>
+                            <button type="button" class="btn btn-success" onclick="finalizeInspection()">
+                                <i class="fas fa-check me-2"></i>Complete Inspection & Finalize GRN
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Inspection Guide -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Inspection Guide</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Quality Control Process:</strong></p>
+                    <ul class="small">
+                        <li><strong>Passed:</strong> Items meeting quality standards</li>
+                        <li><strong>Rejected:</strong> Auto-calculated (Received - Passed)</li>
+                        <li><strong>Status:</strong> Overall inspection result</li>
+                        <li><strong>Notes:</strong> Quality observations</li>
+                    </ul>
+                    
+                    <div class="alert alert-info">
+                        <small>
+                            <i class="fas fa-info-circle me-1"></i>
+                            Only passed quantities will be added to inventory.
+                            Rejected items will be tracked for vendor feedback.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inspection Summary -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Inspection Summary</h6>
+                </div>
+                <div class="card-body" id="inspectionSummary">
+                    {% if grn.line_items %}
+                    {% set total_received = grn.line_items|sum(attribute='quantity_received') %}
+                    <div class="row text-center">
+                        <div class="col-12 mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <h4 class="text-primary mb-0">{{ "%.1f"|format(total_received) }}</h4>
+                                <small class="text-muted">Total Received</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-success bg-opacity-10 p-2 rounded">
+                                <h5 class="text-success mb-0" id="totalPassed">0</h5>
+                                <small class="text-muted">Passed</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-danger bg-opacity-10 p-2 rounded">
+                                <h5 class="text-danger mb-0" id="totalRejected">0</h5>
+                                <small class="text-muted">Rejected</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateRejected(passedInput) {
+    const row = passedInput.closest('tr');
+    const receivedQty = parseFloat(row.querySelector('td:nth-child(2) strong').textContent);
+    const passedQty = parseFloat(passedInput.value) || 0;
+    const rejectedInput = row.querySelector('.quantity-rejected');
+    
+    rejectedInput.value = Math.max(0, receivedQty - passedQty).toFixed(1);
+    updateSummary();
+}
+
+function updateSummary() {
+    let totalPassed = 0;
+    let totalRejected = 0;
+    
+    document.querySelectorAll('.quantity-passed').forEach(input => {
+        totalPassed += parseFloat(input.value) || 0;
+    });
+    
+    document.querySelectorAll('.quantity-rejected').forEach(input => {
+        totalRejected += parseFloat(input.value) || 0;
+    });
+    
+    document.getElementById('totalPassed').textContent = totalPassed.toFixed(1);
+    document.getElementById('totalRejected').textContent = totalRejected.toFixed(1);
+}
+
+function finalizeInspection() {
+    const lineItems = [];
+    
+    document.querySelectorAll('tr[data-line-item-id]').forEach(row => {
+        const lineItemId = row.getAttribute('data-line-item-id');
+        const quantityPassed = parseFloat(row.querySelector('.quantity-passed').value) || 0;
+        const quantityRejected = parseFloat(row.querySelector('.quantity-rejected').value) || 0;
+        const inspectionStatus = row.querySelector('.inspection-status').value;
+        const inspectionNotes = row.querySelector('.inspection-notes').value;
+        
+        lineItems.push({
+            id: lineItemId,
+            quantity_passed: quantityPassed,
+            quantity_rejected: quantityRejected,
+            inspection_status: inspectionStatus,
+            inspection_notes: inspectionNotes
+        });
+    });
+    
+    fetch('{{ url_for("grn_job_card.inspection", grn_id=grn.id) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            line_items: lineItems
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.href = '{{ url_for("grn_job_card.view_grn_for_job_card", job_card_id=job_card.id) }}';
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred during inspection finalization.');
+    });
+}
+
+// Initialize summary
+document.addEventListener('DOMContentLoaded', function() {
+    updateSummary();
+});
+</script>
+{% endblock %}

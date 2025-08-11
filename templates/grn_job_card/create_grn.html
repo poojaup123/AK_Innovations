@@ -1,14 +1,38 @@
 {% extends "base.html" %}
 
-{% block title %}Create GRN for Job Card{% endblock %}
+{% block title %}Step 1: Create GRN Header{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
+    <!-- Progress Indicator -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">3-Step GRN Workflow for Outsourced Job Cards</h5>
+                        <div class="progress" style="width: 300px; height: 8px;">
+                            <div class="progress-bar bg-success" style="width: 33%;"></div>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="badge bg-primary me-2">➤ Step 1: Create GRN</span>
+                        <span class="badge bg-secondary me-2">Step 2: Add Line Items</span>
+                        <span class="badge bg-secondary">Step 3: Inspection</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-lg-8">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-truck-loading me-2"></i>Create GRN for Outsourced Job Card</h5>
+                    <h5 class="mb-0">
+                        <i class="fas fa-truck-loading me-2"></i>Step 1: Create GRN Header
+                        <small class="text-muted ms-2">(Same as PO Workflow)</small>
+                    </h5>
                 </div>
                 <div class="card-body">
                     <!-- Job Card Information -->
@@ -104,7 +128,7 @@
                                 <i class="fas fa-arrow-left me-2"></i>Back to Job Card
                             </a>
                             <button type="submit" class="btn btn-success">
-                                <i class="fas fa-save me-2"></i>Create GRN
+                                <i class="fas fa-arrow-right me-2"></i>Create GRN & Continue to Line Items
                             </button>
                         </div>
                     </form>
@@ -113,24 +137,62 @@
         </div>
         
         <div class="col-lg-4">
-            <div class="card">
+            <div class="card mb-4">
                 <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-question-circle me-2"></i>GRN Information</h6>
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>3-Step Workflow</h6>
                 </div>
                 <div class="card-body">
-                    <p><strong>What is a GRN?</strong></p>
+                    <p><strong>Professional GRN Process:</strong></p>
                     <p class="small text-muted">
-                        A Goods Receipt Note (GRN) records the receipt of materials from outsourced work. 
-                        Once created, it will update inventory levels and mark the job card as completed.
+                        Same standardized workflow as Purchase Orders for consistency 
+                        across all material receipts in the factory.
                     </p>
                     
-                    <p><strong>Next Steps:</strong></p>
-                    <ul class="small text-muted">
-                        <li>GRN will be created with the job card quantity</li>
-                        <li>Inventory will be updated automatically</li>
-                        <li>Job card status will change to "Completed"</li>
-                        <li>Material will be available for next process</li>
-                    </ul>
+                    <div class="timeline">
+                        <div class="timeline-item active">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6>Step 1: GRN Header</h6>
+                                <small>Create receipt document with vendor details</small>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h6>Step 2: Line Items</h6>
+                                <small>Add actual received items and quantities</small>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <h6>Step 3: Inspection</h6>
+                                <small>Quality control and inventory finalization</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-question-circle me-2"></i>About This Step</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Step 1: GRN Header Creation</strong></p>
+                    <p class="small text-muted">
+                        Record basic receipt information including vendor, date, 
+                        and transport details. This creates the foundation for 
+                        detailed line item entry.
+                    </p>
+                    
+                    <div class="alert alert-info">
+                        <small>
+                            <i class="fas fa-lightbulb me-1"></i>
+                            Form is pre-filled with job card details for accuracy. 
+                            Verify information before proceeding.
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>

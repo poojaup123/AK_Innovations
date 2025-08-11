@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Step 2: Add Line Items - {{ grn.grn_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Progress Indicator -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">3-Step GRN Workflow for Outsourced Job Cards</h5>
+                        <div class="progress" style="width: 300px; height: 8px;">
+                            <div class="progress-bar bg-success" style="width: 66%;"></div>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="badge bg-success me-2">✓ Step 1: GRN Created</span>
+                        <span class="badge bg-primary me-2">➤ Step 2: Add Line Items</span>
+                        <span class="badge bg-secondary">Step 3: Inspection</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- GRN Header Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-receipt me-2"></i>{{ grn.grn_number }}
+                        <span class="badge bg-light text-primary ms-2">{{ grn.status.title() }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td><strong>Job Card:</strong></td>
+                                    <td>{{ job_card.job_card_number }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Process:</strong></td>
+                                    <td>{{ job_card.process_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Component:</strong></td>
+                                    <td>{{ job_card.item.name if job_card.item else 'Unknown' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td><strong>Vendor:</strong></td>
+                                    <td>{{ job_card.assigned_vendor.name if job_card.assigned_vendor else 'Not assigned' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Planned Qty:</strong></td>
+                                    <td>{{ "%.1f"|format(job_card.planned_quantity) }} {{ job_card.item.unit_of_measure if job_card.item else 'PCS' }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Received Date:</strong></td>
+                                    <td>{{ grn.received_date.strftime('%Y-%m-%d') if grn.received_date else '-' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Line Items Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-plus me-2"></i>Add Line Items
+                        <small class="text-muted ms-2">(Step 2 of 3)</small>
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.item_id.label(class="form-label") }}
+                                    <select name="item_id" class="form-control" required>
+                                        <option value="{{ job_card.item_id }}" selected>{{ job_card.item.name if job_card.item else 'Select Item' }}</option>
+                                    </select>
+                                    {% for error in form.item_id.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.quantity_received.label(class="form-label") }}
+                                    {{ form.quantity_received(class="form-control", step="0.1") }}
+                                    {% for error in form.quantity_received.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.unit_of_measure.label(class="form-label") }}
+                                    {{ form.unit_of_measure(class="form-control") }}
+                                    {% for error in form.unit_of_measure.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Inspection Status</label>
+                                    <input type="text" class="form-control" value="Pending Inspection" readonly>
+                                    <small class="text-muted">Will be set in Step 3</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.remarks.label(class="form-label") }}
+                            {{ form.remarks(class="form-control", rows="3") }}
+                            {% for error in form.remarks.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Job Card
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-arrow-right me-2"></i>Add Line Item & Continue to Inspection
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Workflow Guide -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Step 2: Line Items</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>What happens here?</strong></p>
+                    <p class="small text-muted">
+                        Add the actual items received from the vendor. This includes quantity 
+                        received and unit of measure validation.
+                    </p>
+                    
+                    <p><strong>Next Steps:</strong></p>
+                    <ul class="small text-muted">
+                        <li>Line items will be added to the GRN</li>
+                        <li>Move to inspection step for quality control</li>
+                        <li>Pass/reject quantities will be determined</li>
+                        <li>Final inventory updates will occur</li>
+                    </ul>
+
+                    <div class="mt-3">
+                        <h6>Pre-filled Information</h6>
+                        <small class="text-muted">
+                            Form is pre-populated with job card details for accuracy. 
+                            Verify quantities match actual receipt.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
