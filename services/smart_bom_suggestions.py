@@ -213,6 +213,9 @@ class SmartBOMSuggestionService:
             raw_material_needed = (required_qty / bom_output_qty) * material_qty_per_unit
             raw_material_available = SmartBOMSuggestionService._get_available_quantity(raw_material)
             
+            # Get PO status for this raw material
+            po_status = SmartBOMSuggestionService._get_po_status_info(raw_material)
+            
             raw_material_info = {
                 'material_id': raw_material.id,
                 'material_code': raw_material.code,
@@ -221,7 +224,8 @@ class SmartBOMSuggestionService:
                 'available_qty': raw_material_available,
                 'sufficient': raw_material_available >= raw_material_needed,
                 'unit': raw_material.unit_of_measure,
-                'estimated_cost': (raw_material.unit_price or 0) * raw_material_needed
+                'estimated_cost': (raw_material.unit_price or 0) * raw_material_needed,
+                'po_status': po_status  # Include PO/GRN information
             }
             
             if not raw_material_info['sufficient']:
