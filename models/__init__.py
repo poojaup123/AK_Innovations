@@ -698,6 +698,14 @@ class Item(db.Model):
     qty_wip_polishing = db.Column(db.Float, default=0.0)   # WIP in polishing process
     
     unit_price = db.Column(db.Float, default=0.0)
+    
+    # BOM-Based Cost Calculation Fields
+    cost_source = db.Column(db.String(20), default='manual')  # manual, bom_calculated, hybrid
+    bom_calculated_cost = db.Column(db.Float, default=0.0)  # Auto-calculated cost from BOM
+    last_cost_calculation = db.Column(db.DateTime)  # When cost was last calculated
+    cost_calculation_status = db.Column(db.String(20), default='current')  # current, outdated, error
+    manual_cost_override = db.Column(db.Float)  # Manual override for hybrid mode
+    
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     weight_unit = db.Column(db.String(10), default='kg')  # Weight unit (kg, g, lbs, oz, ton)
     item_type = db.Column(db.String(20), default='material')  # Legacy field for backward compatibility
