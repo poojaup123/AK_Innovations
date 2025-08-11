@@ -375,24 +375,10 @@
                    date.toLocaleTimeString('en-GB', {hour12: false});
         }
         
-        // Replace moment() calls with actual dates
+        // Print functionality
         document.addEventListener('DOMContentLoaded', function() {
-            const now = new Date();
-            const dateElements = document.querySelectorAll('script');
-            
-            // Update challan date
-            const challanDate = document.querySelector('.challan-info div strong');
-            if (challanDate && challanDate.textContent.includes('Date:')) {
-                challanDate.parentNode.innerHTML = challanDate.parentNode.innerHTML
-                    .replace('{{ moment().format("DD/MM/YYYY") }}', formatDate(now));
-            }
-            
-            // Update generated date
-            const footerDate = document.querySelector('.footer p:last-child');
-            if (footerDate) {
-                footerDate.innerHTML = footerDate.innerHTML
-                    .replace('{{ moment().format("DD/MM/YYYY HH:mm:ss") }}', formatDateTime(now));
-            }
+            // Auto-print functionality can be added here if needed
+            console.log('Challan loaded successfully');
         });
     </script>
 </body>
