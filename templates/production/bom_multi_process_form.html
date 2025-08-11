@@ -51,9 +51,10 @@
                                             <div class="col-md-6">
                                                 <div class="form-group mb-3">
                                                     <label class="form-label">Process Name</label>
-                                                    <select class="form-select process-name" name="processes[0][process_name]" required>
+                                                    <select class="form-select process-name" name="processes[0][process_name]" required onchange="toggleScrapSection(0, this.value)">
                                                         <option value="">Select Process</option>
                                                         <option value="Cutting">Cutting</option>
+                                                        <option value="Notching">Notching</option>
                                                         <option value="Bending">Bending</option>
                                                         <option value="Welding">Welding</option>
                                                         <option value="Zinc">Zinc Plating</option>
@@ -129,9 +130,10 @@
                                         </div>
                                         
                                         <!-- Scrap Tracking Section -->
-                                        <div class="card mt-3">
+                                        <div class="card mt-3" id="scrap_section_0" style="display: none;">
                                             <div class="card-header bg-light">
                                                 <h6 class="mb-0"><i class="fas fa-recycle"></i> Scrap Tracking</h6>
+                                                <small class="text-muted">Only for Cutting and Notching processes</small>
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
@@ -385,6 +387,37 @@ function calculateScrapPercent(processIndex) {
         }
     }
 }
+
+// Function to show/hide scrap section based on process type
+function toggleScrapSection(processIndex, processName) {
+    const scrapSection = document.getElementById(`scrap_section_${processIndex}`);
+    const scrapGeneratingProcesses = ['Cutting', 'Notching'];
+    
+    if (scrapSection) {
+        if (scrapGeneratingProcesses.includes(processName)) {
+            scrapSection.style.display = 'block';
+        } else {
+            scrapSection.style.display = 'none';
+            // Clear scrap fields when hiding
+            const scrapCheckboxes = scrapSection.querySelectorAll('input[type="checkbox"]');
+            const scrapInputs = scrapSection.querySelectorAll('input[type="number"]');
+            
+            scrapCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            scrapInputs.forEach(input => {
+                input.value = '';
+            });
+            
+            // Hide the scrap input fields
+            const scrapFields = scrapSection.querySelectorAll('[id^="scrap_percent_"], [id^="scrap_weight_"]');
+            scrapFields.forEach(field => {
+                field.style.display = 'none';
+            });
+        }
+    }
+}
 </script>
 <script>
 let processCount = 1;
@@ -418,9 +451,10 @@ function createProcessItem(processNumber) {
             <div class="col-md-6">
                 <div class="form-group mb-3">
                     <label class="form-label">Process Name</label>
-                    <select class="form-select process-name" name="processes[${index}][process_name]" required>
+                    <select class="form-select process-name" name="processes[${index}][process_name]" required onchange="toggleScrapSection(${index}, this.value)">
                         <option value="">Select Process</option>
                         <option value="Cutting">Cutting</option>
+                        <option value="Notching">Notching</option>
                         <option value="Bending">Bending</option>
                         <option value="Welding">Welding</option>
                         <option value="Zinc">Zinc Plating</option>
@@ -496,9 +530,10 @@ function createProcessItem(processNumber) {
         </div>
         
         <!-- Scrap Tracking Section -->
-        <div class="card mt-3">
+        <div class="card mt-3" id="scrap_section_${index}" style="display: none;">
             <div class="card-header bg-light">
                 <h6 class="mb-0"><i class="fas fa-recycle"></i> Scrap Tracking</h6>
+                <small class="text-muted">Only for Cutting and Notching processes</small>
             </div>
             <div class="card-body">
                 <div class="row">
