@@ -379,6 +379,133 @@
             </div>
             {% endif %}
 
+            <!-- Outsourced Jobs Section -->
+            {% set outsourced_jobs = job_card.child_job_cards if job_card.child_job_cards else [] %}
+            {% if outsourced_jobs %}
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-external-link-alt me-2"></i>Outsourced Jobs
+                        <span class="badge bg-dark ms-2">{{ outsourced_jobs|length }} job(s)</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Job Card Number</th>
+                                    <th>Process</th>
+                                    <th>Vendor</th>
+                                    <th>Quantity</th>
+                                    <th>Status</th>
+                                    <th>Target Date</th>
+                                    <th>GRN Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for outsourced_job in outsourced_jobs %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-warning text-dark">{{ outsourced_job.job_card_number }}</span>
+                                    </td>
+                                    <td>{{ outsourced_job.process_name }}</td>
+                                    <td>
+                                        {% if outsourced_job.assigned_vendor %}
+                                            {{ outsourced_job.assigned_vendor.name }}
+                                        {% else %}
+                                            <span class="text-muted">No vendor assigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ "%.1f"|format(outsourced_job.planned_quantity) }} {{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if outsourced_job.status == 'completed' %}bg-success
+                                            {% elif outsourced_job.status == 'in_progress' %}bg-primary
+                                            {% elif outsourced_job.status == 'outsourced' %}bg-warning text-dark
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ outsourced_job.status.title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if outsourced_job.target_completion_date %}
+                                            {{ outsourced_job.target_completion_date.strftime('%Y-%m-%d') }}
+                                            {% if outsourced_job.is_overdue %}
+                                                <span class="badge bg-danger ms-1">Overdue</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if outsourced_job.grn_id %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Received
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-clock me-1"></i>Pending
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('job_cards.view_job_card', id=outsourced_job.id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if not outsourced_job.grn_id %}
+                                        <button class="btn btn-sm btn-outline-success ms-1" 
+                                                onclick="createGRN({{ outsourced_job.id }})"
+                                                title="Create GRN for received work">
+                                            <i class="fas fa-truck"></i>
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Summary Row -->
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body p-3">
+                                    <h6 class="card-title">Outsourcing Summary</h6>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small class="text-muted">Total Sent:</small><br>
+                                            <strong>{{ "%.1f"|format(outsourced_jobs|sum(attribute='planned_quantity')) }} {{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">Received Back:</small><br>
+                                            <strong>{{ "%.1f"|format(outsourced_jobs|selectattr('grn_id')|sum(attribute='grn_received_quantity', start=0)) }} {{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body p-3">
+                                    <h6 class="card-title">Vendor Distribution</h6>
+                                    {% set vendor_groups = outsourced_jobs|groupby('assigned_vendor.name') %}
+                                    {% for vendor_name, jobs in vendor_groups %}
+                                    <div class="d-flex justify-content-between">
+                                        <span>{{ vendor_name or 'Unassigned' }}:</span>
+                                        <span>{{ jobs|sum(attribute='planned_quantity') }} {{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Daily Progress History -->
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -1191,5 +1318,15 @@ function forceCleanupModals() {
         </div>
     </div>
 </div>
+
+<script>
+// Function to create GRN for outsourced job
+function createGRN(outsourcedJobId) {
+    if (confirm('Create GRN to receive outsourced work back?')) {
+        // Redirect to GRN creation page with pre-filled data
+        window.location.href = `/grn/add?outsourced_job_id=${outsourcedJobId}`;
+    }
+}
+</script>
 
 {% endblock %}
