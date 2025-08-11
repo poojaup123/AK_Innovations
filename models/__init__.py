@@ -705,6 +705,7 @@ class Item(db.Model):
     last_cost_calculation = db.Column(db.DateTime)  # When cost was last calculated
     cost_calculation_status = db.Column(db.String(20), default='current')  # current, outdated, error
     manual_cost_override = db.Column(db.Float)  # Manual override for hybrid mode
+    overhead_percentage = db.Column(db.Float, default=0.0)  # Overhead percentage for cost calculation
     
     unit_weight = db.Column(db.Float, default=0.0)  # Weight per unit in kg
     weight_unit = db.Column(db.String(10), default='kg')  # Weight unit (kg, g, lbs, oz, ton)
@@ -789,6 +790,57 @@ class Item(db.Model):
             
             return SimpleBOM(bom_dict)
         return None
+    
+    @property
+    def effective_cost(self):
+        """Get the effective cost based on cost source"""
+        if self.cost_source == 'bom_calculated':
+            return self.bom_calculated_cost or 0.0
+        elif self.cost_source == 'hybrid':
+            return self.manual_cost_override or self.bom_calculated_cost or self.unit_price or 0.0
+        else:  # manual
+            return self.unit_price or 0.0
+    
+    def calculate_bom_cost(self, quantity: float = 1.0, force_recalculate: bool = False):
+        """Calculate BOM-based cost for this item"""
+        if self.cost_source != 'bom_calculated':
+            return None
+        
+        try:
+            from services.cost_calculator import calculate_item_cost
+            return calculate_item_cost(self.id, quantity, force_recalculate)
+        except ImportError:
+            # Fallback if service not available
+            return None
+    
+    def update_bom_cost(self):
+        """Update the BOM calculated cost for this item"""
+        if self.cost_source == 'bom_calculated':
+            result = self.calculate_bom_cost(force_recalculate=True)
+            if result and result.get('success', True):
+                self.bom_calculated_cost = result['total_cost_per_unit']
+                self.last_cost_calculation = datetime.utcnow()
+                self.cost_calculation_status = 'current'
+                return True
+        return False
+    
+    @property
+    def cost_calculation_needed(self):
+        """Check if cost calculation is needed"""
+        if self.cost_source != 'bom_calculated':
+            return False
+        
+        if self.cost_calculation_status == 'outdated':
+            return True
+        
+        if not self.last_cost_calculation:
+            return True
+        
+        # Check if cost is older than 24 hours
+        if self.last_cost_calculation < datetime.utcnow() - timedelta(hours=24):
+            return True
+        
+        return False
     
     def move_to_wip(self, quantity, process=None):
         """Move raw material to Work in Progress (job work sent)
@@ -1142,17 +1194,69 @@ class JobWorkRate(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
     rate_per_unit = db.Column(db.Float, nullable=False, default=0.0)
     process_type = db.Column(db.String(50), nullable=True)  # Optional process-specific rate
-    vendor_name = db.Column(db.String(200), nullable=True)  # Optional vendor/supplier name
+    vendor_name = db.Column(db.String(200), nullable=True)  # Optional vendor/supplier name (legacy)
+    
+    # Enhanced vendor management
+    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=True)
+    effective_from = db.Column(db.Date, default=datetime.utcnow().date())
+    effective_until = db.Column(db.Date)
+    transportation_cost = db.Column(db.Float, default=0.0)  # Transportation cost per unit
+    is_primary_vendor = db.Column(db.Boolean, default=False)  # Primary vendor for this process
+    
+    # Cost components
+    setup_cost = db.Column(db.Float, default=0.0)  # One-time setup cost
+    minimum_quantity = db.Column(db.Float, default=1.0)  # Minimum order quantity
+    lead_time_days = db.Column(db.Integer, default=7)  # Lead time in days
+    quality_rating = db.Column(db.Float, default=5.0)  # Quality rating out of 10
+    
     notes = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
-    # Relationship
+    # Relationships
     item = db.relationship('Item', backref='job_work_rates')
+    supplier = db.relationship('Supplier', backref='job_work_rates')
+    
+    @property
+    def total_cost_per_unit(self):
+        """Calculate total cost per unit including transportation"""
+        return (self.rate_per_unit or 0.0) + (self.transportation_cost or 0.0)
+    
+    @property
+    def is_current(self):
+        """Check if rate is currently effective"""
+        today = datetime.utcnow().date()
+        if self.effective_from and self.effective_from > today:
+            return False
+        if self.effective_until and self.effective_until < today:
+            return False
+        return True
+    
+    @classmethod
+    def get_best_rate(cls, item_id, process_type, quantity=1.0):
+        """Get best rate for given item and process considering cost, quality, and lead time"""
+        rates = cls.query.filter(
+            cls.item_id == item_id,
+            cls.process_type == process_type,
+            cls.is_active == True,
+            cls.minimum_quantity <= quantity
+        ).all()
+        
+        # Filter current rates
+        current_rates = [rate for rate in rates if rate.is_current]
+        
+        if not current_rates:
+            return None
+        
+        # Sort by total cost per unit (primary) and quality rating (secondary)
+        best_rate = min(current_rates, 
+                       key=lambda r: (r.total_cost_per_unit, -r.quality_rating))
+        return best_rate
     
     def __repr__(self):
-        return f'<JobWorkRate {self.item.name}: ₹{self.rate_per_unit}>'
+        supplier_name = self.supplier.name if self.supplier else self.vendor_name
+        return f'<JobWorkRate {self.item.name} - {supplier_name}: ₹{self.rate_per_unit}>'
 
 class JobWork(db.Model):
     __tablename__ = 'job_works'
@@ -2360,6 +2464,55 @@ class BOM(db.Model):
         else:
             return "Very Complex"
     
+    @property  
+    def total_bom_calculated_cost(self):
+        """Calculate total BOM cost using the cost calculator service"""
+        try:
+            from services.cost_calculator import calculate_item_cost
+            result = calculate_item_cost(self.product_id, 1.0)
+            if result and result.get('success', True):
+                return result['total_cost_per_unit']
+        except Exception:
+            pass
+        return self.fallback_total_cost_per_unit
+    
+    @property
+    def fallback_total_cost_per_unit(self):
+        """Fallback cost calculation if service unavailable"""
+        material_cost = self.total_material_cost_per_unit
+        process_cost = self.total_process_cost_per_unit  
+        overhead_cost = self.calculated_freight_cost_per_unit
+        
+        # Add overhead percentage
+        if self.overhead_percentage and self.overhead_percentage > 0:
+            base_cost = material_cost + process_cost
+            overhead_cost += (base_cost * self.overhead_percentage / 100)
+        
+        return material_cost + process_cost + overhead_cost
+    
+    def calculate_detailed_cost_breakdown(self, quantity: float = 1.0):
+        """Get detailed cost breakdown using the cost calculator service"""
+        try:
+            from services.cost_calculator import calculate_item_cost
+            return calculate_item_cost(self.product_id, quantity, force_recalculate=True)
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'Cost calculation service unavailable: {str(e)}',
+                'fallback_cost': self.fallback_total_cost_per_unit * quantity
+            }
+    
+    def update_product_cost(self):
+        """Update the product's BOM calculated cost"""
+        if self.product and self.product.cost_source == 'bom_calculated':
+            result = self.calculate_detailed_cost_breakdown(1.0)
+            if result.get('success', True):
+                self.product.bom_calculated_cost = result['total_cost_per_unit']
+                self.product.last_cost_calculation = datetime.utcnow()
+                self.product.cost_calculation_status = 'current'
+                return True
+        return False
+    
     @property
     def total_labor_cost_per_unit(self):
         """Calculate comprehensive labor cost including all process costs from this BOM and all sub-BOMs"""
@@ -2783,10 +2936,15 @@ class BOMProcess(db.Model):
     labor_rate_per_hour = db.Column(db.Float, default=0.0)  # Labor rate for this process
     machine_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)  # Machine/tool used
     department_id = db.Column(db.Integer, db.ForeignKey('departments.id'), nullable=True)  # Department
+    # Cost and outsourcing fields
     is_outsourced = db.Column(db.Boolean, default=False)  # Is this process outsourced?
     vendor_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=True)  # Outsourcing vendor
     cost_per_unit = db.Column(db.Float, default=0.0)  # Process cost per unit
     cost_unit = db.Column(db.String(20), default='per_unit')  # Cost unit (per_unit, per_kg, per_meter, etc.)
+    cost_type = db.Column(db.String(20), default='in_house')  # in_house, outsourced
+    default_supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=True)  # Default supplier for outsourcing
+    machine_cost_per_hour = db.Column(db.Float, default=0.0)  # Machine cost per hour
+    setup_cost = db.Column(db.Float, default=0.0)  # Setup cost for this process
     estimated_scrap_percent = db.Column(db.Float, default=0.0)  # Expected scrap percentage for this process
     quality_check_required = db.Column(db.Boolean, default=False)  # Quality check after this step
     parallel_processes = db.Column(db.Text)  # JSON list of processes that can run in parallel
@@ -2807,6 +2965,7 @@ class BOMProcess(db.Model):
     machine = db.relationship('Item', foreign_keys=[machine_id])
     department = db.relationship('Department', foreign_keys=[department_id])
     vendor = db.relationship('Supplier', foreign_keys=[vendor_id])
+    default_supplier = db.relationship('Supplier', foreign_keys=[default_supplier_id])
     input_product = db.relationship('Item', foreign_keys=[input_product_id])
     output_product = db.relationship('Item', foreign_keys=[output_product_id])
     
@@ -2818,10 +2977,58 @@ class BOMProcess(db.Model):
     @property
     def labor_cost_per_unit(self):
         """Calculate labor cost per unit for this process"""
+        if self.is_outsourced:
+            return self.get_outsourced_cost_per_unit()
+        
         if self.labor_rate_per_hour and self.run_time_minutes:
             return (self.labor_rate_per_hour / 60) * self.run_time_minutes
         return self.converted_cost_per_unit or 0
-        return self.converted_cost_per_unit or 0
+    
+    @property
+    def machine_cost_per_unit(self):
+        """Calculate machine cost per unit for this process"""
+        if self.machine_cost_per_hour and self.run_time_minutes:
+            return (self.machine_cost_per_hour / 60) * self.run_time_minutes
+        return 0.0
+    
+    @property
+    def total_in_house_cost_per_unit(self):
+        """Calculate total in-house cost including labor, machine, and setup"""
+        if self.is_outsourced:
+            return 0.0
+        
+        labor_cost = self.labor_cost_per_unit
+        machine_cost = self.machine_cost_per_unit
+        setup_cost_per_unit = self.setup_cost or 0.0  # Setup cost is typically spread across batch
+        
+        return labor_cost + machine_cost + setup_cost_per_unit
+    
+    def get_outsourced_cost_per_unit(self):
+        """Get outsourced cost from job work rates"""
+        if not self.is_outsourced:
+            return 0.0
+        
+        # First try to get rate from JobWorkRate for this item and process
+        if hasattr(self, 'bom') and self.bom and self.bom.product_id:
+            from models import JobWorkRate
+            best_rate = JobWorkRate.get_best_rate(
+                item_id=self.bom.product_id,
+                process_type=self.process_name,
+                quantity=1.0
+            )
+            if best_rate:
+                return best_rate.total_cost_per_unit
+        
+        # Fallback to manual cost_per_unit
+        return self.converted_cost_per_unit or 0.0
+    
+    @property
+    def effective_cost_per_unit(self):
+        """Get the effective cost per unit (in-house or outsourced)"""
+        if self.is_outsourced:
+            return self.get_outsourced_cost_per_unit()
+        else:
+            return self.total_in_house_cost_per_unit
     
     @property
     def converted_cost_per_unit(self):

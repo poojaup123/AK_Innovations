@@ -213,6 +213,13 @@ def create_app():
     from routes.drawing_upload import drawing_upload_bp
     app.register_blueprint(drawing_upload_bp, url_prefix='/component-scanning')
     
+    # Register cost calculation blueprint
+    try:
+        from routes.cost_calculation import cost_calculation_bp
+        app.register_blueprint(cost_calculation_bp, url_prefix='/cost-calculation')
+    except ImportError as e:
+        print(f"Cost Calculation module import error: {e}")
+    
     # Template context processors
     @app.context_processor
     def utility_processor():
