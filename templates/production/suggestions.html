@@ -104,6 +104,7 @@
                                                         <th>Material</th>
                                                         <th>Required Qty</th>
                                                         <th>Available Qty</th>
+                                                        <th>Allocated Qty</th>
                                                         <th>Status</th>
                                                     </tr>
                                                 </thead>
@@ -134,6 +135,18 @@
                                                                 {% endif %}
                                                             </td>
                                                             <td>
+                                                                {% if material.get('allocated_qty') is not none %}
+                                                                    <span class="text-primary fw-bold">{{ "%.2f"|format(material.get('allocated_qty', 0)) }} {{ material.unit }}</span>
+                                                                    {% if material.get('shared_material') %}
+                                                                        <br><small class="text-warning">
+                                                                            <i class="fas fa-share-alt"></i> {{ material.get('sharing_info', 'Shared material') }}
+                                                                        </small>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-muted">{{ "%.2f"|format(material.needed_qty) }} {{ material.unit }}</span>
+                                                                {% endif %}
+                                                            </td>
+                                                            <td>
                                                                 <span class="badge bg-{{ 'success' if material.sufficient else 'warning' }}">
                                                                     {% if material.get('consolidated') %}
                                                                         Consolidated Purchase
@@ -152,7 +165,7 @@
                                                         </tr>
                                                         {% if material.get('used_by') %}
                                                             <tr class="bg-light">
-                                                                <td colspan="4">
+                                                                <td colspan="5">
                                                                     <small class="text-muted">
                                                                         <strong>Used by:</strong>
                                                                         {% for product in material.used_by %}
