@@ -805,8 +805,13 @@ def list_job_cards():
     status_filter = request.args.get('status', '')
     search = request.args.get('search', '')
     
-    # Get all parent job cards (those without parent_job_card_id)
-    parent_query = JobCard.query.filter(JobCard.parent_job_card_id.is_(None))
+    # Get all parent job cards (those without parent_job_card_id) with production order details
+    parent_query = JobCard.query.filter(JobCard.parent_job_card_id.is_(None)).options(
+        db.joinedload(JobCard.production),
+        db.joinedload(JobCard.item),
+        db.joinedload(JobCard.assigned_worker),
+        db.joinedload(JobCard.assigned_vendor)
+    )
     
     if status_filter:
         parent_query = parent_query.filter_by(status=status_filter)
@@ -825,9 +830,14 @@ def list_job_cards():
     hierarchical_data = []
     
     for parent_card in parent_job_cards:
-        # Get child job cards for this parent
+        # Get child job cards for this parent with related data
         child_cards = JobCard.query.filter(
             JobCard.parent_job_card_id == parent_card.id
+        ).options(
+            db.joinedload(JobCard.production),
+            db.joinedload(JobCard.item),
+            db.joinedload(JobCard.assigned_worker),
+            db.joinedload(JobCard.assigned_vendor)
         ).order_by(JobCard.process_sequence, JobCard.created_at).all()
         
         # Calculate parent-level aggregated metrics
