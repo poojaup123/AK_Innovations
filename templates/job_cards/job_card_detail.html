@@ -203,12 +203,38 @@
                                             {% endif %}
                                         </td>
                                         <td>
-                                            {% if job_card.current_process_step == step.process and job_card.status != 'completed' %}
-                                                <button type="button" class="btn btn-sm btn-success" 
-                                                        onclick="markStepComplete('{{ step.process }}')">
-                                                    <i class="fas fa-check me-1"></i>Complete
-                                                </button>
-                                            {% endif %}
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                {% if step.process in (job_card.processes_completed or '') %}
+                                                    <!-- Process already completed -->
+                                                    <button type="button" class="btn btn-sm btn-outline-info" disabled>
+                                                        <i class="fas fa-check me-1"></i>Completed
+                                                    </button>
+                                                {% elif job_card.current_process_step == step.process and job_card.status != 'completed' %}
+                                                    <!-- Current active process -->
+                                                    <button type="button" class="btn btn-sm btn-success" 
+                                                            onclick="markStepComplete('{{ step.process }}')"
+                                                            title="Mark as completed">
+                                                        <i class="fas fa-check me-1"></i>Complete
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-warning" 
+                                                            onclick="outsourceProcess('{{ step.process }}', {{ loop.index }})"
+                                                            title="Send to external vendor">
+                                                        <i class="fas fa-external-link-alt me-1"></i>Outsource
+                                                    </button>
+                                                {% else %}
+                                                    <!-- Pending process -->
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                            onclick="startProcess('{{ step.process }}', {{ loop.index }})"
+                                                            title="Start in-house production">
+                                                        <i class="fas fa-play me-1"></i>Start
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                            onclick="outsourceProcess('{{ step.process }}', {{ loop.index }})"
+                                                            title="Send to external vendor">
+                                                        <i class="fas fa-external-link-alt me-1"></i>Outsource
+                                                    </button>
+                                                {% endif %}
+                                            </div>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -778,5 +804,121 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Function to outsource a process
+function outsourceProcess(processName, stepNumber) {
+    document.getElementById('processName').value = processName;
+    document.getElementById('processDisplay').value = processName;
+    document.getElementById('stepNumber').value = stepNumber;
+    
+    // Set default expected delivery date (7 days from now)
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 7);
+    document.getElementById('expectedDelivery').value = futureDate.toISOString().split('T')[0];
+    
+    // Load vendors dynamically
+    loadVendors();
+    
+    // Show modal
+    new bootstrap.Modal(document.getElementById('outsourcingModal')).show();
+}
+
+// Function to start a process in-house
+function startProcess(processName, stepNumber) {
+    if (confirm(`Start in-house production for ${processName}?`)) {
+        alert('Process started in-house! (Feature coming soon)');
+        // TODO: Implement process status update
+    }
+}
+
+// Function to load vendors
+function loadVendors() {
+    // For now, add some sample vendors - this will be connected to the API later
+    const vendorSelect = document.getElementById('vendorId');
+    vendorSelect.innerHTML = `
+        <option value="">Choose vendor...</option>
+        <option value="1">ABC Manufacturing Co.</option>
+        <option value="2">XYZ Processing Ltd.</option>
+        <option value="3">Quick Zinc Works</option>
+    `;
+}
+
+// Function to submit outsourcing request
+function submitOutsourcing() {
+    const form = document.getElementById('outsourcingForm');
+    const formData = new FormData(form);
+    
+    alert('Outsourcing request submitted! (Feature coming soon)');
+    bootstrap.Modal.getInstance(document.getElementById('outsourcingModal')).hide();
+    // TODO: Implement actual outsourcing logic
+}
 </script>
+
+<!-- Outsourcing Modal -->
+<div class="modal fade" id="outsourcingModal" tabindex="-1" aria-labelledby="outsourcingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="outsourcingModalLabel">
+                    <i class="fas fa-external-link-alt me-2"></i>Outsource Process
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="outsourcingForm">
+                    <input type="hidden" id="processName" name="processName">
+                    <input type="hidden" id="stepNumber" name="stepNumber">
+                    <input type="hidden" id="jobCardId" name="jobCardId" value="{{ job_card.id }}">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Process</label>
+                            <input type="text" class="form-control" id="processDisplay" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Quantity to Outsource</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="outsourceQuantity" name="outsourceQuantity" 
+                                       value="{{ job_card.planned_quantity }}" min="1" required>
+                                <span class="input-group-text">{{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'pcs' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Select Vendor</label>
+                            <select class="form-select" id="vendorId" name="vendorId" required>
+                                <option value="">Choose vendor...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Expected Delivery Date</label>
+                            <input type="date" class="form-control" id="expectedDelivery" name="expectedDelivery" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Work Instructions</label>
+                        <textarea class="form-control" id="workInstructions" name="workInstructions" rows="3" 
+                                  placeholder="Detailed instructions for the vendor..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Special Requirements</label>
+                        <textarea class="form-control" id="specialRequirements" name="specialRequirements" rows="2" 
+                                  placeholder="Quality standards, certifications, special handling..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="submitOutsourcing()">
+                    <i class="fas fa-external-link-alt me-1"></i>Outsource Process
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
