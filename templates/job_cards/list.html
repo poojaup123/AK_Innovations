@@ -1,18 +1,56 @@
 {% extends "base.html" %}
 
-{% block title %}Job Cards - Factory Management System{% endblock %}
+{% block title %}Job Cards Management - Factory Management System{% endblock %}
 
 {% block head %}
 <style>
-.job-card-item {
-    border-radius: 8px;
-    border: 1px solid #dee2e6;
-    transition: all 0.2s;
+/* Collapsible Table Styles */
+.job-cards-table {
+    font-size: 0.9rem;
 }
 
-.job-card-item:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    transform: translateY(-1px);
+.parent-row {
+    background-color: #f8f9fa;
+    border-left: 4px solid #007bff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.parent-row:hover {
+    background-color: #e3f2fd;
+}
+
+.parent-row.expanded {
+    background-color: #e7f3ff;
+    border-left-color: #0056b3;
+}
+
+.child-row {
+    background-color: #ffffff;
+    border-left: 3px solid #6c757d;
+    margin-left: 20px;
+}
+
+.child-row td:first-child {
+    padding-left: 2rem;
+    position: relative;
+}
+
+.child-row td:first-child::before {
+    content: "└─";
+    position: absolute;
+    left: 1rem;
+    color: #6c757d;
+    font-family: monospace;
+}
+
+.toggle-icon {
+    transition: transform 0.2s ease;
+    color: #007bff;
+}
+
+.toggle-icon.expanded {
+    transform: rotate(90deg);
 }
 
 .status-badge {
@@ -20,16 +58,41 @@
     padding: 0.25rem 0.5rem;
 }
 
-.progress-bar-container {
-    height: 8px;
+.progress-mini {
+    height: 4px;
     background-color: #e9ecef;
-    border-radius: 4px;
+    border-radius: 2px;
     overflow: hidden;
+    width: 60px;
+    display: inline-block;
 }
 
-.progress-bar {
+.progress-mini .progress-bar {
     height: 100%;
     transition: width 0.3s ease;
+}
+
+.metrics-badge {
+    font-size: 0.7rem;
+    margin: 0 2px;
+}
+
+.compact-table td {
+    padding: 0.5rem 0.75rem;
+    vertical-align: middle;
+}
+
+.compact-table th {
+    padding: 0.75rem;
+    background-color: #343a40;
+    color: white;
+    border: none;
+}
+
+.btn-xs {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
 }
 </style>
 {% endblock %}
@@ -40,7 +103,7 @@
     <div class="row mb-4">
         <div class="col">
             <h1><i class="fas fa-tasks"></i> Job Cards Management</h1>
-            <p class="text-muted">Track and manage all production job cards</p>
+            <p class="text-muted">Track and manage all production job cards with hierarchical parent-child structure</p>
         </div>
         <div class="col-auto">
             <div class="btn-group">
@@ -54,119 +117,254 @@
         </div>
     </div>
 
-    <!-- Job Cards List -->
-    {% if job_cards %}
-        <div class="row">
-            {% for job_card in job_cards %}
-            <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card job-card-item h-100">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">{{ job_card.job_card_number }}</h6>
-                        <span class="badge status-badge bg-{{ 'success' if job_card.status == 'completed' else 'warning' if job_card.status == 'in_progress' else 'primary' }}">
-                            {{ job_card.status.replace('_', ' ').title() }}
-                        </span>
-                    </div>
-                    <div class="card-body">
-                        <h6 class="card-title">{{ job_card.item.name if job_card.item else 'No Item' }}</h6>
-                        <p class="card-text text-muted small">{{ job_card.process_name or 'General Production' }}</p>
-                        
-                        <!-- BOM Reference -->
-                        {% if job_card.production and job_card.production.bom %}
-                            <div class="mb-2">
-                                <small class="text-info">
-                                    <i class="fas fa-sitemap"></i> BOM Reference: 
-                                    <span class="badge bg-info text-white">BOM-{{ job_card.production.bom.id }}</span>
-                                </small>
-                            </div>
-                        {% endif %}
-                        
-                        <!-- Progress -->
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <small class="text-muted">Progress</small>
-                                <small class="fw-bold">{{ "%.1f"|format(job_card.progress_percentage or 0) }}%</small>
-                            </div>
-                            <div class="progress-bar-container">
-                                <div class="progress-bar bg-success" style="width: {{ job_card.progress_percentage or 0 }}%"></div>
-                            </div>
-                        </div>
+    <!-- Filter Controls -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <form method="GET" class="d-flex gap-2">
+                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    <option value="planned" {{ 'selected' if status_filter == 'planned' }}>Planned</option>
+                    <option value="in_progress" {{ 'selected' if status_filter == 'in_progress' }}>In Progress</option>
+                    <option value="completed" {{ 'selected' if status_filter == 'completed' }}>Completed</option>
+                    <option value="outsourced" {{ 'selected' if status_filter == 'outsourced' }}>Outsourced</option>
+                </select>
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="Search job cards..." value="{{ search or '' }}">
+                <button type="submit" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-search"></i>
+                </button>
+                {% if status_filter or search %}
+                <a href="{{ url_for('job_cards.list_job_cards') }}" class="btn btn-outline-danger btn-sm">
+                    <i class="fas fa-times"></i>
+                </a>
+                {% endif %}
+            </form>
+        </div>
+        <div class="col-md-6 text-end">
+            <span class="text-muted">Showing {{ total_parents }} parent job cards</span>
+        </div>
+    </div>
 
-                        <!-- Quantities -->
-                        <div class="row text-center">
-                            <div class="col-6">
-                                <div class="small text-muted">Planned</div>
-                                <div class="fw-bold">{{ job_card.planned_quantity or 0 }}</div>
-                            </div>
-                            <div class="col-6">
-                                <div class="small text-muted">Completed</div>
-                                <div class="fw-bold text-success">{{ job_card.completed_quantity or 0 }}</div>
-                            </div>
-                        </div>
+    <!-- Job Cards Table -->
+    {% if hierarchical_job_cards %}
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover job-cards-table compact-table mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%;">Job Card Number</th>
+                                <th style="width: 15%;">Item/Process</th>
+                                <th style="width: 12%;">Status</th>
+                                <th style="width: 15%;">Progress</th>
+                                <th style="width: 10%;">Quantities</th>
+                                <th style="width: 12%;">Assignment</th>
+                                <th style="width: 10%;">Target Date</th>
+                                <th style="width: 6%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for hierarchy in hierarchical_job_cards %}
+                                <!-- Parent Row -->
+                                <tr class="parent-row" data-parent-id="{{ hierarchy.parent.id }}" onclick="toggleChildren({{ hierarchy.parent.id }})">
+                                    <td>
+                                        <i class="fas fa-chevron-right toggle-icon me-2" id="toggle-{{ hierarchy.parent.id }}"></i>
+                                        <strong>{{ hierarchy.parent.job_card_number }}</strong>
+                                        {% if hierarchy.metrics.child_count > 0 %}
+                                            <span class="badge bg-info metrics-badge ms-2">{{ hierarchy.metrics.child_count }} children</span>
+                                        {% endif %}
+                                        {% if hierarchy.metrics.outsourced_count > 0 %}
+                                            <span class="badge bg-warning metrics-badge">{{ hierarchy.metrics.outsourced_count }} outsourced</span>
+                                        {% endif %}
+                                        {% if hierarchy.metrics.pending_grn_count > 0 %}
+                                            <span class="badge bg-danger metrics-badge">{{ hierarchy.metrics.pending_grn_count }} pending GRN</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ hierarchy.parent.item.name if hierarchy.parent.item else 'No Item' }}</div>
+                                        <small class="text-muted">{{ hierarchy.parent.process_name or 'General Production' }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge status-badge bg-{{ 'success' if hierarchy.parent.status == 'completed' else 'warning' if hierarchy.parent.status == 'in_progress' else 'primary' }}">
+                                            {{ hierarchy.parent.status.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress-mini me-2">
+                                                <div class="progress-bar bg-success" style="width: {{ hierarchy.metrics.progress_percentage }}%"></div>
+                                            </div>
+                                            <small class="fw-bold">{{ "%.1f"|format(hierarchy.metrics.progress_percentage) }}%</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="small">
+                                            <div><strong>{{ hierarchy.metrics.total_completed }}</strong> / {{ hierarchy.metrics.total_planned }}</div>
+                                            <small class="text-muted">Complete / Planned</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% if hierarchy.parent.assigned_worker %}
+                                                <i class="fas fa-user me-1"></i>{{ hierarchy.parent.assigned_worker.name }}
+                                            {% elif hierarchy.parent.assigned_vendor %}
+                                                <i class="fas fa-building me-1"></i>{{ hierarchy.parent.assigned_vendor.name }}
+                                            {% else %}
+                                                <i class="fas fa-home me-1"></i>In-House
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if hierarchy.parent.target_completion_date %}
+                                            <small>{{ hierarchy.parent.target_completion_date.strftime('%m/%d/%Y') }}</small>
+                                        {% else %}
+                                            <small class="text-muted">Not Set</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('job_cards.view_job_card', id=hierarchy.parent.id) }}" class="btn btn-primary btn-xs">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('job_cards.update_daily_status', job_card_id=hierarchy.parent.id) }}" class="btn btn-success btn-xs">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
 
-                        <!-- Dates -->
-                        {% if job_card.target_completion_date %}
-                        <div class="mt-2">
-                            <small class="text-muted">
-                                <i class="fas fa-calendar"></i> Target: {{ job_card.target_completion_date.strftime('%m/%d/%Y') }}
-                            </small>
-                        </div>
-                        {% endif %}
-
-                        <!-- Assignment -->
-                        {% if job_card.assigned_worker or job_card.assigned_vendor %}
-                        <div class="mt-2">
-                            <small class="text-muted">
-                                <i class="fas fa-user"></i>
-                                {% if job_card.assigned_worker %}
-                                    {{ job_card.assigned_worker.name }}
-                                {% elif job_card.assigned_vendor %}
-                                    {{ job_card.assigned_vendor.name }} (Vendor)
-                                {% endif %}
-                            </small>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <div class="card-footer">
-                        <div class="btn-group w-100">
-                            <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-primary btn-sm">
-                                <i class="fas fa-eye"></i> View
-                            </a>
-                            <a href="{{ url_for('job_cards.update_daily_status', job_card_id=job_card.id) }}" class="btn btn-success btn-sm">
-                                <i class="fas fa-edit"></i> Update
-                            </a>
-                            {% if job_card.status != 'completed' %}
-                            <div class="btn-group">
-                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                                    <i class="fas fa-cog"></i>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    {% if job_card.status == 'planned' %}
-                                    <li><a class="dropdown-item" href="#">Start Job</a></li>
-                                    {% endif %}
-                                    <li><a class="dropdown-item" href="#">Complete</a></li>
-                                    <li><a class="dropdown-item" href="#">Put on Hold</a></li>
-                                </ul>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
+                                <!-- Child Rows (Initially Hidden) -->
+                                {% for child in hierarchy.children %}
+                                <tr class="child-row" data-parent="{{ hierarchy.parent.id }}" style="display: none;">
+                                    <td>
+                                        {{ child.job_card_number }}
+                                        {% if '-OUT-' in child.job_card_number %}
+                                            <span class="badge bg-warning metrics-badge ms-2">Outsourced</span>
+                                        {% endif %}
+                                        {% if '-OUT-' in child.job_card_number and not child.grn_id %}
+                                            <span class="badge bg-danger metrics-badge">Pending GRN</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ child.item.name if child.item else 'No Item' }}</div>
+                                        <small class="text-muted">{{ child.process_name or 'Sub-Process' }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge status-badge bg-{{ 'success' if child.status == 'completed' else 'warning' if child.status == 'in_progress' else 'info' if child.status == 'outsourced' else 'primary' }}">
+                                            {{ child.status.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress-mini me-2">
+                                                <div class="progress-bar bg-{{ 'info' if child.status == 'outsourced' else 'success' }}" style="width: {{ child.progress_percentage or 0 }}%"></div>
+                                            </div>
+                                            <small class="fw-bold">{{ "%.1f"|format(child.progress_percentage or 0) }}%</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="small">
+                                            <div><strong>{{ child.completed_quantity or 0 }}</strong> / {{ child.planned_quantity or 0 }}</div>
+                                            {% if child.outsource_quantity %}
+                                                <small class="text-warning">Outsource: {{ child.outsource_quantity }}</small>
+                                            {% else %}
+                                                <small class="text-muted">Complete / Planned</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% if child.assigned_worker %}
+                                                <i class="fas fa-user me-1"></i>{{ child.assigned_worker.name }}
+                                            {% elif child.assigned_vendor %}
+                                                <i class="fas fa-building me-1"></i>{{ child.assigned_vendor.name }}
+                                            {% else %}
+                                                <i class="fas fa-home me-1"></i>In-House
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if child.target_completion_date %}
+                                            <small>{{ child.target_completion_date.strftime('%m/%d/%Y') }}</small>
+                                        {% else %}
+                                            <small class="text-muted">Not Set</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('job_cards.view_job_card', id=child.id) }}" class="btn btn-outline-primary btn-xs">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if '-OUT-' in child.job_card_number and not child.grn_id %}
+                                                <a href="{{ url_for('grn_job_card.create_grn_for_job_card', job_card_id=child.id) }}" class="btn btn-warning btn-xs" title="Create GRN">
+                                                    <i class="fas fa-truck"></i>
+                                                </a>
+                                            {% else %}
+                                                <a href="{{ url_for('job_cards.update_daily_status', job_card_id=child.id) }}" class="btn btn-success btn-xs">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            {% endfor %}
         </div>
     {% else %}
-        <div class="row">
-            <div class="col-12">
-                <div class="text-center py-5">
-                    <i class="fas fa-tasks fa-4x text-muted mb-3"></i>
-                    <h4>No Job Cards Found</h4>
-                    <p class="text-muted">Job cards will be automatically created when you create production orders with BOMs.</p>
-                    <a href="{{ url_for('production.add_production') }}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Create Production Order
-                    </a>
-                </div>
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-tasks fa-4x text-muted mb-3"></i>
+                <h4>No Job Cards Found</h4>
+                <p class="text-muted">Job cards will be automatically created when you create production orders with BOMs.</p>
+                <a href="{{ url_for('production.add_production') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create Production Order
+                </a>
             </div>
         </div>
     {% endif %}
 </div>
+
+<script>
+function toggleChildren(parentId) {
+    const toggleIcon = document.getElementById('toggle-' + parentId);
+    const parentRow = document.querySelector(`[data-parent-id="${parentId}"]`);
+    const childRows = document.querySelectorAll(`[data-parent="${parentId}"]`);
+    
+    const isExpanded = toggleIcon.classList.contains('expanded');
+    
+    if (isExpanded) {
+        // Collapse
+        toggleIcon.classList.remove('expanded');
+        parentRow.classList.remove('expanded');
+        childRows.forEach(row => {
+            row.style.display = 'none';
+        });
+    } else {
+        // Expand
+        toggleIcon.classList.add('expanded');
+        parentRow.classList.add('expanded');
+        childRows.forEach(row => {
+            row.style.display = 'table-row';
+        });
+    }
+}
+
+// Initialize - keep all collapsed by default
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page loaded, setting up toggle functionality...');
+    
+    // Set up click handlers for parent rows
+    document.querySelectorAll('.parent-row').forEach(row => {
+        row.addEventListener('click', function(e) {
+            if (e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON') {
+                const parentId = this.getAttribute('data-parent-id');
+                toggleChildren(parentId);
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

@@ -800,27 +800,72 @@ def view_job_card(id):
 @job_cards_bp.route('/list')
 @login_required
 def list_job_cards():
-    """List all job cards with filtering"""
-    page = request.args.get('page', 1, type=int)
+    """List all job cards with parent-child hierarchical structure"""
+    # Get filter parameters
     status_filter = request.args.get('status', '')
     search = request.args.get('search', '')
     
-    query = JobCard.query
+    # Get all parent job cards (those without parent_job_card_id)
+    parent_query = JobCard.query.filter(JobCard.parent_job_card_id.is_(None))
     
     if status_filter:
-        query = query.filter_by(status=status_filter)
+        parent_query = parent_query.filter_by(status=status_filter)
     
     if search:
-        query = query.filter(
+        parent_query = parent_query.filter(
             or_(
                 JobCard.job_card_number.contains(search),
                 JobCard.process_name.contains(search)
             )
         )
     
-    job_cards = query.order_by(JobCard.created_at.desc()).all()
+    parent_job_cards = parent_query.order_by(JobCard.created_at.desc()).all()
     
-    return render_template('job_cards/list.html', job_cards=job_cards)
+    # Build hierarchical structure for each parent
+    hierarchical_data = []
+    
+    for parent_card in parent_job_cards:
+        # Get child job cards for this parent
+        child_cards = JobCard.query.filter(
+            JobCard.parent_job_card_id == parent_card.id
+        ).order_by(JobCard.process_sequence, JobCard.created_at).all()
+        
+        # Calculate parent-level aggregated metrics
+        total_planned = parent_card.planned_quantity or 0
+        total_completed = parent_card.completed_quantity or 0
+        
+        # Calculate child-level aggregated metrics
+        child_planned = sum(child.planned_quantity or 0 for child in child_cards)
+        child_completed = sum(child.completed_quantity or 0 for child in child_cards)
+        
+        # Overall progress calculation
+        overall_planned = total_planned + child_planned
+        overall_completed = total_completed + child_completed
+        overall_progress = (overall_completed / overall_planned * 100) if overall_planned > 0 else 0
+        
+        # Status analysis
+        child_statuses = [child.status for child in child_cards]
+        outsourced_count = len([c for c in child_cards if c.job_card_number and '-OUT-' in c.job_card_number])
+        pending_grn_count = len([c for c in child_cards if c.job_card_number and '-OUT-' in c.job_card_number and not c.grn_id])
+        
+        hierarchical_data.append({
+            'parent': parent_card,
+            'children': child_cards,
+            'metrics': {
+                'total_planned': overall_planned,
+                'total_completed': overall_completed,
+                'progress_percentage': overall_progress,
+                'child_count': len(child_cards),
+                'outsourced_count': outsourced_count,
+                'pending_grn_count': pending_grn_count
+            }
+        })
+    
+    return render_template('job_cards/list.html', 
+                         hierarchical_job_cards=hierarchical_data,
+                         total_parents=len(parent_job_cards),
+                         status_filter=status_filter,
+                         search=search)
 
 @job_cards_bp.route('/create-outsourced/<int:job_card_id>', methods=['POST'])
 @login_required
