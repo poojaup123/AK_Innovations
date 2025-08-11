@@ -1,4 +1,8 @@
 {% extends "base.html" %}
+{% block head %}
+{{ super() }}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
 
 {% block title %}{{ job_card.job_card_number }} - Job Card Details{% endblock %}
 
@@ -993,7 +997,9 @@ function startProcess(processName, stepNumber) {
         const csrfInput = document.createElement('input');
         csrfInput.type = 'hidden';
         csrfInput.name = 'csrf_token';
-        csrfInput.value = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+        csrfInput.value = document.querySelector('meta[name=csrf-token]') ? 
+            document.querySelector('meta[name=csrf-token]').getAttribute('content') : 
+            document.querySelector('input[name=csrf_token]').value;
         form.appendChild(csrfInput);
         
         document.body.appendChild(form);
@@ -1062,7 +1068,9 @@ function submitOutsourcing() {
     }
     
     // Add CSRF token
-    const csrfToken = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+    const csrfToken = document.querySelector('meta[name=csrf-token]') ? 
+        document.querySelector('meta[name=csrf-token]').getAttribute('content') : 
+        document.querySelector('input[name=csrf_token]').value;
     formData.append('csrf_token', csrfToken);
     
     // Submit the form
@@ -1147,6 +1155,7 @@ function forceCleanupModals() {
             </div>
             <div class="modal-body">
                 <form id="outsourcingForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" id="processName" name="processName">
                     <input type="hidden" id="stepNumber" name="stepNumber">
                     <input type="hidden" id="jobCardId" name="jobCardId" value="{{ job_card.id }}">
