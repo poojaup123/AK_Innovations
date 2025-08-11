@@ -103,7 +103,8 @@
                                                     <tr>
                                                         <th>Material</th>
                                                         <th>Required Qty</th>
-                                                        <th>Available Qty</th>
+                                                        <th>PO Ordered</th>
+                                                        <th>GRN Received</th>
                                                         <th>Allocated Qty</th>
                                                         <th>Status</th>
                                                     </tr>
@@ -123,15 +124,27 @@
                                                             </td>
                                                             <td>{{ "%.2f"|format(material.needed_qty) }} {{ material.unit }}</td>
                                                             <td>
-                                                                {% if material.get('available_qty') is not none %}
-                                                                    {{ "%.2f"|format(material.get('available_qty', 0)) }} {{ material.unit }}
-                                                                    {% if material.get('po_status') and material.po_status.get('total_pending', 0) > 0 %}
-                                                                        <br><small class="text-info">
-                                                                            <i class="fas fa-truck"></i> +{{ "%.1f"|format(material.po_status.total_pending) }} pending delivery
+                                                                {% if material.get('po_status') and material.po_status.get('total_ordered', 0) > 0 %}
+                                                                    <span class="text-primary fw-bold">{{ "%.1f"|format(material.po_status.total_ordered) }} {{ material.unit }}</span>
+                                                                    {% if material.po_status.get('active_pos') %}
+                                                                        <br><small class="text-muted">
+                                                                            <i class="fas fa-receipt"></i> PO: {{ material.po_status.active_pos[0].po_number }}
                                                                         </small>
                                                                     {% endif %}
                                                                 {% else %}
-                                                                    N/A
+                                                                    <span class="text-muted">No PO</span>
+                                                                {% endif %}
+                                                            </td>
+                                                            <td>
+                                                                {% if material.get('po_status') and material.po_status.get('total_received', 0) > 0 %}
+                                                                    <span class="text-success fw-bold">{{ "%.1f"|format(material.po_status.total_received) }} {{ material.unit }}</span>
+                                                                    {% if material.po_status.get('total_pending', 0) > 0 %}
+                                                                        <br><small class="text-warning">
+                                                                            <i class="fas fa-clock"></i> {{ "%.1f"|format(material.po_status.total_pending) }} pending
+                                                                        </small>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-muted">Not received</span>
                                                                 {% endif %}
                                                             </td>
                                                             <td>
@@ -165,7 +178,7 @@
                                                         </tr>
                                                         {% if material.get('used_by') %}
                                                             <tr class="bg-light">
-                                                                <td colspan="5">
+                                                                <td colspan="6">
                                                                     <small class="text-muted">
                                                                         <strong>Used by:</strong>
                                                                         {% for product in material.used_by %}
