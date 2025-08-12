@@ -137,12 +137,18 @@ class BOMCostCalculator:
         breakdown['cost_components']['direct_materials'] = material_costs['direct_total']
         breakdown['cost_components']['manufactured_components'] = material_costs['nested_total']
         
-        # Calculate process costs (in-house + outsourced)
+        # Calculate process costs (in-house + outsourced + job cards)
         process_costs = self._calculate_process_costs(bom, quantity)
         breakdown['process_costs'] = process_costs['details']
         breakdown['total_process_cost'] = process_costs['total']
         breakdown['cost_components']['in_house_labor'] = process_costs['in_house_total']
         breakdown['cost_components']['outsourced_processes'] = process_costs['outsourced_total']
+        
+        # Calculate outsourced job card costs
+        job_card_costs = self._calculate_outsourced_job_card_costs(item_id, quantity)
+        breakdown['outsourced_job_card_costs'] = job_card_costs['details']
+        breakdown['total_job_card_cost'] = job_card_costs['total']
+        breakdown['cost_components']['outsourced_job_cards'] = job_card_costs['total']
         
         # Calculate overhead costs
         overhead_costs = self._calculate_overhead_costs(bom, quantity)
@@ -150,17 +156,188 @@ class BOMCostCalculator:
         breakdown['total_overhead_cost'] = sum(overhead_costs.values())
         breakdown['cost_components']['overhead'] = breakdown['total_overhead_cost']
         
-        # Calculate totals
+        # Calculate totals including job card costs
         breakdown['total_cost'] = (
             breakdown['total_material_cost'] + 
             breakdown['total_process_cost'] + 
-            breakdown['total_overhead_cost']
+            breakdown['total_overhead_cost'] +
+            breakdown.get('total_job_card_cost', 0.0)
         )
         breakdown['total_cost_per_unit'] = (
             breakdown['total_cost'] / quantity if quantity > 0 else breakdown['total_cost']
         )
         
         return breakdown
+
+    def _calculate_outsourced_job_card_costs(self, item_id: int, quantity: float) -> Dict:
+        """
+        Calculate costs for outsourced job cards related to this item
+        
+        Args:
+            item_id: ID of the item being produced
+            quantity: Production quantity
+            
+        Returns:
+            Dict containing outsourced job card cost breakdown
+        """
+        from models import JobCard, Item
+        from sqlalchemy import and_
+        
+        job_card_costs = {
+            'details': [],
+            'total': 0.0,
+            'vendor_breakdown': {},
+            'process_breakdown': {}
+        }
+        
+        # Get outsourced job cards for this item (active or recent)
+        outsourced_job_cards = JobCard.query.filter(
+            and_(
+                JobCard.item_id == item_id,
+                JobCard.job_type == 'outsourced',
+                JobCard.status.in_(['planned', 'in_progress', 'completed', 'received'])
+            )
+        ).all()
+        
+        for job_card in outsourced_job_cards:
+            # Get vendor information
+            vendor = job_card.assigned_vendor if hasattr(job_card, 'assigned_vendor') else None
+            vendor_name = vendor.name if vendor else 'Unknown Vendor'
+            vendor_id = vendor.id if vendor else None
+            
+            # Calculate job card costs based on different cost components
+            estimated_cost = job_card.estimated_cost or 0.0
+            actual_cost = job_card.actual_cost or estimated_cost
+            material_cost = job_card.material_cost or 0.0
+            labor_cost = job_card.labor_cost or 0.0
+            overhead_cost = job_card.overhead_cost or 0.0
+            transportation_cost = getattr(job_card, 'transportation_cost', 0.0)
+            handling_charges = getattr(job_card, 'handling_charges', 0.0)
+            
+            # Calculate per unit cost
+            job_card_quantity = job_card.planned_quantity or job_card.quantity_planned or 1.0
+            unit_cost = actual_cost / job_card_quantity if job_card_quantity > 0 else actual_cost
+            
+            # Scale to required quantity
+            scaled_cost = unit_cost * quantity
+            
+            job_card_detail = {
+                'job_card_number': job_card.job_card_number,
+                'process_name': job_card.process_name,
+                'vendor_name': vendor_name,
+                'vendor_id': vendor_id,
+                'job_card_quantity': job_card_quantity,
+                'unit_cost': unit_cost,
+                'scaled_cost': scaled_cost,
+                'cost_breakdown': {
+                    'estimated_cost': estimated_cost,
+                    'actual_cost': actual_cost,
+                    'material_cost': material_cost,
+                    'labor_cost': labor_cost,
+                    'overhead_cost': overhead_cost,
+                    'transportation_cost': transportation_cost,
+                    'handling_charges': handling_charges
+                },
+                'status': job_card.status,
+                'completion_percentage': getattr(job_card, 'progress_percentage', 0.0)
+            }
+            
+            job_card_costs['details'].append(job_card_detail)
+            job_card_costs['total'] += scaled_cost
+            
+            # Vendor breakdown
+            if vendor_name not in job_card_costs['vendor_breakdown']:
+                job_card_costs['vendor_breakdown'][vendor_name] = {
+                    'total_cost': 0.0,
+                    'job_cards': 0,
+                    'processes': []
+                }
+            job_card_costs['vendor_breakdown'][vendor_name]['total_cost'] += scaled_cost
+            job_card_costs['vendor_breakdown'][vendor_name]['job_cards'] += 1
+            job_card_costs['vendor_breakdown'][vendor_name]['processes'].append(job_card.process_name)
+            
+            # Process breakdown
+            process_name = job_card.process_name
+            if process_name not in job_card_costs['process_breakdown']:
+                job_card_costs['process_breakdown'][process_name] = {
+                    'total_cost': 0.0,
+                    'vendors': []
+                }
+            job_card_costs['process_breakdown'][process_name]['total_cost'] += scaled_cost
+            if vendor_name not in job_card_costs['process_breakdown'][process_name]['vendors']:
+                job_card_costs['process_breakdown'][process_name]['vendors'].append(vendor_name)
+        
+        return job_card_costs
+
+    def get_outsourced_job_card_vendor_rates(self, process_name: str, quantity: float = 1.0) -> List[Dict]:
+        """
+        Get vendor rates for outsourced job card processes
+        
+        Args:
+            process_name: Name of the process
+            quantity: Quantity for rate calculation
+            
+        Returns:
+            List of vendor rates with cost breakdown
+        """
+        from models import db
+        
+        # Query outsourced job card rates
+        rates_query = """
+        SELECT 
+            ojr.vendor_id,
+            s.name as vendor_name,
+            s.contact_person,
+            s.phone,
+            ojr.rate_per_unit,
+            ojr.setup_cost,
+            ojr.transportation_cost,
+            ojr.minimum_quantity,
+            ojr.lead_time_days,
+            ojr.quality_rating,
+            ojr.is_preferred,
+            ojr.effective_from,
+            ojr.effective_to
+        FROM outsourced_job_card_rates ojr
+        JOIN suppliers s ON ojr.vendor_id = s.id
+        WHERE ojr.process_name = %s 
+        AND ojr.is_active = TRUE
+        AND (ojr.effective_to IS NULL OR ojr.effective_to >= CURRENT_DATE)
+        ORDER BY ojr.is_preferred DESC, ojr.rate_per_unit ASC
+        """
+        
+        result = db.session.execute(rates_query, (process_name,))
+        vendor_rates = []
+        
+        for row in result:
+            # Calculate total cost for this vendor
+            unit_rate = float(row.rate_per_unit or 0.0)
+            setup_cost = float(row.setup_cost or 0.0)
+            transport_cost = float(row.transportation_cost or 0.0)
+            
+            # Total cost = (unit rate * quantity) + setup cost + transport cost
+            total_cost = (unit_rate * quantity) + setup_cost + transport_cost
+            cost_per_unit = total_cost / quantity if quantity > 0 else total_cost
+            
+            vendor_rates.append({
+                'vendor_id': row.vendor_id,
+                'vendor_name': row.vendor_name,
+                'contact_person': row.contact_person,
+                'phone': row.phone,
+                'rate_per_unit': unit_rate,
+                'setup_cost': setup_cost,
+                'transportation_cost': transport_cost,
+                'total_cost': total_cost,
+                'cost_per_unit': cost_per_unit,
+                'minimum_quantity': float(row.minimum_quantity or 1.0),
+                'lead_time_days': row.lead_time_days,
+                'quality_rating': row.quality_rating,
+                'is_preferred': row.is_preferred,
+                'effective_from': row.effective_from,
+                'effective_to': row.effective_to
+            })
+        
+        return vendor_rates
 
     def _calculate_material_costs(self, bom, quantity: float) -> Dict:
         """Calculate material costs including nested BOM components"""
