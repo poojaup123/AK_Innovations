@@ -134,6 +134,7 @@
                                                                     {% endif %}
                                                                 {% endfor %}
                                                                 <option value="raw_material">Direct Raw Material</option>
+                                                                <option value="previous_process_output">Previous Process Output</option>
                                                             </select>
                                                             <small class="text-muted">Select material source</small>
                                                         </div>
@@ -509,7 +510,7 @@ function createProcessItem(processNumber) {
                                     {% endif %}
                                 {% endfor %}
                                 <option value="raw_material">Direct Raw Material</option>
-                                ${processNumber > 1 ? '<option value="previous_process">Previous Process Output</option>' : ''}
+                                ${processNumber > 1 ? '<option value="previous_process_output">Previous Process Output</option>' : ''}
                             </select>
                             <small class="text-muted">Source of input material</small>
                         </div>
