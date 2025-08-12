@@ -140,15 +140,15 @@
                                                     </div>
                                                     <div class="col-md-1-5">
                                                         <div class="form-group mb-3">
-                                                            <label class="form-label">Input Qty</label>
+                                                            <label class="form-label">Input Qty <span class="text-muted">(Pcs/Units)</span></label>
                                                             <input type="number" step="0.001" class="form-control input-quantity" 
                                                                    name="processes[0][input_quantity]" placeholder="1.0">
-                                                            <small class="text-muted">Input qty</small>
+                                                            <small class="text-muted">Quantity in original UOM</small>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-1-5">
                                                         <div class="form-group mb-3">
-                                                            <label class="form-label">Input Unit Weight</label>
+                                                            <label class="form-label">Input Unit Weight <span class="text-muted">(kg)</span></label>
                                                             <input type="number" step="0.001" class="form-control input-unit-weight" 
                                                                    name="processes[0][input_unit_weight]" placeholder="0.000" readonly>
                                                             <small class="text-muted">kg per input unit</small>
@@ -460,15 +460,15 @@ function createProcessItem(processNumber) {
                     </div>
                     <div class="col-md-1-5">
                         <div class="form-group mb-3">
-                            <label class="form-label">Input Qty</label>
+                            <label class="form-label">Input Qty <span class="text-muted">(Pcs/Units)</span></label>
                             <input type="number" step="0.001" class="form-control input-quantity" 
                                    name="processes[${index}][input_quantity]" placeholder="1.0">
-                            <small class="text-muted">Input qty</small>
+                            <small class="text-muted">Quantity in original UOM</small>
                         </div>
                     </div>
                     <div class="col-md-1-5">
                         <div class="form-group mb-3">
-                            <label class="form-label">Input Unit Weight</label>
+                            <label class="form-label">Input Unit Weight <span class="text-muted">(kg)</span></label>
                             <input type="number" step="0.001" class="form-control input-unit-weight" 
                                    name="processes[${index}][input_unit_weight]" placeholder="0.000" readonly>
                             <small class="text-muted">kg per input unit</small>
@@ -476,15 +476,15 @@ function createProcessItem(processNumber) {
                     </div>
                     <div class="col-md-1-5">
                         <div class="form-group mb-3">
-                            <label class="form-label">Output Qty</label>
+                            <label class="form-label">Output Qty <span class="text-muted">(Pcs/Units)</span></label>
                             <input type="number" step="0.001" class="form-control output-quantity" 
                                    name="processes[${index}][output_quantity]" placeholder="1.0">
-                            <small class="text-muted">Output qty</small>
+                            <small class="text-muted">Quantity in original UOM</small>
                         </div>
                     </div>
                     <div class="col-md-1-5">
                         <div class="form-group mb-3">
-                            <label class="form-label">Output Unit Weight</label>
+                            <label class="form-label">Output Unit Weight <span class="text-muted">(kg)</span></label>
                             <input type="number" step="0.001" class="form-control output-unit-weight" 
                                    name="processes[${index}][output_unit_weight]" placeholder="0.000">
                             <small class="text-muted">kg per output unit</small>
@@ -492,7 +492,7 @@ function createProcessItem(processNumber) {
                     </div>
                     <div class="col-md-1-5">
                         <div class="form-group mb-3">
-                            <label class="form-label">Scrap Weight</label>
+                            <label class="form-label">Scrap Weight <span class="text-muted">(kg)</span></label>
                             <input type="number" step="0.001" class="form-control scrap-weight-input" 
                                    name="processes[${index}][scrap_weight_per_unit]" placeholder="0.000">
                             <small class="text-muted">kg per unit</small>
@@ -500,10 +500,10 @@ function createProcessItem(processNumber) {
                     </div>
                     <div class="col-md-1-5">
                         <div class="form-group mb-3">
-                            <label class="form-label">Scrap %</label>
+                            <label class="form-label">Scrap % <span class="text-muted">(%)</span></label>
                             <input type="number" step="0.1" class="form-control scrap-percent-input" 
                                    name="processes[${index}][estimated_scrap_percent]" placeholder="0.0">
-                            <small class="text-muted">Scrap percentage</small>
+                            <small class="text-muted">Percentage value</small>
                         </div>
                     </div>
                 </div>
@@ -855,6 +855,7 @@ function handleMaterialSourceChange(selectElement) {
                     material_weight: {{ item.material.unit_weight if item.material and item.material.unit_weight else 0 }},
                     qty_required: {{ item.qty_required or 0 }},
                     unit: "{{ item.uom.symbol if item.uom else item.unit or 'pcs' }}",
+                    unit_full_name: "{{ item.uom.name if item.uom else item.unit or 'pieces' }}",
                     material_unit_price: {{ item.material.unit_price if item.material and item.material.unit_price else 0 }}
                 }{% if not loop.last %},{% endif %}
             {% endfor %}
@@ -875,7 +876,16 @@ function handleMaterialSourceChange(selectElement) {
             if (inputUnitWeightField && selectedBomItem.material_weight) {
                 inputUnitWeightField.value = selectedBomItem.material_weight.toFixed(3);
                 inputUnitWeightField.style.backgroundColor = '#f8f9fa';
-                inputUnitWeightField.title = `Material unit weight: ${selectedBomItem.material_name} = ${selectedBomItem.material_weight} kg/unit`;
+                inputUnitWeightField.title = `Material unit weight: ${selectedBomItem.material_name} = ${selectedBomItem.material_weight} kg per ${selectedBomItem.unit_full_name}`;
+            }
+            
+            // Update quantity field labels with actual UOM
+            const inputQtyLabel = processDiv.querySelector('.input-quantity').closest('.form-group').querySelector('label');
+            const outputQtyLabel = processDiv.querySelector('.output-quantity').closest('.form-group').querySelector('label');
+            if (inputQtyLabel && outputQtyLabel) {
+                const uomDisplay = `(${selectedBomItem.unit})`;
+                inputQtyLabel.innerHTML = `Input Qty <span class="text-muted">${uomDisplay}</span>`;
+                outputQtyLabel.innerHTML = `Output Qty <span class="text-muted">${uomDisplay}</span>`;
             }
             
             // Calculate expected scrap weight based on material weight and quantity
@@ -908,8 +918,8 @@ function handleMaterialSourceChange(selectElement) {
                 const infoElement = materialInfoDiv.querySelector('.text-info');
                 if (infoElement) {
                     infoElement.innerHTML = `<i class="fas fa-info-circle text-primary"></i> <strong>Material Info:</strong> 
-                        ${selectedBomItem.material_name} - Input: ${materialWeight} kg/unit, Qty: ${inputQty} ${selectedBomItem.unit}
-                        <br><small class="text-muted">Suggested scrap: ${expectedScrapWeight.toFixed(3)} kg (3% rate) - All weights in kg as per UOM standard</small>`;
+                        ${selectedBomItem.material_name} - Input: ${materialWeight} kg per ${selectedBomItem.unit_full_name}, Qty: ${inputQty} ${selectedBomItem.unit}
+                        <br><small class="text-muted">Suggested scrap: ${expectedScrapWeight.toFixed(3)} kg (3% rate) - All weights standardized to kg UOM</small>`;
                 }
             }
         }
