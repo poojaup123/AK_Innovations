@@ -125,10 +125,15 @@
                                                         <div class="form-group mb-3">
                                                             <label class="form-label">Material Used in Process</label>
                                                             <select class="form-select process-material-source" name="processes[0][input_material_source]">
-                                                                <option value="bom_components">BOM Components</option>
+                                                                <option value="">Select Material Source</option>
+                                                                {% for item in bom.items %}
+                                                                    {% if item.material %}
+                                                                    <option value="bom_component_{{ item.id }}">{{ item.material.name }} ({{ item.qty_required }} {{ item.uom.symbol if item.uom else item.unit }})</option>
+                                                                    {% endif %}
+                                                                {% endfor %}
                                                                 <option value="raw_material">Direct Raw Material</option>
                                                             </select>
-                                                            <small class="text-muted">Source of input material for this process</small>
+                                                            <small class="text-muted">Select the specific material used in this process</small>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-4">
@@ -405,7 +410,12 @@ function createProcessItem(processNumber) {
                         <div class="form-group mb-3">
                             <label class="form-label">Material Used in Process</label>
                             <select class="form-select process-material-source" name="processes[${index}][input_material_source]">
-                                <option value="bom_components">BOM Components</option>
+                                <option value="">Select Material Source</option>
+                                {% for item in bom.items %}
+                                    {% if item.material %}
+                                    <option value="bom_component_{{ item.id }}">{{ item.material.name }} ({{ item.qty_required }} {{ item.uom.symbol if item.uom else item.unit }})</option>
+                                    {% endif %}
+                                {% endfor %}
                                 <option value="raw_material">Direct Raw Material</option>
                                 ${processNumber > 1 ? '<option value="previous_process">Previous Process Output</option>' : ''}
                             </select>
@@ -519,7 +529,8 @@ function updateProcessNumbers() {
                 const option = document.createElement('option');
                 option.value = 'previous_process';
                 option.textContent = 'Previous Process Output';
-                materialSourceSelect.insertBefore(option, materialSourceSelect.children[1]);
+                // Insert before the last option (Direct Raw Material)
+                materialSourceSelect.insertBefore(option, materialSourceSelect.lastElementChild);
             }
         }
         
