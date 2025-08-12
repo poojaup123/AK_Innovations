@@ -52,6 +52,15 @@ def update_settings_api():
         data = request.get_json()
         settings = CostCalculationSettings.get_current_settings()
         
+        # Update Phase 1 settings
+        if 'phase1' in data:
+            settings.enable_enhanced_dashboard = data['phase1'].get('enhanced_dashboard', settings.enable_enhanced_dashboard)
+            settings.enable_bulk_operations = data['phase1'].get('bulk_operations', settings.enable_bulk_operations)
+            settings.enable_cost_source_switching = data['phase1'].get('cost_source_switching', settings.enable_cost_source_switching)
+            settings.enable_variance_analysis = data['phase1'].get('variance_analysis', settings.enable_variance_analysis)
+            settings.enable_excel_export = data['phase1'].get('excel_export', settings.enable_excel_export)
+            settings.enable_advanced_analytics = data['phase1'].get('advanced_analytics', settings.enable_advanced_analytics)
+        
         # Update Phase 2 settings
         if 'phase2' in data:
             settings.enable_cost_change_notifications = data['phase2'].get('cost_change_notifications', settings.enable_cost_change_notifications)
@@ -79,8 +88,9 @@ def update_settings_api():
         # Update UI settings
         if 'ui' in data:
             settings.default_cost_view = data['ui'].get('default_view', settings.default_cost_view)
-            settings.show_advanced_analytics = data['ui'].get('advanced_analytics', settings.show_advanced_analytics)
-            settings.enable_bulk_operations = data['ui'].get('bulk_operations', settings.enable_bulk_operations)
+            settings.show_analytics_cards = data['ui'].get('analytics_cards', settings.show_analytics_cards)
+            settings.show_comparison_table = data['ui'].get('comparison_table', settings.show_comparison_table)
+            settings.enable_quick_actions = data['ui'].get('quick_actions', settings.enable_quick_actions)
         
         db.session.commit()
         
@@ -106,21 +116,35 @@ def reset_to_defaults():
         settings = CostCalculationSettings.get_current_settings()
         
         # Reset to defaults
+        # Phase 1
+        settings.enable_enhanced_dashboard = True
+        settings.enable_bulk_operations = True
+        settings.enable_cost_source_switching = True
+        settings.enable_variance_analysis = True
+        settings.enable_excel_export = True
+        settings.enable_advanced_analytics = True
+        
+        # Phase 2
         settings.enable_cost_change_notifications = True
         settings.enable_smart_bom_creation = True
         settings.enable_automated_cost_validation = True
         settings.enable_integration_alerts = True
+        
+        # Phase 3
         settings.enable_interactive_calculator = True
         settings.enable_cost_simulation = True
         settings.enable_drag_drop_bom = True
         settings.enable_smart_search = True
+        
+        # Other settings
         settings.cost_change_threshold_percent = 10.0
         settings.outdated_cost_days = 7
         settings.real_time_calculation_enabled = True
         settings.batch_calculation_size = 50
         settings.default_cost_view = 'comparison'
-        settings.show_advanced_analytics = True
-        settings.enable_bulk_operations = True
+        settings.show_analytics_cards = True
+        settings.show_comparison_table = True
+        settings.enable_quick_actions = True
         
         db.session.commit()
         

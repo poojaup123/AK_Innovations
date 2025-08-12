@@ -22,8 +22,63 @@
 
     <!-- Feature Toggle Cards -->
     <div class="row">
+        <!-- Phase 1: Core Infrastructure -->
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-foundation me-2"></i>Phase 1: Core Infrastructure</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="enhancedDashboard" 
+                               {{ 'checked' if settings.enable_enhanced_dashboard }}>
+                        <label class="form-check-label" for="enhancedDashboard">
+                            <strong>Enhanced Dashboard</strong>
+                            <small class="text-muted d-block">Improved analytics cards and layout</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="bulkOperations" 
+                               {{ 'checked' if settings.enable_bulk_operations }}>
+                        <label class="form-check-label" for="bulkOperations">
+                            <strong>Bulk Operations</strong>
+                            <small class="text-muted d-block">Multi-select and bulk actions</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="costSourceSwitching" 
+                               {{ 'checked' if settings.enable_cost_source_switching }}>
+                        <label class="form-check-label" for="costSourceSwitching">
+                            <strong>Cost Source Switching</strong>
+                            <small class="text-muted d-block">Switch between manual/BOM/hybrid costing</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="varianceAnalysis" 
+                               {{ 'checked' if settings.enable_variance_analysis }}>
+                        <label class="form-check-label" for="varianceAnalysis">
+                            <strong>Variance Analysis</strong>
+                            <small class="text-muted d-block">Compare manual vs BOM costs</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="excelExport" 
+                               {{ 'checked' if settings.enable_excel_export }}>
+                        <label class="form-check-label" for="excelExport">
+                            <strong>Excel Export</strong>
+                            <small class="text-muted d-block">Export cost reports to Excel</small>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Phase 2: Smart Automation -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-lg-4 mb-4">
             <div class="card h-100">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0"><i class="fas fa-robot me-2"></i>Phase 2: Smart Automation</h5>
@@ -69,7 +124,7 @@
         </div>
 
         <!-- Phase 3: Enhanced UX -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-lg-4 mb-4">
             <div class="card h-100">
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0"><i class="fas fa-magic me-2"></i>Phase 3: Enhanced User Experience</h5>
@@ -163,6 +218,15 @@
                                value="{{ settings.batch_calculation_size }}" min="10" max="500">
                         <small class="text-muted">Number of items to calculate at once</small>
                     </div>
+                    
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="advancedAnalytics" 
+                               {{ 'checked' if settings.enable_advanced_analytics }}>
+                        <label class="form-check-label" for="advancedAnalytics">
+                            <strong>Advanced Analytics</strong>
+                            <small class="text-muted d-block">Show detailed performance metrics</small>
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>
@@ -184,20 +248,29 @@
                     </div>
                     
                     <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="advancedAnalytics" 
-                               {{ 'checked' if settings.show_advanced_analytics }}>
-                        <label class="form-check-label" for="advancedAnalytics">
-                            <strong>Advanced Analytics</strong>
-                            <small class="text-muted d-block">Show detailed charts and metrics</small>
+                        <input class="form-check-input" type="checkbox" id="analyticsCards" 
+                               {{ 'checked' if settings.show_analytics_cards }}>
+                        <label class="form-check-label" for="analyticsCards">
+                            <strong>Analytics Cards</strong>
+                            <small class="text-muted d-block">Show dashboard summary cards</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="comparisonTable" 
+                               {{ 'checked' if settings.show_comparison_table }}>
+                        <label class="form-check-label" for="comparisonTable">
+                            <strong>Comparison Table</strong>
+                            <small class="text-muted d-block">Show detailed cost comparison table</small>
                         </label>
                     </div>
                     
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="bulkOperations" 
-                               {{ 'checked' if settings.enable_bulk_operations }}>
-                        <label class="form-check-label" for="bulkOperations">
-                            <strong>Bulk Operations</strong>
-                            <small class="text-muted d-block">Enable multi-select and bulk actions</small>
+                        <input class="form-check-input" type="checkbox" id="quickActions" 
+                               {{ 'checked' if settings.enable_quick_actions }}>
+                        <label class="form-check-label" for="quickActions">
+                            <strong>Quick Actions</strong>
+                            <small class="text-muted d-block">Enable one-click actions in tables</small>
                         </label>
                     </div>
                 </div>
@@ -245,6 +318,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function saveAllSettings() {
     const settings = {
+        phase1: {
+            enhanced_dashboard: document.getElementById('enhancedDashboard').checked,
+            bulk_operations: document.getElementById('bulkOperations').checked,
+            cost_source_switching: document.getElementById('costSourceSwitching').checked,
+            variance_analysis: document.getElementById('varianceAnalysis').checked,
+            excel_export: document.getElementById('excelExport').checked,
+            advanced_analytics: document.getElementById('advancedAnalytics').checked
+        },
         phase2: {
             cost_change_notifications: document.getElementById('costChangeNotifications').checked,
             smart_bom_creation: document.getElementById('smartBomCreation').checked,
@@ -267,8 +348,9 @@ function saveAllSettings() {
         },
         ui: {
             default_view: document.getElementById('defaultView').value,
-            advanced_analytics: document.getElementById('advancedAnalytics').checked,
-            bulk_operations: document.getElementById('bulkOperations').checked
+            analytics_cards: document.getElementById('analyticsCards').checked,
+            comparison_table: document.getElementById('comparisonTable').checked,
+            quick_actions: document.getElementById('quickActions').checked
         }
     };
 

@@ -12,6 +12,14 @@ class CostCalculationSettings(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     
+    # Phase 1: Core Infrastructure & Dashboard
+    enable_enhanced_dashboard = db.Column(db.Boolean, default=True)
+    enable_bulk_operations = db.Column(db.Boolean, default=True)
+    enable_cost_source_switching = db.Column(db.Boolean, default=True)
+    enable_variance_analysis = db.Column(db.Boolean, default=True)
+    enable_excel_export = db.Column(db.Boolean, default=True)
+    enable_advanced_analytics = db.Column(db.Boolean, default=True)
+    
     # Phase 2: Smart Automation & Notifications
     enable_cost_change_notifications = db.Column(db.Boolean, default=True)
     enable_smart_bom_creation = db.Column(db.Boolean, default=True)
@@ -34,8 +42,9 @@ class CostCalculationSettings(db.Model):
     
     # UI Settings
     default_cost_view = db.Column(db.String(20), default='comparison')  # comparison, bom_only, manual_only
-    show_advanced_analytics = db.Column(db.Boolean, default=True)
-    enable_bulk_operations = db.Column(db.Boolean, default=True)
+    show_analytics_cards = db.Column(db.Boolean, default=True)
+    show_comparison_table = db.Column(db.Boolean, default=True)
+    enable_quick_actions = db.Column(db.Boolean, default=True)
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -63,6 +72,14 @@ class CostCalculationSettings(db.Model):
     def to_dict(self):
         """Convert settings to dictionary for API responses"""
         return {
+            'phase1': {
+                'enhanced_dashboard': self.enable_enhanced_dashboard,
+                'bulk_operations': self.enable_bulk_operations,
+                'cost_source_switching': self.enable_cost_source_switching,
+                'variance_analysis': self.enable_variance_analysis,
+                'excel_export': self.enable_excel_export,
+                'advanced_analytics': self.enable_advanced_analytics
+            },
             'phase2': {
                 'cost_change_notifications': self.enable_cost_change_notifications,
                 'smart_bom_creation': self.enable_smart_bom_creation,
@@ -85,8 +102,9 @@ class CostCalculationSettings(db.Model):
             },
             'ui': {
                 'default_view': self.default_cost_view,
-                'advanced_analytics': self.show_advanced_analytics,
-                'bulk_operations': self.enable_bulk_operations
+                'analytics_cards': self.show_analytics_cards,
+                'comparison_table': self.show_comparison_table,
+                'quick_actions': self.enable_quick_actions
             }
         }
 
