@@ -106,27 +106,44 @@
                             </div>
                         </div>
                         
-                        <!-- Scrap Weight Section -->
+                        <!-- Scrap Weight Section with Dynamic Conversion -->
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.scrap_weight.label(class="form-label") }}
-                                    {{ form.scrap_weight(class="form-control", step="0.001") }}
+                                    {{ form.scrap_weight(class="form-control", step="0.001", id="scrap_weight", onchange="convertScrapValues()") }}
                                     <small class="text-muted">Expected scrap weight in kg</small>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    {{ form.scrap_quantity.label(class="form-label") }}
-                                    {{ form.scrap_quantity(class="form-control", step="0.001") }}
-                                    <small class="text-muted">General scrap quantity</small>
+                                    {{ form.estimated_scrap_percent.label(class="form-label") }}
+                                    {{ form.estimated_scrap_percent(class="form-control", step="0.1", id="scrap_percent", onchange="convertScrapValues()") }}
+                                    <small class="text-muted">Auto-calculated from weight</small>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    {{ form.scrap_uom.label(class="form-label") }}
-                                    {{ form.scrap_uom(class="form-select") }}
-                                    <small class="text-muted">Unit of measure for scrap</small>
+                                    <label class="form-label">Scrap Value Recovery</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="text" class="form-control" id="scrap_recovery_value" readonly>
+                                        <span class="input-group-text">70%</span>
+                                    </div>
+                                    <small class="text-muted">Estimated recovery value</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Material Weight Reference for Calculations -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="alert alert-info py-2">
+                                    <small><i class="fas fa-calculator"></i> 
+                                    <strong>Conversion Logic:</strong> 
+                                    Enter scrap weight to auto-calculate percentage, or enter percentage to auto-calculate weight.
+                                    Based on unit weight: <span id="display_unit_weight">{{ form.unit_weight.data or 0 }}</span> kg per unit.
+                                    </small>
                                 </div>
                             </div>
                         </div>
@@ -137,7 +154,7 @@
                                 <div class="mb-3">
                                     {{ form.unit_weight.label(class="form-label") }}
                                     <div class="input-group">
-                                        {{ form.unit_weight(class="form-control", step="0.001") }}
+                                        {{ form.unit_weight(class="form-control", step="0.001", id="unit_weight", onchange="updateUnitWeightDisplay()") }}
                                         {{ form.unit_weight_uom(class="form-select", style="max-width: 100px;") }}
                                     </div>
                                     <small class="text-muted">Weight per unit for converting per kg costs to per unit costs</small>
@@ -942,6 +959,46 @@
 
 {% block scripts %}
 <script>
+// Dynamic Scrap Weight to Percentage Conversion
+function convertScrapValues() {
+    const scrapWeight = parseFloat(document.getElementById('scrap_weight').value) || 0;
+    const scrapPercent = parseFloat(document.getElementById('scrap_percent').value) || 0;
+    const unitWeight = parseFloat(document.getElementById('unit_weight').value) || 0;
+    const materialRate = 45; // Default MS sheet rate - could be dynamic
+    const recoveryRate = 0.70; // 70% recovery rate
+    
+    // Avoid infinite loop by checking which field was changed
+    const activeElement = document.activeElement;
+    
+    if (activeElement && activeElement.id === 'scrap_weight' && scrapWeight > 0 && unitWeight > 0) {
+        // Convert weight to percentage
+        const calculatedPercent = (scrapWeight / unitWeight) * 100;
+        document.getElementById('scrap_percent').value = calculatedPercent.toFixed(2);
+        
+    } else if (activeElement && activeElement.id === 'scrap_percent' && scrapPercent > 0 && unitWeight > 0) {
+        // Convert percentage to weight
+        const calculatedWeight = (unitWeight * scrapPercent) / 100;
+        document.getElementById('scrap_weight').value = calculatedWeight.toFixed(3);
+    }
+    
+    // Calculate recovery value regardless of which field changed
+    const currentScrapWeight = parseFloat(document.getElementById('scrap_weight').value) || 0;
+    if (currentScrapWeight > 0) {
+        const recoveryValue = currentScrapWeight * materialRate * recoveryRate;
+        document.getElementById('scrap_recovery_value').value = recoveryValue.toFixed(2);
+    } else {
+        document.getElementById('scrap_recovery_value').value = '0.00';
+    }
+}
+
+function updateUnitWeightDisplay() {
+    const unitWeight = parseFloat(document.getElementById('unit_weight').value) || 0;
+    document.getElementById('display_unit_weight').textContent = unitWeight.toFixed(3);
+    // Recalculate scrap conversions when unit weight changes
+    convertScrapValues();
+}
+</script>
+<script>
 // Enhanced BOM Form JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     
@@ -956,6 +1013,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
+    
+    // Initialize scrap conversion on page load
+    convertScrapValues();
+});
     
     // Activate tab based on URL fragment on page load
     activateTabFromHash();
