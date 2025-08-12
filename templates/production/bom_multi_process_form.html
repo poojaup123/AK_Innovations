@@ -124,9 +124,8 @@
                                                     <div class="col-md-4">
                                                         <div class="form-group mb-3">
                                                             <label class="form-label">Material Used in Process</label>
-                                                            <select class="form-select" name="processes[0][input_material_source]">
+                                                            <select class="form-select process-material-source" name="processes[0][input_material_source]">
                                                                 <option value="bom_components">BOM Components</option>
-                                                                <option value="previous_process">Previous Process Output</option>
                                                                 <option value="raw_material">Direct Raw Material</option>
                                                             </select>
                                                             <small class="text-muted">Source of input material for this process</small>
@@ -161,16 +160,17 @@
                                                 <!-- Material Suggestions (Dynamic) -->
                                                 <div class="mt-2">
                                                     <small class="text-info">
-                                                        <i class="fas fa-lightbulb"></i> <strong>Suggested Materials:</strong>
+                                                        <i class="fas fa-lightbulb"></i> <strong>BOM Raw Materials:</strong>
                                                         {% if bom.items %}
-                                                            {% for item in bom.items[:3] %}
-                                                                <span class="badge bg-light text-dark me-1">{{ item.material.name if item.material else 'Unknown' }}</span>
+                                                            {% for item in bom.items %}
+                                                                {% if item.material %}
+                                                                <span class="badge bg-primary text-white me-1" title="{{ item.material.name }} - {{ item.qty_required }} {{ item.uom.symbol if item.uom else item.unit }}">
+                                                                    {{ item.material.name[:15] }}{% if item.material.name|length > 15 %}...{% endif %}
+                                                                </span>
+                                                                {% endif %}
                                                             {% endfor %}
-                                                            {% if bom.items|length > 3 %}
-                                                                <span class="badge bg-secondary">+{{ bom.items|length - 3 }} more</span>
-                                                            {% endif %}
                                                         {% else %}
-                                                            <span class="text-muted">Add BOM items to see material suggestions</span>
+                                                            <span class="text-muted">Add BOM items to see raw materials</span>
                                                         {% endif %}
                                                     </small>
                                                 </div>
@@ -445,6 +445,24 @@ function updateProcessNumbers() {
         // Update step number input
         const stepInput = item.querySelector('.step-number');
         stepInput.value = processNumber;
+        
+        // Update material source dropdown based on process number
+        const materialSourceSelect = item.querySelector('.process-material-source');
+        if (materialSourceSelect) {
+            // Remove previous process option if it exists
+            const previousProcessOption = materialSourceSelect.querySelector('option[value="previous_process"]');
+            if (previousProcessOption) {
+                previousProcessOption.remove();
+            }
+            
+            // Add "Previous Process Output" option only for step 2+
+            if (processNumber > 1) {
+                const option = document.createElement('option');
+                option.value = 'previous_process';
+                option.textContent = 'Previous Process Output';
+                materialSourceSelect.insertBefore(option, materialSourceSelect.children[1]);
+            }
+        }
         
         // Update all name attributes
         const inputs = item.querySelectorAll('input, select, textarea');
