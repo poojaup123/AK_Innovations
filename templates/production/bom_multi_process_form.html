@@ -864,6 +864,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (firstProcess) {
         populateBOMMaterials(firstProcess, 0);
     }
+    
+    // Perform initial cascading for existing processes
+    setTimeout(function() {
+        performInitialCascading();
+        syncOutputQuantities();
+        calculateTotalScrapWeight();
+    }, 500); // Small delay to ensure all DOM elements are ready
 });
 
 // Function to sync last process output with Basic Information Output Quantity and Unit Weight
@@ -1131,6 +1138,23 @@ function showCascadeInfo(processDiv, fromProcessNum, values) {
     `;
 }
 
+// Function to perform initial cascading for all processes
+function performInitialCascading() {
+    const allProcesses = document.querySelectorAll('.process-item');
+    
+    // Start from first process and cascade through all
+    for (let i = 0; i < allProcesses.length - 1; i++) {
+        const currentProcess = allProcesses[i];
+        const outputQty = currentProcess.querySelector('.output-quantity')?.value;
+        const outputWeight = currentProcess.querySelector('.output-unit-weight')?.value;
+        
+        // If current process has output values, cascade to next
+        if (outputQty && parseFloat(outputQty) > 0 && outputWeight && parseFloat(outputWeight) > 0) {
+            cascadeToNextProcess(currentProcess);
+        }
+    }
+}
+
 // Add event listeners for real-time sync
 function addSyncEventListeners() {
     // Add listeners to output quantity and unit weight fields
@@ -1154,6 +1178,28 @@ function addSyncEventListeners() {
             e.target.classList.contains('input-quantity') ||
             e.target.classList.contains('output-quantity')) {
             calculateScrapFromWeightDifference(e.target);
+        }
+    });
+    
+    // Add listeners specifically for output fields to trigger cascading
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('output-unit-weight') ||
+            e.target.classList.contains('output-quantity')) {
+            const processDiv = e.target.closest('.process-item');
+            if (processDiv) {
+                cascadeToNextProcess(processDiv);
+            }
+        }
+    });
+    
+    // Add listeners for UOM changes to trigger cascading
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('output-qty-uom') ||
+            e.target.classList.contains('output-weight-uom')) {
+            const processDiv = e.target.closest('.process-item');
+            if (processDiv) {
+                cascadeToNextProcess(processDiv);
+            }
         }
     });
     
