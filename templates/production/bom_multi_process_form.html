@@ -161,17 +161,19 @@
                                                 <div class="mt-2">
                                                     <small class="text-info">
                                                         <i class="fas fa-lightbulb"></i> <strong>BOM Raw Materials:</strong>
-                                                        {% if bom.items %}
-                                                            {% for item in bom.items %}
-                                                                {% if item.material %}
-                                                                <span class="badge bg-primary text-white me-1" title="{{ item.material.name }} - {{ item.qty_required }} {{ item.uom.symbol if item.uom else item.unit }}">
-                                                                    {{ item.material.name[:15] }}{% if item.material.name|length > 15 %}...{% endif %}
-                                                                </span>
-                                                                {% endif %}
-                                                            {% endfor %}
-                                                        {% else %}
-                                                            <span class="text-muted">Add BOM items to see raw materials</span>
-                                                        {% endif %}
+                                                        <span id="bomMaterials-0">
+                                                            {% if bom.items %}
+                                                                {% for item in bom.items %}
+                                                                    {% if item.material %}
+                                                                    <span class="badge bg-primary text-white me-1" title="{{ item.material.name }} - {{ item.qty_required }} {{ item.uom.symbol if item.uom else item.unit }}">
+                                                                        {{ item.material.name[:15] }}{% if item.material.name|length > 15 %}...{% endif %}
+                                                                    </span>
+                                                                    {% endif %}
+                                                                {% endfor %}
+                                                            {% else %}
+                                                                <span class="text-muted">Add BOM items to see raw materials</span>
+                                                            {% endif %}
+                                                        </span>
                                                     </small>
                                                 </div>
                                             </div>
@@ -668,8 +670,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Populate materials for the first process
     const firstProcess = document.querySelector('[data-process="1"]');
     if (firstProcess) {
+        console.log('Populating materials for first process');
         populateBOMMaterials(firstProcess, 0);
+    } else {
+        console.log('First process not found');
     }
+    
+    // Debug: Log BOM materials data
+    const bomMaterials = [
+        {% for item in bom.items %}
+            {
+                material_name: "{{ item.material.name if item.material else 'Unknown' }}",
+                qty_required: {{ item.qty_required or 0 }},
+                unit: "{{ item.uom.symbol if item.uom else item.unit or 'pcs' }}"
+            }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    console.log('BOM Materials:', bomMaterials);
 });
 
 // Re-initialize when new processes are added
