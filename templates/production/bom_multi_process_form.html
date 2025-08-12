@@ -925,6 +925,97 @@ function calculateTotalScrapWeight() {
     }
 }
 
+// Function to calculate scrap weight and percentage from input/output difference
+function calculateScrapFromWeightDifference(changedElement) {
+    const processDiv = changedElement.closest('.process-item');
+    if (!processDiv) return;
+    
+    // Get all the required fields
+    const inputQtyField = processDiv.querySelector('.input-quantity');
+    const outputQtyField = processDiv.querySelector('.output-quantity');
+    const inputUnitWeightField = processDiv.querySelector('.input-unit-weight');
+    const outputUnitWeightField = processDiv.querySelector('.output-unit-weight');
+    const scrapWeightField = processDiv.querySelector('.scrap-weight-input');
+    const scrapPercentField = processDiv.querySelector('.scrap-percent-input');
+    
+    // Get values
+    const inputQty = parseFloat(inputQtyField?.value) || 0;
+    const outputQty = parseFloat(outputQtyField?.value) || 0;
+    const inputUnitWeight = parseFloat(inputUnitWeightField?.value) || 0;
+    const outputUnitWeight = parseFloat(outputUnitWeightField?.value) || 0;
+    
+    // Only calculate if we have meaningful values
+    if (inputQty > 0 && inputUnitWeight > 0) {
+        // Calculate total input weight
+        const totalInputWeight = inputQty * inputUnitWeight;
+        
+        // Calculate total output weight
+        const totalOutputWeight = outputQty * outputUnitWeight;
+        
+        // Calculate scrap weight (difference)
+        const scrapWeight = totalInputWeight - totalOutputWeight;
+        
+        if (scrapWeight > 0) {
+            // Calculate scrap weight per unit (divide by input quantity)
+            const scrapWeightPerUnit = scrapWeight / inputQty;
+            
+            // Calculate scrap percentage
+            const scrapPercentage = (scrapWeight / totalInputWeight) * 100;
+            
+            // Update the scrap weight field
+            if (scrapWeightField) {
+                scrapWeightField.value = scrapWeightPerUnit.toFixed(3);
+                scrapWeightField.style.backgroundColor = '#e8f5e8';
+                scrapWeightField.title = `Auto-calculated: Total scrap ${scrapWeight.toFixed(3)} kg ÷ ${inputQty} units = ${scrapWeightPerUnit.toFixed(3)} kg per unit`;
+            }
+            
+            // Update the scrap percentage field
+            if (scrapPercentField) {
+                scrapPercentField.value = scrapPercentage.toFixed(2);
+                scrapPercentField.style.backgroundColor = '#e8f5e8';
+                scrapPercentField.title = `Auto-calculated: ${scrapWeight.toFixed(3)} kg scrap ÷ ${totalInputWeight.toFixed(3)} kg input × 100 = ${scrapPercentage.toFixed(2)}%`;
+            }
+            
+            // Show calculation info
+            showScrapCalculationInfo(processDiv, {
+                inputQty,
+                inputUnitWeight,
+                totalInputWeight,
+                outputQty,
+                outputUnitWeight,
+                totalOutputWeight,
+                scrapWeight,
+                scrapWeightPerUnit,
+                scrapPercentage
+            });
+            
+            // Trigger total scrap weight recalculation
+            calculateTotalScrapWeight();
+        }
+    }
+}
+
+// Function to show scrap calculation details
+function showScrapCalculationInfo(processDiv, calc) {
+    // Find or create info display area
+    let infoDiv = processDiv.querySelector('.scrap-calculation-info');
+    if (!infoDiv) {
+        infoDiv = document.createElement('div');
+        infoDiv.className = 'scrap-calculation-info mt-2 alert alert-info';
+        infoDiv.style.fontSize = '0.85em';
+        processDiv.querySelector('.form-check').parentNode.insertBefore(infoDiv, processDiv.querySelector('.form-check'));
+    }
+    
+    infoDiv.innerHTML = `
+        <i class="fas fa-calculator text-primary"></i> <strong>Auto-Calculated Scrap:</strong><br>
+        <small>
+            <strong>Input:</strong> ${calc.inputQty} units × ${calc.inputUnitWeight} kg = ${calc.totalInputWeight.toFixed(3)} kg<br>
+            <strong>Output:</strong> ${calc.outputQty} units × ${calc.outputUnitWeight} kg = ${calc.totalOutputWeight.toFixed(3)} kg<br>
+            <strong>Scrap:</strong> ${calc.scrapWeight.toFixed(3)} kg total (${calc.scrapWeightPerUnit.toFixed(3)} kg/unit, ${calc.scrapPercentage.toFixed(2)}%)
+        </small>
+    `;
+}
+
 // Add event listeners for real-time sync
 function addSyncEventListeners() {
     // Add listeners to output quantity and unit weight fields
@@ -938,6 +1029,16 @@ function addSyncEventListeners() {
     document.addEventListener('input', function(e) {
         if (e.target.classList.contains('scrap-weight-input')) {
             calculateTotalScrapWeight();
+        }
+    });
+    
+    // Add listeners for auto-calculation of scrap weight and percentage
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('input-unit-weight') || 
+            e.target.classList.contains('output-unit-weight') ||
+            e.target.classList.contains('input-quantity') ||
+            e.target.classList.contains('output-quantity')) {
+            calculateScrapFromWeightDifference(e.target);
         }
     });
     
