@@ -179,25 +179,56 @@
                                                     <div class="col-md-1-5">
                                                         <div class="form-group mb-3">
                                                             <label class="form-label">Output Qty</label>
-                                                            <input type="number" step="0.001" class="form-control output-quantity" 
-                                                                   name="processes[0][output_quantity]" placeholder="1.0">
-                                                            <small class="text-muted">Output qty</small>
+                                                            <div class="input-group">
+                                                                <input type="number" step="0.001" class="form-control output-quantity" 
+                                                                       name="processes[0][output_quantity]" placeholder="1.0">
+                                                                <select class="form-select output-qty-uom" name="processes[0][output_qty_uom]" style="max-width: 80px;">
+                                                                    <option value="pcs" selected>Pcs</option>
+                                                                    <option value="m">m</option>
+                                                                    <option value="cm">cm</option>
+                                                                    <option value="mm">mm</option>
+                                                                    <option value="ft">ft</option>
+                                                                    <option value="in">in</option>
+                                                                    <option value="L">L</option>
+                                                                    <option value="ml">ml</option>
+                                                                    <option value="units">Units</option>
+                                                                </select>
+                                                            </div>
+                                                            <small class="text-muted">Quantity with UOM</small>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-2">
                                                         <div class="form-group mb-3">
-                                                            <label class="form-label">Output Unit Weight (kg)</label>
-                                                            <input type="number" step="0.001" class="form-control output-unit-weight" 
-                                                                   name="processes[0][output_unit_weight]" placeholder="0.000">
+                                                            <label class="form-label">Output Unit Weight</label>
+                                                            <div class="input-group">
+                                                                <input type="number" step="0.001" class="form-control output-unit-weight" 
+                                                                       name="processes[0][output_unit_weight]" placeholder="0.000">
+                                                                <select class="form-select output-weight-uom" name="processes[0][output_weight_uom]" style="max-width: 80px;">
+                                                                    <option value="kg" selected>kg</option>
+                                                                    <option value="g">g</option>
+                                                                    <option value="lbs">lbs</option>
+                                                                    <option value="oz">oz</option>
+                                                                    <option value="ton">ton</option>
+                                                                </select>
+                                                            </div>
                                                             <small class="text-muted">Weight per output unit</small>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-2">
                                                         <div class="form-group mb-3">
-                                                            <label class="form-label">Scrap Weight (kg)</label>
-                                                            <input type="number" step="0.001" class="form-control scrap-weight-input" 
-                                                                   name="processes[0][scrap_weight_per_unit]" placeholder="0.000">
-                                                            <small class="text-muted">Scrap per unit</small>
+                                                            <label class="form-label">Scrap Weight</label>
+                                                            <div class="input-group">
+                                                                <input type="number" step="0.001" class="form-control scrap-weight-input" 
+                                                                       name="processes[0][scrap_weight_per_unit]" placeholder="0.000">
+                                                                <select class="form-select scrap-weight-uom" name="processes[0][scrap_weight_uom]" style="max-width: 80px;">
+                                                                    <option value="kg" selected>kg</option>
+                                                                    <option value="g">g</option>
+                                                                    <option value="lbs">lbs</option>
+                                                                    <option value="oz">oz</option>
+                                                                    <option value="ton">ton</option>
+                                                                </select>
+                                                            </div>
+                                                            <small class="text-muted">Weight per unit</small>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-2">
