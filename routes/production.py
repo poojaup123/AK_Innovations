@@ -1830,6 +1830,12 @@ def add_multi_bom_process(bom_id):
                 edit_process.labor_rate_per_hour = float(form_data.get('processes[0][labor_rate_per_hour]') or 0)
                 edit_process.quality_check_required = form_data.get('processes[0][quality_check_required]') == 'true'
                 
+                # Enhanced scrap tracking fields
+                edit_process.estimated_scrap_percent = float(form_data.get('processes[0][estimated_scrap_percent]') or 0)
+                edit_process.scrap_weight_per_unit = float(form_data.get('processes[0][scrap_weight_per_unit]') or 0)
+                edit_process.scrap_tracking_enabled = form_data.get('processes[0][scrap_tracking_enabled]') == 'true'
+                edit_process.input_material_source = form_data.get('processes[0][input_material_source]', 'bom_components')
+                
                 # Update transformation fields
                 edit_process.input_product_id = int(form_data.get('processes[0][input_product_id]') or 0) or None
                 edit_process.output_product_id = int(form_data.get('processes[0][output_product_id]') or 0) or None
@@ -1877,6 +1883,11 @@ def add_multi_bom_process(bom_id):
                         'cost_unit': form_data.get(f'processes[{index}][cost_unit]', 'per_unit'),
                         'labor_rate_per_hour': float(form_data.get(f'processes[{index}][labor_rate_per_hour]') or 0),
                         'quality_check_required': form_data.get(f'processes[{index}][quality_check_required]') == 'true',
+                        # Enhanced scrap tracking fields
+                        'estimated_scrap_percent': float(form_data.get(f'processes[{index}][estimated_scrap_percent]') or 0),
+                        'scrap_weight_per_unit': float(form_data.get(f'processes[{index}][scrap_weight_per_unit]') or 0),
+                        'scrap_tracking_enabled': form_data.get(f'processes[{index}][scrap_tracking_enabled]') == 'true',
+                        'input_material_source': form_data.get(f'processes[{index}][input_material_source]', 'bom_components'),
                         # Transformation fields
                         'input_product_id': int(form_data.get(f'processes[{index}][input_product_id]') or 0) or None,
                         'output_product_id': int(form_data.get(f'processes[{index}][output_product_id]') or 0) or None,
@@ -1906,6 +1917,11 @@ def add_multi_bom_process(bom_id):
                         cost_unit=process_data['cost_unit'],
                         labor_rate_per_hour=process_data['labor_rate_per_hour'], 
                         quality_check_required=process_data['quality_check_required'],
+                        # Enhanced scrap tracking fields
+                        estimated_scrap_percent=process_data['estimated_scrap_percent'],
+                        scrap_weight_per_unit=process_data['scrap_weight_per_unit'],
+                        scrap_tracking_enabled=process_data['scrap_tracking_enabled'],
+                        input_material_source=process_data['input_material_source'],
                         # Transformation fields
                         input_product_id=process_data['input_product_id'],
                         output_product_id=process_data['output_product_id'],

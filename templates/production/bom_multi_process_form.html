@@ -114,6 +114,69 @@
                                             </div>
                                         </div>
                                         
+                                        <!-- Enhanced Scrap Tracking Section -->
+                                        <div class="card mb-3 border-warning">
+                                            <div class="card-header bg-warning text-dark">
+                                                <h6 class="mb-0"><i class="fas fa-recycle"></i> Scrap Tracking Configuration</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <div class="form-group mb-3">
+                                                            <label class="form-label">Material Used in Process</label>
+                                                            <select class="form-select" name="processes[0][input_material_source]">
+                                                                <option value="bom_components">BOM Components</option>
+                                                                <option value="previous_process">Previous Process Output</option>
+                                                                <option value="raw_material">Direct Raw Material</option>
+                                                            </select>
+                                                            <small class="text-muted">Source of input material for this process</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group mb-3">
+                                                            <label class="form-label">Scrap Weight per Unit (kg)</label>
+                                                            <input type="number" step="0.001" class="form-control scrap-weight-input" 
+                                                                   name="processes[0][scrap_weight_per_unit]" placeholder="0.000">
+                                                            <small class="text-muted">Expected scrap weight in kg per unit</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group mb-3">
+                                                            <label class="form-label">Scrap Percentage (%)</label>
+                                                            <input type="number" step="0.1" class="form-control scrap-percent-input" 
+                                                                   name="processes[0][estimated_scrap_percent]" placeholder="0.0">
+                                                            <small class="text-muted">Expected scrap percentage</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="form-check mb-3">
+                                                    <input class="form-check-input" type="checkbox" name="processes[0][scrap_tracking_enabled]" value="true" checked>
+                                                    <label class="form-check-label">
+                                                        <i class="fas fa-chart-line text-success"></i> Enable Scrap Tracking for this Process
+                                                    </label>
+                                                    <small class="form-text text-muted d-block">Track scrap generation and include in BOM total calculations</small>
+                                                </div>
+                                                
+                                                <!-- Material Suggestions (Dynamic) -->
+                                                <div class="mt-2">
+                                                    <small class="text-info">
+                                                        <i class="fas fa-lightbulb"></i> <strong>Suggested Materials:</strong>
+                                                        {% if bom.items %}
+                                                            {% for item in bom.items[:3] %}
+                                                                <span class="badge bg-light text-dark me-1">{{ item.material.name if item.material else 'Unknown' }}</span>
+                                                            {% endfor %}
+                                                            {% if bom.items|length > 3 %}
+                                                                <span class="badge bg-secondary">+{{ bom.items|length - 3 }} more</span>
+                                                            {% endif %}
+                                                        {% else %}
+                                                            <span class="text-muted">Add BOM items to see material suggestions</span>
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
                                         <div class="form-group mb-3">
                                             <label class="form-label">Operation Description</label>
                                             <textarea class="form-control" name="processes[0][operation_description]" rows="2" placeholder="Detailed description of the operation"></textarea>
