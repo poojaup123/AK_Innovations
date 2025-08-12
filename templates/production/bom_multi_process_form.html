@@ -630,20 +630,31 @@ function populateBOMMaterials(processDiv, index) {
     const materialsContainer = processDiv.querySelector(`#bomMaterials-${index}`);
     if (materialsContainer) {
         // Get BOM materials data from server-side
-        const bomMaterials = {{ bom.items | tojson | safe }};
+        const bomMaterials = [
+            {% for item in bom.items %}
+                {
+                    material_name: "{{ item.material.name if item.material else 'Unknown' }}",
+                    qty_required: {{ item.qty_required or 0 }},
+                    unit: "{{ item.uom.symbol if item.uom else item.unit or 'pcs' }}"
+                }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
         let materialsHtml = '';
         
         if (bomMaterials && bomMaterials.length > 0) {
             bomMaterials.forEach(item => {
-                if (item.material) {
-                    const materialName = item.material.name.length > 15 ? 
-                        item.material.name.substring(0, 15) + '...' : 
-                        item.material.name;
-                    const tooltip = `${item.material.name} - ${item.qty_required} ${item.uom ? item.uom.symbol : item.unit}`;
+                if (item.material_name && item.material_name !== 'Unknown') {
+                    const materialName = item.material_name.length > 15 ? 
+                        item.material_name.substring(0, 15) + '...' : 
+                        item.material_name;
+                    const tooltip = `${item.material_name} - ${item.qty_required} ${item.unit}`;
                     materialsHtml += `<span class="badge bg-primary text-white me-1" title="${tooltip}">${materialName}</span>`;
                 }
             });
-        } else {
+        }
+        
+        if (!materialsHtml) {
             materialsHtml = '<span class="text-muted">Add BOM items to see raw materials</span>';
         }
         
