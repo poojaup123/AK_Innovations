@@ -1018,6 +1018,9 @@ function calculateScrapFromWeightDifference(changedElement) {
             
             // Trigger total scrap weight recalculation
             calculateTotalScrapWeight();
+            
+            // Cascade to next process if this is not the last process
+            cascadeToNextProcess(processDiv);
         }
     }
 }
@@ -1039,6 +1042,91 @@ function showScrapCalculationInfo(processDiv, calc) {
             <strong>Input:</strong> ${calc.inputQty} units × ${calc.inputUnitWeightRaw} ${calc.inputWeightUom} (${calc.inputUnitWeight.toFixed(3)} kg) = ${calc.totalInputWeight.toFixed(3)} kg<br>
             <strong>Output:</strong> ${calc.outputQty} units × ${calc.outputUnitWeightRaw} ${calc.outputWeightUom} (${calc.outputUnitWeight.toFixed(3)} kg) = ${calc.totalOutputWeight.toFixed(3)} kg<br>
             <strong>Scrap:</strong> ${calc.scrapWeight.toFixed(3)} kg total (${calc.scrapWeightPerUnit.toFixed(3)} kg/unit, ${calc.scrapPercentage.toFixed(2)}%)
+        </small>
+    `;
+}
+
+// Function to cascade process output to next process input
+function cascadeToNextProcess(currentProcessDiv) {
+    // Find the next process
+    const allProcesses = document.querySelectorAll('.process-item');
+    const currentIndex = Array.from(allProcesses).indexOf(currentProcessDiv);
+    const nextProcess = allProcesses[currentIndex + 1];
+    
+    if (!nextProcess) return; // No next process
+    
+    // Get current process output values
+    const currentOutputQty = parseFloat(currentProcessDiv.querySelector('.output-quantity')?.value) || 0;
+    const currentOutputWeight = parseFloat(currentProcessDiv.querySelector('.output-unit-weight')?.value) || 0;
+    const currentOutputQtyUom = currentProcessDiv.querySelector('.output-qty-uom')?.value || 'pcs';
+    const currentOutputWeightUom = currentProcessDiv.querySelector('.output-weight-uom')?.value || 'kg';
+    
+    // Only cascade if we have meaningful output values
+    if (currentOutputQty > 0 && currentOutputWeight > 0) {
+        // Set next process input values
+        const nextInputQty = nextProcess.querySelector('.input-quantity');
+        const nextInputWeight = nextProcess.querySelector('.input-unit-weight');
+        const nextInputQtyUom = nextProcess.querySelector('.input-qty-uom');
+        const nextInputWeightUom = nextProcess.querySelector('.input-weight-uom');
+        const nextMaterialSource = nextProcess.querySelector('.process-material-source');
+        
+        if (nextInputQty) {
+            nextInputQty.value = currentOutputQty;
+            nextInputQty.style.backgroundColor = '#e3f2fd';
+            nextInputQty.title = `Auto-populated from Process ${currentIndex + 1} output: ${currentOutputQty} ${currentOutputQtyUom}`;
+        }
+        
+        if (nextInputWeight) {
+            nextInputWeight.value = currentOutputWeight.toFixed(3);
+            nextInputWeight.style.backgroundColor = '#e3f2fd';
+            nextInputWeight.title = `Auto-populated from Process ${currentIndex + 1} output: ${currentOutputWeight} ${currentOutputWeightUom}`;
+        }
+        
+        if (nextInputQtyUom) {
+            nextInputQtyUom.value = currentOutputQtyUom;
+        }
+        
+        if (nextInputWeightUom) {
+            nextInputWeightUom.value = currentOutputWeightUom;
+        }
+        
+        // Set material source to "Previous Process Output"
+        if (nextMaterialSource) {
+            nextMaterialSource.value = 'previous_process_output';
+            nextMaterialSource.style.backgroundColor = '#e3f2fd';
+        }
+        
+        // Show cascade info
+        showCascadeInfo(nextProcess, currentIndex + 1, {
+            qty: currentOutputQty,
+            qtyUom: currentOutputQtyUom,
+            weight: currentOutputWeight,
+            weightUom: currentOutputWeightUom
+        });
+        
+        // Trigger calculation for the next process
+        calculateScrapFromWeightDifference(nextInputQty || nextInputWeight);
+    }
+}
+
+// Function to show cascade information
+function showCascadeInfo(processDiv, fromProcessNum, values) {
+    // Find or create cascade info display
+    let cascadeDiv = processDiv.querySelector('.cascade-info');
+    if (!cascadeDiv) {
+        cascadeDiv = document.createElement('div');
+        cascadeDiv.className = 'cascade-info mt-2 alert alert-primary';
+        cascadeDiv.style.fontSize = '0.85em';
+        // Insert at the top of the process
+        const processContent = processDiv.querySelector('.card-body');
+        processContent.insertBefore(cascadeDiv, processContent.firstChild);
+    }
+    
+    cascadeDiv.innerHTML = `
+        <i class="fas fa-arrow-right text-primary"></i> <strong>Auto-Cascaded from Process ${fromProcessNum}:</strong><br>
+        <small>
+            Input Qty: ${values.qty} ${values.qtyUom} | Input Unit Weight: ${values.weight} ${values.weightUom}
+            <span class="text-muted">(Material flow from previous process output)</span>
         </small>
     `;
 }
