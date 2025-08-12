@@ -21,37 +21,89 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <!-- Statistics Cards -->
+                    <!-- Enhanced Statistics Cards -->
                     <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="card bg-primary text-white">
-                                <div class="card-body">
-                                    <h5>{{ bom_calculated_items|length }}</h5>
-                                    <p class="mb-0">BOM Calculated Items</p>
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="card bg-primary text-white h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-calculator fa-2x mb-2"></i>
+                                    <h4>{{ bom_calculated_items|length }}</h4>
+                                    <p class="mb-0 small">BOM Calculated</p>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="card bg-warning text-white">
-                                <div class="card-body">
-                                    <h5>{{ outdated_items|length }}</h5>
-                                    <p class="mb-0">Outdated Costs</p>
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="card bg-secondary text-white h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-edit fa-2x mb-2"></i>
+                                    <h4>{{ manual_items|length }}</h4>
+                                    <p class="mb-0 small">Manual Pricing</p>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="card bg-success text-white">
-                                <div class="card-body">
-                                    <h5>{{ active_rates }}</h5>
-                                    <p class="mb-0">Active Job Work Rates</p>
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="card bg-warning text-white h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                                    <h4>{{ outdated_items|length }}</h4>
+                                    <p class="mb-0 small">Outdated Costs</p>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="card bg-info text-white">
-                                <div class="card-body">
-                                    <h5>{{ recent_updates|length }}</h5>
-                                    <p class="mb-0">Recent Updates</p>
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="card bg-success text-white h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-users fa-2x mb-2"></i>
+                                    <h4>{{ active_rates }}</h4>
+                                    <p class="mb-0 small">Active Vendors</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="card bg-info text-white h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-sync fa-2x mb-2"></i>
+                                    <h4>{{ recent_updates|length }}</h4>
+                                    <p class="mb-0 small">Recent Updates</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="card bg-dark text-white h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-rupee-sign fa-2x mb-2"></i>
+                                    <h4>₹{{ "%.0f"|format(total_inventory_value) }}</h4>
+                                    <p class="mb-0 small">Total Value</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions Bar -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body py-3">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-6">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-bolt text-warning me-2"></i>Quick Actions
+                                            </h6>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="btn-group w-100" role="group">
+                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="convertManualToBOM()">
+                                                    <i class="fas fa-exchange-alt me-1"></i>Convert to BOM
+                                                </button>
+                                                <button type="button" class="btn btn-outline-success btn-sm" onclick="bulkUpdateCosts()">
+                                                    <i class="fas fa-sync me-1"></i>Update All
+                                                </button>
+                                                <button type="button" class="btn btn-outline-info btn-sm" onclick="exportCostReport()">
+                                                    <i class="fas fa-download me-1"></i>Export
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -116,42 +168,94 @@
                     </div>
                     {% endif %}
 
-                    <!-- All BOM Calculated Items -->
+                    <!-- All Items with Cost Comparison -->
                     <div class="row">
                         <div class="col-12">
                             <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0">All BOM Calculated Items</h5>
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-list me-2"></i>All Items - Cost Management
+                                    </h5>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-secondary" onclick="filterByCostSource('all')">All</button>
+                                        <button class="btn btn-outline-secondary" onclick="filterByCostSource('manual')">Manual</button>
+                                        <button class="btn btn-outline-primary" onclick="filterByCostSource('bom_calculated')">BOM</button>
+                                        <button class="btn btn-outline-info" onclick="filterByCostSource('hybrid')">Hybrid</button>
+                                    </div>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
-                                        <table class="table table-hover">
-                                            <thead>
+                                        <table class="table table-hover table-sm" id="costManagementTable">
+                                            <thead class="table-dark">
                                                 <tr>
-                                                    <th>Item</th>
-                                                    <th>BOM Cost</th>
-                                                    <th>Manual Price</th>
-                                                    <th>Effective Cost</th>
-                                                    <th>Last Updated</th>
-                                                    <th>Status</th>
-                                                    <th>Actions</th>
+                                                    <th width="5%">
+                                                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                                    </th>
+                                                    <th width="20%">Item</th>
+                                                    <th width="12%">Cost Source</th>
+                                                    <th width="12%">Manual Price</th>
+                                                    <th width="12%">BOM Cost</th>
+                                                    <th width="12%">Effective Cost</th>
+                                                    <th width="8%">Variance</th>
+                                                    <th width="10%">Status</th>
+                                                    <th width="9%">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {% for item in bom_calculated_items %}
-                                                <tr>
+                                                {% for item in all_items %}
+                                                <tr data-cost-source="{{ item.cost_source }}">
                                                     <td>
-                                                        <strong>{{ item.name }}</strong><br>
-                                                        <small class="text-muted">{{ item.code }}</small>
+                                                        <input type="checkbox" class="item-checkbox" value="{{ item.id }}">
                                                     </td>
-                                                    <td>₹{{ "%.2f"|format(item.bom_calculated_cost or 0) }}</td>
-                                                    <td>₹{{ "%.2f"|format(item.unit_price or 0) }}</td>
-                                                    <td>₹{{ "%.2f"|format(item.effective_cost) }}</td>
                                                     <td>
-                                                        {% if item.last_cost_calculation %}
-                                                            {{ item.last_cost_calculation.strftime('%Y-%m-%d %H:%M') }}
+                                                        <div>
+                                                            <strong>{{ item.name }}</strong>
+                                                            <br><small class="text-muted">{{ item.code }}</small>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge 
+                                                            {% if item.cost_source == 'manual' %}bg-secondary
+                                                            {% elif item.cost_source == 'bom_calculated' %}bg-primary
+                                                            {% elif item.cost_source == 'hybrid' %}bg-info
+                                                            {% else %}bg-warning
+                                                            {% endif %}">
+                                                            {% if item.cost_source == 'manual' %}Manual
+                                                            {% elif item.cost_source == 'bom_calculated' %}BOM Calc
+                                                            {% elif item.cost_source == 'hybrid' %}Hybrid
+                                                            {% else %}{{ item.cost_source|title }}
+                                                            {% endif %}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        {% if item.unit_price %}
+                                                            <span class="text-success fw-bold">₹{{ "%.2f"|format(item.unit_price) }}</span>
                                                         {% else %}
-                                                            <span class="text-muted">Never</span>
+                                                            <span class="text-muted">—</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if item.bom_calculated_cost %}
+                                                            <span class="text-primary fw-bold">₹{{ "%.2f"|format(item.bom_calculated_cost) }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">—</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        <span class="fw-bold text-dark">₹{{ "%.2f"|format(item.effective_cost) }}</span>
+                                                    </td>
+                                                    <td>
+                                                        {% if item.cost_source == 'manual' and item.bom_calculated_cost and item.unit_price %}
+                                                            {% set variance = ((item.bom_calculated_cost - item.unit_price) / item.unit_price * 100) %}
+                                                            <span class="
+                                                                {% if variance > 10 %}text-danger
+                                                                {% elif variance < -10 %}text-success
+                                                                {% else %}text-warning
+                                                                {% endif %}">
+                                                                {{ "%.1f"|format(variance) }}%
+                                                            </span>
+                                                        {% else %}
+                                                            <span class="text-muted">—</span>
                                                         {% endif %}
                                                     </td>
                                                     <td>
@@ -159,27 +263,64 @@
                                                             <span class="badge bg-success">Current</span>
                                                         {% elif item.cost_calculation_status == 'outdated' %}
                                                             <span class="badge bg-warning">Outdated</span>
+                                                        {% elif item.cost_calculation_status == 'needs_bom' %}
+                                                            <span class="badge bg-info">Needs BOM</span>
                                                         {% else %}
-                                                            <span class="badge bg-danger">{{ item.cost_calculation_status }}</span>
+                                                            <span class="badge bg-secondary">{{ item.cost_calculation_status|title }}</span>
                                                         {% endif %}
                                                     </td>
                                                     <td>
                                                         <div class="btn-group btn-group-sm">
-                                                            <button class="btn btn-primary btn-sm" onclick="calculateItemCost({{ item.id }})" title="Recalculate Cost">
-                                                                <i class="fas fa-calculator"></i>
+                                                            {% if item.cost_source == 'bom_calculated' %}
+                                                                <button class="btn btn-primary btn-sm" onclick="calculateItemCost({{ item.id }})" title="Recalculate">
+                                                                    <i class="fas fa-calculator"></i>
+                                                                </button>
+                                                            {% endif %}
+                                                            <button class="btn btn-secondary btn-sm" onclick="switchCostSource({{ item.id }}, '{{ item.cost_source }}')" title="Switch Cost Source">
+                                                                <i class="fas fa-exchange-alt"></i>
                                                             </button>
-                                                            <a href="{{ url_for('cost_calculation.item_cost_detail', item_id=item.id) }}" class="btn btn-info btn-sm" title="View Details">
-                                                                <i class="fas fa-eye"></i>
+                                                            <a href="{{ url_for('inventory.edit_item', id=item.id) }}" class="btn btn-outline-secondary btn-sm" title="Edit">
+                                                                <i class="fas fa-edit"></i>
                                                             </a>
-                                                            <button class="btn btn-secondary btn-sm" onclick="setCostSource({{ item.id }})" title="Change Cost Source">
-                                                                <i class="fas fa-cog"></i>
-                                                            </button>
                                                         </div>
                                                     </td>
                                                 </tr>
                                                 {% endfor %}
                                             </tbody>
                                         </table>
+                                    </div>
+                                    
+                                    <!-- Bulk Actions -->
+                                    <div class="row mt-3" id="bulkActions" style="display: none;">
+                                        <div class="col-12">
+                                            <div class="card bg-light border-primary">
+                                                <div class="card-body py-2">
+                                                    <div class="row align-items-center">
+                                                        <div class="col-md-3">
+                                                            <span class="fw-bold text-primary">
+                                                                <span id="selectedCount">0</span> items selected
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-md-9">
+                                                            <div class="btn-group btn-group-sm">
+                                                                <button class="btn btn-outline-primary" onclick="bulkSwitchToBOM()">
+                                                                    <i class="fas fa-calculator me-1"></i>Switch to BOM
+                                                                </button>
+                                                                <button class="btn btn-outline-secondary" onclick="bulkSwitchToManual()">
+                                                                    <i class="fas fa-edit me-1"></i>Switch to Manual
+                                                                </button>
+                                                                <button class="btn btn-outline-success" onclick="bulkUpdateSelectedCosts()">
+                                                                    <i class="fas fa-sync me-1"></i>Update Costs
+                                                                </button>
+                                                                <button class="btn btn-outline-danger" onclick="clearSelection()">
+                                                                    <i class="fas fa-times me-1"></i>Clear
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -243,7 +384,223 @@
 </div>
 
 <script>
-// Cost calculation functions
+// Enhanced cost calculation functions
+
+// Item selection and bulk operations
+let selectedItems = new Set();
+
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+    
+    if (selectAllCheckbox.checked) {
+        itemCheckboxes.forEach(checkbox => {
+            checkbox.checked = true;
+            selectedItems.add(checkbox.value);
+        });
+    } else {
+        itemCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        selectedItems.clear();
+    }
+    
+    updateBulkActionsVisibility();
+}
+
+function updateSelection() {
+    const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+    selectedItems.clear();
+    
+    itemCheckboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            selectedItems.add(checkbox.value);
+        }
+    });
+    
+    updateBulkActionsVisibility();
+}
+
+function updateBulkActionsVisibility() {
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    if (selectedItems.size > 0) {
+        bulkActions.style.display = 'block';
+        selectedCount.textContent = selectedItems.size;
+    } else {
+        bulkActions.style.display = 'none';
+    }
+}
+
+function clearSelection() {
+    selectedItems.clear();
+    document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    document.getElementById('selectAll').checked = false;
+    updateBulkActionsVisibility();
+}
+
+// Add event listeners to checkboxes
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelection);
+    });
+});
+
+// Filter functions
+function filterByCostSource(costSource) {
+    const table = document.getElementById('costManagementTable');
+    const rows = table.querySelectorAll('tbody tr');
+    
+    // Update button states
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    rows.forEach(row => {
+        const rowCostSource = row.getAttribute('data-cost-source');
+        if (costSource === 'all' || rowCostSource === costSource) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Cost source switching
+function switchCostSource(itemId, currentSource) {
+    let newSource;
+    let confirmMessage;
+    
+    if (currentSource === 'manual') {
+        newSource = 'bom_calculated';
+        confirmMessage = 'Switch to BOM calculation? You\'ll need to create a BOM if one doesn\'t exist.';
+    } else {
+        newSource = 'manual';
+        confirmMessage = 'Switch to manual pricing? This will use the unit price you set.';
+    }
+    
+    if (confirm(confirmMessage)) {
+        fetch(`/cost-calculation/switch-cost-source/${itemId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({
+                cost_source: newSource
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('Cost source updated successfully!', 'success');
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showAlert('Error: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Error switching cost source: ' + error.message, 'danger');
+        });
+    }
+}
+
+// Bulk operations
+function bulkSwitchToBOM() {
+    if (selectedItems.size === 0) {
+        showAlert('Please select items first.', 'warning');
+        return;
+    }
+    
+    if (confirm(`Switch ${selectedItems.size} items to BOM calculation?`)) {
+        bulkUpdateCostSource('bom_calculated');
+    }
+}
+
+function bulkSwitchToManual() {
+    if (selectedItems.size === 0) {
+        showAlert('Please select items first.', 'warning');
+        return;
+    }
+    
+    if (confirm(`Switch ${selectedItems.size} items to manual pricing?`)) {
+        bulkUpdateCostSource('manual');
+    }
+}
+
+function bulkUpdateCostSource(newSource) {
+    const itemIds = Array.from(selectedItems);
+    
+    fetch('/cost-calculation/bulk-switch-cost-source', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            item_ids: itemIds,
+            cost_source: newSource
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(`Successfully updated ${data.updated_count} items!`, 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showAlert('Error: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert('Error updating items: ' + error.message, 'danger');
+    });
+}
+
+function bulkUpdateSelectedCosts() {
+    if (selectedItems.size === 0) {
+        showAlert('Please select items first.', 'warning');
+        return;
+    }
+    
+    const itemIds = Array.from(selectedItems);
+    showAlert('Updating costs for selected items...', 'info');
+    
+    fetch('/cost-calculation/bulk-update-costs', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            item_ids: itemIds
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(`Successfully updated costs for ${data.updated_count} items!`, 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showAlert('Error: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert('Error updating costs: ' + error.message, 'danger');
+    });
+}
+
+// Export functionality
+function exportCostReport() {
+    showAlert('Generating cost report...', 'info');
+    
+    window.location.href = '/cost-calculation/export-report';
+}
+
+// Individual item cost calculation
 function calculateItemCost(itemId) {
     const modal = new bootstrap.Modal(document.getElementById('costCalculationModal'));
     modal.show();
@@ -351,5 +708,39 @@ document.getElementById('costSource').addEventListener('change', function() {
         document.getElementById('manualOverride').required = false;
     }
 });
+
+// Utility functions
+function getCsrfToken() {
+    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+    return csrfMeta ? csrfMeta.getAttribute('content') : '';
+}
+
+function showAlert(message, type) {
+    const alertContainer = document.getElementById('alertContainer') || createAlertContainer();
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    alertContainer.appendChild(alertDiv);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+function createAlertContainer() {
+    const container = document.createElement('div');
+    container.id = 'alertContainer';
+    container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+    document.body.appendChild(container);
+    return container;
+}
 </script>
 {% endblock %}

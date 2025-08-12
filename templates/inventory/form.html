@@ -99,7 +99,39 @@
                                 </div>
                             </div>
                             
-                            <div class="col-md-4 mb-3">
+                        </div>
+                        
+                        <!-- Cost Management Section -->
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <h6 class="text-primary">
+                                    <i class="fas fa-calculator me-2"></i>Cost Management
+                                </h6>
+                                <hr class="mt-2 mb-3">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.cost_source.label(class="form-label") }}
+                                {{ form.cost_source(class="form-select", id="cost_source_field") }}
+                                {% if form.cost_source.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.cost_source.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    <small>
+                                        <strong>Manual:</strong> Set price yourself<br>
+                                        <strong>BOM Calculator:</strong> Automatic calculation from components<br>
+                                        <strong>Hybrid:</strong> BOM calculation with manual override
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3" id="unit_price_field">
                                 {{ form.unit_price.label(class="form-label") }}
                                 <div class="input-group">
                                     <span class="input-group-text">₹</span>
@@ -112,6 +144,36 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
+                                <div class="form-text">Used when cost source is Manual</div>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3" id="cost_override_field" style="display: none;">
+                                {{ form.cost_override.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    {{ form.cost_override(class="form-control") }}
+                                </div>
+                                {% if form.cost_override.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.cost_override.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Override calculated BOM cost</div>
+                            </div>
+                        </div>
+                        
+                        <!-- BOM Creation Helper -->
+                        <div class="row" id="bom_helper" style="display: none;">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>BOM Calculator Selected:</strong> After saving this item, you'll need to create a Bill of Materials (BOM) to enable automatic cost calculation.
+                                    <a href="{{ url_for('production.list_boms') }}" class="btn btn-sm btn-outline-primary ms-2" target="_blank">
+                                        <i class="fas fa-external-link-alt"></i> Create BOM Later
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         
@@ -239,6 +301,33 @@
                                 updateWeightInKg();
                                 weightField.value = weightInKgField.value; // Submit in kg
                             });
+                            
+                            // Cost source management
+                            const costSourceField = document.getElementById('cost_source_field');
+                            const unitPriceField = document.getElementById('unit_price_field');
+                            const costOverrideField = document.getElementById('cost_override_field');
+                            const bomHelper = document.getElementById('bom_helper');
+                            
+                            function updateCostFields() {
+                                const costSource = costSourceField.value;
+                                
+                                if (costSource === 'manual') {
+                                    unitPriceField.style.display = 'block';
+                                    costOverrideField.style.display = 'none';
+                                    bomHelper.style.display = 'none';
+                                } else if (costSource === 'bom_calculated') {
+                                    unitPriceField.style.display = 'none';
+                                    costOverrideField.style.display = 'none';
+                                    bomHelper.style.display = 'block';
+                                } else if (costSource === 'hybrid') {
+                                    unitPriceField.style.display = 'none';
+                                    costOverrideField.style.display = 'block';
+                                    bomHelper.style.display = 'block';
+                                }
+                            }
+                            
+                            costSourceField.addEventListener('change', updateCostFields);
+                            updateCostFields(); // Initialize on page load
                         });
                         </script>
                         

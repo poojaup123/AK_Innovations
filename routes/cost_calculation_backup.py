@@ -128,43 +128,37 @@ def cost_variance_analysis_api(item_id):
 
 
 @cost_calculation_bp.route('/dashboard')
-@login_required  
+@login_required
 def cost_dashboard():
-    """Enhanced cost calculation dashboard"""
+    """Cost calculation dashboard"""
     try:
-        # Get all items
-        all_items = Item.query.all()
+        # Get items with BOM-calculated cost source
+        bom_calculated_items = Item.query.filter(
+            Item.cost_source == 'bom_calculated'
+        ).order_by(Item.name).all()
         
-        # Categorize items by cost source
-        bom_calculated_items = [item for item in all_items if item.cost_source == 'bom_calculated']
-        manual_items = [item for item in all_items if item.cost_source in ['manual', None]]
+        # Get items that need cost calculation
+        outdated_items = [
+            item for item in bom_calculated_items 
+            if item.cost_calculation_needed
+        ]
         
-        # Get items with outdated costs (last calculated > 7 days ago)
-        from datetime import datetime, timedelta
-        outdated_threshold = datetime.utcnow() - timedelta(days=7)
+        # Get recent cost updates
+        recent_updates = Item.query.filter(
+            Item.cost_source == 'bom_calculated',
+            Item.last_cost_calculation.isnot(None)
+        ).order_by(Item.last_cost_calculation.desc()).limit(10).all()
         
-        outdated_items = [item for item in all_items if 
-                         item.cost_source == 'bom_calculated' and 
-                         (not item.last_cost_calculation or item.last_cost_calculation < outdated_threshold)]
-        
-        # Get active job work rates count
-        active_rates = JobWorkRate.query.filter_by(is_active=True).count()
-        
-        # Get recent cost updates (last 7 days)
-        recent_updates = [item for item in all_items if 
-                         item.last_cost_calculation and item.last_cost_calculation >= outdated_threshold]
-        
-        # Calculate total inventory value
-        total_inventory_value = sum(item.effective_cost * (item.current_stock or 0) for item in all_items)
+        # Get vendor rates summary
+        active_rates = JobWorkRate.query.filter(
+            JobWorkRate.is_active == True
+        ).count()
         
         return render_template('cost_calculation/dashboard.html',
-                             all_items=all_items,
                              bom_calculated_items=bom_calculated_items,
-                             manual_items=manual_items,
                              outdated_items=outdated_items,
-                             active_rates=active_rates,
                              recent_updates=recent_updates,
-                             total_inventory_value=total_inventory_value)
+                             active_rates=active_rates)
         
     except Exception as e:
         logger.error(f"Error loading cost dashboard: {str(e)}")

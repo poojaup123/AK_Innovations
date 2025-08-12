@@ -640,7 +640,9 @@ def edit_item(id):
         item.gst_rate = form.gst_rate.data
         item.current_stock = form.current_stock.data
         item.minimum_stock = form.minimum_stock.data
+        item.cost_source = form.cost_source.data
         item.unit_price = form.unit_price.data
+        item.cost_override = form.cost_override.data
         item.unit_weight = form.unit_weight.data
         item.item_type_id = int(form.item_type.data)
         item.item_type = item_type_obj.name.lower() if item_type_obj else 'material'
