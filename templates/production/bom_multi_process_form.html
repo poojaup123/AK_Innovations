@@ -866,8 +866,9 @@ document.addEventListener('DOMContentLoaded', function() {
         populateBOMMaterials(firstProcess, 0);
     }
     
-    // Initialize calculations without cascading
+    // Perform initial cascading for existing processes (excluding scrap)
     setTimeout(function() {
+        performInitialCascading();
         syncOutputQuantities();
         calculateTotalScrapWeight();
     }, 500);
@@ -1025,6 +1026,9 @@ function calculateScrapFromWeightDifference(changedElement) {
             
             // Trigger total scrap weight recalculation
             calculateTotalScrapWeight();
+            
+            // Cascade to next process (excluding scrap values)
+            cascadeToNextProcess(processDiv);
         }
     }
 }
@@ -1197,14 +1201,165 @@ function addSyncEventListeners() {
         }
     });
     
-    // Removed cascading functionality - each process is independent
+    // Add listeners specifically for output fields to trigger cascading (excluding scrap)
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('output-unit-weight') ||
+            e.target.classList.contains('output-quantity')) {
+            const processDiv = e.target.closest('.process-item');
+            if (processDiv) {
+                cascadeToNextProcess(processDiv);
+            }
+        }
+    });
+    
+    // Add listeners for UOM changes to trigger cascading
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('output-qty-uom') ||
+            e.target.classList.contains('output-weight-uom')) {
+            const processDiv = e.target.closest('.process-item');
+            if (processDiv) {
+                cascadeToNextProcess(processDiv);
+            }
+        }
+    });
     
     // Add listeners to material source dropdowns
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('process-material-source')) {
             handleMaterialSourceChange(e.target);
             
-            // Previous Process Output is just a label - no auto-cascading
+            // If "Previous Process Output" is selected, trigger cascading from previous process
+            if (e.target.value === 'previous_process_output') {
+                const currentProcessDiv = e.target.closest('.process-item');
+                const allProcesses = document.querySelectorAll('.process-item');
+                const currentIndex = Array.from(allProcesses).indexOf(currentProcessDiv);
+                
+                if (currentIndex > 0) {
+                    const previousProcess = allProcesses[currentIndex - 1];
+                    cascadeToNextProcess(previousProcess);
+                }
+            } else {
+                // Reset cascade effect if different material source is selected
+                const currentProcessDiv = e.target.closest('.process-item');
+                resetCascadeEffect(currentProcessDiv);
+            }
+        }
+    });
+}
+
+// Cascading functions for sequential material flow (excluding scrap calculations)
+function cascadeToNextProcess(currentProcessDiv) {
+    const allProcesses = document.querySelectorAll('.process-item');
+    const currentIndex = Array.from(allProcesses).indexOf(currentProcessDiv);
+    
+    if (currentIndex >= 0 && currentIndex < allProcesses.length - 1) {
+        const nextProcess = allProcesses[currentIndex + 1];
+        const nextMaterialSource = nextProcess.querySelector('.process-material-source');
+        
+        // Only cascade if next process is set to "Previous Process Output"
+        if (nextMaterialSource && nextMaterialSource.value === 'previous_process_output') {
+            cascadeValues(currentProcessDiv, nextProcess);
+        }
+    }
+}
+
+function manualCascade(toProcessNumber) {
+    const allProcesses = document.querySelectorAll('.process-item');
+    if (toProcessNumber > 1 && toProcessNumber <= allProcesses.length) {
+        const fromProcess = allProcesses[toProcessNumber - 2];
+        const toProcess = allProcesses[toProcessNumber - 1];
+        cascadeValues(fromProcess, toProcess);
+    }
+}
+
+function cascadeValues(fromProcess, toProcess) {
+    // Get output values from the source process (EXCLUDING scrap values)
+    const outputQty = fromProcess.querySelector('.output-quantity').value;
+    const outputQtyUom = fromProcess.querySelector('.output-qty-uom').value;
+    const outputWeight = fromProcess.querySelector('.output-unit-weight').value;
+    const outputWeightUom = fromProcess.querySelector('.output-weight-uom').value;
+    
+    // Set input values in the target process (EXCLUDING scrap values)
+    const inputQty = toProcess.querySelector('.input-quantity');
+    const inputQtyUom = toProcess.querySelector('.input-qty-uom');
+    const inputWeight = toProcess.querySelector('.input-unit-weight');
+    const inputWeightUom = toProcess.querySelector('.input-weight-uom');
+    
+    if (outputQty && inputQty) {
+        inputQty.value = outputQty;
+        inputQty.style.backgroundColor = '#d1ecf1'; // Light blue background
+        inputQty.readOnly = true;
+    }
+    
+    if (outputQtyUom && inputQtyUom) {
+        inputQtyUom.value = outputQtyUom;
+        inputQtyUom.style.backgroundColor = '#d1ecf1';
+        inputQtyUom.disabled = true;
+    }
+    
+    if (outputWeight && inputWeight) {
+        inputWeight.value = outputWeight;
+        inputWeight.style.backgroundColor = '#d1ecf1';
+        inputWeight.readOnly = true;
+    }
+    
+    if (outputWeightUom && inputWeightUom) {
+        inputWeightUom.value = outputWeightUom;
+        inputWeightUom.style.backgroundColor = '#d1ecf1';
+        inputWeightUom.disabled = true;
+    }
+    
+    // Add cascade indicator
+    let cascadeInfo = toProcess.querySelector('.cascade-info');
+    if (!cascadeInfo) {
+        cascadeInfo = document.createElement('div');
+        cascadeInfo.className = 'cascade-info alert alert-info alert-sm mt-2';
+        cascadeInfo.innerHTML = '<i class="fas fa-link text-info"></i> Auto-Cascaded from Previous Process (Scrap calculated independently)';
+        toProcess.querySelector('.card-body').appendChild(cascadeInfo);
+    }
+    
+    // NOTE: We do NOT cascade scrap values - each process calculates its own scrap
+    // Each process maintains independent scrap weight and scrap percentage calculations
+}
+
+function resetCascadeEffect(processDiv) {
+    const inputQty = processDiv.querySelector('.input-quantity');
+    const inputQtyUom = processDiv.querySelector('.input-qty-uom');
+    const inputWeight = processDiv.querySelector('.input-unit-weight');
+    const inputWeightUom = processDiv.querySelector('.input-weight-uom');
+    
+    // Reset styling and enable fields
+    [inputQty, inputWeight].forEach(field => {
+        if (field) {
+            field.style.backgroundColor = '';
+            field.readOnly = false;
+        }
+    });
+    
+    [inputQtyUom, inputWeightUom].forEach(field => {
+        if (field) {
+            field.style.backgroundColor = '';
+            field.disabled = false;
+        }
+    });
+    
+    // Remove cascade indicator
+    const cascadeInfo = processDiv.querySelector('.cascade-info');
+    if (cascadeInfo) {
+        cascadeInfo.remove();
+    }
+}
+
+function performInitialCascading() {
+    const allProcesses = document.querySelectorAll('.process-item');
+    
+    allProcesses.forEach((process, index) => {
+        if (index > 0) { // Skip first process
+            const materialSource = process.querySelector('.process-material-source');
+            if (materialSource && materialSource.value === 'previous_process_output') {
+                const previousProcess = allProcesses[index - 1];
+                cascadeValues(previousProcess, process);
+            }
         }
     });
 }
