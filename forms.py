@@ -22,19 +22,7 @@ class ItemForm(FlaskForm):
     gst_rate = FloatField('GST Rate (%)', validators=[NumberRange(min=0, max=100)], default=18.0)
     current_stock = FloatField('Current Stock', validators=[NumberRange(min=0)], default=0.0)
     minimum_stock = FloatField('Minimum Stock', validators=[NumberRange(min=0)], default=0.0)
-    
-    # Cost Management Fields
-    cost_source = SelectField('Cost Source', 
-                            choices=[
-                                ('manual', 'Manual Pricing (Simple)'),
-                                ('bom_calculated', 'BOM Calculator (Advanced)'),
-                                ('hybrid', 'Hybrid (BOM + Manual Override)')
-                            ],
-                            default='manual',
-                            validators=[DataRequired()])
     unit_price = FloatField('Unit Price', validators=[NumberRange(min=0)], default=0.0)
-    cost_override = FloatField('Cost Override', validators=[NumberRange(min=0)], default=0.0)
-    
     unit_weight = FloatField('Unit Weight (kg)', validators=[NumberRange(min=0)], default=0.0)
     item_type = SelectField('Item Type', 
                           choices=[],  # Will be populated dynamically
