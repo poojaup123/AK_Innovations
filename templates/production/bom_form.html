@@ -152,9 +152,27 @@
                             </div>
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    {{ form.estimated_scrap_percent.label(class="form-label") }}
-                                    {{ form.estimated_scrap_percent(class="form-control", step="0.1", id="scrap_percent", onchange="convertScrapValues()") }}
-                                    <small class="text-muted">Auto-calculated from weight</small>
+                                    {{ form.overall_scrap_percent.label(class="form-label") }}
+                                    {% if bom and bom.processes %}
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" 
+                                               value="{{ '%.2f'|format(bom.calculated_total_scrap_percent) }}" 
+                                               step="0.01" readonly>
+                                        <span class="input-group-text">%</span>
+                                        <span class="input-group-text bg-success text-white" 
+                                              title="Auto-calculated from manufacturing processes">
+                                            <i class="fas fa-calculator"></i>
+                                        </span>
+                                    </div>
+                                    <small class="text-success">
+                                        <i class="fas fa-info-circle"></i> Auto-calculated from process scrap tracking
+                                    </small>
+                                    <!-- Hidden field to store the calculated value for form submission -->
+                                    <input type="hidden" name="overall_scrap_percent" value="{{ bom.calculated_total_scrap_percent }}">
+                                    {% else %}
+                                    {{ form.overall_scrap_percent(class="form-control", step="0.1", id="scrap_percent", onchange="convertScrapValues()") }}
+                                    <small class="text-muted">Auto-calculated from processes when added</small>
+                                    {% endif %}
                                 </div>
                             </div>
                             <div class="col-md-4">

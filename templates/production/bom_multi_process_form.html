@@ -121,6 +121,8 @@
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
+                                                </div>
+                                                <div class="row">
                                                     <div class="col-md-4">
                                                         <div class="form-group mb-3">
                                                             <label class="form-label">Material Used in Process</label>
@@ -152,20 +154,20 @@
                                                             <small class="text-muted">Output quantity</small>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-4">
+                                                    <div class="col-md-2">
                                                         <div class="form-group mb-3">
-                                                            <label class="form-label">Scrap Weight per Unit (kg)</label>
+                                                            <label class="form-label">Scrap Weight (kg)</label>
                                                             <input type="number" step="0.001" class="form-control scrap-weight-input" 
                                                                    name="processes[0][scrap_weight_per_unit]" placeholder="0.000">
-                                                            <small class="text-muted">Expected scrap weight in kg per unit</small>
+                                                            <small class="text-muted">Scrap per unit</small>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-4">
+                                                    <div class="col-md-2">
                                                         <div class="form-group mb-3">
-                                                            <label class="form-label">Scrap Percentage (%)</label>
+                                                            <label class="form-label">Scrap %</label>
                                                             <input type="number" step="0.1" class="form-control scrap-percent-input" 
                                                                    name="processes[0][estimated_scrap_percent]" placeholder="0.0">
-                                                            <small class="text-muted">Expected scrap percentage</small>
+                                                            <small class="text-muted">Scrap percentage</small>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -422,6 +424,8 @@ function createProcessItem(processNumber) {
             </div>
             <div class="card-body">
                 <div class="row">
+                </div>
+                <div class="row">
                     <div class="col-md-4">
                         <div class="form-group mb-3">
                             <label class="form-label">Material Used in Process</label>
@@ -454,20 +458,20 @@ function createProcessItem(processNumber) {
                             <small class="text-muted">Output quantity</small>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-2">
                         <div class="form-group mb-3">
-                            <label class="form-label">Scrap Weight per Unit (kg)</label>
+                            <label class="form-label">Scrap Weight (kg)</label>
                             <input type="number" step="0.001" class="form-control scrap-weight-input" 
                                    name="processes[${index}][scrap_weight_per_unit]" placeholder="0.000">
-                            <small class="text-muted">Expected scrap weight in kg per unit</small>
+                            <small class="text-muted">Scrap per unit</small>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-2">
                         <div class="form-group mb-3">
-                            <label class="form-label">Scrap Percentage (%)</label>
+                            <label class="form-label">Scrap %</label>
                             <input type="number" step="0.1" class="form-control scrap-percent-input" 
                                    name="processes[${index}][estimated_scrap_percent]" placeholder="0.0">
-                            <small class="text-muted">Expected scrap percentage</small>
+                            <small class="text-muted">Scrap percentage</small>
                         </div>
                     </div>
                 </div>
@@ -710,12 +714,74 @@ function populateBOMMaterials(processDiv, index) {
 // Initialize unit display updates
 document.addEventListener('DOMContentLoaded', function() {
     updateUnitDisplays();
+    addSyncEventListeners();
     // Populate materials for the first process
     const firstProcess = document.querySelector('[data-process="1"]');
     if (firstProcess) {
         populateBOMMaterials(firstProcess, 0);
     }
 });
+
+// Function to sync last process output with Basic Information Output Quantity
+function syncOutputQuantities() {
+    const processItems = document.querySelectorAll('.process-item');
+    if (processItems.length === 0) return;
+    
+    // Get the last process output quantity
+    const lastProcess = processItems[processItems.length - 1];
+    const lastOutputQty = lastProcess.querySelector('.output-quantity');
+    const basicOutputQty = document.querySelector('#output_quantity');
+    
+    if (lastOutputQty && basicOutputQty && lastOutputQty.value) {
+        basicOutputQty.value = lastOutputQty.value;
+        basicOutputQty.dispatchEvent(new Event('change'));
+    }
+}
+
+// Function to calculate total scrap weight from all processes
+function calculateTotalScrapWeight() {
+    const scrapWeightInputs = document.querySelectorAll('.scrap-weight-input');
+    let totalScrapWeight = 0;
+    
+    scrapWeightInputs.forEach(input => {
+        const value = parseFloat(input.value) || 0;
+        totalScrapWeight += value;
+    });
+    
+    // Update Basic Information Scrap Weight
+    const basicScrapWeight = document.querySelector('#scrap_weight');
+    if (basicScrapWeight) {
+        basicScrapWeight.value = totalScrapWeight.toFixed(3);
+        basicScrapWeight.dispatchEvent(new Event('change'));
+    }
+    
+    // Calculate and update overall scrap percentage
+    const unitWeight = parseFloat(document.querySelector('#unit_weight')?.value) || 1;
+    const overallScrapPercent = unitWeight > 0 ? (totalScrapWeight / unitWeight) * 100 : 0;
+    
+    const basicScrapPercent = document.querySelector('#overall_scrap_percent');
+    if (basicScrapPercent) {
+        basicScrapPercent.value = overallScrapPercent.toFixed(2);
+        basicScrapPercent.dispatchEvent(new Event('change'));
+    }
+}
+
+// Add event listeners for real-time sync
+function addSyncEventListeners() {
+    // Add listeners to output quantity fields
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('output-quantity')) {
+            syncOutputQuantities();
+        }
+    });
+    
+    // Add listeners to scrap weight fields
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('scrap-weight-input')) {
+            calculateTotalScrapWeight();
+        }
+    });
+}
 
 // Re-initialize when new processes are added
 document.getElementById('addProcessBtn').addEventListener('click', function() {
