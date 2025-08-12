@@ -826,17 +826,25 @@ function handleMaterialSourceChange(selectElement) {
             // Calculate expected scrap weight based on material weight and quantity
             const inputQty = parseFloat(inputQtyField?.value) || 1;
             const materialWeight = selectedBomItem.material_weight;
-            const expectedScrapWeight = materialWeight * inputQty * 0.05; // Assume 5% scrap rate initially
             
-            // Auto-populate scrap weight field
+            // Check if user wants automatic scrap calculation
+            const defaultScrapRate = 0.03; // Default 3% scrap rate (more realistic)
+            const expectedScrapWeight = materialWeight * inputQty * defaultScrapRate;
+            
+            // Ask user if they want to auto-populate scrap weight
             const scrapWeightField = processDiv.querySelector('.scrap-weight-input');
-            if (scrapWeightField && !scrapWeightField.value) {
-                scrapWeightField.value = expectedScrapWeight.toFixed(3);
-                scrapWeightField.dispatchEvent(new Event('input')); // Trigger sync calculation
+            if (scrapWeightField && !scrapWeightField.value && materialWeight > 0) {
+                // Only auto-populate if user confirms or if it's a small amount
+                const autoPopulate = confirm(`Auto-calculate scrap weight for ${selectedBomItem.material_name}?\n\nCalculation: ${materialWeight} kg/unit × ${inputQty} qty × 3% = ${expectedScrapWeight.toFixed(3)} kg\n\nClick OK to auto-fill, Cancel to enter manually.`);
                 
-                // Add visual indicator that this was auto-calculated
-                scrapWeightField.style.backgroundColor = '#e8f5e8';
-                scrapWeightField.title = `Auto-calculated from ${selectedBomItem.material_name} (${materialWeight} kg/unit × ${inputQty} qty × 5% scrap rate)`;
+                if (autoPopulate) {
+                    scrapWeightField.value = expectedScrapWeight.toFixed(3);
+                    scrapWeightField.dispatchEvent(new Event('input')); // Trigger sync calculation
+                    
+                    // Add visual indicator that this was auto-calculated
+                    scrapWeightField.style.backgroundColor = '#e8f5e8';
+                    scrapWeightField.title = `Auto-calculated: ${materialWeight} kg/unit × ${inputQty} qty × 3% scrap rate = ${expectedScrapWeight.toFixed(3)} kg`;
+                }
             }
             
             // Show material info notification
@@ -844,9 +852,9 @@ function handleMaterialSourceChange(selectElement) {
             if (materialInfoDiv) {
                 const infoElement = materialInfoDiv.querySelector('.text-info');
                 if (infoElement) {
-                    infoElement.innerHTML = `<i class="fas fa-check-circle text-success"></i> <strong>Material Info:</strong> 
-                        ${selectedBomItem.material_name} - ${materialWeight} kg/unit, Qty: ${inputQty}, 
-                        Expected Scrap: ${expectedScrapWeight.toFixed(3)} kg (5% rate)`;
+                    infoElement.innerHTML = `<i class="fas fa-info-circle text-primary"></i> <strong>Material Info:</strong> 
+                        ${selectedBomItem.material_name} - ${materialWeight} kg/unit, Qty: ${inputQty}
+                        <br><small class="text-muted">Suggested scrap: ${expectedScrapWeight.toFixed(3)} kg (3% rate) - Enter your own values if different</small>`;
                 }
             }
         }
