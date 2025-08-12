@@ -925,6 +925,21 @@ function calculateTotalScrapWeight() {
     }
 }
 
+// Function to convert weight to kg based on UOM
+function convertWeightToKg(weight, uom) {
+    if (!weight || !uom) return 0;
+    
+    const conversions = {
+        'kg': 1,
+        'g': 0.001,
+        'lbs': 0.453592,
+        'oz': 0.0283495,
+        'ton': 1000
+    };
+    
+    return weight * (conversions[uom] || 1);
+}
+
 // Function to calculate scrap weight and percentage from input/output difference
 function calculateScrapFromWeightDifference(changedElement) {
     const processDiv = changedElement.closest('.process-item');
@@ -935,14 +950,22 @@ function calculateScrapFromWeightDifference(changedElement) {
     const outputQtyField = processDiv.querySelector('.output-quantity');
     const inputUnitWeightField = processDiv.querySelector('.input-unit-weight');
     const outputUnitWeightField = processDiv.querySelector('.output-unit-weight');
+    const inputWeightUomField = processDiv.querySelector('.input-weight-uom');
+    const outputWeightUomField = processDiv.querySelector('.output-weight-uom');
     const scrapWeightField = processDiv.querySelector('.scrap-weight-input');
     const scrapPercentField = processDiv.querySelector('.scrap-percent-input');
     
     // Get values
     const inputQty = parseFloat(inputQtyField?.value) || 0;
     const outputQty = parseFloat(outputQtyField?.value) || 0;
-    const inputUnitWeight = parseFloat(inputUnitWeightField?.value) || 0;
-    const outputUnitWeight = parseFloat(outputUnitWeightField?.value) || 0;
+    const inputUnitWeightRaw = parseFloat(inputUnitWeightField?.value) || 0;
+    const outputUnitWeightRaw = parseFloat(outputUnitWeightField?.value) || 0;
+    const inputWeightUom = inputWeightUomField?.value || 'kg';
+    const outputWeightUom = outputWeightUomField?.value || 'kg';
+    
+    // Convert weights to kg for calculation
+    const inputUnitWeight = convertWeightToKg(inputUnitWeightRaw, inputWeightUom);
+    const outputUnitWeight = convertWeightToKg(outputUnitWeightRaw, outputWeightUom);
     
     // Only calculate if we have meaningful values
     if (inputQty > 0 && inputUnitWeight > 0) {
@@ -980,9 +1003,13 @@ function calculateScrapFromWeightDifference(changedElement) {
             showScrapCalculationInfo(processDiv, {
                 inputQty,
                 inputUnitWeight,
+                inputUnitWeightRaw,
+                inputWeightUom,
                 totalInputWeight,
                 outputQty,
                 outputUnitWeight,
+                outputUnitWeightRaw,
+                outputWeightUom,
                 totalOutputWeight,
                 scrapWeight,
                 scrapWeightPerUnit,
@@ -1009,8 +1036,8 @@ function showScrapCalculationInfo(processDiv, calc) {
     infoDiv.innerHTML = `
         <i class="fas fa-calculator text-primary"></i> <strong>Auto-Calculated Scrap:</strong><br>
         <small>
-            <strong>Input:</strong> ${calc.inputQty} units × ${calc.inputUnitWeight} kg = ${calc.totalInputWeight.toFixed(3)} kg<br>
-            <strong>Output:</strong> ${calc.outputQty} units × ${calc.outputUnitWeight} kg = ${calc.totalOutputWeight.toFixed(3)} kg<br>
+            <strong>Input:</strong> ${calc.inputQty} units × ${calc.inputUnitWeightRaw} ${calc.inputWeightUom} (${calc.inputUnitWeight.toFixed(3)} kg) = ${calc.totalInputWeight.toFixed(3)} kg<br>
+            <strong>Output:</strong> ${calc.outputQty} units × ${calc.outputUnitWeightRaw} ${calc.outputWeightUom} (${calc.outputUnitWeight.toFixed(3)} kg) = ${calc.totalOutputWeight.toFixed(3)} kg<br>
             <strong>Scrap:</strong> ${calc.scrapWeight.toFixed(3)} kg total (${calc.scrapWeightPerUnit.toFixed(3)} kg/unit, ${calc.scrapPercentage.toFixed(2)}%)
         </small>
     `;
