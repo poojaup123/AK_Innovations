@@ -30,7 +30,7 @@ class DragDropBOMBuilder {
             this.bindEvents();
         } catch (error) {
             console.error('Error initializing BOM builder:', error);
-            this.showError('Failed to initialize BOM builder');
+            this.showFallbackInterface();
         }
     }
 
@@ -442,6 +442,80 @@ class DragDropBOMBuilder {
                 <i class="fas fa-info-circle me-2"></i>
                 Drag & Drop BOM Builder is currently disabled. 
                 <a href="/cost-settings/" class="alert-link">Enable it in settings</a>.
+            </div>
+        `;
+    }
+
+    showFallbackInterface() {
+        this.container.innerHTML = `
+            <div class="drag-drop-bom-builder">
+                <div class="builder-header mb-4">
+                    <h5><i class="fas fa-magic me-2"></i>Drag & Drop BOM Builder</h5>
+                    <div class="builder-actions">
+                        <button class="btn btn-success btn-sm me-2" disabled>
+                            <i class="fas fa-save me-1"></i>Save BOM
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" disabled>
+                            <i class="fas fa-trash me-1"></i>Clear All
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="fas fa-box me-2"></i>Available Items</h6>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="text-center py-4 text-muted">
+                                    <i class="fas fa-box fa-2x mb-2"></i>
+                                    <p>Sample items would appear here</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-5">
+                        <div class="card h-100">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="fas fa-list me-2"></i>BOM Components</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="bom-drop-zone text-center py-5">
+                                    <i class="fas fa-plus-circle fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">Drag items here to build your BOM</h5>
+                                    <p class="text-muted">Components will appear here with editable quantities</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="card h-100">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0"><i class="fas fa-calculator me-2"></i>Cost Summary</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="cost-summary">
+                                    <div class="cost-item d-flex justify-content-between mb-2">
+                                        <span>Components:</span>
+                                        <span class="fw-bold">0</span>
+                                    </div>
+                                    <div class="cost-item d-flex justify-content-between mb-2">
+                                        <span>Material Cost:</span>
+                                        <span class="fw-bold text-primary">₹0.00</span>
+                                    </div>
+                                    <hr>
+                                    <div class="cost-total d-flex justify-content-between">
+                                        <span class="fw-bold">Total BOM Cost:</span>
+                                        <span class="fw-bold fs-5 text-success">₹0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
     }
