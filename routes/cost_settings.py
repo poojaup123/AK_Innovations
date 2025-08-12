@@ -24,7 +24,6 @@ def settings_dashboard():
         logger.error(f"Error loading cost settings: {str(e)}")
         # Create default settings if they don't exist
         try:
-            from models.cost_settings import CostCalculationSettings
             settings = CostCalculationSettings()
             db.session.add(settings)
             db.session.commit()
