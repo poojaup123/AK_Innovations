@@ -1068,8 +1068,12 @@ function cascadeToNextProcess(currentProcessDiv) {
     const currentOutputQtyUom = currentProcessDiv.querySelector('.output-qty-uom')?.value || 'pcs';
     const currentOutputWeightUom = currentProcessDiv.querySelector('.output-weight-uom')?.value || 'kg';
     
-    // Only cascade if we have meaningful output values
-    if (currentOutputQty > 0 && currentOutputWeight > 0) {
+    // Check if next process has "Previous Process Output" selected
+    const nextMaterialSource = nextProcess.querySelector('.process-material-source');
+    const shouldCascade = !nextMaterialSource || nextMaterialSource.value === 'previous_process_output';
+    
+    // Only cascade if we have meaningful output values and next process is set to receive them
+    if (shouldCascade && (currentOutputQty > 0 || currentOutputWeight > 0)) {
         // Set next process input values
         const nextInputQty = nextProcess.querySelector('.input-quantity');
         const nextInputWeight = nextProcess.querySelector('.input-unit-weight');
@@ -1077,23 +1081,25 @@ function cascadeToNextProcess(currentProcessDiv) {
         const nextInputWeightUom = nextProcess.querySelector('.input-weight-uom');
         const nextMaterialSource = nextProcess.querySelector('.process-material-source');
         
-        if (nextInputQty) {
+        // Set values if they exist
+        if (nextInputQty && currentOutputQty > 0) {
             nextInputQty.value = currentOutputQty;
             nextInputQty.style.backgroundColor = '#e3f2fd';
             nextInputQty.title = `Auto-populated from Process ${currentIndex + 1} output: ${currentOutputQty} ${currentOutputQtyUom}`;
         }
         
-        if (nextInputWeight) {
+        if (nextInputWeight && currentOutputWeight > 0) {
             nextInputWeight.value = currentOutputWeight.toFixed(3);
             nextInputWeight.style.backgroundColor = '#e3f2fd';
             nextInputWeight.title = `Auto-populated from Process ${currentIndex + 1} output: ${currentOutputWeight} ${currentOutputWeightUom}`;
         }
         
-        if (nextInputQtyUom) {
+        // Set UOMs
+        if (nextInputQtyUom && currentOutputQty > 0) {
             nextInputQtyUom.value = currentOutputQtyUom;
         }
         
-        if (nextInputWeightUom) {
+        if (nextInputWeightUom && currentOutputWeight > 0) {
             nextInputWeightUom.value = currentOutputWeightUom;
         }
         
@@ -1103,7 +1109,7 @@ function cascadeToNextProcess(currentProcessDiv) {
             nextMaterialSource.style.backgroundColor = '#e3f2fd';
         }
         
-        // Show cascade info
+        // Show cascade info (even if partial data)
         showCascadeInfo(nextProcess, currentIndex + 1, {
             qty: currentOutputQty,
             qtyUom: currentOutputQtyUom,
@@ -1111,8 +1117,10 @@ function cascadeToNextProcess(currentProcessDiv) {
             weightUom: currentOutputWeightUom
         });
         
-        // Trigger calculation for the next process
-        calculateScrapFromWeightDifference(nextInputQty || nextInputWeight);
+        // Trigger calculation for the next process if we have input values
+        if (nextInputQty || nextInputWeight) {
+            calculateScrapFromWeightDifference(nextInputQty || nextInputWeight);
+        }
     }
 }
 
@@ -1136,6 +1144,17 @@ function showCascadeInfo(processDiv, fromProcessNum, values) {
             <span class="text-muted">(Material flow from previous process output)</span>
         </small>
     `;
+}
+
+// Manual cascade function for testing
+function manualCascade(processIndex) {
+    const allProcesses = document.querySelectorAll('.process-item');
+    const currentProcess = allProcesses[processIndex - 1]; // Previous process
+    
+    if (currentProcess) {
+        console.log('Manual cascade triggered for process', processIndex);
+        cascadeToNextProcess(currentProcess);
+    }
 }
 
 // Function to perform initial cascading for all processes
@@ -1207,6 +1226,18 @@ function addSyncEventListeners() {
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('process-material-source')) {
             handleMaterialSourceChange(e.target);
+            
+            // If "Previous Process Output" is selected, trigger cascading from previous process
+            if (e.target.value === 'previous_process_output') {
+                const currentProcessDiv = e.target.closest('.process-item');
+                const allProcesses = document.querySelectorAll('.process-item');
+                const currentIndex = Array.from(allProcesses).indexOf(currentProcessDiv);
+                
+                if (currentIndex > 0) {
+                    const previousProcess = allProcesses[currentIndex - 1];
+                    cascadeToNextProcess(previousProcess);
+                }
+            }
         }
     });
 }
