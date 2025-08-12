@@ -100,8 +100,25 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.estimated_scrap_percent.label(class="form-label") }}
-                                    {{ form.estimated_scrap_percent(class="form-control", step="0.1") }}
-                                    <small class="text-muted">Overall scrap percentage expected</small>
+                                    {% if bom and bom.processes %}
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" 
+                                               value="{{ '%.2f'|format(bom.calculated_total_scrap_percent) }}" 
+                                               step="0.01" readonly>
+                                        <span class="input-group-text bg-success text-white" 
+                                              title="Auto-calculated from manufacturing processes">
+                                            <i class="fas fa-calculator"></i>
+                                        </span>
+                                    </div>
+                                    <small class="text-success">
+                                        <i class="fas fa-info-circle"></i> Calculated from {{ bom.processes|length }} manufacturing processes
+                                    </small>
+                                    <!-- Hidden field to store the calculated value for form submission -->
+                                    <input type="hidden" name="estimated_scrap_percent" value="{{ bom.calculated_total_scrap_percent }}">
+                                    {% else %}
+                                    {{ form.estimated_scrap_percent(class="form-control", step="0.1", id="scrap_percent", onchange="convertScrapValues()") }}
+                                    <small class="text-muted">Add manufacturing processes to auto-calculate this value</small>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -111,8 +128,26 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.scrap_weight.label(class="form-label") }}
+                                    {% if bom and bom.processes %}
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" 
+                                               value="{{ '%.3f'|format(bom.calculated_total_scrap_weight) }}" 
+                                               step="0.001" readonly>
+                                        <span class="input-group-text">kg</span>
+                                        <span class="input-group-text bg-success text-white" 
+                                              title="Auto-calculated from manufacturing processes">
+                                            <i class="fas fa-calculator"></i>
+                                        </span>
+                                    </div>
+                                    <small class="text-success">
+                                        <i class="fas fa-info-circle"></i> Calculated from process scrap tracking
+                                    </small>
+                                    <!-- Hidden field to store the calculated value for form submission -->
+                                    <input type="hidden" name="scrap_weight" value="{{ bom.calculated_total_scrap_weight }}">
+                                    {% else %}
                                     {{ form.scrap_weight(class="form-control", step="0.001", id="scrap_weight", onchange="convertScrapValues()") }}
                                     <small class="text-muted">Expected scrap weight in kg</small>
+                                    {% endif %}
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -152,12 +187,14 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    {{ form.unit_weight.label(class="form-label") }}
+                                    <label class="form-label">Final Product Unit Weight <span class="text-danger">*</span></label>
                                     <div class="input-group">
-                                        {{ form.unit_weight(class="form-control", step="0.001", id="unit_weight", onchange="updateUnitWeightDisplay()") }}
+                                        {{ form.unit_weight(class="form-control", step="0.001", id="unit_weight", onchange="updateUnitWeightDisplay()", placeholder="Weight of final product") }}
                                         {{ form.unit_weight_uom(class="form-select", style="max-width: 100px;") }}
                                     </div>
-                                    <small class="text-muted">Weight per unit for converting per kg costs to per unit costs</small>
+                                    <small class="text-info">
+                                        <i class="fas fa-info-circle"></i> <strong>Final product weight</strong> - used for scrap % calculations and per kg cost conversions
+                                    </small>
                                 </div>
                             </div>
                             <div class="col-md-6">

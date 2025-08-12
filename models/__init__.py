@@ -2758,6 +2758,35 @@ class BOM(db.Model):
                                  breakdown['overhead_costs'])
         
         return breakdown
+    
+    @property
+    def calculated_total_scrap_weight(self):
+        """Calculate total scrap weight from all manufacturing processes"""
+        if not self.processes:
+            return self.scrap_weight or 0.0
+        
+        total_scrap = 0.0
+        for process in self.processes:
+            if process.scrap_tracking_enabled and process.calculated_scrap_weight:
+                total_scrap += process.calculated_scrap_weight
+        
+        # Add manual scrap weight if specified
+        if self.scrap_weight:
+            total_scrap += self.scrap_weight
+            
+        return total_scrap
+    
+    @property
+    def calculated_total_scrap_percent(self):
+        """Calculate total scrap percentage based on final product weight"""
+        if not self.unit_weight or self.unit_weight == 0:
+            return self.estimated_scrap_percent or 0.0
+        
+        total_scrap_weight = self.calculated_total_scrap_weight
+        if total_scrap_weight > 0:
+            return (total_scrap_weight / self.unit_weight) * 100
+        
+        return self.estimated_scrap_percent or 0.0
 
 # New model for BOM Process routing
 class BOMProcess(db.Model):
@@ -2780,6 +2809,9 @@ class BOMProcess(db.Model):
     cost_per_unit = db.Column(db.Float, default=0.0)  # Process cost per unit
     cost_unit = db.Column(db.String(20), default='per_unit')  # Cost unit (per_unit, per_kg, per_meter, etc.)
     estimated_scrap_percent = db.Column(db.Float, default=0.0)  # Expected scrap percentage for this process
+    scrap_weight_per_unit = db.Column(db.Float, default=0.0)  # Expected scrap weight per unit in kg
+    scrap_tracking_enabled = db.Column(db.Boolean, default=True)  # Enable scrap tracking for this process
+    input_material_source = db.Column(db.String(50), default='bom_components')  # Source: bom_components, previous_process, raw_material
     quality_check_required = db.Column(db.Boolean, default=False)  # Quality check after this step
     parallel_processes = db.Column(db.Text)  # JSON list of processes that can run in parallel
     predecessor_processes = db.Column(db.Text)  # JSON list of required predecessor processes
@@ -2872,6 +2904,39 @@ class BOMProcess(db.Model):
             'has_conversion': abs(original_cost - converted_cost) > 0.001 and original_cost > 0,
             'conversion_factor': (converted_cost / original_cost) if original_cost > 0 else 1
         }
+    
+    @property
+    def suggested_input_materials(self):
+        """Get suggested input materials based on BOM components"""
+        if not self.bom or not self.bom.items:
+            return []
+        
+        materials = []
+        for bom_item in self.bom.items:
+            if bom_item.material:
+                materials.append({
+                    'id': bom_item.material.id,
+                    'name': bom_item.material.name,
+                    'unit_weight': bom_item.unit_weight or bom_item.material.unit_weight or 0,
+                    'qty_required': bom_item.qty_required,
+                    'uom': bom_item.uom.symbol if bom_item.uom else bom_item.unit
+                })
+        
+        return materials
+    
+    @property 
+    def calculated_scrap_weight(self):
+        """Calculate scrap weight from percentage and input material weight"""
+        if self.scrap_weight_per_unit > 0:
+            return self.scrap_weight_per_unit
+        
+        # Calculate from percentage if material weight is available
+        if self.estimated_scrap_percent > 0 and self.input_product:
+            input_weight = getattr(self.input_product, 'unit_weight', 0) or 0
+            if input_weight > 0:
+                return (input_weight * self.estimated_scrap_percent) / 100
+        
+        return 0.0
 
 class BOMItem(db.Model):
     __tablename__ = 'bom_items'
