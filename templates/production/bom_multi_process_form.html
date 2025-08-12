@@ -781,6 +781,76 @@ function addSyncEventListeners() {
             calculateTotalScrapWeight();
         }
     });
+    
+    // Add listeners to material source dropdowns
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('process-material-source')) {
+            handleMaterialSourceChange(e.target);
+        }
+    });
+}
+
+// Function to handle material source change and auto-populate material weight
+function handleMaterialSourceChange(selectElement) {
+    const selectedValue = selectElement.value;
+    const processDiv = selectElement.closest('.process-item');
+    
+    // Check if a BOM component is selected (starts with "bom_component_")
+    if (selectedValue.startsWith('bom_component_')) {
+        const bomItemId = selectedValue.replace('bom_component_', '');
+        
+        // Get BOM materials data from server-side
+        const bomMaterials = [
+            {% for item in bom.items %}
+                {
+                    id: {{ item.id }},
+                    material_name: "{{ item.material.name if item.material else 'Unknown' }}",
+                    material_weight: {{ item.material.unit_weight if item.material and item.material.unit_weight else 0 }},
+                    qty_required: {{ item.qty_required or 0 }},
+                    unit: "{{ item.uom.symbol if item.uom else item.unit or 'pcs' }}",
+                    material_unit_price: {{ item.material.unit_price if item.material and item.material.unit_price else 0 }}
+                }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        // Find the selected BOM item
+        const selectedBomItem = bomMaterials.find(item => item.id == bomItemId);
+        
+        if (selectedBomItem && selectedBomItem.material_weight > 0) {
+            // Auto-populate input quantity with BOM requirement
+            const inputQtyField = processDiv.querySelector('.input-quantity');
+            if (inputQtyField && !inputQtyField.value) {
+                inputQtyField.value = selectedBomItem.qty_required;
+            }
+            
+            // Calculate expected scrap weight based on material weight and quantity
+            const inputQty = parseFloat(inputQtyField?.value) || 1;
+            const materialWeight = selectedBomItem.material_weight;
+            const expectedScrapWeight = materialWeight * inputQty * 0.05; // Assume 5% scrap rate initially
+            
+            // Auto-populate scrap weight field
+            const scrapWeightField = processDiv.querySelector('.scrap-weight-input');
+            if (scrapWeightField && !scrapWeightField.value) {
+                scrapWeightField.value = expectedScrapWeight.toFixed(3);
+                scrapWeightField.dispatchEvent(new Event('input')); // Trigger sync calculation
+                
+                // Add visual indicator that this was auto-calculated
+                scrapWeightField.style.backgroundColor = '#e8f5e8';
+                scrapWeightField.title = `Auto-calculated from ${selectedBomItem.material_name} (${materialWeight} kg/unit × ${inputQty} qty × 5% scrap rate)`;
+            }
+            
+            // Show material info notification
+            const materialInfoDiv = processDiv.querySelector('.mt-2');
+            if (materialInfoDiv) {
+                const infoElement = materialInfoDiv.querySelector('.text-info');
+                if (infoElement) {
+                    infoElement.innerHTML = `<i class="fas fa-check-circle text-success"></i> <strong>Material Info:</strong> 
+                        ${selectedBomItem.material_name} - ${materialWeight} kg/unit, Qty: ${inputQty}, 
+                        Expected Scrap: ${expectedScrapWeight.toFixed(3)} kg (5% rate)`;
+                }
+            }
+        }
+    }
 }
 
 // Re-initialize when new processes are added
