@@ -148,10 +148,19 @@
                                                     </div>
                                                     <div class="col-md-1-5">
                                                         <div class="form-group mb-3">
-                                                            <label class="form-label">Input Unit Weight <span class="text-muted">(kg)</span></label>
-                                                            <input type="number" step="0.001" class="form-control input-unit-weight" 
-                                                                   name="processes[0][input_unit_weight]" placeholder="0.000" readonly>
-                                                            <small class="text-muted">kg per input unit</small>
+                                                            <label class="form-label">Input Unit Weight</label>
+                                                            <div class="input-group">
+                                                                <input type="number" step="0.001" class="form-control input-unit-weight" 
+                                                                       name="processes[0][input_unit_weight]" placeholder="0.000" readonly>
+                                                                <select class="form-select input-weight-uom" name="processes[0][input_weight_uom]" style="max-width: 80px;">
+                                                                    <option value="kg" selected>kg</option>
+                                                                    <option value="g">g</option>
+                                                                    <option value="lbs">lbs</option>
+                                                                    <option value="oz">oz</option>
+                                                                    <option value="ton">ton</option>
+                                                                </select>
+                                                            </div>
+                                                            <small class="text-muted">Weight per input unit</small>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-1-5">
@@ -468,10 +477,19 @@ function createProcessItem(processNumber) {
                     </div>
                     <div class="col-md-1-5">
                         <div class="form-group mb-3">
-                            <label class="form-label">Input Unit Weight <span class="text-muted">(kg)</span></label>
-                            <input type="number" step="0.001" class="form-control input-unit-weight" 
-                                   name="processes[${index}][input_unit_weight]" placeholder="0.000" readonly>
-                            <small class="text-muted">kg per input unit</small>
+                            <label class="form-label">Input Unit Weight</label>
+                            <div class="input-group">
+                                <input type="number" step="0.001" class="form-control input-unit-weight" 
+                                       name="processes[${index}][input_unit_weight]" placeholder="0.000" readonly>
+                                <select class="form-select input-weight-uom" name="processes[${index}][input_weight_uom]" style="max-width: 80px;">
+                                    <option value="kg" selected>kg</option>
+                                    <option value="g">g</option>
+                                    <option value="lbs">lbs</option>
+                                    <option value="oz">oz</option>
+                                    <option value="ton">ton</option>
+                                </select>
+                            </div>
+                            <small class="text-muted">Weight per input unit</small>
                         </div>
                     </div>
                     <div class="col-md-1-5">
@@ -484,18 +502,36 @@ function createProcessItem(processNumber) {
                     </div>
                     <div class="col-md-1-5">
                         <div class="form-group mb-3">
-                            <label class="form-label">Output Unit Weight <span class="text-muted">(kg)</span></label>
-                            <input type="number" step="0.001" class="form-control output-unit-weight" 
-                                   name="processes[${index}][output_unit_weight]" placeholder="0.000">
-                            <small class="text-muted">kg per output unit</small>
+                            <label class="form-label">Output Unit Weight</label>
+                            <div class="input-group">
+                                <input type="number" step="0.001" class="form-control output-unit-weight" 
+                                       name="processes[${index}][output_unit_weight]" placeholder="0.000">
+                                <select class="form-select output-weight-uom" name="processes[${index}][output_weight_uom]" style="max-width: 80px;">
+                                    <option value="kg" selected>kg</option>
+                                    <option value="g">g</option>
+                                    <option value="lbs">lbs</option>
+                                    <option value="oz">oz</option>
+                                    <option value="ton">ton</option>
+                                </select>
+                            </div>
+                            <small class="text-muted">Weight per output unit</small>
                         </div>
                     </div>
                     <div class="col-md-1-5">
                         <div class="form-group mb-3">
-                            <label class="form-label">Scrap Weight <span class="text-muted">(kg)</span></label>
-                            <input type="number" step="0.001" class="form-control scrap-weight-input" 
-                                   name="processes[${index}][scrap_weight_per_unit]" placeholder="0.000">
-                            <small class="text-muted">kg per unit</small>
+                            <label class="form-label">Scrap Weight</label>
+                            <div class="input-group">
+                                <input type="number" step="0.001" class="form-control scrap-weight-input" 
+                                       name="processes[${index}][scrap_weight_per_unit]" placeholder="0.000">
+                                <select class="form-select scrap-weight-uom" name="processes[${index}][scrap_weight_uom]" style="max-width: 80px;">
+                                    <option value="kg" selected>kg</option>
+                                    <option value="g">g</option>
+                                    <option value="lbs">lbs</option>
+                                    <option value="oz">oz</option>
+                                    <option value="ton">ton</option>
+                                </select>
+                            </div>
+                            <small class="text-muted">Weight per unit</small>
                         </div>
                     </div>
                     <div class="col-md-1-5">
@@ -873,10 +909,16 @@ function handleMaterialSourceChange(selectElement) {
             
             // Auto-populate input unit weight from material
             const inputUnitWeightField = processDiv.querySelector('.input-unit-weight');
+            const inputWeightUomField = processDiv.querySelector('.input-weight-uom');
             if (inputUnitWeightField && selectedBomItem.material_weight) {
                 inputUnitWeightField.value = selectedBomItem.material_weight.toFixed(3);
                 inputUnitWeightField.style.backgroundColor = '#f8f9fa';
                 inputUnitWeightField.title = `Material unit weight: ${selectedBomItem.material_name} = ${selectedBomItem.material_weight} kg per ${selectedBomItem.unit_full_name}`;
+                
+                // Set UOM to kg (material weights are stored in kg)
+                if (inputWeightUomField) {
+                    inputWeightUomField.value = 'kg';
+                }
             }
             
             // Update quantity field labels with actual UOM
