@@ -215,34 +215,9 @@
                                                             <small class="text-muted">Weight per output unit</small>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-1-5">
-                                                        <div class="form-group mb-3">
-                                                            <label class="form-label">Scrap Weight</label>
-                                                            <div class="input-group">
-                                                                <input type="number" step="0.001" class="form-control scrap-weight-input" 
-                                                                       name="processes[0][scrap_weight_per_unit]" placeholder="0.000">
-                                                                <select class="form-select scrap-weight-uom" name="processes[0][scrap_weight_uom]" style="max-width: 80px;">
-                                                                    <option value="kg" selected>kg</option>
-                                                                    <option value="g">g</option>
-                                                                    <option value="lbs">lbs</option>
-                                                                    <option value="oz">oz</option>
-                                                                    <option value="ton">ton</option>
-                                                                </select>
-                                                            </div>
-                                                            <small class="text-muted">Weight per unit</small>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-1-5">
-                                                        <div class="form-group mb-3">
-                                                            <label class="form-label">Scrap %</label>
-                                                            <div class="input-group">
-                                                                <input type="number" step="0.1" class="form-control scrap-percent-input" 
-                                                                       name="processes[0][estimated_scrap_percent]" placeholder="0.0">
-                                                                <span class="input-group-text">%</span>
-                                                            </div>
-                                                            <small class="text-muted">Scrap percentage</small>
-                                                        </div>
-                                                    </div>
+                                                    <!-- Hidden fields for scrap calculation - values auto-calculated and synced to Basic Information -->
+                                                    <input type="hidden" class="scrap-weight-input" name="processes[0][scrap_weight_per_unit]" value="0">
+                                                    <input type="hidden" class="scrap-percent-input" name="processes[0][estimated_scrap_percent]" value="0">
                                                 </div>
                                                 
                                                 <div class="form-check mb-3">
@@ -591,34 +566,9 @@ function createProcessItem(processNumber) {
                             <small class="text-muted">Weight per output unit</small>
                         </div>
                     </div>
-                    <div class="col-md-1-5">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Scrap Weight</label>
-                            <div class="input-group">
-                                <input type="number" step="0.001" class="form-control scrap-weight-input" 
-                                       name="processes[${index}][scrap_weight_per_unit]" placeholder="0.000">
-                                <select class="form-select scrap-weight-uom" name="processes[${index}][scrap_weight_uom]" style="max-width: 80px;">
-                                    <option value="kg" selected>kg</option>
-                                    <option value="g">g</option>
-                                    <option value="lbs">lbs</option>
-                                    <option value="oz">oz</option>
-                                    <option value="ton">ton</option>
-                                </select>
-                            </div>
-                            <small class="text-muted">Weight per unit</small>
-                        </div>
-                    </div>
-                    <div class="col-md-1-5">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Scrap %</label>
-                            <div class="input-group">
-                                <input type="number" step="0.1" class="form-control scrap-percent-input" 
-                                       name="processes[${index}][estimated_scrap_percent]" placeholder="0.0">
-                                <span class="input-group-text">%</span>
-                            </div>
-                            <small class="text-muted">Scrap percentage</small>
-                        </div>
-                    </div>
+                    <!-- Hidden fields for scrap calculation - values auto-calculated and synced to Basic Information -->
+                    <input type="hidden" class="scrap-weight-input" name="processes[${index}][scrap_weight_per_unit]" value="0">
+                    <input type="hidden" class="scrap-percent-input" name="processes[${index}][estimated_scrap_percent]" value="0">
                 </div>
                 
                 <div class="form-check mb-3">
