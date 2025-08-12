@@ -123,7 +123,7 @@
                                                 <div class="row">
                                                 </div>
                                                 <div class="row">
-                                                    <div class="col-md-4">
+                                                    <div class="col-md-3">
                                                         <div class="form-group mb-3">
                                                             <label class="form-label">Material Used in Process</label>
                                                             <select class="form-select process-material-source" name="processes[0][input_material_source]">
@@ -135,23 +135,31 @@
                                                                 {% endfor %}
                                                                 <option value="raw_material">Direct Raw Material</option>
                                                             </select>
-                                                            <small class="text-muted">Select the specific material used in this process</small>
+                                                            <small class="text-muted">Select material source</small>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-2">
+                                                    <div class="col-md-1-5">
                                                         <div class="form-group mb-3">
                                                             <label class="form-label">Input Qty</label>
                                                             <input type="number" step="0.001" class="form-control input-quantity" 
                                                                    name="processes[0][input_quantity]" placeholder="1.0">
-                                                            <small class="text-muted">Input quantity</small>
+                                                            <small class="text-muted">Input qty</small>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-2">
+                                                    <div class="col-md-1-5">
                                                         <div class="form-group mb-3">
                                                             <label class="form-label">Output Qty</label>
                                                             <input type="number" step="0.001" class="form-control output-quantity" 
                                                                    name="processes[0][output_quantity]" placeholder="1.0">
-                                                            <small class="text-muted">Output quantity</small>
+                                                            <small class="text-muted">Output qty</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <div class="form-group mb-3">
+                                                            <label class="form-label">Output Unit Weight (kg)</label>
+                                                            <input type="number" step="0.001" class="form-control output-unit-weight" 
+                                                                   name="processes[0][output_unit_weight]" placeholder="0.000">
+                                                            <small class="text-muted">Weight per output unit</small>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-2">
@@ -460,6 +468,14 @@ function createProcessItem(processNumber) {
                     </div>
                     <div class="col-md-2">
                         <div class="form-group mb-3">
+                            <label class="form-label">Output Unit Weight (kg)</label>
+                            <input type="number" step="0.001" class="form-control output-unit-weight" 
+                                   name="processes[${index}][output_unit_weight]" placeholder="0.000">
+                            <small class="text-muted">Weight per output unit</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group mb-3">
                             <label class="form-label">Scrap Weight (kg)</label>
                             <input type="number" step="0.001" class="form-control scrap-weight-input" 
                                    name="processes[${index}][scrap_weight_per_unit]" placeholder="0.000">
@@ -722,19 +738,34 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Function to sync last process output with Basic Information Output Quantity
+// Function to sync last process output with Basic Information Output Quantity and Unit Weight
 function syncOutputQuantities() {
     const processItems = document.querySelectorAll('.process-item');
     if (processItems.length === 0) return;
     
-    // Get the last process output quantity
+    // Get the last process output quantity and unit weight
     const lastProcess = processItems[processItems.length - 1];
     const lastOutputQty = lastProcess.querySelector('.output-quantity');
+    const lastOutputUnitWeight = lastProcess.querySelector('.output-unit-weight');
     const basicOutputQty = document.querySelector('#output_quantity');
+    const basicUnitWeight = document.querySelector('#unit_weight');
     
+    // Sync output quantity
     if (lastOutputQty && basicOutputQty && lastOutputQty.value) {
         basicOutputQty.value = lastOutputQty.value;
         basicOutputQty.dispatchEvent(new Event('change'));
+    }
+    
+    // Sync unit weight from final process
+    if (lastOutputUnitWeight && basicUnitWeight && lastOutputUnitWeight.value) {
+        basicUnitWeight.value = lastOutputUnitWeight.value;
+        basicUnitWeight.dispatchEvent(new Event('change'));
+        
+        // Update unit weight display
+        const unitWeightDisplay = document.querySelector('#display_unit_weight');
+        if (unitWeightDisplay) {
+            unitWeightDisplay.textContent = lastOutputUnitWeight.value;
+        }
     }
 }
 
@@ -768,9 +799,9 @@ function calculateTotalScrapWeight() {
 
 // Add event listeners for real-time sync
 function addSyncEventListeners() {
-    // Add listeners to output quantity fields
+    // Add listeners to output quantity and unit weight fields
     document.addEventListener('input', function(e) {
-        if (e.target.classList.contains('output-quantity')) {
+        if (e.target.classList.contains('output-quantity') || e.target.classList.contains('output-unit-weight')) {
             syncOutputQuantities();
         }
     });
