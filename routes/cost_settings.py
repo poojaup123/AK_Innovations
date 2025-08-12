@@ -22,8 +22,17 @@ def settings_dashboard():
         return render_template('cost_calculation/settings.html', settings=settings)
     except Exception as e:
         logger.error(f"Error loading cost settings: {str(e)}")
-        flash('Error loading settings', 'error')
-        return redirect(url_for('cost_calculation.cost_dashboard'))
+        # Create default settings if they don't exist
+        try:
+            from models.cost_settings import CostCalculationSettings
+            settings = CostCalculationSettings()
+            db.session.add(settings)
+            db.session.commit()
+            return render_template('cost_calculation/settings.html', settings=settings)
+        except Exception as e2:
+            logger.error(f"Error creating default settings: {str(e2)}")
+            flash(f'Error loading settings: {str(e)}', 'error')
+            return redirect(url_for('cost_calculation.cost_dashboard'))
 
 
 @cost_settings_bp.route('/api/get', methods=['GET'])
