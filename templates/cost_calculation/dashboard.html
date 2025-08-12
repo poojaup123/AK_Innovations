@@ -12,11 +12,20 @@
                         <i class="fas fa-calculator me-2"></i>BOM Cost Calculation Dashboard
                     </h3>
                     <div class="btn-group">
+                        <a href="{{ url_for('cost_settings.settings_dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-cogs me-1"></i>Settings
+                        </a>
                         <button type="button" class="btn btn-primary" onclick="bulkUpdateCosts()">
                             <i class="fas fa-sync me-1"></i>Update All Costs
                         </button>
-                        <a href="{{ url_for('cost_calculation.cost_trends') }}" class="btn btn-info">
-                            <i class="fas fa-chart-line me-1"></i>Cost Trends
+                        <a href="{{ url_for('cost_notifications.notifications_dashboard') }}" class="btn btn-warning">
+                            <i class="fas fa-bell me-1"></i>Notifications
+                        </a>
+                        <a href="{{ url_for('cost_calculation.features_showcase') }}" class="btn btn-info">
+                            <i class="fas fa-star me-1"></i>Features
+                        </a>
+                        <a href="{{ url_for('cost_calculation.export_cost_report') }}" class="btn btn-success">
+                            <i class="fas fa-download me-1"></i>Export Report
                         </a>
                     </div>
                 </div>

@@ -218,6 +218,14 @@ def create_app():
         from routes.cost_calculation import cost_calculation_bp
         app.register_blueprint(cost_calculation_bp, url_prefix='/cost-calculation')
         
+        # Register cost settings blueprint
+        from routes.cost_settings import cost_settings_bp
+        app.register_blueprint(cost_settings_bp, url_prefix='/cost-settings')
+        
+        # Register cost notifications blueprint
+        from routes.cost_notifications import cost_notifications_bp
+        app.register_blueprint(cost_notifications_bp, url_prefix='/cost-notifications')
+        
         # Register cost update triggers
         from routes.cost_update_triggers import cost_triggers_bp
         app.register_blueprint(cost_triggers_bp, url_prefix='/cost-triggers')
@@ -238,6 +246,7 @@ def create_app():
     import models.document  # Document upload models
     import models.notifications  # Notification system models
     import models.visual_scanning  # Component scanning models
+    import models.cost_settings  # Cost calculation settings models
     
     # Register CLI commands
     from cli import init_db_command, create_admin_command

@@ -7,6 +7,14 @@ This Flask-based Factory Management System is designed for small to medium manuf
 Preferred communication style: Simple, everyday language.
 UI/UX Preferences: Compact, horizontally-arranged dashboard cards with consistent sizing and professional spacing throughout the application. Job Card Summary should appear on the right side of forms, not at the bottom.
 
+## Recent Changes
+- **Phase 2 & 3 Implementation (August 2025)**: Successfully implemented both Phase 2 (Smart Automation) and Phase 3 (Enhanced User Experience) for the BOM Cost Calculation system with comprehensive settings panel control.
+- **Phase 2 Features**: Cost change notifications system, smart BOM creation workflow, automated cost validation, integration alerts with real-time monitoring.
+- **Phase 3 Features**: Interactive cost calculator with real-time adjustments, cost simulation with "what-if" scenarios, drag-and-drop BOM builder, smart search functionality.
+- **Settings Control System**: Comprehensive settings panel allowing users to enable/disable all advanced features independently, with granular control over thresholds, performance settings, and UI preferences.
+- **Database Enhancements**: Added cost_calculation_settings and cost_change_notifications tables to support the new automation features.
+- **JavaScript Modules**: Created interactive_cost_calculator.js, cost_simulation.js, and drag_drop_bom.js for Phase 3 enhanced user experience features.
+
 ## System Architecture
 
 ### UI/UX Decisions

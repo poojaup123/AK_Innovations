@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block title %}Cost Calculation Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-cogs me-2"></i>Cost Calculation Settings</h2>
+                <div>
+                    <button type="button" class="btn btn-outline-secondary me-2" onclick="resetToDefaults()">
+                        <i class="fas fa-undo me-1"></i>Reset to Defaults
+                    </button>
+                    <a href="{{ url_for('cost_calculation.cost_dashboard') }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature Toggle Cards -->
+    <div class="row">
+        <!-- Phase 2: Smart Automation -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-robot me-2"></i>Phase 2: Smart Automation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="costChangeNotifications" 
+                               {{ 'checked' if settings.enable_cost_change_notifications }}>
+                        <label class="form-check-label" for="costChangeNotifications">
+                            <strong>Cost Change Notifications</strong>
+                            <small class="text-muted d-block">Alert when item costs change significantly</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="smartBomCreation" 
+                               {{ 'checked' if settings.enable_smart_bom_creation }}>
+                        <label class="form-check-label" for="smartBomCreation">
+                            <strong>Smart BOM Creation</strong>
+                            <small class="text-muted d-block">Intelligent BOM workflow with cost validation</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="automatedValidation" 
+                               {{ 'checked' if settings.enable_automated_cost_validation }}>
+                        <label class="form-check-label" for="automatedValidation">
+                            <strong>Automated Cost Validation</strong>
+                            <small class="text-muted d-block">Automatic checks for cost accuracy</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="integrationAlerts" 
+                               {{ 'checked' if settings.enable_integration_alerts }}>
+                        <label class="form-check-label" for="integrationAlerts">
+                            <strong>Integration Alerts</strong>
+                            <small class="text-muted d-block">Notifications for BOM and inventory updates</small>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 3: Enhanced UX -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-magic me-2"></i>Phase 3: Enhanced User Experience</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="interactiveCalculator" 
+                               {{ 'checked' if settings.enable_interactive_calculator }}>
+                        <label class="form-check-label" for="interactiveCalculator">
+                            <strong>Interactive Cost Calculator</strong>
+                            <small class="text-muted d-block">Real-time cost adjustments with quantity changes</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="costSimulation" 
+                               {{ 'checked' if settings.enable_cost_simulation }}>
+                        <label class="form-check-label" for="costSimulation">
+                            <strong>Cost Simulation</strong>
+                            <small class="text-muted d-block">"What-if" scenarios for different material costs</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="dragDropBom" 
+                               {{ 'checked' if settings.enable_drag_drop_bom }}>
+                        <label class="form-check-label" for="dragDropBom">
+                            <strong>Drag & Drop BOM Builder</strong>
+                            <small class="text-muted d-block">Visual BOM creation with instant cost calculation</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="smartSearch" 
+                               {{ 'checked' if settings.enable_smart_search }}>
+                        <label class="form-check-label" for="smartSearch">
+                            <strong>Smart Search & Filtering</strong>
+                            <small class="text-muted d-block">Find items by cost range, components, processes</small>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Settings -->
+    <div class="row">
+        <!-- Threshold Settings -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Alert Thresholds</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="costChangeThreshold" class="form-label">Cost Change Alert (%)</label>
+                        <input type="number" class="form-control" id="costChangeThreshold" 
+                               value="{{ settings.cost_change_threshold_percent }}" min="1" max="100" step="0.1">
+                        <small class="text-muted">Alert when cost changes by this percentage</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="outdatedCostDays" class="form-label">Outdated Cost Days</label>
+                        <input type="number" class="form-control" id="outdatedCostDays" 
+                               value="{{ settings.outdated_cost_days }}" min="1" max="365">
+                        <small class="text-muted">Alert when costs are older than this many days</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Settings -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-tachometer-alt me-2"></i>Performance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="realTimeCalculation" 
+                               {{ 'checked' if settings.real_time_calculation_enabled }}>
+                        <label class="form-check-label" for="realTimeCalculation">
+                            <strong>Real-time Calculations</strong>
+                            <small class="text-muted d-block">Calculate costs instantly as you type</small>
+                        </label>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="batchSize" class="form-label">Batch Calculation Size</label>
+                        <input type="number" class="form-control" id="batchSize" 
+                               value="{{ settings.batch_calculation_size }}" min="10" max="500">
+                        <small class="text-muted">Number of items to calculate at once</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- UI Settings -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-desktop me-2"></i>Interface</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="defaultView" class="form-label">Default Cost View</label>
+                        <select class="form-select" id="defaultView">
+                            <option value="comparison" {{ 'selected' if settings.default_cost_view == 'comparison' }}>Comparison View</option>
+                            <option value="bom_only" {{ 'selected' if settings.default_cost_view == 'bom_only' }}>BOM Only</option>
+                            <option value="manual_only" {{ 'selected' if settings.default_cost_view == 'manual_only' }}>Manual Only</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="advancedAnalytics" 
+                               {{ 'checked' if settings.show_advanced_analytics }}>
+                        <label class="form-check-label" for="advancedAnalytics">
+                            <strong>Advanced Analytics</strong>
+                            <small class="text-muted d-block">Show detailed charts and metrics</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="bulkOperations" 
+                               {{ 'checked' if settings.enable_bulk_operations }}>
+                        <label class="form-check-label" for="bulkOperations">
+                            <strong>Bulk Operations</strong>
+                            <small class="text-muted d-block">Enable multi-select and bulk actions</small>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Button -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <button type="button" class="btn btn-success btn-lg me-2" onclick="saveAllSettings()">
+                        <i class="fas fa-save me-2"></i>Save All Settings
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-lg" onclick="location.reload()">
+                        <i class="fas fa-undo me-2"></i>Cancel Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Alerts -->
+<div id="alertContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Feature toggle handlers
+document.addEventListener('DOMContentLoaded', function() {
+    // Add change listeners for all toggles
+    const toggles = document.querySelectorAll('.form-check-input[type="checkbox"]');
+    toggles.forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            // Visual feedback for immediate response
+            this.closest('.form-check').style.opacity = '0.6';
+            setTimeout(() => {
+                this.closest('.form-check').style.opacity = '1';
+            }, 200);
+        });
+    });
+});
+
+function saveAllSettings() {
+    const settings = {
+        phase2: {
+            cost_change_notifications: document.getElementById('costChangeNotifications').checked,
+            smart_bom_creation: document.getElementById('smartBomCreation').checked,
+            automated_cost_validation: document.getElementById('automatedValidation').checked,
+            integration_alerts: document.getElementById('integrationAlerts').checked
+        },
+        phase3: {
+            interactive_calculator: document.getElementById('interactiveCalculator').checked,
+            cost_simulation: document.getElementById('costSimulation').checked,
+            drag_drop_bom: document.getElementById('dragDropBom').checked,
+            smart_search: document.getElementById('smartSearch').checked
+        },
+        thresholds: {
+            cost_change_threshold: parseFloat(document.getElementById('costChangeThreshold').value),
+            outdated_cost_days: parseInt(document.getElementById('outdatedCostDays').value)
+        },
+        performance: {
+            real_time_calculation: document.getElementById('realTimeCalculation').checked,
+            batch_size: parseInt(document.getElementById('batchSize').value)
+        },
+        ui: {
+            default_view: document.getElementById('defaultView').value,
+            advanced_analytics: document.getElementById('advancedAnalytics').checked,
+            bulk_operations: document.getElementById('bulkOperations').checked
+        }
+    };
+
+    fetch('/cost-settings/api/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Settings saved successfully!', 'success');
+        } else {
+            showAlert('Error saving settings: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert('Error saving settings: ' + error, 'danger');
+    });
+}
+
+function resetToDefaults() {
+    if (confirm('Reset all settings to default values? This cannot be undone.')) {
+        fetch('/cost-settings/reset-defaults', {
+            method: 'POST',
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                showAlert('Error resetting settings', 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Error resetting settings: ' + error, 'danger');
+        });
+    }
+}
+
+function showAlert(message, type) {
+    const alertContainer = document.getElementById('alertContainer');
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    alertContainer.appendChild(alertDiv);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

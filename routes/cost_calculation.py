@@ -409,6 +409,18 @@ def bulk_update_selected_costs():
         }), 500
 
 
+@cost_calculation_bp.route('/features-showcase')
+@login_required
+def features_showcase():
+    """Showcase all enhanced cost calculation features"""
+    try:
+        return render_template('cost_calculation/feature_showcase.html')
+    except Exception as e:
+        logger.error(f"Error loading features showcase: {str(e)}")
+        flash('Error loading features showcase', 'error')
+        return redirect(url_for('cost_calculation.cost_dashboard'))
+
+
 @cost_calculation_bp.route('/export-report')
 @login_required
 def export_cost_report():
