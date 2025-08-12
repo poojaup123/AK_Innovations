@@ -759,7 +759,7 @@ function calculateTotalScrapWeight() {
     const unitWeight = parseFloat(document.querySelector('#unit_weight')?.value) || 1;
     const overallScrapPercent = unitWeight > 0 ? (totalScrapWeight / unitWeight) * 100 : 0;
     
-    const basicScrapPercent = document.querySelector('#overall_scrap_percent');
+    const basicScrapPercent = document.querySelector('#scrap_percent');
     if (basicScrapPercent) {
         basicScrapPercent.value = overallScrapPercent.toFixed(2);
         basicScrapPercent.dispatchEvent(new Event('change'));
