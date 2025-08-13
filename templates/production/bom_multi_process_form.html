@@ -986,12 +986,12 @@ function calculateScrapFromWeightDifference(changedElement) {
         // Calculate scrap weight (difference)
         const scrapWeight = totalInputWeight - totalOutputWeight;
         
-        if (scrapWeight > 0) {
+        if (scrapWeight >= 0) { // Allow zero scrap
             // Calculate scrap weight per unit (divide by input quantity)
-            const scrapWeightPerUnit = scrapWeight / inputQty;
+            const scrapWeightPerUnit = inputQty > 0 ? scrapWeight / inputQty : 0;
             
             // Calculate scrap percentage
-            const scrapPercentage = (scrapWeight / totalInputWeight) * 100;
+            const scrapPercentage = totalInputWeight > 0 ? (scrapWeight / totalInputWeight) * 100 : 0;
             
             // Update the scrap weight field
             if (scrapWeightField) {
