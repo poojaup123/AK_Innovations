@@ -1068,26 +1068,46 @@ def generate_challan(job_card_id):
                         # Calculate raw material needed based on BOM output quantity and job card qty
                         # BOM shows quantity per bom.output_quantity, scale for job_card_qty
                         bom_output_qty = bom.output_quantity or 1
-                        total_qty = (bom_item.quantity_required * job_card_qty) / bom_output_qty
+                        exact_qty = (bom_item.quantity_required * job_card_qty) / bom_output_qty
+                        
+                        # Round up material quantity for outsourcing (always send extra)
+                        import math
+                        rounded_qty = math.ceil(exact_qty)
+                        excess_qty = rounded_qty - exact_qty
+                        
+                        remarks = f'Material for {int(job_card_qty):,} {job_card.item.name}'
+                        if excess_qty > 0:
+                            remarks += f' (Excess: {excess_qty:.3f} - Return or make extra pieces)'
+                            
                         materials.append({
                             'item': bom_item.item,
-                            'quantity_required': total_qty,
+                            'quantity_required': rounded_qty,
+                            'exact_quantity': exact_qty,
+                            'excess_quantity': excess_qty,
                             'batch_number': 'TBD',
-                            'remarks': f'Raw material to make {int(job_card_qty):,} {job_card.item.name} (per BOM {bom.bom_code})'
+                            'remarks': remarks
                         })
                 else:
                     # For cutting process, show raw materials (MS sheets)
                     if job_card.process_name and 'cut' in job_card.process_name.lower():
                         # Calculate sheets needed (assuming 50 plates per sheet)
                         plates_per_sheet = 50
-                        sheets_needed = (job_card_qty + plates_per_sheet - 1) // plates_per_sheet
+                        exact_sheets = job_card_qty / plates_per_sheet
+                        sheets_needed = math.ceil(exact_sheets)  # Always round up
+                        excess_plates = (sheets_needed * plates_per_sheet) - job_card_qty
+                        
+                        remarks = f'MS sheets to cut {int(job_card_qty):,} {job_card.item.name} ({plates_per_sheet} plates/sheet)'
+                        if excess_plates > 0:
+                            remarks += f' - Excess: {int(excess_plates)} plates (Return or make extra)'
                         
                         materials = [{
                             'item': None,
                             'item_name': 'MS Sheet (Raw Material)',
                             'quantity_required': sheets_needed,
+                            'exact_quantity': exact_sheets,
+                            'excess_quantity': excess_plates,
                             'batch_number': 'TBD',
-                            'remarks': f'MS sheets to cut {int(job_card_qty):,} {job_card.item.name} ({plates_per_sheet} plates per sheet)'
+                            'remarks': remarks
                         }]
                     else:
                         # For other processes, show the item being processed
@@ -1102,14 +1122,22 @@ def generate_challan(job_card_id):
                 # For cutting process, show MS sheets
                 if job_card.process_name and 'cut' in job_card.process_name.lower():
                     plates_per_sheet = 50
-                    sheets_needed = (job_card_qty + plates_per_sheet - 1) // plates_per_sheet
+                    exact_sheets = job_card_qty / plates_per_sheet
+                    sheets_needed = math.ceil(exact_sheets)  # Always round up
+                    excess_plates = (sheets_needed * plates_per_sheet) - job_card_qty
+                    
+                    remarks = f'MS sheets to cut {int(job_card_qty):,} {job_card.item.name} ({plates_per_sheet} plates/sheet)'
+                    if excess_plates > 0:
+                        remarks += f' - Excess: {int(excess_plates)} plates (Return or make extra)'
                     
                     materials = [{
                         'item': None,
                         'item_name': 'MS Sheet (Raw Material)',
                         'quantity_required': sheets_needed,
+                        'exact_quantity': exact_sheets,
+                        'excess_quantity': excess_plates,
                         'batch_number': 'TBD',
-                        'remarks': f'MS sheets to cut {int(job_card_qty):,} {job_card.item.name} ({plates_per_sheet} plates per sheet)'
+                        'remarks': remarks
                     }]
                 else:
                     materials = [{

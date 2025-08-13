@@ -290,10 +290,11 @@
                     <tr>
                         <th style="width: 5%;">Sr.</th>
                         <th style="width: 40%;">Material Description</th>
-                        <th style="width: 15%;">Quantity</th>
-                        <th style="width: 10%;">UOM</th>
-                        <th style="width: 15%;">Batch No.</th>
-                        <th style="width: 15%;">Remarks</th>
+                        <th style="width: 12%;">Quantity</th>
+                        <th style="width: 8%;">UOM</th>
+                        <th style="width: 10%;">Excess</th>
+                        <th style="width: 12%;">Batch No.</th>
+                        <th style="width: 18%;">Remarks</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -302,10 +303,22 @@
                         <tr>
                             <td>{{ loop.index }}</td>
                             <td>{{ material.item.name if material.item else (material['item_name'] if material is mapping and 'item_name' in material else 'N/A') }}</td>
-                            <td style="text-align: right;">{{ material.quantity_required if material.quantity_required is defined else (material['quantity_required'] if material is mapping and 'quantity_required' in material else (material.quantity_allocated or 0)) }}</td>
-                            <td>Pcs</td>
+                            <td style="text-align: right; font-weight: bold;">
+                                {{ material.quantity_required if material.quantity_required is defined else (material['quantity_required'] if material is mapping and 'quantity_required' in material else (material.quantity_allocated or 0)) }}
+                                {% if material is mapping and 'exact_quantity' in material %}
+                                    <br><small style="color: #666; font-weight: normal;">(Need: {{ "%.3f"|format(material['exact_quantity']) }})</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ material.item.uom.abbreviation if material.item and material.item.uom else 'Pcs' }}</td>
+                            <td style="text-align: center;">
+                                {% if material is mapping and 'excess_quantity' in material and material['excess_quantity'] > 0 %}
+                                    <span style="color: #e74c3c; font-weight: bold;">+{{ "%.3f"|format(material['excess_quantity']) }}</span>
+                                {% else %}
+                                    <span style="color: #27ae60;">None</span>
+                                {% endif %}
+                            </td>
                             <td>{{ material.batch.batch_number if material.batch else (material['batch_number'] if material is mapping and 'batch_number' in material else 'TBD') }}</td>
-                            <td>{{ material.notes if material.notes is defined else (material['remarks'] if material is mapping and 'remarks' in material else 'For Processing') }}</td>
+                            <td style="font-size: 11px;">{{ material.notes if material.notes is defined else (material['remarks'] if material is mapping and 'remarks' in material else 'For Processing') }}</td>
                         </tr>
                         {% endfor %}
                     {% else %}
@@ -315,6 +328,7 @@
                             <td>{{ job_card.item.name if job_card.item else 'Material for Processing' }}</td>
                             <td style="text-align: right;">{{ job_card.planned_quantity or 0 }}</td>
                             <td>{{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'Pcs' }}</td>
+                            <td style="text-align: center;"><span style="color: #27ae60;">None</span></td>
                             <td>-</td>
                             <td>For {{ job_card.process_name or 'Processing' }}</td>
                         </tr>
@@ -331,7 +345,9 @@
                 <p><strong>2. Quality Standards:</strong> All work should meet the specified quality standards. Rejected items will be returned at vendor's cost.</p>
                 <p><strong>3. Material Responsibility:</strong> Vendor is responsible for the safe custody of materials until return.</p>
                 <p><strong>4. Process Compliance:</strong> All processes should be carried out as per technical specifications.</p>
-                <p><strong>5. Documentation:</strong> This challan should accompany the materials during transport and return.</p>
+                <p><strong>5. Excess Material Handling:</strong> Any excess raw material must be returned OR used to make additional pieces (with prior approval).</p>
+                <p><strong>6. Scrap Return:</strong> All scrap material must be returned along with finished goods for recycling.</p>
+                <p><strong>7. Documentation:</strong> This challan should accompany the materials during transport and return.</p>
             </div>
         </div>
         
