@@ -327,7 +327,7 @@
                                                                     </td>
                                                                     <td>{{ item.qty_required or item.quantity_required or 0 }} {{ item.uom.symbol if item.uom else item.unit }}</td>
                                                                     <td>₹{{ '{:.2f}'.format((item.material.unit_price if item.material else item.item.unit_price if item.item else 0) or 0) }}</td>
-                                                                    <td>{{ '{:.3f}'.format((item.material.unit_weight if item.material and hasattr(item.material, 'unit_weight') else 0) or 0) }} kg</td>
+                                                                    <td>{{ '{:.3f}'.format((item.material.unit_weight if item.material and item.material.unit_weight else 0) or 0) }} kg</td>
                                                                     <td><span class="assembly-wastage-display">0</span>%</td>
                                                                     <td><span class="assembly-effective-qty">{{ item.qty_required or item.quantity_required or 0 }}</span></td>
                                                                     <td>₹<span class="assembly-component-cost">{{ '{:.2f}'.format(((item.qty_required or item.quantity_required or 0) * ((item.material.unit_price if item.material else item.item.unit_price if item.item else 0) or 0))) }}</span></td>
