@@ -369,7 +369,7 @@
                                                     <i class="fas fa-info-circle"></i> {{ "1 Ms sheet → {} base plates of 48g each".format(bom.output_quantity|int) if bom and bom.output_quantity else "Component quantities × unit prices" }}
                                                 </small>
                                                 <hr>
-                                                <h6 class="text-primary">Complete Unit Cost</h6>
+                                                <h6 class="text-primary">Complete Unit Cost <small class="text-muted">(per unit)</small></h6>
                                                 {% if bom and bom.output_quantity %}
                                                 {% set material_cost_per_unit = bom.total_material_cost / bom.output_quantity %}
                                                 {% set labor_cost_per_unit = bom.calculated_labor_cost_per_unit %}
@@ -377,15 +377,15 @@
                                                 <table class="table table-sm" id="costBreakdownTable">
                                                     <tbody>
                                                         <tr>
-                                                            <td>Material Cost:</td>
+                                                            <td>Material Cost <small class="text-muted">(per unit)</small>:</td>
                                                             <td class="text-end"><strong>₹<span id="materialCostDisplay">{{ '{:.2f}'.format(material_cost_per_unit) }}</span></strong></td>
                                                         </tr>
                                                         <tr>
-                                                            <td>Labor Cost:</td>
+                                                            <td>Labor Cost <small class="text-muted">(per unit)</small>:</td>
                                                             <td class="text-end"><strong>₹<span id="laborCostDisplay">{{ '{:.2f}'.format(labor_cost_per_unit) }}</span></strong></td>
                                                         </tr>
                                                         <tr id="overheadRow">
-                                                            <td>Overhead Cost (<span id="overheadPercentDisplay">0</span>%):</td>
+                                                            <td>Overhead Cost <small class="text-muted">(per unit)</small> (<span id="overheadPercentDisplay">0</span>%):</td>
                                                             <td class="text-end"><strong>₹<span id="overheadCostDisplay">0.00</span></strong></td>
                                                         </tr>
                                                         <tr id="freightRow">
@@ -393,23 +393,23 @@
                                                             <td class="text-end"><strong>₹<span id="freightCostDisplay">0.00</span></strong></td>
                                                         </tr>
                                                         <tr class="table-secondary">
-                                                            <td><strong>Total Cost:</strong></td>
+                                                            <td><strong>Total Cost <small class="text-muted">(per unit)</small>:</strong></td>
                                                             <td class="text-end"><strong>₹<span id="totalCostDisplay">{{ '{:.2f}'.format(material_cost_per_unit + labor_cost_per_unit) }}</span></strong></td>
                                                         </tr>
                                                         <tr class="text-success" id="scrapRecoveryRow">
-                                                            <td>Scrap Recovery (<span id="scrapPercentDisplay">0</span>%):</td>
+                                                            <td>Scrap Recovery <small class="text-muted">(per unit)</small> (<span id="scrapPercentDisplay">0</span>%):</td>
                                                             <td class="text-end"><strong>-₹<span id="scrapRecoveryDisplay">0.00</span></strong></td>
                                                         </tr>
                                                         <tr class="table-info">
-                                                            <td><strong>Net Manufacturing Cost:</strong></td>
+                                                            <td><strong>Net Manufacturing Cost <small class="text-muted">(per unit)</small>:</strong></td>
                                                             <td class="text-end"><strong>₹<span id="netCostDisplay">{{ '{:.2f}'.format(material_cost_per_unit + labor_cost_per_unit) }}</span></strong></td>
                                                         </tr>
                                                         <tr class="text-warning" id="markupRow">
-                                                            <td>Markup (<span id="markupPercentDisplay">0</span>%):</td>
+                                                            <td>Markup <small class="text-muted">(per unit)</small> (<span id="markupPercentDisplay">0</span>%):</td>
                                                             <td class="text-end"><strong>₹<span id="markupValueDisplay">0.00</span></strong></td>
                                                         </tr>
                                                         <tr class="table-success" id="sellingPriceRow">
-                                                            <td><strong>Selling Price:</strong></td>
+                                                            <td><strong>Selling Price <small class="text-muted">(per unit)</small>:</strong></td>
                                                             <td class="text-end"><strong>₹<span id="sellingPriceDisplay">{{ '{:.2f}'.format(material_cost_per_unit + labor_cost_per_unit) }}</span></strong></td>
                                                         </tr>
                                                     </tbody>

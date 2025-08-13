@@ -1304,6 +1304,10 @@ def edit_bom(id):
     material_cost = bom.total_material_cost
     total_cost_per_unit = bom.total_cost_per_unit
     
+    # Calculate per-unit costs for template
+    material_cost_per_unit = material_cost / max(bom.output_quantity, 1)
+    labor_cost_per_unit = bom.calculated_labor_cost_per_unit
+    
     # Get materials for adding new items
     materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
     
@@ -1327,6 +1331,8 @@ def edit_bom(id):
                          bom_items=bom_items,
                          materials=materials,
                          material_cost=material_cost,
+                         material_cost_per_unit=material_cost_per_unit,
+                         labor_cost_per_unit=labor_cost_per_unit,
                          total_cost_per_unit=total_cost_per_unit,
                          uom_choices=uom_choices)
 
