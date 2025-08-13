@@ -1244,16 +1244,11 @@ function addSyncEventListeners() {
         if (e.target.classList.contains('process-material-source')) {
             handleMaterialSourceChange(e.target);
             
-            // If "Previous Process Output" is selected, trigger cascading from previous process
+            // If "Previous Process Output" is selected, fetch data from database
             if (e.target.value === 'previous_process_output') {
                 const currentProcessDiv = e.target.closest('.process-item');
-                const allProcesses = document.querySelectorAll('.process-item');
-                const currentIndex = Array.from(allProcesses).indexOf(currentProcessDiv);
-                
-                if (currentIndex > 0) {
-                    const previousProcess = allProcesses[currentIndex - 1];
-                    cascadeToNextProcess(previousProcess);
-                }
+                const currentProcessNumber = parseInt(currentProcessDiv.getAttribute('data-process'));
+                fetchPreviousProcessData(currentProcessNumber, currentProcessDiv);
             } else {
                 // Reset cascade effect if different material source is selected
                 const currentProcessDiv = e.target.closest('.process-item');
@@ -1286,6 +1281,79 @@ function manualCascade(toProcessNumber) {
         const toProcess = allProcesses[toProcessNumber - 1];
         cascadeValues(fromProcess, toProcess);
     }
+}
+
+// Function to fetch previous process data from the server
+function fetchPreviousProcessData(currentSequence, processDiv) {
+    const bomId = {{ bom.id }};
+    
+    fetch(`/production/api/bom/${bomId}/previous_process_data/${currentSequence}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.previous_process) {
+                const prevData = data.previous_process;
+                
+                // Auto-populate input fields with previous process output
+                const inputQty = processDiv.querySelector('.input-quantity');
+                const inputWeight = processDiv.querySelector('.input-unit-weight');
+                const inputWeightUom = processDiv.querySelector('.input-weight-uom');
+                
+                if (inputQty && prevData.output_quantity) {
+                    inputQty.value = prevData.output_quantity;
+                    inputQty.style.backgroundColor = '#d1ecf1';
+                    inputQty.readOnly = true;
+                }
+                
+                if (inputWeight && prevData.output_unit_weight) {
+                    inputWeight.value = prevData.output_unit_weight;
+                    inputWeight.style.backgroundColor = '#d1ecf1';
+                    inputWeight.readOnly = true;
+                }
+                
+                if (inputWeightUom && prevData.output_weight_uom) {
+                    inputWeightUom.value = prevData.output_weight_uom;
+                    inputWeightUom.style.backgroundColor = '#d1ecf1';
+                    inputWeightUom.disabled = true;
+                }
+                
+                // Show success notification
+                showNotification(`Data loaded from ${prevData.process_name} (Step ${prevData.step_number})`, 'success');
+            } else {
+                showNotification(data.message || 'No previous process data available', 'warning');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching previous process data:', error);
+            showNotification('Error loading previous process data', 'error');
+        });
+}
+
+// Helper function to show notifications
+function showNotification(message, type = 'info') {
+    const alertClass = type === 'success' ? 'alert-success' : 
+                      type === 'warning' ? 'alert-warning' : 
+                      type === 'error' ? 'alert-danger' : 'alert-info';
+    
+    const notification = document.createElement('div');
+    notification.className = `alert ${alertClass} alert-dismissible fade show`;
+    notification.setAttribute('role', 'alert');
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.getElementById('processContainer');
+    container.insertBefore(notification, container.firstChild);
+    
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
 }
 
 function cascadeValues(fromProcess, toProcess) {

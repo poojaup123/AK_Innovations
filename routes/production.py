@@ -2023,6 +2023,50 @@ def get_item_unit(item_id):
         'code': item.code
     })
 
+@production_bp.route('/api/bom/<int:bom_id>/previous_process_data/<int:sequence>')
+@login_required
+def get_previous_process_data(bom_id, sequence):
+    """Get output data from previous process for sequential material flow"""
+    try:
+        # Get the previous process (sequence - 1)
+        previous_sequence = sequence - 1
+        if previous_sequence < 1:
+            return jsonify({
+                'success': False,
+                'message': 'No previous process available'
+            })
+        
+        previous_process = BOMProcess.query.filter_by(
+            bom_id=bom_id,
+            step_number=previous_sequence
+        ).first()
+        
+        if not previous_process:
+            return jsonify({
+                'success': False,
+                'message': f'Previous process (Step {previous_sequence}) not found'
+            })
+        
+        # Return the output data from previous process
+        return jsonify({
+            'success': True,
+            'previous_process': {
+                'process_name': previous_process.process_name,
+                'step_number': previous_process.step_number,
+                'output_product_id': previous_process.output_product_id,
+                'output_quantity': previous_process.output_quantity,
+                'output_unit_weight': previous_process.output_unit_weight,
+                'output_weight_uom': previous_process.output_weight_uom,
+                'transformation_type': previous_process.transformation_type
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        })
+
 @production_bp.route('/bom_process/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_bom_process(id):
