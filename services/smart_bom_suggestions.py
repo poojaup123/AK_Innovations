@@ -25,7 +25,8 @@ class SmartBOMSuggestionService:
         suggestions = []
         
         # Get all BOM items and their requirements
-        for bom_item in bom.items:
+        bom_items = bom.items if hasattr(bom, 'items') and bom.items else []
+        for bom_item in bom_items:
             item = bom_item.item
             material_qty_per_output = bom_item.quantity_required or bom_item.qty_required
             bom_output_qty = bom.output_quantity or 1.0
@@ -606,15 +607,12 @@ class SmartBOMSuggestionService:
             
         # Check if the item's BOM has complex sub-components (nested BOM structure)
         item_bom = BOM.query.filter_by(product_id=item_id, is_active=True).first()
-        if item_bom and item_bom.items:
-            # Check if any of the BOM components can also be manufactured (nested structure)
-            for bom_item in item_bom.items:
-                component = bom_item.item
-                component_bom = BOM.query.filter_by(product_id=component.id, is_active=True).first()
-                if component_bom:  # This component also has a BOM (nested structure)
-                    return False  # Don't offer purchase alternative for complex nested items
+        if item_bom:
+            # If this item has its own BOM and is used as a component in another BOM, 
+            # it's an intermediate product that should be manufactured, not purchased
+            return False
         
-        # For simple items with basic material requirements, offer purchase alternative
+        # For items without BOMs (true raw materials), offer purchase alternative
         return True
     
     @staticmethod
@@ -766,7 +764,7 @@ class SmartBOMSuggestionService:
                         'unit_cost': material_info.get('unit_cost', 0),
                         'consolidated': True,
                         'used_by': material_info['used_by_products'],
-                        'po_status': SmartBOMSuggestionService._get_po_status_info(Item.query.get(material_id)) if Item.query.get(material_id) else {},
+                        'po_status': SmartBOMSuggestionService._get_po_status_info(Item.query.get(material_id)) if Item.query.get(material_id) else {'has_active_pos': False, 'total_pending': 0, 'active_pos': []},
                         'total_allocated_qty': material_info.get('total_allocated_qty', 0),  # Total allocated across all products
                         'is_shared_material': True  # Mark as shared for proper calculation
                     }],
