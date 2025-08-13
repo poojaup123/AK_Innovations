@@ -81,14 +81,19 @@ class SmartBOMSuggestionService:
             s for s in shortages if not s.get('can_manufacture', False)
         ])
         
+        # ALSO generate purchase suggestions for items that CAN be manufactured (buy vs make option)
+        manufacturable_purchase_suggestions = SmartBOMSuggestionService._generate_purchase_alternatives_for_manufacturable_items([
+            s for s in shortages if s.get('can_manufacture', False)
+        ])
+        
         # Consolidate purchase suggestions for shared raw materials across manufacturing suggestions
         consolidated_purchase_suggestions = SmartBOMSuggestionService._consolidate_shared_material_purchases(
             optimized_suggestions, purchase_suggestions
         )
         
-        # Keep all original suggestions AND add consolidated suggestions
-        # This gives users choice between individual purchases and consolidated bulk purchasing
-        all_suggestions = optimized_suggestions + consolidated_purchase_suggestions
+        # Keep all original suggestions AND add consolidated suggestions AND alternative purchase options
+        # This gives users choice between individual purchases, consolidated bulk purchasing, and buy vs make
+        all_suggestions = optimized_suggestions + consolidated_purchase_suggestions + purchase_suggestions + manufacturable_purchase_suggestions
         
         # Apply final deduplication to remove exact duplicates
         final_suggestions = SmartBOMSuggestionService._final_deduplication(all_suggestions)
@@ -529,6 +534,51 @@ class SmartBOMSuggestionService:
             purchase_suggestions.append(purchase_suggestion)
         
         return purchase_suggestions
+    
+    @staticmethod
+    def _generate_purchase_alternatives_for_manufacturable_items(manufacturable_shortages: List[Dict]) -> List[Dict]:
+        """
+        Generate purchase alternatives for items that can be manufactured (buy vs make decision)
+        """
+        purchase_alternatives = []
+        
+        for shortage in manufacturable_shortages:
+            if not shortage.get('can_manufacture', False):
+                continue  # Skip items that cannot be manufactured
+                
+            purchase_alternative = {
+                'type': 'purchase_order_recommendation',
+                'priority': 'medium',  # Lower priority than direct materials since it can be manufactured
+                'title': f"Purchase {shortage['item_name']} - Consolidated Item",
+                'description': f"Buy {shortage['shortage_qty']:.1f} {shortage['unit']} of {shortage['item_name']} directly instead of manufacturing",
+                'action_steps': [
+                    f"Create Purchase Order for {shortage['shortage_qty']:.1f} {shortage['unit']} of {shortage['item_name']}",
+                    "Contact supplier and negotiate pricing",
+                    "Include additional safety stock (recommend +20%)",
+                    f"Expected cost: ₹{(getattr(shortage, 'unit_price', 0) or 0) * shortage['shortage_qty']:.2f}",
+                    "Track delivery schedule and update inventory upon receipt"
+                ],
+                'item_details': {
+                    'item_id': shortage['item_id'],
+                    'item_code': shortage['item_code'],
+                    'item_name': shortage['item_name'],
+                    'shortage_qty': shortage['shortage_qty'],
+                    'recommended_qty': shortage['shortage_qty'] * 1.2,  # Add 20% safety stock
+                    'unit': shortage['unit']
+                },
+                'target_item_id': shortage['item_id'],  # This is the key field that was missing!
+                'target_item_name': shortage['item_name'],
+                'estimated_cost': shortage.get('estimated_cost', 0),
+                'estimated_time': "3-7 days (depends on supplier)",
+                'feasibility': 'requires_supplier_contact',
+                'purchase_priority': 'alternative',  # Mark as alternative to manufacturing
+                'manufacturing_alternative': True,  # Flag to show this is a buy vs make option
+                'alternative_note': f"Alternative to manufacturing using BOM. Consider cost comparison with raw materials."
+            }
+            
+            purchase_alternatives.append(purchase_alternative)
+        
+        return purchase_alternatives
     
     @staticmethod
     def _final_deduplication(suggestions: List[Dict]) -> List[Dict]:
