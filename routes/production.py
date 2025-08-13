@@ -1130,7 +1130,7 @@ def add_bom():
             estimated_scrap_percent=form.estimated_scrap_percent.data or 0.0,
             scrap_quantity=form.scrap_quantity.data or 0.0,
             scrap_uom=form.scrap_uom.data or 'kg',
-            scrap_value_recovery_percent=form.scrap_value_recovery_percent.data or 15.0,
+            scrap_value_recovery_percent=form.scrap_value_recovery_percent.data if form.scrap_value_recovery_percent.data is not None else 15.0,
             description=form.description.data,
             remarks=form.remarks.data,
             labor_cost_per_unit=form.labor_cost_per_unit.data or 0.0,
@@ -1273,7 +1273,7 @@ def edit_bom(id):
         bom.scrap_weight = form.scrap_weight.data or 0.0
         bom.scrap_quantity = form.scrap_quantity.data or 0.0
         bom.scrap_uom = form.scrap_uom.data or 'kg'
-        bom.scrap_value_recovery_percent = form.scrap_value_recovery_percent.data or 15.0
+        bom.scrap_value_recovery_percent = form.scrap_value_recovery_percent.data if form.scrap_value_recovery_percent.data is not None else 15.0
         bom.description = form.description.data
         # Ensure remarks is not None - use existing value if form data is None
         bom.remarks = form.remarks.data if form.remarks.data is not None else bom.remarks
