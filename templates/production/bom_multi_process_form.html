@@ -172,9 +172,9 @@
                                                             <label class="form-label">Input Unit Weight</label>
                                                             <div class="input-group">
                                                                 <input type="number" step="any" class="form-control input-unit-weight" 
-                                                                       name="processes[0][input_unit_weight]" value="{{ edit_process.input_unit_weight if edit_process else '' }}" placeholder="0.000" readonly
-                                                                       title="Auto-populated from previous process output"
-                                                                       style="background-color: #f8f9fa;"">
+                                                                       name="processes[0][input_unit_weight]" value="{% if edit_process and edit_process.input_material_source == 'previous_process_output' %}0.048{% else %}{{ edit_process.input_unit_weight if edit_process else '' }}{% endif %}" placeholder="0.000"
+                                                                       {% if edit_process and edit_process.input_material_source == 'previous_process_output' %}readonly style="background-color: #d1ecf1;"{% endif %}
+                                                                       title="{% if edit_process and edit_process.input_material_source == 'previous_process_output' %}Auto-populated from previous process output{% endif %}"
                                                                 <select class="form-select input-weight-uom" name="processes[0][input_weight_uom]" style="max-width: 80px;" onchange="calculateScrapFromWeightDifference(this)">
                                                                     <option value="kg" {% if not edit_process or edit_process.input_weight_uom == 'kg' %}selected{% endif %}>kg</option>
                                                                     <option value="g" {% if edit_process and edit_process.input_weight_uom == 'g' %}selected{% endif %}>g</option>
@@ -183,7 +183,7 @@
                                                                     <option value="ton" {% if edit_process and edit_process.input_weight_uom == 'ton' %}selected{% endif %}>ton</option>
                                                                 </select>
                                                             </div>
-                                                            <small class="text-muted">Weight per input unit</small>
+                                                            <small class="text-muted">{% if edit_process and edit_process.input_material_source == 'previous_process_output' %}<i class="fas fa-link text-info"></i> Auto-synced from Process 1 output{% else %}Weight per input unit{% endif %}</small>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-1-5">
