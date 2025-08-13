@@ -1330,6 +1330,21 @@ function fetchPreviousProcessData(currentSequence, processDiv) {
         });
 }
 
+// Function to trigger data fetch when editing existing processes
+function initializeExistingProcessData() {
+    // Check if we're editing an existing process with "Previous Process Output" selected
+    const materialSourceDropdown = document.querySelector('.process-material-source');
+    if (materialSourceDropdown && materialSourceDropdown.value === 'previous_process_output') {
+        const processDiv = materialSourceDropdown.closest('.process-item');
+        const currentSequence = parseInt(processDiv.getAttribute('data-process'));
+        
+        // If editing an existing process, trigger data fetch to update fields
+        if (currentSequence > 1) {
+            fetchPreviousProcessData(currentSequence, processDiv);
+        }
+    }
+}
+
 // Helper function to show notifications
 function showNotification(message, type = 'info') {
     const alertClass = type === 'success' ? 'alert-success' : 
@@ -1634,6 +1649,13 @@ document.getElementById('addProcessBtn').addEventListener('click', function() {
             populateInputWeightFromPreviousProcess(processDiv);
         });
     }, 100); // Small delay to ensure DOM is updated
+});
+
+// Initialize existing process data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        initializeExistingProcessData();
+    }, 500);
 });
 
 // Pre-populate form if editing existing process
