@@ -381,7 +381,7 @@
                                                 <hr>
                                                 <h6 class="text-primary">Complete Unit Cost <small class="text-muted">(per unit)</small></h6>
                                                 {% if bom and bom.output_quantity %}
-                                                {% set material_cost_per_unit = bom.total_material_cost / bom.output_quantity %}
+                                                {% set material_cost_per_unit = bom.total_material_cost / (bom.output_quantity if bom.output_quantity and bom.output_quantity > 0 else 1) %}
                                                 {% set labor_cost_per_unit = bom.calculated_labor_cost_per_unit %}
                                                 
                                                 <table class="table table-sm" id="costBreakdownTable">
@@ -429,9 +429,10 @@
                                                 </small>
                                                 
                                                 <script>
-                                                // Store base costs for calculations
+                                                // Store base costs for calculations (already converted to per-unit)
                                                 const materialCostPerUnit = {{ material_cost_per_unit }};
                                                 const laborCostPerUnit = {{ labor_cost_per_unit }};
+                                                const outputQuantity = {{ bom.output_quantity if bom and bom.output_quantity else 1 }};
                                                 
                                                 function updateCostBreakdown() {
                                                     // Get form values
@@ -448,9 +449,9 @@
                                                     // Calculate freight cost per unit based on freight unit type
                                                     let freightCostPerUnit = 0;
                                                     if (freightUnitType === 'per_kg') {
-                                                        // Each base plate weighs 48g = 0.048kg
-                                                        const basePlateWeightKg = 0.048;
-                                                        freightCostPerUnit = freightCostPerKg * basePlateWeightKg;
+                                                        // Use the actual unit weight from the form if available
+                                                        const unitWeightKg = parseFloat(document.querySelector('input[name="unit_weight"]')?.value || 0.048);
+                                                        freightCostPerUnit = freightCostPerKg * unitWeightKg;
                                                     } else {
                                                         // per_piece, per_box, per_carton - use direct value
                                                         freightCostPerUnit = freightCostPerKg;
