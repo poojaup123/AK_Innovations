@@ -405,15 +405,15 @@
 
 {% block scripts %}
 <script>
-let processCount = 1;
+// Initialize processCount based on existing processes in the BOM
+let processCount = {{ bom.processes|length + 1 }};
 
 document.getElementById('addProcessBtn').addEventListener('click', function() {
-    processCount++;
-    
     const processContainer = document.getElementById('processContainer');
     const newProcessItem = createProcessItem(processCount);
     processContainer.appendChild(newProcessItem);
     
+    processCount++;
     updateRemoveButtons();
 });
 
