@@ -33,8 +33,8 @@ class ProcessIntegrationService:
         
         for process in sorted_processes:
             # Labor cost calculation
-            if process.labor_cost_per_unit:
-                total_labor_cost += process.labor_cost_per_unit
+            if process.cost_per_unit:
+                total_labor_cost += process.cost_per_unit
             
             # Scrap percentage accumulation
             if process.estimated_scrap_percent:
