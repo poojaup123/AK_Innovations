@@ -1276,13 +1276,18 @@ def edit_bom(id):
         bom.labor_rate_per_hour = form.labor_rate_per_hour.data or 0.0
         # Debug: Print form data to see what's being received
         print(f"DEBUG: Form data - overhead_percentage: {form.overhead_percentage.data}")
+        print(f"DEBUG: Form data - overhead_cost_per_unit: {form.overhead_cost_per_unit.data}")
         print(f"DEBUG: Form data - freight_cost_per_unit: {form.freight_cost_per_unit.data}")
+        print(f"DEBUG: Form data - freight_unit_type: {form.freight_unit_type.data}")
         print(f"DEBUG: Form data - markup_percentage: {form.markup_percentage.data}")
+        print(f"DEBUG: Form validation errors: {form.errors}")
+        print(f"DEBUG: Raw request data: {request.form.to_dict()}")
         
+        # Use explicit None checks to preserve 0.0 values
         bom.overhead_cost_per_unit = form.overhead_cost_per_unit.data if form.overhead_cost_per_unit.data is not None else 0.0
         bom.overhead_percentage = form.overhead_percentage.data if form.overhead_percentage.data is not None else 0.0
         bom.freight_cost_per_unit = form.freight_cost_per_unit.data if form.freight_cost_per_unit.data is not None else 0.0
-        bom.freight_unit_type = form.freight_unit_type.data or 'per_piece'
+        bom.freight_unit_type = form.freight_unit_type.data if form.freight_unit_type.data else 'per_piece'
         bom.markup_percentage = form.markup_percentage.data if form.markup_percentage.data is not None else 0.0
         
         # Multi-level BOM fields - these were missing!
@@ -1308,7 +1313,18 @@ def edit_bom(id):
             
             print(f"AUTO-UPDATE: Item {bom.product.code} price: ₹{old_price} → ₹{bom.product.unit_price}")
         
+        # Debug: Print values before saving
+        print(f"DEBUG: Before save - overhead_percentage: {bom.overhead_percentage}")
+        print(f"DEBUG: Before save - freight_cost_per_unit: {bom.freight_cost_per_unit}")
+        print(f"DEBUG: Before save - markup_percentage: {bom.markup_percentage}")
+        
         db.session.commit()
+        
+        # Debug: Print values after saving
+        print(f"DEBUG: After save - overhead_percentage: {bom.overhead_percentage}")
+        print(f"DEBUG: After save - freight_cost_per_unit: {bom.freight_cost_per_unit}")
+        print(f"DEBUG: After save - markup_percentage: {bom.markup_percentage}")
+        
         flash('BOM updated successfully and item price auto-updated based on BOM cost', 'success')
         return redirect(url_for('production.list_bom'))
     
