@@ -2870,7 +2870,7 @@ class BOMProcess(db.Model):
     
     @property
     def converted_cost_per_unit(self):
-        """Convert cost per unit based on cost_unit and BOM's unit weight"""
+        """Convert cost per unit based on cost_unit and process-specific weight"""
         if not self.cost_per_unit or self.cost_per_unit == 0:
             return 0.0
         
@@ -2878,14 +2878,28 @@ class BOMProcess(db.Model):
         if not self.cost_unit or self.cost_unit == 'per_unit':
             return self.cost_per_unit
         
-        # Get BOM's unit weight for conversion
-        bom = self.bom
-        if not bom or not bom.unit_weight or bom.unit_weight == 0:
-            return self.cost_per_unit  # Can't convert without unit weight
-        
         # Convert based on cost unit type
         if self.cost_unit == 'per_kg':
-            # Convert per kg cost to per unit cost using BOM unit weight
+            # First try to use process-specific output weight
+            if hasattr(self, 'output_unit_weight') and self.output_unit_weight and self.output_unit_weight > 0:
+                unit_weight_kg = self.output_unit_weight
+                # Convert based on process output weight UOM
+                if hasattr(self, 'output_weight_uom'):
+                    if self.output_weight_uom == 'g':
+                        unit_weight_kg = self.output_unit_weight / 1000
+                    elif self.output_weight_uom == 'lbs':
+                        unit_weight_kg = self.output_unit_weight * 0.453592
+                    elif self.output_weight_uom == 'oz':
+                        unit_weight_kg = self.output_unit_weight * 0.0283495
+                    # Default is kg, so no conversion needed
+                
+                return self.cost_per_unit * unit_weight_kg
+            
+            # Fallback to BOM's unit weight for conversion
+            bom = self.bom
+            if not bom or not bom.unit_weight or bom.unit_weight == 0:
+                return self.cost_per_unit  # Can't convert without unit weight
+                
             unit_weight_kg = bom.unit_weight
             if bom.unit_weight_uom == 'g':
                 unit_weight_kg = bom.unit_weight / 1000
