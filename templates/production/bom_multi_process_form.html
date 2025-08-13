@@ -30,6 +30,9 @@
                 <div class="card-body">
                     <form id="multiProcessForm" method="POST" action="{{ url_for('production.add_multi_bom_process', bom_id=bom.id) }}">
                         {{ form.hidden_tag() }}
+                        {% if edit_process %}
+                        <input type="hidden" name="edit_process_id" value="{{ edit_process.id }}">
+                        {% endif %}
                         
                         <!-- Multi-Process Configuration -->
                         <div class="card mb-4">

@@ -1805,7 +1805,7 @@ def add_multi_bom_process(bom_id):
     bom = BOM.query.get_or_404(bom_id)
     
     # Check if we're editing an existing process
-    edit_process_id = request.args.get('edit_process_id', type=int)
+    edit_process_id = request.args.get('edit_process_id', type=int) or request.form.get('edit_process_id', type=int)
     edit_process = None
     if edit_process_id:
         edit_process = BOMProcess.query.get_or_404(edit_process_id)
