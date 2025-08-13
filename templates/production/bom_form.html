@@ -307,6 +307,61 @@
                     <form method="POST">
                         {{ form.hidden_tag() }}
 
+                        <!-- Material Cost Section -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-primary text-white">
+                                <h6><i class="fas fa-boxes"></i> Material Costs</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Material</th>
+                                                        <th>Qty Required</th>
+                                                        <th>Unit Price</th>
+                                                        <th class="text-end">Total Cost</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for item in bom.items if bom %}
+                                                    <tr>
+                                                        <td>{{ item.item.name if item.item else 'N/A' }}</td>
+                                                        <td>{{ item.qty_required }} {{ item.uom.symbol if item.uom else item.unit }}</td>
+                                                        <td>₹{{ '{:,.2f}'.format(item.item.unit_price) if item.item and item.item.unit_price else '0.00' }}</td>
+                                                        <td class="text-end">₹{{ '{:,.2f}'.format((item.qty_required or 0) * (item.item.unit_price or 0)) }}</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                    {% if not bom or not bom.items %}
+                                                    <tr>
+                                                        <td colspan="4" class="text-center text-muted">No materials added yet. Add components in the "Components" tab.</td>
+                                                    </tr>
+                                                    {% endif %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <h6>Material Cost Summary</h6>
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Total Material Cost:</span>
+                                                    <strong>₹{{ '{:,.2f}'.format(bom.total_material_cost) if bom and hasattr(bom, 'total_material_cost') else '0.00' }}</strong>
+                                                </div>
+                                                <hr>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-info-circle"></i> Calculated from component quantities × unit prices
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Labor Cost Section -->
                         <div class="card">
                             <div class="card-header">
