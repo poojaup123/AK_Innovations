@@ -2363,3 +2363,29 @@ def api_price_comparison(bom_id):
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+@production_bp.route('/api/bom-item/<int:item_id>/update-price', methods=['POST'])
+@login_required
+def api_update_bom_item_price(item_id):
+    """Update BOM item price to sync with current inventory price"""
+    try:
+        from flask import request
+        bom_item = BOMItem.query.get_or_404(item_id)
+        data = request.get_json()
+        
+        new_price = float(data.get('new_price', 0))
+        if new_price <= 0:
+            return jsonify({'success': False, 'error': 'Invalid price value'})
+        
+        # Update the BOM item price
+        bom_item.unit_cost = new_price
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Updated {bom_item.material.name if bom_item.material else "item"} price to ₹{new_price:.2f}',
+            'new_price': new_price
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
