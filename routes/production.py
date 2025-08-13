@@ -1293,8 +1293,23 @@ def edit_bom(id):
         
         bom.updated_at = datetime.utcnow()
         
+        # Auto-update item price based on BOM cost if this is a manufactured item
+        if bom.product and bom.product.item_type in ['spare part', 'product', 'finished_goods']:
+            # Calculate total cost per unit including material, labor, overhead, freight, markup
+            total_cost_per_unit = bom.total_cost_per_unit
+            if bom.output_quantity and bom.output_quantity > 0:
+                unit_cost = total_cost_per_unit / bom.output_quantity
+            else:
+                unit_cost = total_cost_per_unit
+            
+            # Update item unit price with BOM-calculated cost
+            old_price = bom.product.unit_price or 0
+            bom.product.unit_price = round(unit_cost, 2)
+            
+            print(f"AUTO-UPDATE: Item {bom.product.code} price: ₹{old_price} → ₹{bom.product.unit_price}")
+        
         db.session.commit()
-        flash('BOM updated successfully', 'success')
+        flash('BOM updated successfully and item price auto-updated based on BOM cost', 'success')
         return redirect(url_for('production.list_bom'))
     
     # Get BOM items
