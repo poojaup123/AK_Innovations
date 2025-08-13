@@ -1054,13 +1054,8 @@ def generate_challan(job_card_id):
         
         # If no JobCardMaterial, get actual raw materials from BOM or production order
         if not materials and job_card.item:
-            # Get production quantity if available
-            production_qty = 1
-            if job_card.production_id:
-                from models import Production
-                production = Production.query.get(job_card.production_id)
-                if production:
-                    production_qty = production.quantity_planned or 1
+            # Use job card's planned quantity (for outsourced work)
+            job_card_qty = job_card.planned_quantity or 1
             
             # Try to find BOM for raw materials using correct field name
             from models import BOM, BOMItem
@@ -1070,35 +1065,35 @@ def generate_challan(job_card_id):
                     bom_items = BOMItem.query.filter_by(bom_id=bom.id).all()
                     materials = []
                     for bom_item in bom_items:
-                        # Calculate raw material needed based on BOM output quantity and production qty
-                        # BOM shows quantity per bom.output_quantity, scale for production_qty
+                        # Calculate raw material needed based on BOM output quantity and job card qty
+                        # BOM shows quantity per bom.output_quantity, scale for job_card_qty
                         bom_output_qty = bom.output_quantity or 1
-                        total_qty = (bom_item.quantity_required * production_qty) / bom_output_qty
+                        total_qty = (bom_item.quantity_required * job_card_qty) / bom_output_qty
                         materials.append({
                             'item': bom_item.item,
                             'quantity_required': total_qty,
                             'batch_number': 'TBD',
-                            'remarks': f'Raw material to make {int(production_qty):,} {job_card.item.name} (per BOM {bom.bom_code})'
+                            'remarks': f'Raw material to make {int(job_card_qty):,} {job_card.item.name} (per BOM {bom.bom_code})'
                         })
                 else:
                     # For cutting process, show raw materials (MS sheets)
                     if job_card.process_name and 'cut' in job_card.process_name.lower():
                         # Calculate sheets needed (assuming 50 plates per sheet)
                         plates_per_sheet = 50
-                        sheets_needed = (production_qty + plates_per_sheet - 1) // plates_per_sheet
+                        sheets_needed = (job_card_qty + plates_per_sheet - 1) // plates_per_sheet
                         
                         materials = [{
                             'item': None,
                             'item_name': 'MS Sheet (Raw Material)',
                             'quantity_required': sheets_needed,
                             'batch_number': 'TBD',
-                            'remarks': f'MS sheets to cut {int(production_qty):,} {job_card.item.name} ({plates_per_sheet} plates per sheet)'
+                            'remarks': f'MS sheets to cut {int(job_card_qty):,} {job_card.item.name} ({plates_per_sheet} plates per sheet)'
                         }]
                     else:
                         # For other processes, show the item being processed
                         materials = [{
                             'item': job_card.item,
-                            'quantity_required': production_qty,
+                            'quantity_required': job_card_qty,
                             'batch_number': 'TBD',
                             'remarks': f'Material for {job_card.process_name or "Processing"}'
                         }]
@@ -1107,19 +1102,19 @@ def generate_challan(job_card_id):
                 # For cutting process, show MS sheets
                 if job_card.process_name and 'cut' in job_card.process_name.lower():
                     plates_per_sheet = 50
-                    sheets_needed = (production_qty + plates_per_sheet - 1) // plates_per_sheet
+                    sheets_needed = (job_card_qty + plates_per_sheet - 1) // plates_per_sheet
                     
                     materials = [{
                         'item': None,
                         'item_name': 'MS Sheet (Raw Material)',
                         'quantity_required': sheets_needed,
                         'batch_number': 'TBD',
-                        'remarks': f'MS sheets to cut {int(production_qty):,} {job_card.item.name} ({plates_per_sheet} plates per sheet)'
+                        'remarks': f'MS sheets to cut {int(job_card_qty):,} {job_card.item.name} ({plates_per_sheet} plates per sheet)'
                     }]
                 else:
                     materials = [{
                         'item': job_card.item,
-                        'quantity_required': production_qty,
+                        'quantity_required': job_card_qty,
                         'batch_number': 'TBD',
                         'remarks': f'Material for {job_card.process_name or "Processing"}'
                     }]
@@ -1127,9 +1122,35 @@ def generate_challan(job_card_id):
         print(f"Error getting materials: {e}")
         pass
     
+    # Calculate expected scrap for this job card quantity
+    scrap_info = None
+    try:
+        from models import BOM, BOMProcess
+        if job_card.item:
+            bom = BOM.query.filter_by(product_id=job_card.item.id).first()
+            if bom:
+                # Find scrap for this specific process
+                process = BOMProcess.query.filter(
+                    BOMProcess.bom_id == bom.id,
+                    BOMProcess.process_name.ilike(f'%{job_card.process_name}%')
+                ).first()
+                
+                if process and process.scrap_weight_per_unit and process.scrap_tracking_enabled:
+                    total_scrap = process.scrap_weight_per_unit * (job_card.planned_quantity or 1)
+                    scrap_percent = (process.scrap_weight_per_unit / process.input_unit_weight * 100) if process.input_unit_weight else 0
+                    scrap_info = {
+                        'weight_per_unit': process.scrap_weight_per_unit,
+                        'total_weight': total_scrap,
+                        'percentage': scrap_percent,
+                        'tracking_enabled': process.scrap_tracking_enabled
+                    }
+    except Exception as e:
+        print(f"Error calculating scrap: {e}")
+    
     return render_template('job_cards/outsourced_challan.html', 
                          job_card=job_card, 
                          company_settings=company_settings,
                          materials=materials,
+                         scrap_info=scrap_info,
                          current_date=datetime.now().date(),
                          current_datetime=datetime.now())

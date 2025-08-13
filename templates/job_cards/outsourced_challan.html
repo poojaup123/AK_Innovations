@@ -257,12 +257,21 @@
                 </div>
                 <div class="detail-box">
                     <strong>Quantity Planned:</strong><br>
-                    {{ job_card.quantity_planned or (job_card.production.quantity_planned if job_card.production else 1) }} Pcs
+                    {{ job_card.planned_quantity or 1 }} Pcs
                 </div>
                 <div class="detail-box">
                     <strong>Target Completion:</strong><br>
                     {{ job_card.target_completion_date.strftime('%d/%m/%Y') if job_card.target_completion_date else 'Not Set' }}
                 </div>
+                {% if scrap_info %}
+                <div class="detail-box">
+                    <strong>Expected Scrap:</strong><br>
+                    <span style="color: #e74c3c; font-weight: bold;">{{ "%.2f"|format(scrap_info.total_weight) }} kg</span>
+                    <small style="display: block; color: #666; margin-top: 2px;">
+                        ({{ "%.3f"|format(scrap_info.weight_per_unit) }} kg × {{ job_card.planned_quantity }} pcs = {{ "%.1f"|format(scrap_info.percentage) }}%)
+                    </small>
+                </div>
+                {% endif %}
             </div>
             
             {% if job_card.special_instructions %}
@@ -304,7 +313,7 @@
                         <tr>
                             <td>1</td>
                             <td>{{ job_card.item.name if job_card.item else 'Material for Processing' }}</td>
-                            <td style="text-align: right;">{{ job_card.quantity_planned or 0 }}</td>
+                            <td style="text-align: right;">{{ job_card.planned_quantity or 0 }}</td>
                             <td>{{ job_card.item.uom.abbreviation if job_card.item and job_card.item.uom else 'Pcs' }}</td>
                             <td>-</td>
                             <td>For {{ job_card.process_name or 'Processing' }}</td>
