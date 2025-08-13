@@ -996,14 +996,14 @@ function calculateScrapFromWeightDifference(changedElement) {
             // Update the scrap weight field
             if (scrapWeightField) {
                 scrapWeightField.value = scrapWeightPerUnit.toFixed(3);
-                scrapWeightField.style.backgroundColor = '#e8f5e8';
+                scrapWeightField.style.backgroundColor = scrapPercentage > 50 ? '#fff3cd' : '#e8f5e8';
                 scrapWeightField.title = `Auto-calculated: Total scrap ${scrapWeight.toFixed(3)} kg ÷ ${inputQty} units = ${scrapWeightPerUnit.toFixed(3)} kg per unit`;
             }
             
-            // Update the scrap percentage field
+            // Update the scrap percentage field  
             if (scrapPercentField) {
                 scrapPercentField.value = scrapPercentage.toFixed(2);
-                scrapPercentField.style.backgroundColor = '#e8f5e8';
+                scrapPercentField.style.backgroundColor = scrapPercentage > 50 ? '#fff3cd' : '#e8f5e8';
                 scrapPercentField.title = `Auto-calculated: ${scrapWeight.toFixed(3)} kg scrap ÷ ${totalInputWeight.toFixed(3)} kg input × 100 = ${scrapPercentage.toFixed(2)}%`;
             }
             
@@ -1047,9 +1047,10 @@ function showScrapCalculationInfo(processDiv, calc) {
     infoDiv.innerHTML = `
         <i class="fas fa-calculator text-primary"></i> <strong>Auto-Calculated Scrap:</strong><br>
         <small>
-            <strong>Input:</strong> ${calc.inputQty} units × ${calc.inputUnitWeightRaw} ${calc.inputWeightUom} (${calc.inputUnitWeight.toFixed(3)} kg) = ${calc.totalInputWeight.toFixed(3)} kg<br>
-            <strong>Output:</strong> ${calc.outputQty} units × ${calc.outputUnitWeightRaw} ${calc.outputWeightUom} (${calc.outputUnitWeight.toFixed(3)} kg) = ${calc.totalOutputWeight.toFixed(3)} kg<br>
+            <strong>Input:</strong> ${calc.inputQty} units × ${calc.inputUnitWeightRaw} ${calc.inputWeightUom} = ${calc.totalInputWeight.toFixed(3)} kg total<br>
+            <strong>Output:</strong> ${calc.outputQty} units × ${calc.outputUnitWeightRaw} ${calc.outputWeightUom} = ${calc.totalOutputWeight.toFixed(3)} kg total<br>
             <strong>Scrap:</strong> ${calc.scrapWeight.toFixed(3)} kg total (${calc.scrapWeightPerUnit.toFixed(3)} kg/unit, ${calc.scrapPercentage.toFixed(2)}%)
+            ${calc.scrapPercentage > 50 ? '<br><span class="text-warning"><i class="fas fa-exclamation-triangle"></i> High scrap percentage - please verify units!</span>' : ''}
         </small>
     `;
 }
