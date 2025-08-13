@@ -1843,6 +1843,12 @@ def add_multi_bom_process(bom_id):
                 edit_process.output_quantity = float(form_data.get('processes[0][output_quantity]') or 1.0)
                 edit_process.transformation_type = form_data.get('processes[0][transformation_type]', 'modify')
                 
+                # Update weight tracking fields
+                edit_process.input_unit_weight = float(form_data.get('processes[0][input_unit_weight]') or 0)
+                edit_process.output_unit_weight = float(form_data.get('processes[0][output_unit_weight]') or 0)
+                edit_process.input_weight_uom = form_data.get('processes[0][input_weight_uom]', 'kg')
+                edit_process.output_weight_uom = form_data.get('processes[0][output_weight_uom]', 'kg')
+                
                 db.session.commit()
                 
                 # Trigger intelligent sync after editing process
