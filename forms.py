@@ -186,7 +186,7 @@ class PurchaseOrderItemForm(FlaskForm):
         # Load UOM choices
         try:
             from models.uom import UnitOfMeasure
-            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
             self.uom.choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
         except Exception:
             self.uom.choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
@@ -224,7 +224,7 @@ class SalesOrderItemForm(FlaskForm):
         # Load UOM choices
         try:
             from models.uom import UnitOfMeasure
-            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
             self.uom.choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
         except Exception:
             self.uom.choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
@@ -349,13 +349,13 @@ class JobWorkForm(FlaskForm):
         self.assigned_to.choices = assigned_choices
         
         # Populate input material choices
-        items = Item.query.order_by(Item.name).all()
+        items = Item.query.order_by(Item.name).limit(200).all()
         self.input_material_id.choices = [(0, 'Select Material')] + [(i.id, f"{i.code} - {i.name}") for i in items]
         
         # Load UOM choices
         try:
             from models.uom import UnitOfMeasure
-            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
             uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
             self.input_uom.choices = uom_choices
         except Exception:
@@ -386,13 +386,13 @@ class JobWorkProcessRowForm(FlaskForm):
         super(JobWorkProcessRowForm, self).__init__(*args, **kwargs)
         
         # Populate output product choices
-        items = Item.query.order_by(Item.name).all()
+        items = Item.query.order_by(Item.name).limit(200).all()
         self.output_product_id.choices = [(0, 'Select Product')] + [(i.id, f"{i.code} - {i.name}") for i in items]
         
         # Load UOM choices
         try:
             from models.uom import UnitOfMeasure
-            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
             self.uom.choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
         except Exception:
             self.uom.choices = [('', 'Select Unit'), ('piece', 'Piece'), ('kg', 'Kilogram')]
@@ -464,7 +464,7 @@ class DailyJobWorkForm(FlaskForm):
         # Load UOM choices
         try:
             from models.uom import UnitOfMeasure
-            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
             uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
             self.completed_uom.choices = uom_choices
             self.scrap_uom.choices = uom_choices
@@ -494,7 +494,7 @@ class JobWorkQuantityUpdateForm(FlaskForm):
         # Load UOM choices
         try:
             from models.uom import UnitOfMeasure
-            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
             self.received_uom.choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
         except Exception:
             self.received_uom.choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
@@ -529,7 +529,7 @@ class JobWorkTeamAssignmentForm(FlaskForm):
         # Load UOM choices
         try:
             from models.uom import UnitOfMeasure
-            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
             self.assigned_uom.choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
         except Exception:
             self.assigned_uom.choices = [('', 'Select Unit'), ('pcs', 'Pieces'), ('kg', 'Kilogram'), ('ltr', 'Liter')]
@@ -558,7 +558,7 @@ class ProductionForm(FlaskForm):
         # Load UOM choices
         try:
             from models.uom import UnitOfMeasure
-            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
             uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
             self.planned_uom.choices = uom_choices
             self.produced_uom.choices = uom_choices
@@ -609,7 +609,7 @@ class QualityIssueForm(FlaskForm):
         # Load UOM choices
         try:
             from models.uom import UnitOfMeasure
-            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
             uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
             self.affected_uom.choices = uom_choices
             self.quality_scrap_uom.choices = uom_choices
@@ -638,7 +638,7 @@ class QualityControlLogForm(FlaskForm):
         # Load UOM choices
         try:
             from models.uom import UnitOfMeasure
-            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
             uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
             self.inspected_uom.choices = uom_choices
             self.passed_uom.choices = uom_choices
@@ -794,7 +794,7 @@ class BOMForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super(BOMForm, self).__init__(*args, **kwargs)
         # Allow any product type for BOM creation - no restrictions
-        self.product_id.choices = [(0, 'Select Product')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.order_by(Item.name).all()]
+        self.product_id.choices = [(0, 'Select Product')] + [(i.id, f"{i.code} - {i.name}") for i in Item.query.order_by(Item.name).limit(200).all()]
         
         # Populate parent BOM choices (only top-level BOMs can be parents to avoid deep nesting)
         from models import BOM
@@ -804,7 +804,7 @@ class BOMForm(FlaskForm):
         # Populate UOM choices
         try:
             from models.uom import UnitOfMeasure
-            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
             self.output_uom_id.choices = [(0, 'Select UOM')] + [(u.id, f"{u.name} ({u.symbol})") for u in uoms]
             # Populate scrap UOM choices (typically weight-based)
             weight_uoms = [u for u in uoms if u.category == 'Weight']
@@ -850,7 +850,7 @@ class BOMItemForm(FlaskForm):
         super(BOMItemForm, self).__init__(*args, **kwargs)
         
         # Populate material choices - all items can be BOM materials now
-        items = Item.query.order_by(Item.name).all()
+        items = Item.query.order_by(Item.name).limit(200).all()
         material_choices = [(0, 'Select Material')] + [(i.id, f"{i.code} - {i.name}") for i in items]
         self.material_id.choices = material_choices
         self.item_id.choices = material_choices  # Legacy compatibility
@@ -858,7 +858,7 @@ class BOMItemForm(FlaskForm):
         # Populate UOM choices
         try:
             from models.uom import UnitOfMeasure
-            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
             self.uom_id.choices = [(0, 'Select UOM')] + [(u.id, f"{u.name} ({u.symbol})") for u in uoms]
         except Exception:
             self.uom_id.choices = [(0, 'Select UOM')]
@@ -936,7 +936,7 @@ class BOMProcessForm(FlaskForm):
         
         # Populate input and output product choices
         try:
-            products = Item.query.order_by(Item.name).all()
+            products = Item.query.order_by(Item.name).limit(200).all()
             product_choices = [(0, 'Select Product')] + [(p.id, f"{p.code} - {p.name}") for p in products]
             self.input_product_id.choices = product_choices
             self.output_product_id.choices = product_choices
@@ -1202,7 +1202,7 @@ class JobWorkBatchReturnForm(FlaskForm):
             self.job_work_id.choices = [(0, 'Select Job Work')]
         
         # Populate output item choices
-        items = Item.query.order_by(Item.name).all()
+        items = Item.query.order_by(Item.name).limit(200).all()
         self.output_item_id.choices = [(0, 'Select Output Product')] + [
             (i.id, f"{i.code} - {i.name}") for i in items
         ]
@@ -1243,7 +1243,7 @@ class BatchInventoryForm(FlaskForm):
         super(BatchInventoryForm, self).__init__(*args, **kwargs)
         
         # Populate item choices
-        items = Item.query.order_by(Item.name).all()
+        items = Item.query.order_by(Item.name).limit(200).all()
         self.item_id.choices = [(0, 'Select Item')] + [
             (i.id, f"{i.code} - {i.name}") for i in items
         ]

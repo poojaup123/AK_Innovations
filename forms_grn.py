@@ -74,7 +74,7 @@ class GRNLineItemForm(FlaskForm):
         # Load UOM choices
         try:
             from models.uom import UnitOfMeasure
-            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
             uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
             self.received_uom.choices = uom_choices
             self.passed_uom.choices = uom_choices

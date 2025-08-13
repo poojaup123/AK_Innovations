@@ -24,7 +24,7 @@ class JobWorkRateForm(FlaskForm):
     
     def __init__(self, *args, **kwargs):
         super(JobWorkRateForm, self).__init__(*args, **kwargs)
-        self.item_id.choices = [(0, 'Select Item')] + [(item.id, f"{item.code} - {item.name}") for item in Item.query.order_by(Item.name).all()]
+        self.item_id.choices = [(0, 'Select Item')] + [(item.id, f"{item.code} - {item.name}") for item in Item.query.order_by(Item.name).limit(200).all()]
         
         # Populate vendor choices with suppliers and vendors
         vendors = Supplier.query.filter(

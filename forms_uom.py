@@ -35,7 +35,7 @@ class UOMConversionForm(FlaskForm):
     
     def __init__(self, *args, **kwargs):
         super(UOMConversionForm, self).__init__(*args, **kwargs)
-        units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+        units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
         self.from_unit.choices = [(u.id, f"{u.name} ({u.symbol})") for u in units]
         self.to_unit.choices = [(u.id, f"{u.name} ({u.symbol})") for u in units]
 
@@ -71,11 +71,11 @@ class ItemUOMConversionForm(FlaskForm):
         super(ItemUOMConversionForm, self).__init__(*args, **kwargs)
         
         # Populate item choices
-        items = Item.query.order_by(Item.name).all()
+        items = Item.query.order_by(Item.name).limit(200).all()
         self.item.choices = [(i.id, f"{i.name} ({i.code})") for i in items]
         
         # Populate unit choices
-        units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+        units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
         unit_choices = [(u.id, f"{u.name} ({u.symbol}) - {u.category}") for u in units]
         
         self.purchase_unit.choices = unit_choices
@@ -95,11 +95,11 @@ class UOMCalculatorForm(FlaskForm):
         super(UOMCalculatorForm, self).__init__(*args, **kwargs)
         
         # Populate item choices
-        items = Item.query.order_by(Item.name).all()
+        items = Item.query.order_by(Item.name).limit(200).all()
         self.item.choices = [(i.id, f"{i.name} ({i.code})") for i in items]
         
         # Populate unit choices
-        units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+        units = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
         unit_choices = [(u.id, f"{u.name} ({u.symbol})") for u in units]
         
         self.from_unit.choices = unit_choices

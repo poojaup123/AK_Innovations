@@ -150,10 +150,10 @@ def dashboard():
     # Today's production summary - get active productions with proper item loading
     today_productions = Production.query.join(Item).filter(
         Production.status.in_(['planned', 'in_progress'])
-    ).all()
+    ).limit(50).all()
     
     # Products with BOM
-    products_with_bom = db.session.query(Item).join(BOM).filter(BOM.is_active == True).all()
+    products_with_bom = db.session.query(Item).join(BOM).filter(BOM.is_active == True).limit(100).all()
     
     return render_template('production/dashboard.html', 
                          stats=stats, 
@@ -1199,7 +1199,7 @@ def edit_bom(id):
     # Initialize form and populate choices first
     form = BOMForm()
     # Optimize: Load only necessary items with limit for performance
-    form.product_id.choices = [(i.id, f"{i.code} - {i.name}") for i in Item.query.order_by(Item.name).limit(1000).all()]
+    form.product_id.choices = [(i.id, f"{i.code} - {i.name}") for i in Item.query.order_by(Item.name).limit(200).all()]
     
     # For GET request, populate form with existing BOM data
     if request.method == 'GET':

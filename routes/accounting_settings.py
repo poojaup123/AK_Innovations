@@ -31,9 +31,9 @@ def general_settings():
     form = AccountingSettingsForm(obj=settings)
     
     # Populate account choices
-    cash_accounts = Account.query.filter_by(is_cash_account=True, is_active=True).all()
-    bank_accounts = Account.query.filter_by(is_bank_account=True, is_active=True).all()
-    all_accounts = Account.query.filter_by(is_active=True).all()
+    cash_accounts = Account.query.filter_by(is_cash_account=True, is_active=True).limit(100).all()
+    bank_accounts = Account.query.filter_by(is_bank_account=True, is_active=True).limit(100).all()
+    all_accounts = Account.query.filter_by(is_active=True).limit(500).all()
     
     form.default_cash_account_id.choices = [('', 'Select Cash Account')] + [(a.id, a.name) for a in cash_accounts]
     form.default_bank_account_id.choices = [('', 'Select Bank Account')] + [(a.id, a.name) for a in bank_accounts]
@@ -71,7 +71,7 @@ def add_cost_center():
     form = CostCenterForm()
     
     # Populate parent cost center choices
-    cost_centers = CostCenter.query.filter_by(is_active=True).all()
+    cost_centers = CostCenter.query.filter_by(is_active=True).limit(100).all()
     form.parent_center_id.choices = [('', 'No Parent')] + [(cc.id, cc.name) for cc in cost_centers]
     
     if form.validate_on_submit():
@@ -141,8 +141,8 @@ def add_ledger_mapping():
     form = LedgerMappingForm()
     
     # Populate account choices
-    accounts = Account.query.filter_by(is_active=True).all()
-    cost_centers = CostCenter.query.filter_by(is_active=True).all()
+    accounts = Account.query.filter_by(is_active=True).limit(500).all()
+    cost_centers = CostCenter.query.filter_by(is_active=True).limit(100).all()
     
     form.receivable_account_id.choices = [('', 'Select Account')] + [(a.id, a.name) for a in accounts]
     form.payable_account_id.choices = [('', 'Select Account')] + [(a.id, a.name) for a in accounts]
@@ -193,7 +193,7 @@ def add_payment_method():
     form = PaymentMethodForm()
     
     # Populate account choices
-    accounts = Account.query.filter_by(is_active=True).all()
+    accounts = Account.query.filter_by(is_active=True).limit(500).all()
     form.account_id.choices = [(a.id, a.name) for a in accounts]
     
     if form.validate_on_submit():

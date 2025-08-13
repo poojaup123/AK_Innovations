@@ -91,13 +91,13 @@ class JobWorkProcessForm(FlaskForm):
         super(JobWorkProcessForm, self).__init__(*args, **kwargs)
         
         # Populate customer choices from suppliers/vendors 
-        suppliers = Supplier.query.order_by(Supplier.name).all()
+        suppliers = Supplier.query.order_by(Supplier.name).limit(200).all()
         self.customer_name.choices = [('', 'Select Customer/Vendor')] + [(s.name, s.name) for s in suppliers]
         
         # Load UOM choices
         try:
             from models.uom import UnitOfMeasure
-            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+            uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(50).all()
             uom_choices = [('', 'Select Unit')] + [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
             self.input_uom.choices = uom_choices
             self.scrap_uom.choices = uom_choices
@@ -109,7 +109,7 @@ class JobWorkProcessForm(FlaskForm):
             self.output_uom.choices = fallback_choices
         
         # Populate output product choices with all items
-        items = Item.query.order_by(Item.name).all()
+        items = Item.query.order_by(Item.name).limit(300).all()
         self.output_item_id.choices = [('', 'Select Output Product')] + [(str(i.id), f"{i.code} - {i.name}") for i in items]
 
 
