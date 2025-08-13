@@ -1233,7 +1233,12 @@ def edit_bom(id):
         form.is_phantom_bom.data = bom.is_phantom_bom
         form.intermediate_product.data = bom.intermediate_product
     
-    # Debug removed after successful fix
+    if request.method == 'POST':
+        print(f"FORM SUBMISSION: overhead_percentage = {request.form.get('overhead_percentage')}")
+        print(f"FORM SUBMISSION: freight_cost_per_unit = {request.form.get('freight_cost_per_unit')}")
+        print(f"FORM SUBMISSION: markup_percentage = {request.form.get('markup_percentage')}")
+        print(f"FORM VALIDATION: {form.validate()}")
+        print(f"FORM ERRORS: {form.errors}")
     
     if form.validate_on_submit():
         # Check if BOM already exists for this product (excluding current BOM)
