@@ -370,7 +370,7 @@
                         <span class="text-secondary">🏭 Overhead: ₹{{ "%.2f"|format(overhead_cost_per_unit) }}</span><br>
                     {% endif %}
                     {% if tree.bom.estimated_scrap_percent and tree.bom.estimated_scrap_percent > 0 %}
-                        <span class="text-danger">♻️ Scrap Allowance: {{ tree.bom.estimated_scrap_percent }}%</span><br>
+                        <span class="text-danger">♻️ Scrap Allowance: {{ '%.3f'|format(tree.bom.estimated_scrap_percent) }}%</span><br>
                     {% endif %}
                     <hr style="margin: 0.5rem 0;">
                     <strong class="text-success">💰 Total Cost: ₹{{ "%.2f"|format(total_cost_per_unit) }}</strong>
