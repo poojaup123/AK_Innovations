@@ -2351,3 +2351,23 @@ def get_bom_job_work_data(bom_id):
             'success': False,
             'error': f'Error loading BOM data: {str(e)}'
         })
+
+@production_bp.route('/api/bom/<int:bom_id>/final_weight')
+@login_required
+def get_bom_final_weight(bom_id):
+    """API endpoint to get final product unit weight from last process"""
+    try:
+        bom = BOM.query.get_or_404(bom_id)
+        final_weight = bom.calculated_final_product_unit_weight
+        
+        return jsonify({
+            'success': True,
+            'final_weight': final_weight,
+            'message': f'Final weight calculated from last process: {final_weight:.3f} kg'
+        })
+    except Exception as e:
+        app.logger.error(f"Error fetching final weight for BOM {bom_id}: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500

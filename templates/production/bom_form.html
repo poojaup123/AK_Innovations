@@ -209,13 +209,22 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label">Final Product Unit Weight <span class="text-danger">*</span></label>
+                                    <label class="form-label">Final Product Unit Weight <span class="text-danger">*</span>
+                                        {% if bom and bom.processes %}
+                                        <button type="button" class="btn btn-sm btn-outline-primary ms-2" id="autoFetchWeightBtn" title="Auto-fetch from last process">
+                                            <i class="fas fa-sync-alt"></i> Auto-fetch
+                                        </button>
+                                        {% endif %}
+                                    </label>
                                     <div class="input-group">
-                                        {{ form.unit_weight(class="form-control", step="0.001", id="unit_weight", onchange="updateUnitWeightDisplay()", placeholder="Weight of final product") }}
+                                        {{ form.unit_weight(class="form-control", step="0.001", id="unit_weight", onchange="updateUnitWeightDisplay()", placeholder="Weight of final product", value=(bom.calculated_final_product_unit_weight if bom else '0.0')) }}
                                         {{ form.unit_weight_uom(class="form-select", style="max-width: 100px;") }}
                                     </div>
                                     <small class="text-info">
                                         <i class="fas fa-info-circle"></i> <strong>Final product weight</strong> - used for scrap % calculations and per kg cost conversions
+                                        {% if bom and bom.processes %}
+                                        <br><i class="fas fa-robot text-success"></i> <strong>Auto-calculated from last process:</strong> {{ '{:.3f}'.format(bom.calculated_final_product_unit_weight) }} kg
+                                        {% endif %}
                                     </small>
                                 </div>
                             </div>
@@ -1274,6 +1283,47 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize scrap conversion on page load
     convertScrapValues();
+    
+    // Handle auto-fetch weight button
+    $('#autoFetchWeightBtn').on('click', function() {
+        {% if bom and bom.id %}
+        const $btn = $(this);
+        const originalText = $btn.html();
+        
+        // Show loading state
+        $btn.html('<i class="fas fa-spinner fa-spin"></i> Fetching...').prop('disabled', true);
+        
+        // Fetch calculated weight from last process
+        fetch('/production/api/bom/{{ bom.id }}/final_weight')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    $('#unit_weight').val(data.final_weight.toFixed(3));
+                    updateUnitWeightDisplay();
+                    
+                    // Show success notification
+                    $btn.html('<i class="fas fa-check text-success"></i> Updated')
+                         .removeClass('btn-outline-primary')
+                         .addClass('btn-success');
+                    
+                    setTimeout(() => {
+                        $btn.html(originalText)
+                             .removeClass('btn-success')
+                             .addClass('btn-outline-primary')
+                             .prop('disabled', false);
+                    }, 2000);
+                } else {
+                    alert('Unable to fetch weight from processes: ' + data.message);
+                    $btn.html(originalText).prop('disabled', false);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching final weight:', error);
+                alert('Error fetching weight from last process');
+                $btn.html(originalText).prop('disabled', false);
+            });
+        {% endif %}
+    });
 });
     
     // Activate tab based on URL fragment on page load

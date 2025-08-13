@@ -2300,6 +2300,57 @@ class BOM(db.Model):
         return total_weight
     
     @property
+    def calculated_final_product_unit_weight(self):
+        """Calculate final product unit weight from the last manufacturing process output"""
+        if not self.processes:
+            # If no processes, use BOM's unit_weight or calculate from materials
+            return self.unit_weight or self.total_weight_per_unit
+        
+        # Sort processes by step number to get the final process
+        sorted_processes = sorted(self.processes, key=lambda p: p.step_number or 0)
+        if not sorted_processes:
+            return self.unit_weight or self.total_weight_per_unit
+        
+        final_process = sorted_processes[-1]  # Last process in sequence
+        
+        # Check if final process has output weight specified
+        if hasattr(final_process, 'output_unit_weight') and final_process.output_unit_weight:
+            final_weight = final_process.output_unit_weight
+            
+            # Convert to kg if needed (standardize to kg)
+            if hasattr(final_process, 'output_weight_uom'):
+                if final_process.output_weight_uom == 'g':
+                    final_weight = final_weight / 1000
+                elif final_process.output_weight_uom == 'lbs':
+                    final_weight = final_weight * 0.453592
+                elif final_process.output_weight_uom == 'oz':
+                    final_weight = final_weight * 0.0283495
+                elif final_process.output_weight_uom == 'ton':
+                    final_weight = final_weight * 1000
+                # 'kg' requires no conversion
+            
+            return final_weight
+        
+        # Fallback: check if any process has weight transformation
+        for process in reversed(sorted_processes):
+            if hasattr(process, 'output_unit_weight') and process.output_unit_weight:
+                weight = process.output_unit_weight
+                # Convert to kg if needed
+                if hasattr(process, 'output_weight_uom'):
+                    if process.output_weight_uom == 'g':
+                        weight = weight / 1000
+                    elif process.output_weight_uom == 'lbs':
+                        weight = weight * 0.453592
+                    elif process.output_weight_uom == 'oz':
+                        weight = weight * 0.0283495
+                    elif process.output_weight_uom == 'ton':
+                        weight = weight * 1000
+                return weight
+        
+        # Final fallback: use BOM's specified unit weight or calculated material weight
+        return self.unit_weight or self.total_weight_per_unit
+    
+    @property
     def total_process_cost_per_unit(self):
         """Calculate total process cost from all manufacturing processes using converted costs"""
         if not self.processes:
