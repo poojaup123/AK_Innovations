@@ -368,6 +368,35 @@
                                                 <small class="text-muted">
                                                     <i class="fas fa-info-circle"></i> {{ "1 Ms sheet → {} base plates of 48g each".format(bom.output_quantity|int) if bom and bom.output_quantity else "Component quantities × unit prices" }}
                                                 </small>
+                                                <hr>
+                                                <h6 class="text-primary">Complete Unit Cost</h6>
+                                                {% if bom and bom.output_quantity %}
+                                                <table class="table table-sm">
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Material Cost:</td>
+                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(bom.total_material_cost / bom.output_quantity) }}</strong></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Labor Cost:</td>
+                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(bom.calculated_labor_cost_per_unit) }}</strong></td>
+                                                        </tr>
+                                                        {% if bom.overhead_cost_per_unit and bom.overhead_cost_per_unit > 0 %}
+                                                        <tr>
+                                                            <td>Overhead Cost:</td>
+                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(bom.overhead_cost_per_unit) }}</strong></td>
+                                                        </tr>
+                                                        {% endif %}
+                                                        <tr class="table-primary">
+                                                            <td><strong>Total Unit Cost:</strong></td>
+                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format((bom.total_material_cost / bom.output_quantity) + bom.calculated_labor_cost_per_unit + (bom.overhead_cost_per_unit or 0)) }}</strong></td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                                <small class="text-success">
+                                                    <i class="fas fa-calculator"></i> Complete cost for each {{ bom.product.name if bom.product else 'base plate' }}
+                                                </small>
+                                                {% endif %}
                                             </div>
                                         </div>
                                     </div>
