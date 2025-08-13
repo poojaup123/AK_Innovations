@@ -101,12 +101,12 @@
                                                         <span class="input-group-text">₹</span>
                                                         <input type="number" step="any" class="form-control" name="processes[0][cost_per_unit]" value="{{ edit_process.cost_per_unit if edit_process else '' }}" placeholder="0.00">
                                                         <select class="form-select" name="processes[0][cost_unit]" style="max-width: 120px;">
-                                                            <option value="per_unit">per unit</option>
-                                                            <option value="per_kg">per kg</option>
-                                                            <option value="per_meter">per meter</option>
-                                                            <option value="per_hour">per hour</option>
-                                                            <option value="per_piece">per piece</option>
-                                                            <option value="per_batch">per batch</option>
+                                                            <option value="per_unit" {% if not edit_process or edit_process.cost_unit == 'per_unit' %}selected{% endif %}>per unit</option>
+                                                            <option value="per_kg" {% if edit_process and edit_process.cost_unit == 'per_kg' %}selected{% endif %}>per kg</option>
+                                                            <option value="per_meter" {% if edit_process and edit_process.cost_unit == 'per_meter' %}selected{% endif %}>per meter</option>
+                                                            <option value="per_hour" {% if edit_process and edit_process.cost_unit == 'per_hour' %}selected{% endif %}>per hour</option>
+                                                            <option value="per_piece" {% if edit_process and edit_process.cost_unit == 'per_piece' %}selected{% endif %}>per piece</option>
+                                                            <option value="per_batch" {% if edit_process and edit_process.cost_unit == 'per_batch' %}selected{% endif %}>per batch</option>
                                                         </select>
                                                     </div>
                                                     <small class="form-text text-muted">Cost for this manufacturing process</small>
@@ -130,11 +130,12 @@
                                                                 <option value="">Select Material Source</option>
                                                                 {% for item in bom.items %}
                                                                     {% if item.material %}
-                                                                    <option value="bom_component_{{ item.id }}">{{ item.material.name }} ({{ item.qty_required }} {{ item.uom.symbol if item.uom else item.unit }})</option>
+                                                                    <option value="bom_component_{{ item.id }}" {% if edit_process and edit_process.input_material_source == 'bom_component_' + item.id|string %}selected{% endif %}>{{ item.material.name }} ({{ item.qty_required }} {{ item.uom.symbol if item.uom else item.unit }})</option>
                                                                     {% endif %}
                                                                 {% endfor %}
-                                                                <option value="raw_material">Direct Raw Material</option>
-                                                                <option value="previous_process_output">Previous Process Output</option>
+                                                                <option value="raw_material" {% if edit_process and edit_process.input_material_source == 'raw_material' %}selected{% endif %}>Direct Raw Material</option>
+                                                                <option value="previous_process_output" {% if edit_process and edit_process.input_material_source == 'previous_process_output' %}selected{% endif %}>Previous Process Output</option>
+                                                                <option value="bom_components" {% if edit_process and edit_process.input_material_source == 'bom_components' %}selected{% endif %}>BOM Components (General)</option>
                                                             </select>
                                                             <small class="text-muted">Select material source</small>
                                                         </div>
@@ -167,11 +168,11 @@
                                                                 <input type="number" step="any" class="form-control input-unit-weight" 
                                                                        name="processes[0][input_unit_weight]" value="{{ edit_process.input_unit_weight if edit_process else '' }}" placeholder="0.000" readonly>
                                                                 <select class="form-select input-weight-uom" name="processes[0][input_weight_uom]" style="max-width: 80px;">
-                                                                    <option value="kg" selected>kg</option>
-                                                                    <option value="g">g</option>
-                                                                    <option value="lbs">lbs</option>
-                                                                    <option value="oz">oz</option>
-                                                                    <option value="ton">ton</option>
+                                                                    <option value="kg" {% if not edit_process or edit_process.input_weight_uom == 'kg' %}selected{% endif %}>kg</option>
+                                                                    <option value="g" {% if edit_process and edit_process.input_weight_uom == 'g' %}selected{% endif %}>g</option>
+                                                                    <option value="lbs" {% if edit_process and edit_process.input_weight_uom == 'lbs' %}selected{% endif %}>lbs</option>
+                                                                    <option value="oz" {% if edit_process and edit_process.input_weight_uom == 'oz' %}selected{% endif %}>oz</option>
+                                                                    <option value="ton" {% if edit_process and edit_process.input_weight_uom == 'ton' %}selected{% endif %}>ton</option>
                                                                 </select>
                                                             </div>
                                                             <small class="text-muted">Weight per input unit</small>
@@ -246,7 +247,7 @@
                                                 </div>
                                                 
                                                 <div class="form-check mb-3">
-                                                    <input class="form-check-input" type="checkbox" name="processes[0][scrap_tracking_enabled]" value="true" checked>
+                                                    <input class="form-check-input" type="checkbox" name="processes[0][scrap_tracking_enabled]" value="true" {% if not edit_process or edit_process.scrap_tracking_enabled %}checked{% endif %}>
                                                     <label class="form-check-label">
                                                         <i class="fas fa-chart-line text-success"></i> Enable Scrap Tracking for this Process
                                                     </label>
