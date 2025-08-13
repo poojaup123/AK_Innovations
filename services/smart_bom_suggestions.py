@@ -450,6 +450,8 @@ class SmartBOMSuggestionService:
                     'title': f"Purchase Additional Materials for {suggestion['target_item_name']} Production",
                     'description': f"Purchase {len(material_shortages)} materials to satisfy remaining {(suggestion['target_quantity'] - max_producible):.1f} units (Check consolidated options above for potential cost savings)",
                     'target_item': suggestion['target_item_name'],
+                    'target_item_id': suggestion.get('target_item_id'),  # Add missing target_item_id
+                    'target_item_name': suggestion.get('target_item_name'),  # Add missing target_item_name
                     'remaining_quantity': suggestion['target_quantity'] - max_producible,
                     'material_shortages': material_shortages,
                     'priority': 'high',
@@ -467,15 +469,16 @@ class SmartBOMSuggestionService:
             # Add all generated suggestions for this item
             optimized_suggestions.extend(suggestions_to_add)
         
-        # Deduplicate suggestions more effectively
+        # Deduplicate suggestions more effectively - but keep separate suggestions for different target items
         seen_suggestions = {}
         deduplicated_suggestions = []
         
         for suggestion in optimized_suggestions:
-            # Create a unique key based on item name and suggestion type
+            # Create a unique key based on target item ID, item name, and suggestion type to ensure separate items get separate suggestions
+            target_item_id = suggestion.get('target_item_id', suggestion.get('bom_id', ''))
             item_name = suggestion.get('target_item_name', '')
             suggestion_type = suggestion.get('type', '')
-            unique_key = f"{item_name}|{suggestion_type}"
+            unique_key = f"{target_item_id}|{item_name}|{suggestion_type}"
             
             # Only add if we haven't seen this exact combination
             if unique_key not in seen_suggestions:
