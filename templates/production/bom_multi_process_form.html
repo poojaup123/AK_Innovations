@@ -41,10 +41,10 @@
                             </div>
                             <div class="card-body">
                                 <div id="processContainer">
-                                    <!-- Process 1 (Default) -->
-                                    <div class="process-item border rounded p-3 mb-3" data-process="1">
+                                    <!-- Dynamic Process (Based on Current Process Count) -->
+                                    <div class="process-item border rounded p-3 mb-3" data-process="{{ bom.processes|length + 1 }}">
                                         <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <h6 class="text-primary mb-0">{% if edit_process %}Edit: {{ edit_process.process_name }}{% else %}Process 1{% endif %}</h6>
+                                            <h6 class="text-primary mb-0">{% if edit_process %}Edit: {{ edit_process.process_name }}{% else %}Process {{ bom.processes|length + 1 }}{% endif %}</h6>
                                             <button type="button" class="btn btn-sm btn-outline-danger remove-process" style="display: none;">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -70,7 +70,7 @@
                                             <div class="col-md-6">
                                                 <div class="form-group mb-3">
                                                     <label class="form-label">Sequence Number</label>
-                                                    <input type="number" class="form-control step-number" name="processes[0][step_number]" value="{{ edit_process.step_number if edit_process else '1' }}" required>
+                                                    <input type="number" class="form-control step-number" name="processes[0][step_number]" value="{{ edit_process.step_number if edit_process else (bom.processes|length + 1) }}" required>
                                                 </div>
                                             </div>
                                         </div>
@@ -137,7 +137,9 @@
                                                                     {% endif %}
                                                                 {% endfor %}
                                                                 <option value="raw_material" {% if edit_process and edit_process.input_material_source == 'raw_material' %}selected{% endif %}>Direct Raw Material</option>
+                                                                {% if bom.processes|length > 0 %}
                                                                 <option value="previous_process_output" {% if edit_process and edit_process.input_material_source == 'previous_process_output' %}selected{% endif %}>Previous Process Output</option>
+                                                                {% endif %}
                                                                 <option value="bom_components" {% if edit_process and edit_process.input_material_source == 'bom_components' %}selected{% endif %}>BOM Components (General)</option>
                                                             </select>
                                                             <small class="text-muted">Select material source</small>
