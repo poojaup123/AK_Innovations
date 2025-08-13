@@ -373,70 +373,121 @@
                                                 {% if bom and bom.output_quantity %}
                                                 {% set material_cost_per_unit = bom.total_material_cost / bom.output_quantity %}
                                                 {% set labor_cost_per_unit = bom.calculated_labor_cost_per_unit %}
-                                                {% set overhead_cost_per_unit = bom.overhead_cost_per_unit or (material_cost_per_unit * ((bom.overhead_percentage or 0) / 100)) %}
-                                                {% set freight_cost_per_unit = bom.freight_cost_per_unit or 0 %}
                                                 
-                                                <table class="table table-sm">
+                                                <table class="table table-sm" id="costBreakdownTable">
                                                     <tbody>
                                                         <tr>
                                                             <td>Material Cost:</td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(material_cost_per_unit) }}</strong></td>
+                                                            <td class="text-end"><strong>₹<span id="materialCostDisplay">{{ '{:.2f}'.format(material_cost_per_unit) }}</span></strong></td>
                                                         </tr>
                                                         <tr>
                                                             <td>Labor Cost:</td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(labor_cost_per_unit) }}</strong></td>
+                                                            <td class="text-end"><strong>₹<span id="laborCostDisplay">{{ '{:.2f}'.format(labor_cost_per_unit) }}</span></strong></td>
                                                         </tr>
-                                                        {% if overhead_cost_per_unit > 0 %}
-                                                        <tr>
-                                                            <td>Overhead Cost{% if bom.overhead_percentage %} ({{ bom.overhead_percentage }}%){% endif %}:</td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(overhead_cost_per_unit) }}</strong></td>
+                                                        <tr id="overheadRow">
+                                                            <td>Overhead Cost (<span id="overheadPercentDisplay">0</span>%):</td>
+                                                            <td class="text-end"><strong>₹<span id="overheadCostDisplay">0.00</span></strong></td>
                                                         </tr>
-                                                        {% endif %}
-                                                        {% if freight_cost_per_unit > 0 %}
-                                                        <tr>
+                                                        <tr id="freightRow">
                                                             <td>Freight Cost:</td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(freight_cost_per_unit) }}</strong></td>
+                                                            <td class="text-end"><strong>₹<span id="freightCostDisplay">0.00</span></strong></td>
                                                         </tr>
-                                                        {% endif %}
-                                                        
-                                                        {% set total_cost_per_unit = material_cost_per_unit + labor_cost_per_unit + overhead_cost_per_unit + freight_cost_per_unit %}
                                                         <tr class="table-secondary">
                                                             <td><strong>Total Cost:</strong></td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(total_cost_per_unit) }}</strong></td>
+                                                            <td class="text-end"><strong>₹<span id="totalCostDisplay">{{ '{:.2f}'.format(material_cost_per_unit + labor_cost_per_unit) }}</span></strong></td>
                                                         </tr>
-                                                        
-                                                        {% if bom.scrap_value_recovery_percent and bom.scrap_value_recovery_percent > 0 %}
-                                                        {% set scrap_recovery_per_unit = material_cost_per_unit * (bom.scrap_value_recovery_percent / 100) %}
-                                                        <tr class="text-success">
-                                                            <td>Scrap Recovery ({{ bom.scrap_value_recovery_percent }}%):</td>
-                                                            <td class="text-end"><strong>-₹{{ '{:.2f}'.format(scrap_recovery_per_unit) }}</strong></td>
+                                                        <tr class="text-success" id="scrapRecoveryRow">
+                                                            <td>Scrap Recovery (<span id="scrapPercentDisplay">0</span>%):</td>
+                                                            <td class="text-end"><strong>-₹<span id="scrapRecoveryDisplay">0.00</span></strong></td>
                                                         </tr>
-                                                        {% set net_cost_per_unit = total_cost_per_unit - scrap_recovery_per_unit %}
-                                                        {% else %}
-                                                        {% set net_cost_per_unit = total_cost_per_unit %}
-                                                        {% endif %}
-                                                        
                                                         <tr class="table-info">
                                                             <td><strong>Net Manufacturing Cost:</strong></td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(net_cost_per_unit) }}</strong></td>
+                                                            <td class="text-end"><strong>₹<span id="netCostDisplay">{{ '{:.2f}'.format(material_cost_per_unit + labor_cost_per_unit) }}</span></strong></td>
                                                         </tr>
-                                                        
-                                                        {% if bom.markup_percentage and bom.markup_percentage > 0 %}
-                                                        {% set markup_value_per_unit = net_cost_per_unit * (bom.markup_percentage / 100) %}
-                                                        <tr class="text-warning">
-                                                            <td>Markup ({{ bom.markup_percentage }}%):</td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(markup_value_per_unit) }}</strong></td>
+                                                        <tr class="text-warning" id="markupRow">
+                                                            <td>Markup (<span id="markupPercentDisplay">0</span>%):</td>
+                                                            <td class="text-end"><strong>₹<span id="markupValueDisplay">0.00</span></strong></td>
                                                         </tr>
-                                                        <tr class="table-success">
+                                                        <tr class="table-success" id="sellingPriceRow">
                                                             <td><strong>Selling Price:</strong></td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(net_cost_per_unit + markup_value_per_unit) }}</strong></td>
+                                                            <td class="text-end"><strong>₹<span id="sellingPriceDisplay">{{ '{:.2f}'.format(material_cost_per_unit + labor_cost_per_unit) }}</span></strong></td>
                                                         </tr>
-                                                        {% endif %}
                                                     </tbody>
                                                 </table>
                                                 <small class="text-success">
-                                                    <i class="fas fa-calculator"></i> Complete cost for each {{ bom.product.name if bom.product else 'base plate' }}
+                                                    <i class="fas fa-calculator"></i> Live calculations based on form inputs
                                                 </small>
+                                                
+                                                <script>
+                                                // Store base costs for calculations
+                                                const materialCostPerUnit = {{ material_cost_per_unit }};
+                                                const laborCostPerUnit = {{ labor_cost_per_unit }};
+                                                
+                                                function updateCostBreakdown() {
+                                                    // Get form values
+                                                    const overheadPercent = parseFloat(document.querySelector('input[name="overhead_percentage"]')?.value || 0);
+                                                    const overheadFixed = parseFloat(document.querySelector('input[name="overhead_cost_per_unit"]')?.value || 0);
+                                                    const freightCost = parseFloat(document.querySelector('input[name="freight_cost_per_unit"]')?.value || 0);
+                                                    const markupPercent = parseFloat(document.querySelector('input[name="markup_percentage"]')?.value || 0);
+                                                    const scrapRecoveryPercent = parseFloat(document.querySelector('input[name="scrap_value_recovery_percent"]')?.value || 0);
+                                                    
+                                                    // Calculate overhead cost (use fixed cost if provided, otherwise percentage)
+                                                    const overheadCost = overheadFixed > 0 ? overheadFixed : (materialCostPerUnit * overheadPercent / 100);
+                                                    
+                                                    // Calculate total cost
+                                                    const totalCost = materialCostPerUnit + laborCostPerUnit + overheadCost + freightCost;
+                                                    
+                                                    // Calculate scrap recovery
+                                                    const scrapRecovery = materialCostPerUnit * scrapRecoveryPercent / 100;
+                                                    
+                                                    // Calculate net cost
+                                                    const netCost = totalCost - scrapRecovery;
+                                                    
+                                                    // Calculate markup and selling price
+                                                    const markupValue = netCost * markupPercent / 100;
+                                                    const sellingPrice = netCost + markupValue;
+                                                    
+                                                    // Update display
+                                                    document.getElementById('overheadPercentDisplay').textContent = overheadPercent.toFixed(1);
+                                                    document.getElementById('overheadCostDisplay').textContent = overheadCost.toFixed(2);
+                                                    document.getElementById('freightCostDisplay').textContent = freightCost.toFixed(2);
+                                                    document.getElementById('totalCostDisplay').textContent = totalCost.toFixed(2);
+                                                    document.getElementById('scrapPercentDisplay').textContent = scrapRecoveryPercent.toFixed(1);
+                                                    document.getElementById('scrapRecoveryDisplay').textContent = scrapRecovery.toFixed(2);
+                                                    document.getElementById('netCostDisplay').textContent = netCost.toFixed(2);
+                                                    document.getElementById('markupPercentDisplay').textContent = markupPercent.toFixed(1);
+                                                    document.getElementById('markupValueDisplay').textContent = markupValue.toFixed(2);
+                                                    document.getElementById('sellingPriceDisplay').textContent = sellingPrice.toFixed(2);
+                                                    
+                                                    // Show/hide rows based on values
+                                                    document.getElementById('overheadRow').style.display = overheadCost > 0 ? '' : 'none';
+                                                    document.getElementById('freightRow').style.display = freightCost > 0 ? '' : 'none';
+                                                    document.getElementById('scrapRecoveryRow').style.display = scrapRecovery > 0 ? '' : 'none';
+                                                    document.getElementById('markupRow').style.display = markupValue > 0 ? '' : 'none';
+                                                }
+                                                
+                                                // Add event listeners to form inputs
+                                                document.addEventListener('DOMContentLoaded', function() {
+                                                    const inputs = [
+                                                        'input[name="overhead_percentage"]',
+                                                        'input[name="overhead_cost_per_unit"]',
+                                                        'input[name="freight_cost_per_unit"]',
+                                                        'input[name="markup_percentage"]',
+                                                        'input[name="scrap_value_recovery_percent"]'
+                                                    ];
+                                                    
+                                                    inputs.forEach(selector => {
+                                                        const input = document.querySelector(selector);
+                                                        if (input) {
+                                                            input.addEventListener('input', updateCostBreakdown);
+                                                            input.addEventListener('change', updateCostBreakdown);
+                                                        }
+                                                    });
+                                                    
+                                                    // Initial calculation
+                                                    setTimeout(updateCostBreakdown, 100);
+                                                });
+                                                </script>
                                                 {% endif %}
                                             </div>
                                         </div>
