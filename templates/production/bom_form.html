@@ -332,10 +332,10 @@
                                                 <tbody>
                                                     {% for item in bom.items if bom %}
                                                     <tr>
-                                                        <td>{{ item.material.name if item.material else (item.item.name if item.item else 'N/A') }}</td>
+                                                        <td>{{ item.item.name if item.item else 'N/A' }}</td>
                                                         <td>{{ item.qty_required }} {{ item.uom.symbol if item.uom else item.unit }}</td>
-                                                        <td>₹{{ '{:,.2f}'.format(item.material.unit_price if item.material else (item.item.unit_price if item.item else 0)) }}</td>
-                                                        <td class="text-end">₹{{ '{:,.2f}'.format((item.qty_required or 0) * (item.material.unit_price if item.material else (item.item.unit_price if item.item else 0))) }}</td>
+                                                        <td>₹{{ '{:,.2f}'.format(item.item.unit_price) if item.item and item.item.unit_price else '0.00' }}</td>
+                                                        <td class="text-end">₹{{ '{:,.2f}'.format((item.qty_required or 0) * (item.item.unit_price or 0)) }}</td>
                                                     </tr>
                                                     {% endfor %}
                                                     {% if not bom or not bom.items %}

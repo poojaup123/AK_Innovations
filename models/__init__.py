@@ -3031,57 +3031,6 @@ class BOMItem(db.Model):
         if self.scrap_percent > 0:
             return base_qty * (1 + self.scrap_percent / 100)
         return base_qty
-    
-    @property
-    def price_comparison(self):
-        """Compare BOM stored price with current inventory price"""
-        material = self.material or self.item
-        if not material:
-            return {
-                'bom_price': self.unit_cost or 0,
-                'current_price': 0,
-                'variance': 0,
-                'variance_percent': 0,
-                'status': 'no_material',
-                'needs_update': False
-            }
-        
-        bom_price = self.unit_cost or 0
-        current_price = material.unit_price or 0
-        
-        if bom_price == 0 and current_price == 0:
-            return {
-                'bom_price': 0,
-                'current_price': 0,
-                'variance': 0,
-                'variance_percent': 0,
-                'status': 'no_price',
-                'needs_update': False
-            }
-        
-        variance = current_price - bom_price
-        variance_percent = (variance / bom_price * 100) if bom_price > 0 else 0
-        
-        # Determine status and if update is needed
-        if abs(variance_percent) < 5:
-            status = 'current'
-            needs_update = False
-        elif abs(variance_percent) < 15:
-            status = 'minor_variance'
-            needs_update = False
-        else:
-            status = 'major_variance'
-            needs_update = True
-        
-        return {
-            'bom_price': bom_price,
-            'current_price': current_price,
-            'variance': variance,
-            'variance_percent': round(variance_percent, 2),
-            'status': status,
-            'needs_update': needs_update,
-            'last_checked': datetime.utcnow().strftime('%Y-%m-%d %H:%M')
-        }
 
 class QualityIssue(db.Model):
     __tablename__ = 'quality_issues'
