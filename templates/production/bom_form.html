@@ -356,11 +356,9 @@
                                                                 {% if price_comp.variance > 0 %}+{% endif %}{{ '{:.1f}'.format(price_comp.variance_percent) }}%
                                                             </span>
                                                             {% if price_comp.needs_update %}
-                                                            <br><small class="text-muted">
-                                                                <i class="fas fa-sync-alt text-primary" style="cursor: pointer;" 
-                                                                   onclick="updateBOMItemPrice({{ item.id }}, {{ price_comp.current_price }})" 
-                                                                   title="Click to sync price"></i> 
-                                                                Auto-sync?
+                                                            <br><small class="text-info">
+                                                                <i class="fas fa-info-circle"></i> 
+                                                                Price difference detected
                                                             </small>
                                                             {% endif %}
                                                             {% else %}
@@ -1248,34 +1246,6 @@
 
 {% block scripts %}
 <script>
-// Price Auto-Sync Function
-function updateBOMItemPrice(itemId, newPrice) {
-    if (confirm(`Update BOM price to ₹${newPrice.toFixed(2)}? This will sync with current inventory price.`)) {
-        fetch('/production/api/bom-item/' + itemId + '/update-price', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
-            },
-            body: JSON.stringify({
-                'new_price': newPrice
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Reload the page to show updated prices
-                location.reload();
-            } else {
-                alert('Error updating price: ' + data.error);
-            }
-        })
-        .catch(error => {
-            alert('Error: ' + error);
-        });
-    }
-}
-
 // Dynamic Scrap Weight to Percentage Conversion
 function convertScrapValues() {
     const scrapWeight = parseFloat(document.getElementById('scrap_weight').value) || 0;
