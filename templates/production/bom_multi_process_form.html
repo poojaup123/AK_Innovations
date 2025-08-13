@@ -153,7 +153,7 @@
                                                                        name="processes[0][input_quantity]" value="{{ edit_process.input_quantity if edit_process else '' }}" placeholder="1.0"
                                                                        oninput="calculateScrapFromWeightDifference(this)"
                                                                        {% if edit_process and edit_process.input_material_source == 'previous_process_output' %}readonly style="background-color: #d1ecf1;"{% endif %}>
-                                                                <select class="form-select input-qty-uom" name="processes[0][input_qty_uom]" style="max-width: 80px;" {% if edit_process and edit_process.input_material_source == 'previous_process_output' %}disabled style="background-color: #d1ecf1; max-width: 80px;"{% endif %}>
+                                                                <select class="form-select input-qty-uom" name="processes[0][input_qty_uom]" {% if edit_process and edit_process.input_material_source == 'previous_process_output' %}disabled style="background-color: #d1ecf1; max-width: 80px;"{% else %}style="max-width: 80px;"{% endif %}>
                                                                     <option value="pcs" {% if not edit_process or (edit_process and edit_process.input_material_source == 'previous_process_output') %}selected{% endif %}>Pcs</option>
                                                                     <option value="m">m</option>
                                                                     <option value="cm">cm</option>
@@ -176,7 +176,7 @@
                                                                        name="processes[0][input_unit_weight]" value="{% if edit_process and edit_process.input_material_source == 'previous_process_output' %}0.048{% else %}{{ edit_process.input_unit_weight if edit_process else '' }}{% endif %}" placeholder="0.000"
                                                                        {% if edit_process and edit_process.input_material_source == 'previous_process_output' %}readonly style="background-color: #d1ecf1;"{% endif %}
                                                                        title="{% if edit_process and edit_process.input_material_source == 'previous_process_output' %}Auto-populated from previous process output{% endif %}"
-                                                                <select class="form-select input-weight-uom" name="processes[0][input_weight_uom]" style="max-width: 80px;" onchange="calculateScrapFromWeightDifference(this)">
+                                                                <select class="form-select input-weight-uom" name="processes[0][input_weight_uom]" {% if edit_process and edit_process.input_material_source == 'previous_process_output' %}disabled style="background-color: #d1ecf1; max-width: 80px;"{% else %}style="max-width: 80px;"{% endif %} onchange="calculateScrapFromWeightDifference(this)">
                                                                     <option value="kg" {% if not edit_process or edit_process.input_weight_uom == 'kg' %}selected{% endif %}>kg</option>
                                                                     <option value="g" {% if edit_process and edit_process.input_weight_uom == 'g' %}selected{% endif %}>g</option>
                                                                     <option value="lbs" {% if edit_process and edit_process.input_weight_uom == 'lbs' %}selected{% endif %}>lbs</option>
