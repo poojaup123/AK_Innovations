@@ -2825,6 +2825,12 @@ class BOMProcess(db.Model):
     output_quantity = db.Column(db.Float, default=1.0)  # Output quantity per unit
     transformation_type = db.Column(db.String(50), default='modify')  # modify, convert, assemble, disassemble
     
+    # Weight tracking fields
+    input_unit_weight = db.Column(db.Float, default=0.0)  # Input weight per unit
+    output_unit_weight = db.Column(db.Float, default=0.0)  # Output weight per unit  
+    input_weight_uom = db.Column(db.String(10), default='kg')  # Input weight unit of measure
+    output_weight_uom = db.Column(db.String(10), default='kg')  # Output weight unit of measure
+    
     notes = db.Column(db.Text)
     
     # Relationships

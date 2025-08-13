@@ -1893,7 +1893,12 @@ def add_multi_bom_process(bom_id):
                         'output_product_id': int(form_data.get(f'processes[{index}][output_product_id]') or 0) or None,
                         'input_quantity': float(form_data.get(f'processes[{index}][input_quantity]') or 1.0),
                         'output_quantity': float(form_data.get(f'processes[{index}][output_quantity]') or 1.0),
-                        'transformation_type': form_data.get(f'processes[{index}][transformation_type]', 'modify')
+                        'transformation_type': form_data.get(f'processes[{index}][transformation_type]', 'modify'),
+                        # Weight tracking fields
+                        'input_unit_weight': float(form_data.get(f'processes[{index}][input_unit_weight]') or 0),
+                        'output_unit_weight': float(form_data.get(f'processes[{index}][output_unit_weight]') or 0),
+                        'input_weight_uom': form_data.get(f'processes[{index}][input_weight_uom]', 'kg'),
+                        'output_weight_uom': form_data.get(f'processes[{index}][output_weight_uom]', 'kg')
                     }
                     processes_data.append(process_data)
                 
@@ -1927,7 +1932,12 @@ def add_multi_bom_process(bom_id):
                         output_product_id=process_data['output_product_id'],
                         input_quantity=process_data['input_quantity'],
                         output_quantity=process_data['output_quantity'],
-                        transformation_type=process_data['transformation_type']
+                        transformation_type=process_data['transformation_type'],
+                        # Weight tracking fields
+                        input_unit_weight=process_data['input_unit_weight'],
+                        output_unit_weight=process_data['output_unit_weight'],
+                        input_weight_uom=process_data['input_weight_uom'],
+                        output_weight_uom=process_data['output_weight_uom']
                     )
                     db.session.add(bom_process)
                     created_count += 1

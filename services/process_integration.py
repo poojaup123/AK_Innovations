@@ -25,8 +25,13 @@ class ProcessIntegrationService:
         total_scrap_percent = 0.0
         total_time_hours = 0.0
         process_notes = []
+        final_output_weight = None
+        last_process = None
         
-        for process in bom.processes:
+        # Sort processes by step number to find the last process
+        sorted_processes = sorted(bom.processes, key=lambda p: p.step_number)
+        
+        for process in sorted_processes:
             # Labor cost calculation
             if process.labor_cost_per_unit:
                 total_labor_cost += process.labor_cost_per_unit
@@ -42,11 +47,53 @@ class ProcessIntegrationService:
             # Collect process notes
             if process.notes:
                 process_notes.append(f"{process.process_name}: {process.notes}")
+            
+            # Track the last process for final weight calculation
+            last_process = process
+        
+        # Get final output weight from the last process (highest step number)
+        if last_process:
+            # Check for various possible field names for output weight
+            output_weight_field = None
+            if hasattr(last_process, 'output_unit_weight') and last_process.output_unit_weight:
+                output_weight_field = last_process.output_unit_weight
+            elif hasattr(last_process, 'output_weight') and last_process.output_weight:
+                output_weight_field = last_process.output_weight
+            elif hasattr(last_process, 'unit_output_weight') and last_process.unit_output_weight:
+                output_weight_field = last_process.unit_output_weight
+            
+            if output_weight_field:
+                final_output_weight = output_weight_field
+                
+                # Convert to kg if needed (assuming BOM weight is stored in kg)
+                weight_conversions = {
+                    'g': 0.001,    # grams to kg
+                    'lbs': 0.453592,  # pounds to kg
+                    'oz': 0.0283495,  # ounces to kg
+                    'ton': 1000,   # tons to kg
+                    'kg': 1.0      # kg to kg (no conversion)
+                }
+                
+                # Check for UOM field variations
+                uom = 'kg'  # default
+                if hasattr(last_process, 'output_weight_uom'):
+                    uom = getattr(last_process, 'output_weight_uom', 'kg')
+                elif hasattr(last_process, 'output_unit_weight_uom'):
+                    uom = getattr(last_process, 'output_unit_weight_uom', 'kg')
+                elif hasattr(last_process, 'unit_output_weight_uom'):
+                    uom = getattr(last_process, 'unit_output_weight_uom', 'kg')
+                
+                conversion_factor = weight_conversions.get(uom, 1.0)
+                final_output_weight = final_output_weight * conversion_factor
         
         # Update BOM with calculated values
         bom.labor_cost_per_unit = total_labor_cost
         bom.estimated_scrap_percent = total_scrap_percent
         bom.labor_hours_per_unit = total_time_hours
+        
+        # Update BOM final product unit weight from last process output
+        if final_output_weight is not None:
+            bom.unit_weight = final_output_weight
         
         # Add process integration note
         process_integration_note = f"Auto-calculated from {len(bom.processes)} manufacturing processes on {datetime.now().strftime('%Y-%m-%d %H:%M')}"
