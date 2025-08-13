@@ -387,9 +387,19 @@
                                                             <td class="text-end"><strong>₹{{ '{:.2f}'.format(bom.overhead_cost_per_unit) }}</strong></td>
                                                         </tr>
                                                         {% endif %}
+                                                        {% if bom.scrap_value_recovery_percent and bom.scrap_value_recovery_percent > 0 %}
+                                                        {% set scrap_recovery_per_unit = (bom.calculated_total_scrap_weight / bom.output_quantity) * (bom.total_material_cost / bom.output_quantity) * (bom.scrap_value_recovery_percent / 100) %}
+                                                        <tr class="text-success">
+                                                            <td>Scrap Recovery ({{ bom.scrap_value_recovery_percent }}%):</td>
+                                                            <td class="text-end"><strong>-₹{{ '{:.2f}'.format(scrap_recovery_per_unit) }}</strong></td>
+                                                        </tr>
+                                                        {% set net_unit_cost = (bom.total_material_cost / bom.output_quantity) + bom.calculated_labor_cost_per_unit + (bom.overhead_cost_per_unit or 0) - scrap_recovery_per_unit %}
+                                                        {% else %}
+                                                        {% set net_unit_cost = (bom.total_material_cost / bom.output_quantity) + bom.calculated_labor_cost_per_unit + (bom.overhead_cost_per_unit or 0) %}
+                                                        {% endif %}
                                                         <tr class="table-primary">
-                                                            <td><strong>Total Unit Cost:</strong></td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format((bom.total_material_cost / bom.output_quantity) + bom.calculated_labor_cost_per_unit + (bom.overhead_cost_per_unit or 0)) }}</strong></td>
+                                                            <td><strong>Net Unit Cost:</strong></td>
+                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(net_unit_cost) }}</strong></td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
