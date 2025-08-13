@@ -1577,6 +1577,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Auto-populate Input Unit Weight from previous process if this is process 2+
         populateInputWeightFromPreviousProcess(firstProcess);
         
+        // For Process 1, populate input weight from selected material
+        const materialDropdown = firstProcess.querySelector('.process-material-source');
+        if (materialDropdown && materialDropdown.value) {
+            handleMaterialSourceChange(materialDropdown);
+        }
+        
         const outputWeightField = firstProcess.querySelector('.output-unit-weight');
         if (outputWeightField && outputWeightField.value) {
             calculateScrapFromWeightDifference(outputWeightField);
@@ -1608,6 +1614,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set scrap tracking checkbox
     if ('{{ edit_process.scrap_tracking_enabled }}' === 'True') {
         firstProcess.querySelector('[name="processes[0][scrap_tracking_enabled]"]').checked = true;
+    }
+    
+    // Pre-populate material source dropdown
+    const materialSourceDropdown = firstProcess.querySelector('[name="processes[0][input_material_source]"]');
+    if (materialSourceDropdown) {
+        materialSourceDropdown.value = '{{ edit_process.input_material_source or "" }}';
     }
     
 
