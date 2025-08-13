@@ -1394,8 +1394,8 @@ function handleMaterialSourceChange(selectElement) {
             {% for item in bom.items %}
                 {
                     id: {{ item.id }},
-                    material_name: "{{ item.material.name if item.material else 'Unknown' }}",
-                    material_weight: {{ item.material.unit_weight if item.material and item.material.unit_weight else 0 }},
+                    material_name: "{{ item.item.name if item.item else 'Unknown' }}",
+                    material_weight: {{ item.item.unit_weight if item.item and item.item.unit_weight else 0 }},
                     qty_required: {{ item.qty_required or 0 }},
                     unit: "{{ item.uom.symbol if item.uom else item.unit or 'pcs' }}",
                     unit_full_name: "{{ item.uom.name if item.uom else item.unit or 'pieces' }}",
