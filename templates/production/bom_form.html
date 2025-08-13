@@ -351,9 +351,18 @@
                                                     <span>Total Material Cost:</span>
                                                     <strong>₹{{ '{:,.2f}'.format(bom.total_material_cost) if bom and bom.total_material_cost else '0.00' }}</strong>
                                                 </div>
+                                                {% if bom and bom.output_quantity and bom.output_quantity > 1 %}
+                                                <div class="d-flex justify-content-between text-primary">
+                                                    <span>Cost per Unit:</span>
+                                                    <strong>₹{{ '{:.2f}'.format(bom.total_material_cost / bom.output_quantity) }}</strong>
+                                                </div>
+                                                <small class="text-info">
+                                                    <i class="fas fa-calculator"></i> ₹{{ '{:,.0f}'.format(bom.total_material_cost) }} ÷ {{ '{:,.0f}'.format(bom.output_quantity) }} units = ₹{{ '{:.2f}'.format(bom.total_material_cost / bom.output_quantity) }} per unit
+                                                </small>
+                                                {% endif %}
                                                 <hr>
                                                 <small class="text-muted">
-                                                    <i class="fas fa-info-circle"></i> Calculated from component quantities × unit prices
+                                                    <i class="fas fa-info-circle"></i> {{ "1 Ms sheet → {} base plates of 48g each".format(bom.output_quantity|int) if bom and bom.output_quantity else "Component quantities × unit prices" }}
                                                 </small>
                                             </div>
                                         </div>
