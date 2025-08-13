@@ -1786,6 +1786,39 @@ def get_process_summary(id):
     summary = ProcessIntegrationService.get_process_summary(bom)
     return jsonify(summary)
 
+@production_bp.route('/api/bom/<int:bom_id>/process/<int:step_number>')
+@login_required
+def get_process_by_step(bom_id, step_number):
+    """API endpoint to get process data by step number for sequential material flow"""
+    try:
+        process = BOMProcess.query.filter_by(
+            bom_id=bom_id, 
+            step_number=step_number
+        ).first()
+        
+        if process:
+            return jsonify({
+                'success': True,
+                'process': {
+                    'id': process.id,
+                    'process_name': process.process_name,
+                    'step_number': process.step_number,
+                    'output_unit_weight': process.output_unit_weight,
+                    'output_weight_uom': process.output_weight_uom,
+                    'output_quantity': process.output_quantity
+                }
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Process not found'
+            })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        })
+
 @production_bp.route('/bom/<int:id>/process_report')
 @login_required
 def process_integration_report(id):

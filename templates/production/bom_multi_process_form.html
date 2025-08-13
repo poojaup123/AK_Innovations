@@ -170,7 +170,9 @@
                                                             <label class="form-label">Input Unit Weight</label>
                                                             <div class="input-group">
                                                                 <input type="number" step="any" class="form-control input-unit-weight" 
-                                                                       name="processes[0][input_unit_weight]" value="{{ edit_process.input_unit_weight if edit_process else '' }}" placeholder="0.000" readonly>
+                                                                       name="processes[0][input_unit_weight]" value="{{ edit_process.input_unit_weight if edit_process else '' }}" placeholder="0.000" readonly
+                                                                       title="Auto-populated from previous process output"
+                                                                       style="background-color: #f8f9fa;"">
                                                                 <select class="form-select input-weight-uom" name="processes[0][input_weight_uom]" style="max-width: 80px;" onchange="calculateScrapFromWeightDifference(this)">
                                                                     <option value="kg" {% if not edit_process or edit_process.input_weight_uom == 'kg' %}selected{% endif %}>kg</option>
                                                                     <option value="g" {% if edit_process and edit_process.input_weight_uom == 'g' %}selected{% endif %}>g</option>
@@ -1497,9 +1499,71 @@ function handleMaterialSourceChange(selectElement) {
     }
 }
 
+// Function to populate Input Unit Weight from previous process output
+function populateInputWeightFromPreviousProcess(processDiv) {
+    const currentProcessNumber = parseInt(processDiv.getAttribute('data-process'));
+    
+    // Only populate for Process 2+ (not Process 1)
+    if (currentProcessNumber <= 1) return;
+    
+    // Find the previous process
+    const previousProcessNumber = currentProcessNumber - 1;
+    const previousProcessDiv = document.querySelector(`[data-process="${previousProcessNumber}"]`);
+    
+    if (previousProcessDiv) {
+        const previousOutputWeight = previousProcessDiv.querySelector('.output-unit-weight');
+        const previousOutputUom = previousProcessDiv.querySelector('.output-weight-uom');
+        const currentInputWeight = processDiv.querySelector('.input-unit-weight');
+        const currentInputUom = processDiv.querySelector('.input-weight-uom');
+        
+        if (previousOutputWeight && previousOutputUom && currentInputWeight && currentInputUom) {
+            // Copy the output weight and UOM from previous process
+            currentInputWeight.value = previousOutputWeight.value;
+            currentInputUom.value = previousOutputUom.value;
+            
+            // Add visual indicator that this was auto-populated
+            currentInputWeight.style.backgroundColor = '#e8f5e8';
+            currentInputWeight.title = `Auto-populated from ${previousProcessNumber === 1 ? 'Process 1' : 'previous process'} output: ${previousOutputWeight.value} ${previousOutputUom.value}`;
+        }
+    } else {
+        // If no previous process found, check database for existing processes
+        const bomId = {{ bom.id }};
+        const stepNumber = {{ edit_process.step_number if edit_process else 1 }};
+        
+        if (stepNumber > 1) {
+            // Make AJAX call to get previous process data
+            fetch(`/production/api/bom/${bomId}/process/${stepNumber - 1}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.process) {
+                        const currentInputWeight = processDiv.querySelector('.input-unit-weight');
+                        const currentInputUom = processDiv.querySelector('.input-weight-uom');
+                        
+                        if (currentInputWeight && currentInputUom) {
+                            currentInputWeight.value = data.process.output_unit_weight || 0;
+                            currentInputUom.value = data.process.output_weight_uom || 'kg';
+                            
+                            // Add visual indicator
+                            currentInputWeight.style.backgroundColor = '#e8f5e8';
+                            currentInputWeight.title = `Auto-populated from previous process output: ${data.process.output_unit_weight} ${data.process.output_weight_uom}`;
+                        }
+                    }
+                })
+                .catch(error => console.log('Previous process data not found:', error));
+        }
+    }
+}
+
 // Re-initialize when new processes are added
 document.getElementById('addProcessBtn').addEventListener('click', function() {
-    setTimeout(updateUnitDisplays, 100); // Small delay to ensure DOM is updated
+    setTimeout(function() {
+        updateUnitDisplays();
+        // Auto-populate input weights for new processes
+        const allProcesses = document.querySelectorAll('.process-item');
+        allProcesses.forEach(processDiv => {
+            populateInputWeightFromPreviousProcess(processDiv);
+        });
+    }, 100); // Small delay to ensure DOM is updated
 });
 
 // Pre-populate form if editing existing process
@@ -1510,6 +1574,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Trigger scrap calculation after form is populated
     setTimeout(function() {
+        // Auto-populate Input Unit Weight from previous process if this is process 2+
+        populateInputWeightFromPreviousProcess(firstProcess);
+        
         const outputWeightField = firstProcess.querySelector('.output-unit-weight');
         if (outputWeightField && outputWeightField.value) {
             calculateScrapFromWeightDifference(outputWeightField);
