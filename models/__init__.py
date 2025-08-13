@@ -2778,13 +2778,28 @@ class BOM(db.Model):
     
     @property
     def calculated_total_scrap_percent(self):
-        """Calculate total scrap percentage based on final product weight"""
-        if not self.unit_weight or self.unit_weight == 0:
+        """Calculate total scrap percentage based on input material weight"""
+        # For scrap percentage, we need to compare scrap weight to input material weight
+        # Not to final product unit weight
+        
+        if not self.items or len(self.items) == 0:
+            return self.estimated_scrap_percent or 0.0
+        
+        # Get total input material weight
+        total_input_weight = 0.0
+        for bom_item in self.items:
+            if bom_item.material and bom_item.material.unit_weight:
+                item_total_weight = bom_item.qty_required * bom_item.material.unit_weight
+                total_input_weight += item_total_weight
+        
+        if total_input_weight == 0:
             return self.estimated_scrap_percent or 0.0
         
         total_scrap_weight = self.calculated_total_scrap_weight
         if total_scrap_weight > 0:
-            return (total_scrap_weight / self.unit_weight) * 100
+            # Calculate scrap percentage based on input material weight
+            scrap_percent = (total_scrap_weight / total_input_weight) * 100
+            return scrap_percent
         
         return self.estimated_scrap_percent or 0.0
 
