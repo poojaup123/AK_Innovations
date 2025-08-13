@@ -1181,9 +1181,11 @@ def add_bom():
             ('sqm', 'Square Meters (sq.m)')
         ]
     
-    # Get materials for the component selection
+    # Get materials for the component selection - include all relevant types
     try:
-        materials = Item.query.join(ItemType).filter(ItemType.name == 'Material').order_by(Item.name).limit(1000).all()
+        materials = Item.query.join(ItemType).filter(
+            ItemType.name.in_(['Material', 'Spare Part', 'Consumable', 'Component'])
+        ).order_by(Item.name).limit(1000).all()
     except Exception:
         # Fallback to all items if ItemType relationship issues
         materials = Item.query.order_by(Item.name).limit(1000).all()
@@ -1326,8 +1328,14 @@ def edit_bom(id):
     material_cost_per_unit = material_cost / max(bom.output_quantity, 1)
     labor_cost_per_unit = bom.calculated_labor_cost_per_unit
     
-    # Get materials for adding new items (optimized with limit)
-    materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).limit(500).all()
+    # Get materials for adding new items - include all relevant types
+    try:
+        materials = Item.query.join(ItemType).filter(
+            ItemType.name.in_(['Material', 'Spare Part', 'Consumable', 'Component'])
+        ).order_by(Item.name).limit(1000).all()
+    except Exception:
+        # Fallback to all items if ItemType relationship issues
+        materials = Item.query.order_by(Item.name).limit(1000).all()
     
     # Get UOM choices for dynamic dropdown
     try:
