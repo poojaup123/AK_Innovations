@@ -381,10 +381,11 @@
                                                             <td>Labor Cost:</td>
                                                             <td class="text-end"><strong>₹{{ '{:.2f}'.format(bom.calculated_labor_cost_per_unit) }}</strong></td>
                                                         </tr>
-                                                        {% if bom.overhead_cost_per_unit and bom.overhead_cost_per_unit > 0 %}
+                                                        {% if (bom.overhead_cost_per_unit and bom.overhead_cost_per_unit > 0) or (bom.overhead_percentage and bom.overhead_percentage > 0) %}
+                                                        {% set overhead_cost = bom.overhead_cost_per_unit or ((bom.total_material_cost / bom.output_quantity) * (bom.overhead_percentage / 100)) %}
                                                         <tr>
-                                                            <td>Overhead Cost:</td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(bom.overhead_cost_per_unit) }}</strong></td>
+                                                            <td>Overhead Cost{% if bom.overhead_percentage %} ({{ bom.overhead_percentage }}%){% endif %}:</td>
+                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(overhead_cost) }}</strong></td>
                                                         </tr>
                                                         {% endif %}
                                                         {% if bom.freight_cost_per_unit and bom.freight_cost_per_unit > 0 %}
@@ -395,7 +396,8 @@
                                                         {% endif %}
                                                         <tr class="table-secondary">
                                                             <td><strong>Total Cost:</strong></td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format((bom.total_material_cost / bom.output_quantity) + bom.calculated_labor_cost_per_unit + (bom.overhead_cost_per_unit or 0) + (bom.freight_cost_per_unit or 0)) }}</strong></td>
+                                                            {% set total_cost = (bom.total_material_cost / bom.output_quantity) + bom.calculated_labor_cost_per_unit + (bom.overhead_cost_per_unit or ((bom.total_material_cost / bom.output_quantity) * ((bom.overhead_percentage or 0) / 100))) + (bom.freight_cost_per_unit or 0) %}
+                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(total_cost) }}</strong></td>
                                                         </tr>
                                                         {% if bom.scrap_value_recovery_percent and bom.scrap_value_recovery_percent > 0 %}
                                                         {% set scrap_recovery_per_unit = (bom.calculated_total_scrap_weight / bom.output_quantity) * (bom.total_material_cost / bom.output_quantity) * (bom.scrap_value_recovery_percent / 100) %}
@@ -403,9 +405,11 @@
                                                             <td>Scrap Recovery ({{ bom.scrap_value_recovery_percent }}%):</td>
                                                             <td class="text-end"><strong>-₹{{ '{:.2f}'.format(scrap_recovery_per_unit) }}</strong></td>
                                                         </tr>
-                                                        {% set net_cost = (bom.total_material_cost / bom.output_quantity) + bom.calculated_labor_cost_per_unit + (bom.overhead_cost_per_unit or 0) + (bom.freight_cost_per_unit or 0) - scrap_recovery_per_unit %}
+                                                        {% set overhead_cost = bom.overhead_cost_per_unit or ((bom.total_material_cost / bom.output_quantity) * ((bom.overhead_percentage or 0) / 100)) %}
+                                                        {% set net_cost = (bom.total_material_cost / bom.output_quantity) + bom.calculated_labor_cost_per_unit + overhead_cost + (bom.freight_cost_per_unit or 0) - scrap_recovery_per_unit %}
                                                         {% else %}
-                                                        {% set net_cost = (bom.total_material_cost / bom.output_quantity) + bom.calculated_labor_cost_per_unit + (bom.overhead_cost_per_unit or 0) + (bom.freight_cost_per_unit or 0) %}
+                                                        {% set overhead_cost = bom.overhead_cost_per_unit or ((bom.total_material_cost / bom.output_quantity) * ((bom.overhead_percentage or 0) / 100)) %}
+                                                        {% set net_cost = (bom.total_material_cost / bom.output_quantity) + bom.calculated_labor_cost_per_unit + overhead_cost + (bom.freight_cost_per_unit or 0) %}
                                                         {% set scrap_recovery_per_unit = 0 %}
                                                         {% endif %}
                                                         <tr class="table-info">
