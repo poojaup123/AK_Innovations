@@ -2325,3 +2325,41 @@ def get_bom_job_work_data(bom_id):
             'success': False,
             'error': f'Error loading BOM data: {str(e)}'
         })
+
+@production_bp.route('/api/bom/<int:bom_id>/price-comparison')
+@login_required
+def api_price_comparison(bom_id):
+    """Get price comparison data for BOM components"""
+    try:
+        bom = BOM.query.get_or_404(bom_id)
+        comparison_data = []
+        
+        for item in bom.items:
+            price_comp = item.price_comparison
+            material = item.material or item.item
+            
+            comparison_data.append({
+                'item_id': item.id,
+                'material_name': material.name if material else 'Unknown',
+                'material_code': material.code if material else 'N/A',
+                'qty_required': item.qty_required,
+                'unit': item.unit,
+                'bom_price': price_comp['bom_price'],
+                'current_price': price_comp['current_price'],
+                'variance': price_comp['variance'],
+                'variance_percent': price_comp['variance_percent'],
+                'status': price_comp['status'],
+                'needs_update': price_comp['needs_update'],
+                'total_bom_cost': price_comp['bom_price'] * item.qty_required,
+                'total_current_cost': price_comp['current_price'] * item.qty_required,
+                'total_variance': price_comp['variance'] * item.qty_required
+            })
+        
+        return jsonify({
+            'success': True,
+            'bom_code': bom.bom_code,
+            'comparison_data': comparison_data
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})

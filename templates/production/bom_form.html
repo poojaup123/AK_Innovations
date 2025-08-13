@@ -325,17 +325,49 @@
                                                     <tr>
                                                         <th>Material</th>
                                                         <th>Qty Required</th>
-                                                        <th>Unit Price</th>
+                                                        <th>BOM Price</th>
+                                                        <th>Current Price</th>
+                                                        <th>Variance</th>
                                                         <th class="text-end">Total Cost</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     {% for item in bom.items if bom %}
+                                                    {% set price_comp = item.price_comparison %}
                                                     <tr>
-                                                        <td>{{ item.item.name if item.item else 'N/A' }}</td>
+                                                        <td>{{ item.material.name if item.material else (item.item.name if item.item else 'N/A') }}</td>
                                                         <td>{{ item.qty_required }} {{ item.uom.symbol if item.uom else item.unit }}</td>
-                                                        <td>₹{{ '{:,.2f}'.format(item.item.unit_price) if item.item and item.item.unit_price else '0.00' }}</td>
-                                                        <td class="text-end">₹{{ '{:,.2f}'.format((item.qty_required or 0) * (item.item.unit_price or 0)) }}</td>
+                                                        <td>
+                                                            <span class="price-display">₹{{ '{:.2f}'.format(price_comp.bom_price) }}</span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="price-display">₹{{ '{:.2f}'.format(price_comp.current_price) }}</span>
+                                                            {% if price_comp.status == 'current' %}
+                                                            <span class="badge bg-success ms-1" title="Price is current">✓</span>
+                                                            {% elif price_comp.status == 'minor_variance' %}
+                                                            <span class="badge bg-warning ms-1" title="Minor price variance">△</span>
+                                                            {% elif price_comp.status == 'major_variance' %}
+                                                            <span class="badge bg-danger ms-1" title="Major price variance">⚠</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% if price_comp.variance != 0 %}
+                                                            <span class="{% if price_comp.variance > 0 %}text-danger{% else %}text-success{% endif %}">
+                                                                {% if price_comp.variance > 0 %}+{% endif %}{{ '{:.1f}'.format(price_comp.variance_percent) }}%
+                                                            </span>
+                                                            {% if price_comp.needs_update %}
+                                                            <br><small class="text-muted">
+                                                                <i class="fas fa-sync-alt text-primary" style="cursor: pointer;" 
+                                                                   onclick="updateBOMItemPrice({{ item.id }}, {{ price_comp.current_price }})" 
+                                                                   title="Click to sync price"></i> 
+                                                                Auto-sync?
+                                                            </small>
+                                                            {% endif %}
+                                                            {% else %}
+                                                            <span class="text-muted">—</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td class="text-end">₹{{ '{:,.2f}'.format((item.qty_required or 0) * price_comp.bom_price) }}</td>
                                                     </tr>
                                                     {% endfor %}
                                                     {% if not bom or not bom.items %}
@@ -1216,6 +1248,34 @@
 
 {% block scripts %}
 <script>
+// Price Auto-Sync Function
+function updateBOMItemPrice(itemId, newPrice) {
+    if (confirm(`Update BOM price to ₹${newPrice.toFixed(2)}? This will sync with current inventory price.`)) {
+        fetch('/production/api/bom-item/' + itemId + '/update-price', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                'new_price': newPrice
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload the page to show updated prices
+                location.reload();
+            } else {
+                alert('Error updating price: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    }
+}
+
 // Dynamic Scrap Weight to Percentage Conversion
 function convertScrapValues() {
     const scrapWeight = parseFloat(document.getElementById('scrap_weight').value) || 0;
