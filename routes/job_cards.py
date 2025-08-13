@@ -765,7 +765,11 @@ def view_job_card(id):
                 'description': process.operation_description or f'{process.process_name} operation',
                 'est_time': (process.setup_time_minutes or 0) + (process.run_time_minutes or 0) or 60,
                 'status': 'pending',  # Default status
-                'process_id': process.id
+                'process_id': process.id,
+                'scrap_weight_per_unit': process.scrap_weight_per_unit or 0,
+                'scrap_tracking_enabled': process.scrap_tracking_enabled or False,
+                'input_unit_weight': process.input_unit_weight or 0,
+                'input_material_source': process.input_material_source
             } for process in bom_processes]
         else:
             print(f"DEBUG: No component-specific BOM found for item {job_card.item_id}")

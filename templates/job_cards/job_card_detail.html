@@ -208,13 +208,15 @@
                             <table class="table table-sm table-hover mb-0">
                                 <thead class="table-dark">
                                     <tr style="height: 40px;">
-                                        <th class="align-middle" style="width: 6%;">Step</th>
-                                        <th class="align-middle" style="width: 15%;">Process</th>
-                                        <th class="align-middle" style="width: 20%;">Description</th>
-                                        <th class="align-middle" style="width: 8%;">Est. Time</th>
-                                        <th class="align-middle" style="width: 15%;">Status</th>
-                                        <th class="align-middle" style="width: 8%;">Out. Sent</th>
-                                        <th class="align-middle" style="width: 8%;">Out. Received</th>
+                                        <th class="align-middle" style="width: 5%;">Step</th>
+                                        <th class="align-middle" style="width: 12%;">Process</th>
+                                        <th class="align-middle" style="width: 15%;">Description</th>
+                                        <th class="align-middle" style="width: 7%;">Est. Time</th>
+                                        <th class="align-middle" style="width: 12%;">Status</th>
+                                        <th class="align-middle" style="width: 8%;">Scrap (kg)</th>
+                                        <th class="align-middle" style="width: 7%;">Scrap %</th>
+                                        <th class="align-middle" style="width: 7%;">Out. Sent</th>
+                                        <th class="align-middle" style="width: 7%;">Out. Received</th>
                                         <th class="align-middle" style="width: 20%;">Actions</th>
                                     </tr>
                                 </thead>
@@ -254,6 +256,40 @@
                                                 <br><small class="text-muted" style="font-size: 0.65rem;">
                                                     <i class="fas fa-arrow-left"></i> Needs material from {{ routing_steps[loop.index0 - 1].process }}
                                                 </small>
+                                            {% endif %}
+                                        </td>
+                                        
+                                        <!-- Scrap Weight per Unit -->
+                                        <td class="align-middle text-center">
+                                            {% if step.scrap_weight_per_unit %}
+                                                <span class="badge bg-warning text-dark badge-sm">{{ "%.3f"|format(step.scrap_weight_per_unit) }}</span>
+                                                {% if step.scrap_tracking_enabled %}
+                                                    <br><small class="text-success" style="font-size: 0.65rem;">
+                                                        <i class="fas fa-check"></i> Tracked
+                                                    </small>
+                                                {% else %}
+                                                    <br><small class="text-muted" style="font-size: 0.65rem;">
+                                                        Not tracked
+                                                    </small>
+                                                {% endif %}
+                                            {% else %}
+                                                <small class="text-muted">0.000</small>
+                                            {% endif %}
+                                        </td>
+                                        
+                                        <!-- Scrap Percentage -->
+                                        <td class="align-middle text-center">
+                                            {% if step.scrap_weight_per_unit and step.input_unit_weight %}
+                                                {% set scrap_percent = (step.scrap_weight_per_unit / step.input_unit_weight * 100) %}
+                                                {% if scrap_percent > 5 %}
+                                                    <span class="badge bg-danger badge-sm">{{ "%.1f"|format(scrap_percent) }}%</span>
+                                                {% elif scrap_percent > 2 %}
+                                                    <span class="badge bg-warning text-dark badge-sm">{{ "%.1f"|format(scrap_percent) }}%</span>
+                                                {% else %}
+                                                    <span class="badge bg-success badge-sm">{{ "%.1f"|format(scrap_percent) }}%</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <small class="text-muted">-</small>
                                             {% endif %}
                                         </td>
                                         
