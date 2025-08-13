@@ -389,7 +389,7 @@
                                                             <td class="text-end"><strong>₹<span id="overheadCostDisplay">0.00</span></strong></td>
                                                         </tr>
                                                         <tr id="freightRow">
-                                                            <td>Freight Cost:</td>
+                                                            <td>Freight Cost <small class="text-muted">(per unit)</small>:</td>
                                                             <td class="text-end"><strong>₹<span id="freightCostDisplay">0.00</span></strong></td>
                                                         </tr>
                                                         <tr class="table-secondary">
@@ -427,15 +427,27 @@
                                                     // Get form values
                                                     const overheadPercent = parseFloat(document.querySelector('input[name="overhead_percentage"]')?.value || 0);
                                                     const overheadFixed = parseFloat(document.querySelector('input[name="overhead_cost_per_unit"]')?.value || 0);
-                                                    const freightCost = parseFloat(document.querySelector('input[name="freight_cost_per_unit"]')?.value || 0);
+                                                    const freightCostPerKg = parseFloat(document.querySelector('input[name="freight_cost_per_unit"]')?.value || 0);
+                                                    const freightUnitType = document.querySelector('select[name="freight_unit_type"]')?.value || 'per_piece';
                                                     const markupPercent = parseFloat(document.querySelector('input[name="markup_percentage"]')?.value || 0);
                                                     const scrapRecoveryPercent = parseFloat(document.querySelector('input[name="scrap_value_recovery_percent"]')?.value || 0);
                                                     
                                                     // Calculate overhead cost (use fixed cost if provided, otherwise percentage)
                                                     const overheadCost = overheadFixed > 0 ? overheadFixed : (materialCostPerUnit * overheadPercent / 100);
                                                     
+                                                    // Calculate freight cost per unit based on freight unit type
+                                                    let freightCostPerUnit = 0;
+                                                    if (freightUnitType === 'per_kg') {
+                                                        // Each base plate weighs 48g = 0.048kg
+                                                        const basePlateWeightKg = 0.048;
+                                                        freightCostPerUnit = freightCostPerKg * basePlateWeightKg;
+                                                    } else {
+                                                        // per_piece, per_box, per_carton - use direct value
+                                                        freightCostPerUnit = freightCostPerKg;
+                                                    }
+                                                    
                                                     // Calculate total cost
-                                                    const totalCost = materialCostPerUnit + laborCostPerUnit + overheadCost + freightCost;
+                                                    const totalCost = materialCostPerUnit + laborCostPerUnit + overheadCost + freightCostPerUnit;
                                                     
                                                     // Calculate scrap recovery
                                                     const scrapRecovery = materialCostPerUnit * scrapRecoveryPercent / 100;
@@ -450,7 +462,7 @@
                                                     // Update display
                                                     document.getElementById('overheadPercentDisplay').textContent = overheadPercent.toFixed(1);
                                                     document.getElementById('overheadCostDisplay').textContent = overheadCost.toFixed(2);
-                                                    document.getElementById('freightCostDisplay').textContent = freightCost.toFixed(2);
+                                                    document.getElementById('freightCostDisplay').textContent = freightCostPerUnit.toFixed(2);
                                                     document.getElementById('totalCostDisplay').textContent = totalCost.toFixed(2);
                                                     document.getElementById('scrapPercentDisplay').textContent = scrapRecoveryPercent.toFixed(1);
                                                     document.getElementById('scrapRecoveryDisplay').textContent = scrapRecovery.toFixed(2);
@@ -461,7 +473,7 @@
                                                     
                                                     // Show/hide rows based on values
                                                     document.getElementById('overheadRow').style.display = overheadCost > 0 ? '' : 'none';
-                                                    document.getElementById('freightRow').style.display = freightCost > 0 ? '' : 'none';
+                                                    document.getElementById('freightRow').style.display = freightCostPerUnit > 0 ? '' : 'none';
                                                     document.getElementById('scrapRecoveryRow').style.display = scrapRecovery > 0 ? '' : 'none';
                                                     document.getElementById('markupRow').style.display = markupValue > 0 ? '' : 'none';
                                                 }
@@ -472,6 +484,7 @@
                                                         'input[name="overhead_percentage"]',
                                                         'input[name="overhead_cost_per_unit"]',
                                                         'input[name="freight_cost_per_unit"]',
+                                                        'select[name="freight_unit_type"]',
                                                         'input[name="markup_percentage"]',
                                                         'input[name="scrap_value_recovery_percent"]'
                                                     ];
