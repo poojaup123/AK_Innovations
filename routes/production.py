@@ -1183,10 +1183,10 @@ def add_bom():
     
     # Get materials for the component selection
     try:
-        materials = Item.query.join(ItemType).filter(ItemType.name == 'Material').order_by(Item.name).limit(500).all()
+        materials = Item.query.join(ItemType).filter(ItemType.name == 'Material').order_by(Item.name).limit(1000).all()
     except Exception:
         # Fallback to all items if ItemType relationship issues
-        materials = Item.query.order_by(Item.name).limit(500).all()
+        materials = Item.query.order_by(Item.name).limit(1000).all()
     
     return render_template('production/bom_form.html', form=form, title='Add BOM', uom_choices=uom_choices, materials=materials)
 
