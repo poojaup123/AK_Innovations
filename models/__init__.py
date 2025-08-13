@@ -2866,7 +2866,6 @@ class BOMProcess(db.Model):
         if self.labor_rate_per_hour and self.run_time_minutes:
             return (self.labor_rate_per_hour / 60) * self.run_time_minutes
         return self.converted_cost_per_unit or 0
-        return self.converted_cost_per_unit or 0
     
     @property
     def converted_cost_per_unit(self):
