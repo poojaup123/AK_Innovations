@@ -152,20 +152,20 @@
                             </div>
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    <label class="form-label">Overall Scrap %</label>
+                                    <label class="form-label">Per Unit Scrap</label>
                                     {% if bom and bom.processes %}
                                     <div class="input-group">
                                         <input type="number" class="form-control" 
-                                               value="{{ '%.2f'|format(bom.calculated_total_scrap_percent) }}" 
-                                               step="0.01" readonly>
-                                        <span class="input-group-text">%</span>
-                                        <span class="input-group-text bg-success text-white" 
-                                              title="Auto-calculated from manufacturing processes">
-                                            <i class="fas fa-calculator"></i>
+                                               value="{{ '%.3f'|format(bom.calculated_total_scrap_weight / bom.output_quantity if bom.output_quantity and bom.output_quantity > 0 else 0) }}" 
+                                               step="0.001" readonly>
+                                        <span class="input-group-text">kg</span>
+                                        <span class="input-group-text bg-info text-white" 
+                                              title="Scrap weight per individual unit">
+                                            <i class="fas fa-balance-scale"></i>
                                         </span>
                                     </div>
-                                    <small class="text-success">
-                                        <i class="fas fa-info-circle"></i> Auto-calculated from process scrap tracking
+                                    <small class="text-info">
+                                        <i class="fas fa-info-circle"></i> Scrap weight per base plate ({{ '%.0f'|format(bom.calculated_total_scrap_weight / bom.output_quantity * 1000 if bom.output_quantity and bom.output_quantity > 0 else 0) }}g each)
                                     </small>
                                     <!-- Hidden field to store the calculated value for form submission -->
                                     <input type="hidden" name="estimated_scrap_percent" value="{{ bom.calculated_total_scrap_percent }}">
