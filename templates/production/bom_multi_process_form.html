@@ -1307,9 +1307,12 @@ function fetchPreviousProcessData(currentSequence, processDiv) {
                 }
                 
                 if (inputWeight && prevData.output_unit_weight) {
-                    inputWeight.value = prevData.output_unit_weight;
-                    inputWeight.style.backgroundColor = '#d1ecf1';
-                    inputWeight.readOnly = true;
+                    // Only update if current value is not already the correct value
+                    if (parseFloat(inputWeight.value) !== parseFloat(prevData.output_unit_weight)) {
+                        inputWeight.value = prevData.output_unit_weight;
+                        inputWeight.style.backgroundColor = '#d1ecf1';
+                        inputWeight.readOnly = true;
+                    }
                 }
                 
                 if (inputWeightUom && prevData.output_weight_uom) {
@@ -1654,16 +1657,31 @@ document.getElementById('addProcessBtn').addEventListener('click', function() {
 // Initialize existing process data on page load
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
+        {% if not edit_process %}
+        // Only initialize for new processes, not editing existing ones
         initializeExistingProcessData();
+        {% else %}
+        // For editing mode, just apply correct styling
+        {% if edit_process.input_material_source == 'previous_process_output' %}
+        const inputWeight = document.querySelector('.input-unit-weight');
+        const inputQty = document.querySelector('.input-quantity');
+        const inputWeightUom = document.querySelector('.input-weight-uom');
         
-        // Force refresh for editing mode if "Previous Process Output" is selected
-        {% if edit_process and edit_process.input_material_source == 'previous_process_output' %}
-        const processDiv = document.querySelector('.process-item');
-        if (processDiv) {
-            fetchPreviousProcessData({{ edit_process.step_number }}, processDiv);
+        if (inputWeight) {
+            inputWeight.style.backgroundColor = '#d1ecf1';
+            inputWeight.readOnly = true;
+        }
+        if (inputQty) {
+            inputQty.style.backgroundColor = '#d1ecf1';
+            inputQty.readOnly = true;
+        }
+        if (inputWeightUom) {
+            inputWeightUom.style.backgroundColor = '#d1ecf1';
+            inputWeightUom.disabled = true;
         }
         {% endif %}
-    }, 500);
+        {% endif %}
+    }, 100);
 });
 
 // Pre-populate form if editing existing process
