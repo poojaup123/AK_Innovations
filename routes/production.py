@@ -1193,6 +1193,7 @@ def add_bom():
 @production_bp.route('/bom/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_bom(id):
+    print(f"DEBUG: edit_bom route called for BOM {id}, method: {request.method}")
     bom = BOM.query.get_or_404(id)
     
     # Initialize form and populate choices first
