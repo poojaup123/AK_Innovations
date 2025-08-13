@@ -179,11 +179,15 @@
                                 <div class="mb-3">
                                     <label class="form-label">Scrap Value Recovery</label>
                                     <div class="input-group">
-                                        <span class="input-group-text">₹</span>
-                                        <input type="text" class="form-control" id="scrap_recovery_value" readonly>
-                                        <span class="input-group-text">70%</span>
+                                        {{ form.scrap_value_recovery_percent(class="form-control", step="0.1", id="scrap_recovery_percent", onchange="calculateScrapRecovery()") }}
+                                        <span class="input-group-text">%</span>
                                     </div>
-                                    <small class="text-muted">Estimated recovery value</small>
+                                    <div class="mt-2">
+                                        <small class="text-info">
+                                            <i class="fas fa-calculator"></i> Recovery Value: ₹<span id="scrap_recovery_value">0.00</span>
+                                        </small>
+                                    </div>
+                                    <small class="text-muted">% of scrap material value recoverable</small>
                                 </div>
                             </div>
                         </div>
@@ -1819,7 +1823,36 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-calculate multi-level costs on page load
     setTimeout(() => {
         calculateMultiLevelCost();
+        calculateScrapRecovery(); // Calculate initial scrap recovery value
     }, 500);
 });
+
+// Scrap Recovery Value Calculation
+function calculateScrapRecovery() {
+    const scrapPercentElement = document.getElementById('scrap_recovery_percent');
+    const scrapValueElement = document.getElementById('scrap_recovery_value');
+    
+    if (!scrapPercentElement || !scrapValueElement) return;
+    
+    const recoveryPercent = parseFloat(scrapPercentElement.value) || 15.0;
+    
+    // For your base plate production:
+    // 1 Ms sheet (₹3000) → 600 base plates
+    // Each base plate = 48g, total used = 28.8kg (48g × 600)
+    // Scrap = 48kg - 28.8kg = 19.2kg
+    // Recovery value = (scrap weight / total weight) × material cost × recovery %
+    
+    const materialCost = 3000; // ₹3000 for Ms sheet
+    const totalInputWeight = 48; // 48 kg Ms sheet input
+    const usedWeight = 0.048 * 600; // 48g per piece × 600 pieces = 28.8 kg
+    const scrapWeight = totalInputWeight - usedWeight; // 19.2 kg scrap
+    const scrapRatio = scrapWeight / totalInputWeight; // 0.4 (40% scrap)
+    
+    const recoveryValue = materialCost * scrapRatio * (recoveryPercent / 100);
+    
+    if (scrapValueElement) {
+        scrapValueElement.textContent = recoveryValue.toFixed(2);
+    }
+}
 </script>
 {% endblock %}
