@@ -1233,6 +1233,11 @@ def edit_bom(id):
         form.is_phantom_bom.data = bom.is_phantom_bom
         form.intermediate_product.data = bom.intermediate_product
     
+    if request.method == 'POST':
+        print(f"FORM DEBUG: Validation result: {form.validate()}")
+        print(f"FORM DEBUG: Form errors: {form.errors}")
+        print(f"FORM DEBUG: Request form data: {dict(request.form)}")
+    
     if form.validate_on_submit():
         # Check if BOM already exists for this product (excluding current BOM)
         existing_bom = BOM.query.filter(
