@@ -1237,6 +1237,8 @@ def edit_bom(id):
         print(f"FORM DEBUG: Validation result: {form.validate()}")
         print(f"FORM DEBUG: Form errors: {form.errors}")
         print(f"FORM DEBUG: Request form data: {dict(request.form)}")
+        print(f"FORM DEBUG: Current BOM product_id: {bom.product_id}")
+        print(f"FORM DEBUG: All request form keys: {list(request.form.keys())}")
     
     if form.validate_on_submit():
         # Check if BOM already exists for this product (excluding current BOM)

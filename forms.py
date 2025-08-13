@@ -739,7 +739,7 @@ class BOMForm(FlaskForm):
     # Basic BOM Information
     bom_code = StringField('BOM Code', validators=[Optional(), Length(max=50)], 
                           render_kw={"placeholder": "e.g., BOM-2025-001"})
-    product_id = SelectField('Product', validators=[DataRequired()], coerce=int)
+    product_id = SelectField('Product', validators=[Optional()], coerce=int)
     output_uom_id = SelectField('Output UOM', validators=[Optional()], coerce=int)
     version = StringField('Version', validators=[Optional(), Length(max=20)], default='1.0')
     status = SelectField('Status', validators=[Optional()], 
