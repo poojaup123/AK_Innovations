@@ -325,47 +325,17 @@
                                                     <tr>
                                                         <th>Material</th>
                                                         <th>Qty Required</th>
-                                                        <th>BOM Price</th>
-                                                        <th>Current Price</th>
-                                                        <th>Variance</th>
+                                                        <th>Unit Price</th>
                                                         <th class="text-end">Total Cost</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     {% for item in bom.items if bom %}
-                                                    {% set price_comp = item.price_comparison %}
                                                     <tr>
                                                         <td>{{ item.material.name if item.material else (item.item.name if item.item else 'N/A') }}</td>
                                                         <td>{{ item.qty_required }} {{ item.uom.symbol if item.uom else item.unit }}</td>
-                                                        <td>
-                                                            <span class="price-display">₹{{ '{:.2f}'.format(price_comp.bom_price) }}</span>
-                                                        </td>
-                                                        <td>
-                                                            <span class="price-display">₹{{ '{:.2f}'.format(price_comp.current_price) }}</span>
-                                                            {% if price_comp.status == 'current' %}
-                                                            <span class="badge bg-success ms-1" title="Price is current">✓</span>
-                                                            {% elif price_comp.status == 'minor_variance' %}
-                                                            <span class="badge bg-warning ms-1" title="Minor price variance">△</span>
-                                                            {% elif price_comp.status == 'major_variance' %}
-                                                            <span class="badge bg-danger ms-1" title="Major price variance">⚠</span>
-                                                            {% endif %}
-                                                        </td>
-                                                        <td>
-                                                            {% if price_comp.variance != 0 %}
-                                                            <span class="{% if price_comp.variance > 0 %}text-danger{% else %}text-success{% endif %}">
-                                                                {% if price_comp.variance > 0 %}+{% endif %}{{ '{:.1f}'.format(price_comp.variance_percent) }}%
-                                                            </span>
-                                                            {% if price_comp.needs_update %}
-                                                            <br><small class="text-info">
-                                                                <i class="fas fa-info-circle"></i> 
-                                                                Price difference detected
-                                                            </small>
-                                                            {% endif %}
-                                                            {% else %}
-                                                            <span class="text-muted">—</span>
-                                                            {% endif %}
-                                                        </td>
-                                                        <td class="text-end">₹{{ '{:,.2f}'.format((item.qty_required or 0) * price_comp.bom_price) }}</td>
+                                                        <td>₹{{ '{:,.2f}'.format(item.material.unit_price if item.material else (item.item.unit_price if item.item else 0)) }}</td>
+                                                        <td class="text-end">₹{{ '{:,.2f}'.format((item.qty_required or 0) * (item.material.unit_price if item.material else (item.item.unit_price if item.item else 0))) }}</td>
                                                     </tr>
                                                     {% endfor %}
                                                     {% if not bom or not bom.items %}
