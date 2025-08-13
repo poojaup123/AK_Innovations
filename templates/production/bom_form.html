@@ -93,7 +93,7 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.output_quantity.label(class="form-label") }}
-                                    {{ form.output_quantity(class="form-control", step="0.001") }}
+                                    {{ form.output_quantity(class="form-control", step="0.001", min="0.001") }}
                                     <small class="text-muted">Units produced by this BOM</small>
                                 </div>
                             </div>
@@ -217,7 +217,14 @@
                                         {% endif %}
                                     </label>
                                     <div class="input-group">
-                                        {{ form.unit_weight(class="form-control", step="0.001", id="unit_weight", onchange="updateUnitWeightDisplay()", placeholder="Weight of final product", value=(bom.calculated_final_product_unit_weight if bom else '0.0')) }}
+                                        {% if bom %}
+                                        <input type="number" class="form-control" id="unit_weight" name="unit_weight" 
+                                               step="0.001" onchange="updateUnitWeightDisplay()" 
+                                               placeholder="Weight of final product" 
+                                               value="{{ '%.3f'|format(bom.calculated_final_product_unit_weight|float) }}">
+                                        {% else %}
+                                        {{ form.unit_weight(class="form-control", step="0.001", id="unit_weight", onchange="updateUnitWeightDisplay()", placeholder="Weight of final product") }}
+                                        {% endif %}
                                         {{ form.unit_weight_uom(class="form-select", style="max-width: 100px;") }}
                                     </div>
                                     <small class="text-info">
@@ -552,13 +559,13 @@
                                     <div class="col-md-4">
                                         <div class="mb-3">
                                             {{ form.labor_hours_per_unit.label(class="form-label") }}
-                                            {{ form.labor_hours_per_unit(class="form-control", step="0.01") }}
+                                            {{ form.labor_hours_per_unit(class="form-control", step="0.001") }}
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="mb-3">
                                             {{ form.labor_rate_per_hour.label(class="form-label") }}
-                                            {{ form.labor_rate_per_hour(class="form-control", step="0.01") }}
+                                            {{ form.labor_rate_per_hour(class="form-control", step="0.001") }}
                                         </div>
                                     </div>
                                     <div class="col-md-4">
@@ -567,8 +574,8 @@
                                             {% if bom and bom.processes %}
                                             <div class="input-group">
                                                 <input type="number" class="form-control" 
-                                                       value="{{ '%.2f'|format(bom.calculated_labor_cost_per_unit) }}" 
-                                                       step="0.01" readonly>
+                                                       value="{{ '%.3f'|format(bom.calculated_labor_cost_per_unit) }}" 
+                                                       step="0.001" readonly>
                                                 <span class="input-group-text bg-info text-white" 
                                                       title="Automatically calculated from manufacturing processes">
                                                     <i class="fas fa-magic"></i>
@@ -580,7 +587,7 @@
                                             <!-- Hidden field to store the calculated value for form submission -->
                                             <input type="hidden" name="labor_cost_per_unit" value="{{ bom.calculated_labor_cost_per_unit }}">
                                             {% else %}
-                                            {{ form.labor_cost_per_unit(class="form-control", step="0.01") }}
+                                            {{ form.labor_cost_per_unit(class="form-control", step="0.001") }}
                                             <small class="text-muted">
                                                 <i class="fas fa-info-circle"></i> Add manufacturing processes to auto-calculate this value
                                             </small>
@@ -601,13 +608,13 @@
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             {{ form.overhead_percentage.label(class="form-label") }}
-                                            {{ form.overhead_percentage(class="form-control", step="0.1") }}
+                                            {{ form.overhead_percentage(class="form-control", step="0.001") }}
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             {{ form.overhead_cost_per_unit.label(class="form-label") }}
-                                            {{ form.overhead_cost_per_unit(class="form-control", step="0.01") }}
+                                            {{ form.overhead_cost_per_unit(class="form-control", step="0.001") }}
                                         </div>
                                     </div>
                                 </div>
@@ -624,7 +631,7 @@
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             {{ form.freight_cost_per_unit.label(class="form-label") }}
-                                            {{ form.freight_cost_per_unit(class="form-control", step="0.01") }}
+                                            {{ form.freight_cost_per_unit(class="form-control", step="0.001") }}
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -645,7 +652,7 @@
                             <div class="card-body">
                                 <div class="mb-3">
                                     {{ form.markup_percentage.label(class="form-label") }}
-                                    {{ form.markup_percentage(class="form-control", step="0.1") }}
+                                    {{ form.markup_percentage(class="form-control", step="0.001") }}
                                     <small class="text-muted">Markup percentage applied to total cost</small>
                                 </div>
                             </div>
