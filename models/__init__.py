@@ -2868,6 +2868,123 @@ class BOMProcess(db.Model):
         return self.converted_cost_per_unit or 0
     
     @property
+    def is_assembly_process(self):
+        """Check if this is an assembly process"""
+        return self.process_name and self.process_name.lower() == 'assembly'
+    
+    @property
+    def assembly_component_cost(self):
+        """Calculate total component cost for assembly process"""
+        if not self.is_assembly_process or not self.bom:
+            return 0.0
+        
+        total_component_cost = 0.0
+        total_component_weight = 0.0
+        
+        # Sum up all component costs and weights
+        for bom_item in self.bom.items:
+            material = bom_item.material or bom_item.item
+            if material:
+                qty_required = bom_item.qty_required or bom_item.quantity_required or 0
+                unit_price = material.unit_price or 0
+                unit_weight = getattr(material, 'unit_weight', 0) or 0
+                
+                # Apply wastage/damage percentage if configured
+                if self.estimated_scrap_percent and self.estimated_scrap_percent > 0:
+                    # Increase requirement to account for wastage/damage
+                    wastage_multiplier = 1 + (self.estimated_scrap_percent / 100)
+                    effective_qty = qty_required * wastage_multiplier
+                else:
+                    effective_qty = qty_required
+                
+                component_cost = effective_qty * unit_price
+                component_weight = effective_qty * unit_weight
+                
+                total_component_cost += component_cost
+                total_component_weight += component_weight
+        
+        return total_component_cost
+    
+    @property
+    def assembly_total_weight(self):
+        """Calculate total weight for assembly process including all components"""
+        if not self.is_assembly_process or not self.bom:
+            return 0.0
+        
+        total_weight = 0.0
+        
+        for bom_item in self.bom.items:
+            material = bom_item.material or bom_item.item
+            if material:
+                qty_required = bom_item.qty_required or bom_item.quantity_required or 0
+                unit_weight = getattr(material, 'unit_weight', 0) or 0
+                
+                # Apply wastage/damage percentage if configured
+                if self.estimated_scrap_percent and self.estimated_scrap_percent > 0:
+                    wastage_multiplier = 1 + (self.estimated_scrap_percent / 100)
+                    effective_qty = qty_required * wastage_multiplier
+                else:
+                    effective_qty = qty_required
+                
+                total_weight += effective_qty * unit_weight
+        
+        return total_weight
+    
+    @property
+    def assembly_process_summary(self):
+        """Get detailed assembly process summary with component breakdown"""
+        if not self.is_assembly_process or not self.bom:
+            return None
+        
+        components = []
+        total_cost = 0.0
+        total_weight = 0.0
+        
+        for bom_item in self.bom.items:
+            material = bom_item.material or bom_item.item
+            if material:
+                qty_required = bom_item.qty_required or bom_item.quantity_required or 0
+                unit_price = material.unit_price or 0
+                unit_weight = getattr(material, 'unit_weight', 0) or 0
+                
+                # Apply wastage/damage percentage
+                if self.estimated_scrap_percent and self.estimated_scrap_percent > 0:
+                    wastage_multiplier = 1 + (self.estimated_scrap_percent / 100)
+                    effective_qty = qty_required * wastage_multiplier
+                    wastage_qty = effective_qty - qty_required
+                else:
+                    effective_qty = qty_required
+                    wastage_qty = 0
+                
+                component_cost = effective_qty * unit_price
+                component_weight = effective_qty * unit_weight
+                
+                components.append({
+                    'material': material,
+                    'required_qty': qty_required,
+                    'wastage_qty': wastage_qty,
+                    'effective_qty': effective_qty,
+                    'unit_price': unit_price,
+                    'unit_weight': unit_weight,
+                    'total_cost': component_cost,
+                    'total_weight': component_weight,
+                    'wastage_percent': self.estimated_scrap_percent or 0
+                })
+                
+                total_cost += component_cost
+                total_weight += component_weight
+        
+        return {
+            'components': components,
+            'total_cost': total_cost,
+            'total_weight': total_weight,
+            'labor_cost': self.labor_cost_per_unit,
+            'process_cost': self.converted_cost_per_unit,
+            'wastage_percent': self.estimated_scrap_percent or 0,
+            'total_assembly_cost': total_cost + self.labor_cost_per_unit + (self.converted_cost_per_unit or 0)
+        }
+    
+    @property
     def converted_cost_per_unit(self):
         """Convert cost per unit based on cost_unit and process-specific weight"""
         if not self.cost_per_unit or self.cost_per_unit == 0:

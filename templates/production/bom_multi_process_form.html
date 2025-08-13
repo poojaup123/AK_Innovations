@@ -292,6 +292,65 @@
                                             <textarea class="form-control" name="processes[0][operation_description]" rows="2" placeholder="Detailed description of the operation">{{ edit_process.operation_description if edit_process else '' }}</textarea>
                                         </div>
                                         
+                                        <!-- Assembly Process Special Section -->
+                                        <div class="assembly-details" style="display: none;">
+                                            <div class="card border-info mt-3">
+                                                <div class="card-header bg-info text-white">
+                                                    <h6 class="mb-0"><i class="fas fa-wrench"></i> Assembly Process - Component Integration</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="alert alert-info">
+                                                        <i class="fas fa-info-circle"></i> <strong>Assembly Process Detected!</strong><br>
+                                                        This process will automatically include all BOM components with their unit weights, unit prices, and wastage calculations.
+                                                    </div>
+                                                    
+                                                    {% if bom and bom.items %}
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Component</th>
+                                                                    <th>Required Qty</th>
+                                                                    <th>Unit Price</th>
+                                                                    <th>Unit Weight</th>
+                                                                    <th>Wastage %</th>
+                                                                    <th>Effective Qty</th>
+                                                                    <th>Total Cost</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {% for item in bom.items %}
+                                                                <tr>
+                                                                    <td>
+                                                                        <strong>{{ item.material.name if item.material else item.item.name if item.item else 'N/A' }}</strong><br>
+                                                                        <small class="text-muted">{{ item.material.code if item.material else item.item.code if item.item else 'N/A' }}</small>
+                                                                    </td>
+                                                                    <td>{{ item.qty_required or item.quantity_required or 0 }} {{ item.uom.symbol if item.uom else item.unit }}</td>
+                                                                    <td>₹{{ '{:.2f}'.format((item.material.unit_price if item.material else item.item.unit_price if item.item else 0) or 0) }}</td>
+                                                                    <td>{{ '{:.3f}'.format((item.material.unit_weight if item.material and hasattr(item.material, 'unit_weight') else 0) or 0) }} kg</td>
+                                                                    <td><span class="assembly-wastage-display">0</span>%</td>
+                                                                    <td><span class="assembly-effective-qty">{{ item.qty_required or item.quantity_required or 0 }}</span></td>
+                                                                    <td>₹<span class="assembly-component-cost">{{ '{:.2f}'.format(((item.qty_required or item.quantity_required or 0) * ((item.material.unit_price if item.material else item.item.unit_price if item.item else 0) or 0))) }}</span></td>
+                                                                </tr>
+                                                                {% endfor %}
+                                                            </tbody>
+                                                            <tfoot>
+                                                                <tr class="table-info">
+                                                                    <td colspan="6"><strong>Total Assembly Component Cost:</strong></td>
+                                                                    <td><strong>₹<span id="assembly-total-cost">{{ '{:.2f}'.format(bom.total_material_cost) }}</span></strong></td>
+                                                                </tr>
+                                                            </tfoot>
+                                                        </table>
+                                                    </div>
+                                                    {% else %}
+                                                    <div class="alert alert-warning">
+                                                        <i class="fas fa-exclamation-triangle"></i> No components found in BOM. Add components first to see assembly details.
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="processes[0][quality_check_required]" value="true" {% if edit_process and edit_process.quality_check_required %}checked{% endif %}>
                                             <label class="form-check-label">Quality Check Required</label>
@@ -751,8 +810,67 @@ document.addEventListener('change', function(e) {
         if (processName && !processCode.value) {
             processCode.value = processName.substring(0, 4).toUpperCase();
         }
+        
+        // Handle Assembly process special display
+        const assemblyDetails = processItem.querySelector('.assembly-details');
+        if (processName === 'Assembly') {
+            assemblyDetails.style.display = 'block';
+            updateAssemblyCalculations(processItem);
+        } else {
+            assemblyDetails.style.display = 'none';
+        }
     }
 });
+
+// Handle scrap percentage changes for assembly processes
+document.addEventListener('input', function(e) {
+    if (e.target.name && e.target.name.includes('[estimated_scrap_percent]')) {
+        const processItem = e.target.closest('.process-item');
+        const processName = processItem.querySelector('.process-name').value;
+        
+        if (processName === 'Assembly') {
+            updateAssemblyCalculations(processItem);
+        }
+    }
+});
+
+function updateAssemblyCalculations(processItem) {
+    const scrapPercent = parseFloat(processItem.querySelector('input[name*="[estimated_scrap_percent]"]').value) || 0;
+    let totalCost = 0;
+    
+    // Update each component row
+    const assemblyRows = processItem.querySelectorAll('.assembly-details tbody tr');
+    assemblyRows.forEach(function(row) {
+        const requiredQtyCell = row.cells[1];
+        const unitPriceCell = row.cells[2];
+        
+        // Extract numeric values from text content
+        const requiredQty = parseFloat(requiredQtyCell.textContent.split(' ')[0]) || 0;
+        const unitPrice = parseFloat(unitPriceCell.textContent.replace('₹', '')) || 0;
+        
+        // Calculate effective quantity with wastage
+        const wastageMultiplier = 1 + (scrapPercent / 100);
+        const effectiveQty = requiredQty * wastageMultiplier;
+        const componentCost = effectiveQty * unitPrice;
+        
+        // Update display elements
+        const wastageDisplay = row.querySelector('.assembly-wastage-display');
+        const effectiveQtyDisplay = row.querySelector('.assembly-effective-qty');
+        const componentCostDisplay = row.querySelector('.assembly-component-cost');
+        
+        if (wastageDisplay) wastageDisplay.textContent = scrapPercent.toFixed(1);
+        if (effectiveQtyDisplay) effectiveQtyDisplay.textContent = effectiveQty.toFixed(3);
+        if (componentCostDisplay) componentCostDisplay.textContent = componentCost.toFixed(2);
+        
+        totalCost += componentCost;
+    });
+    
+    // Update total cost
+    const totalCostDisplay = processItem.querySelector('#assembly-total-cost');
+    if (totalCostDisplay) {
+        totalCostDisplay.textContent = totalCost.toFixed(2);
+    }
+}
 
 // Form validation
 document.getElementById('multiProcessForm').addEventListener('submit', function(e) {
