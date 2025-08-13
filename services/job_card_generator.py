@@ -30,7 +30,7 @@ class JobCardGenerator:
             List of generated job cards
         """
         try:
-            production = Production.query.get(production_id)
+            production = db.session.get(Production, production_id)
             if not production:
                 raise ValueError(f"Production order {production_id} not found")
             
