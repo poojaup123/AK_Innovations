@@ -39,7 +39,7 @@ def dashboard():
     ).all()
     
     # Get today's production status reports
-    today_reports = DailyProductionStatus.query.filter_by(report_date=today).all()
+    today_reports = DailyProductionStatus.query.filter_by(report_date=today).limit(100).all()
     
     # Get or create today's summary
     daily_summary = DailyProductionSummary.generate_daily_summary(today)
@@ -67,7 +67,7 @@ def dashboard():
     ]
     
     # Job Card Integration - get today's job card status
-    today_job_card_reports = JobCardDailyStatus.query.filter_by(report_date=today).all()
+    today_job_card_reports = JobCardDailyStatus.query.filter_by(report_date=today).limit(100).all()
     active_job_cards = JobCard.query.filter(
         JobCard.status.in_(['planned', 'in_progress']),
         JobCard.target_completion_date >= today
@@ -1183,10 +1183,10 @@ def add_bom():
     
     # Get materials for the component selection
     try:
-        materials = Item.query.join(ItemType).filter(ItemType.name == 'Material').order_by(Item.name).all()
+        materials = Item.query.join(ItemType).filter(ItemType.name == 'Material').order_by(Item.name).limit(500).all()
     except Exception:
         # Fallback to all items if ItemType relationship issues
-        materials = Item.query.order_by(Item.name).all()
+        materials = Item.query.order_by(Item.name).limit(500).all()
     
     return render_template('production/bom_form.html', form=form, title='Add BOM', uom_choices=uom_choices, materials=materials)
 
@@ -1234,29 +1234,7 @@ def edit_bom(id):
         form.intermediate_product.data = bom.intermediate_product
     
     if request.method == 'POST':
-        print(f"FORM SUBMISSION: overhead_percentage = {request.form.get('overhead_percentage')}")
-        print(f"FORM SUBMISSION: freight_cost_per_unit = {request.form.get('freight_cost_per_unit')}")
-        print(f"FORM SUBMISSION: markup_percentage = {request.form.get('markup_percentage')}")
-        print(f"FORM SUBMISSION: scrap_uom = {request.form.get('scrap_uom')}")
-        print(f"FORM VALIDATION: {form.validate()}")
-        print(f"FORM ERRORS: {form.errors}")
-        
-        # BYPASS VALIDATION ISSUE - directly update the costing fields
-        if request.form.get('overhead_percentage') or request.form.get('freight_cost_per_unit') or request.form.get('markup_percentage'):
-            try:
-                if request.form.get('overhead_percentage'):
-                    bom.overhead_percentage = float(request.form.get('overhead_percentage'))
-                if request.form.get('freight_cost_per_unit'):
-                    bom.freight_cost_per_unit = float(request.form.get('freight_cost_per_unit'))
-                if request.form.get('markup_percentage'):
-                    bom.markup_percentage = float(request.form.get('markup_percentage'))
-                
-                db.session.commit()
-                flash('Costing information updated successfully!', 'success')
-                return redirect(url_for('production.edit_bom', id=bom.id))
-            except Exception as e:
-                print(f"Direct update error: {e}")
-                db.session.rollback()
+        pass  # Performance: Remove debug logging
     
     if form.validate_on_submit():
         # Check if BOM already exists for this product (excluding current BOM)
