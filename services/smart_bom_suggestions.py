@@ -82,8 +82,9 @@ class SmartBOMSuggestionService:
         ])
         
         # ALSO generate purchase suggestions for items that CAN be manufactured (buy vs make option)
+        # BUT ONLY if they are not intermediate products with complex BOMs
         manufacturable_purchase_suggestions = SmartBOMSuggestionService._generate_purchase_alternatives_for_manufacturable_items([
-            s for s in shortages if s.get('can_manufacture', False)
+            s for s in shortages if s.get('can_manufacture', False) and SmartBOMSuggestionService._should_offer_purchase_alternative(s)
         ])
         
         # Consolidate purchase suggestions for shared raw materials across manufacturing suggestions
@@ -579,6 +580,42 @@ class SmartBOMSuggestionService:
             purchase_alternatives.append(purchase_alternative)
         
         return purchase_alternatives
+    
+    @staticmethod
+    def _should_offer_purchase_alternative(shortage_info: Dict) -> bool:
+        """
+        Determine if we should offer a purchase alternative for a manufacturable item
+        Returns False for intermediate products that are part of complex nested BOMs
+        """
+        item_id = shortage_info.get('item_id')
+        if not item_id:
+            return False
+            
+        # Get the item
+        item = Item.query.get(item_id)
+        if not item:
+            return False
+            
+        # Check if this item is used as a component in other BOMs (intermediate product)
+        # If it's used in multiple BOMs or in complex assemblies, prefer manufacturing
+        bom_usage_count = db.session.query(BOMItem).filter_by(item_id=item_id).count()
+        
+        # If the item is used in multiple BOMs (common intermediate), prefer manufacturing
+        if bom_usage_count > 1:
+            return False
+            
+        # Check if the item's BOM has complex sub-components (nested BOM structure)
+        item_bom = BOM.query.filter_by(product_id=item_id, is_active=True).first()
+        if item_bom and item_bom.items:
+            # Check if any of the BOM components can also be manufactured (nested structure)
+            for bom_item in item_bom.items:
+                component = bom_item.item
+                component_bom = BOM.query.filter_by(product_id=component.id, is_active=True).first()
+                if component_bom:  # This component also has a BOM (nested structure)
+                    return False  # Don't offer purchase alternative for complex nested items
+        
+        # For simple items with basic material requirements, offer purchase alternative
+        return True
     
     @staticmethod
     def _final_deduplication(suggestions: List[Dict]) -> List[Dict]:
