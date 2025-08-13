@@ -1075,9 +1075,15 @@ def generate_challan(job_card_id):
                         rounded_qty = math.ceil(exact_qty)
                         excess_qty = rounded_qty - exact_qty
                         
+                        # Calculate how many extra pieces can be made with excess material
+                        extra_pieces = int(excess_qty / (bom_item.quantity_required / bom_output_qty)) if (bom_item.quantity_required / bom_output_qty) > 0 else 0
+                        
                         remarks = f'Material for {int(job_card_qty):,} {job_card.item.name}'
                         if excess_qty > 0:
-                            remarks += f' (Excess: {excess_qty:.3f} - Return or make extra pieces)'
+                            if extra_pieces > 0:
+                                remarks += f' (Excess: {excess_qty:.3f} - Can make {extra_pieces} extra pcs or return material)'
+                            else:
+                                remarks += f' (Excess: {excess_qty:.3f} - Return excess material)'
                             
                         materials.append({
                             'item': bom_item.item,
@@ -1098,7 +1104,7 @@ def generate_challan(job_card_id):
                         
                         remarks = f'MS sheets to cut {int(job_card_qty):,} {job_card.item.name} ({plates_per_sheet} plates/sheet)'
                         if excess_plates > 0:
-                            remarks += f' - Excess: {int(excess_plates)} plates (Return or make extra)'
+                            remarks += f' - Excess: {int(excess_plates)} plates (Can make {int(excess_plates)} extra pcs or return material)'
                         
                         materials = [{
                             'item': None,
@@ -1128,7 +1134,7 @@ def generate_challan(job_card_id):
                     
                     remarks = f'MS sheets to cut {int(job_card_qty):,} {job_card.item.name} ({plates_per_sheet} plates/sheet)'
                     if excess_plates > 0:
-                        remarks += f' - Excess: {int(excess_plates)} plates (Return or make extra)'
+                        remarks += f' - Excess: {int(excess_plates)} plates (Can make {int(excess_plates)} extra pcs or return material)'
                     
                     materials = [{
                         'item': None,

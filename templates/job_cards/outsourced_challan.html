@@ -312,7 +312,12 @@
                             <td>{{ material.item.uom.abbreviation if material.item and material.item.uom else 'Pcs' }}</td>
                             <td style="text-align: center;">
                                 {% if material is mapping and 'excess_quantity' in material and material['excess_quantity'] > 0 %}
-                                    <span style="color: #e74c3c; font-weight: bold;">+{{ "%.3f"|format(material['excess_quantity']) }}</span>
+                                    <span style="color: #e74c3c; font-weight: bold;">+{{ "%.0f"|format(material['excess_quantity']) if material['excess_quantity'] >= 1 else "%.3f"|format(material['excess_quantity']) }}</span>
+                                    {% if material['excess_quantity'] >= 1 %}
+                                        <br><small style="color: #666; font-size: 9px;">
+                                            +{{ "%.0f"|format(material['excess_quantity']) }} extra pcs possible
+                                        </small>
+                                    {% endif %}
                                 {% else %}
                                     <span style="color: #27ae60;">None</span>
                                 {% endif %}
@@ -345,7 +350,7 @@
                 <p><strong>2. Quality Standards:</strong> All work should meet the specified quality standards. Rejected items will be returned at vendor's cost.</p>
                 <p><strong>3. Material Responsibility:</strong> Vendor is responsible for the safe custody of materials until return.</p>
                 <p><strong>4. Process Compliance:</strong> All processes should be carried out as per technical specifications.</p>
-                <p><strong>5. Excess Material Handling:</strong> Any excess raw material must be returned OR used to make additional pieces (with prior approval).</p>
+                <p><strong>5. Excess Material Handling:</strong> Excess material can be used to make additional pieces as shown in remarks, or returned to sender (requires prior approval for extra production).</p>
                 <p><strong>6. Scrap Return:</strong> All scrap material must be returned along with finished goods for recycling.</p>
                 <p><strong>7. Documentation:</strong> This challan should accompany the materials during transport and return.</p>
             </div>
