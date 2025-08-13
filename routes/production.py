@@ -1842,6 +1842,8 @@ def add_multi_bom_process(bom_id):
     edit_process = None
     if edit_process_id:
         edit_process = BOMProcess.query.get_or_404(edit_process_id)
+        # Refresh from database to get latest values
+        db.session.refresh(edit_process)
     
     if request.method == 'POST':
         try:

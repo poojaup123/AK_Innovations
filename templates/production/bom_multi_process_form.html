@@ -1655,6 +1655,14 @@ document.getElementById('addProcessBtn').addEventListener('click', function() {
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         initializeExistingProcessData();
+        
+        // Force refresh for editing mode if "Previous Process Output" is selected
+        {% if edit_process and edit_process.input_material_source == 'previous_process_output' %}
+        const processDiv = document.querySelector('.process-item');
+        if (processDiv) {
+            fetchPreviousProcessData({{ edit_process.step_number }}, processDiv);
+        }
+        {% endif %}
     }, 500);
 });
 
