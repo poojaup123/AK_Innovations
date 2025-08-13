@@ -80,7 +80,7 @@ def dashboard():
     job_cards_active_today = len([r for r in today_job_card_reports if r.daily_status == 'active'])
     
     # Calculate cost metrics from completed productions
-    completed_prods = Production.query.filter_by(status='completed').all()
+    completed_prods = Production.query.filter_by(status='completed').limit(50).all()
     avg_cost_per_unit = 0
     avg_material_cost = 0
     avg_labor_cost = 0
@@ -510,7 +510,7 @@ def api_get_production_batch_consumption(production_id):
     """Get batch consumption details for a production"""
     try:
         production = Production.query.get_or_404(production_id)
-        production_batches = ProductionBatch.query.filter_by(production_id=production_id).all()
+        production_batches = ProductionBatch.query.filter_by(production_id=production_id).limit(100).all()
         
         consumption_data = []
         for pb in production_batches:
@@ -543,7 +543,7 @@ def view(production_id):
     item = Item.query.get(production.item_id) if production.item_id else None
     
     # Get production batches and related data
-    batches = ProductionBatch.query.filter_by(production_id=production_id).all()
+    batches = ProductionBatch.query.filter_by(production_id=production_id).limit(100).all()
     
     # Get BOM items if available
     bom_items = []
@@ -1095,7 +1095,7 @@ def add_bom():
             # Get UOM choices for error case
             try:
                 from models.uom import UnitOfMeasure
-                uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+                uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(100).all()
                 uom_choices = [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
             except Exception:
                 uom_choices = [('pcs', 'Pieces (pcs)'), ('kg', 'Kilograms (kg)'), ('g', 'Grams (g)')]
@@ -1108,7 +1108,7 @@ def add_bom():
             # Get UOM choices for error case
             try:
                 from models.uom import UnitOfMeasure
-                uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+                uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(100).all()
                 uom_choices = [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
             except Exception:
                 uom_choices = [('pcs', 'Pieces (pcs)'), ('kg', 'Kilograms (kg)'), ('g', 'Grams (g)')]
@@ -1171,7 +1171,7 @@ def add_bom():
     # Get UOM choices for dynamic dropdown
     try:
         from models.uom import UnitOfMeasure
-        uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+        uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(100).all()
         uom_choices = [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
     except Exception:
         uom_choices = [
@@ -1193,13 +1193,13 @@ def add_bom():
 @production_bp.route('/bom/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_bom(id):
-    print(f"DEBUG: edit_bom route called for BOM {id}, method: {request.method}")
+    # Removed debug logging for performance
     bom = BOM.query.get_or_404(id)
     
     # Initialize form and populate choices first
     form = BOMForm()
-    # Allow any product type for BOM creation - no restrictions  
-    form.product_id.choices = [(i.id, f"{i.code} - {i.name}") for i in Item.query.order_by(Item.name).all()]
+    # Optimize: Load only necessary items with limit for performance
+    form.product_id.choices = [(i.id, f"{i.code} - {i.name}") for i in Item.query.order_by(Item.name).limit(1000).all()]
     
     # For GET request, populate form with existing BOM data
     if request.method == 'GET':
@@ -1245,7 +1245,7 @@ def edit_bom(id):
             # Get UOM choices for error case
             try:
                 from models.uom import UnitOfMeasure
-                uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+                uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(100).all()
                 uom_choices = [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
             except Exception:
                 uom_choices = [('pcs', 'Pieces (pcs)'), ('kg', 'Kilograms (kg)'), ('g', 'Grams (g)')]
@@ -1275,14 +1275,7 @@ def edit_bom(id):
         bom.labor_cost_per_unit = form.labor_cost_per_unit.data or 0.0
         bom.labor_hours_per_unit = form.labor_hours_per_unit.data or 0.0
         bom.labor_rate_per_hour = form.labor_rate_per_hour.data or 0.0
-        # Debug: Print form data to see what's being received
-        print(f"DEBUG: Form data - overhead_percentage: {form.overhead_percentage.data}")
-        print(f"DEBUG: Form data - overhead_cost_per_unit: {form.overhead_cost_per_unit.data}")
-        print(f"DEBUG: Form data - freight_cost_per_unit: {form.freight_cost_per_unit.data}")
-        print(f"DEBUG: Form data - freight_unit_type: {form.freight_unit_type.data}")
-        print(f"DEBUG: Form data - markup_percentage: {form.markup_percentage.data}")
-        print(f"DEBUG: Form validation errors: {form.errors}")
-        print(f"DEBUG: Raw request data: {request.form.to_dict()}")
+        # Form data processing - debug removed for performance
         
         # Use explicit None checks to preserve 0.0 values
         bom.overhead_cost_per_unit = form.overhead_cost_per_unit.data if form.overhead_cost_per_unit.data is not None else 0.0
@@ -1312,19 +1305,9 @@ def edit_bom(id):
             old_price = bom.product.unit_price or 0
             bom.product.unit_price = round(unit_cost, 2)
             
-            print(f"AUTO-UPDATE: Item {bom.product.code} price: ₹{old_price} → ₹{bom.product.unit_price}")
-        
-        # Debug: Print values before saving
-        print(f"DEBUG: Before save - overhead_percentage: {bom.overhead_percentage}")
-        print(f"DEBUG: Before save - freight_cost_per_unit: {bom.freight_cost_per_unit}")
-        print(f"DEBUG: Before save - markup_percentage: {bom.markup_percentage}")
+            # Auto-updated item price based on BOM cost
         
         db.session.commit()
-        
-        # Debug: Print values after saving
-        print(f"DEBUG: After save - overhead_percentage: {bom.overhead_percentage}")
-        print(f"DEBUG: After save - freight_cost_per_unit: {bom.freight_cost_per_unit}")
-        print(f"DEBUG: After save - markup_percentage: {bom.markup_percentage}")
         
         flash('BOM updated successfully and item price auto-updated based on BOM cost', 'success')
         return redirect(url_for('production.list_bom'))
@@ -1340,13 +1323,13 @@ def edit_bom(id):
     material_cost_per_unit = material_cost / max(bom.output_quantity, 1)
     labor_cost_per_unit = bom.calculated_labor_cost_per_unit
     
-    # Get materials for adding new items
-    materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
+    # Get materials for adding new items (optimized with limit)
+    materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).limit(500).all()
     
     # Get UOM choices for dynamic dropdown
     try:
         from models.uom import UnitOfMeasure
-        uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).all()
+        uoms = UnitOfMeasure.query.order_by(UnitOfMeasure.category, UnitOfMeasure.name).limit(100).all()
         uom_choices = [(u.symbol, f"{u.name} ({u.symbol})") for u in uoms]
     except Exception:
         uom_choices = [
@@ -1526,7 +1509,7 @@ def add_bom_with_params():
     form.product_id.choices = [(0, 'Select Product')] + [(p.id, f"{p.name} ({p.code})") for p in products]
     
     # Get materials for adding new items
-    materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).all()
+    materials = Item.query.filter(Item.item_type.in_(['material', 'consumable'])).limit(500).all()
     
     return render_template('production/bom_form.html', 
                          form=form, 
