@@ -319,6 +319,28 @@
                 <div class="card-body">
                     <form method="POST">
                         {{ form.hidden_tag() }}
+                        <!-- Hidden required fields for form validation -->
+                        {% if bom %}
+                        <input type="hidden" name="product_id" value="{{ bom.product_id }}">
+                        <input type="hidden" name="bom_code" value="{{ bom.bom_code or '' }}">
+                        <input type="hidden" name="output_quantity" value="{{ bom.output_quantity or 1 }}">
+                        <input type="hidden" name="version" value="{{ bom.version or '1.0' }}">
+                        <input type="hidden" name="status" value="{{ bom.status or 'active' }}">
+                        <input type="hidden" name="output_uom_id" value="{{ bom.output_uom_id or 0 }}">
+                        <input type="hidden" name="unit_weight" value="{{ bom.unit_weight or 0 }}">
+                        <input type="hidden" name="unit_weight_uom" value="{{ bom.unit_weight_uom or 'kg' }}">
+                        <input type="hidden" name="estimated_scrap_percent" value="{{ bom.estimated_scrap_percent or 0 }}">
+                        <input type="hidden" name="scrap_quantity" value="{{ bom.scrap_quantity or 0 }}">
+                        <input type="hidden" name="scrap_uom" value="{{ bom.scrap_uom or 'kg' }}">
+                        <input type="hidden" name="scrap_value_recovery_percent" value="{{ bom.scrap_value_recovery_percent or 15 }}">
+                        <input type="hidden" name="description" value="{{ bom.description or '' }}">
+                        <input type="hidden" name="remarks" value="{{ bom.remarks or '' }}">
+                        <input type="hidden" name="is_phantom_bom" value="{{ 'y' if bom.is_phantom_bom else 'n' }}">
+                        <input type="hidden" name="is_active" value="{{ 'y' if bom.is_active else 'n' }}">
+                        <input type="hidden" name="parent_bom_id" value="{{ bom.parent_bom_id or 0 }}">
+                        <input type="hidden" name="bom_level" value="{{ bom.bom_level or 0 }}">
+                        <input type="hidden" name="intermediate_product" value="{{ bom.intermediate_product or '' }}">
+                        {% endif %}
 
                         <!-- Material Cost Section -->
                         <div class="card mb-3">
