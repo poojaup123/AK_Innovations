@@ -1593,6 +1593,23 @@ document.addEventListener('DOMContentLoaded', function() {
     firstProcess.querySelector('[name="processes[0][cost_per_unit]"]').value = '{{ edit_process.cost_per_unit or 0 }}';
     firstProcess.querySelector('[name="processes[0][cost_unit]"]').value = '{{ edit_process.cost_unit or "per_unit" }}';
     
+    // Pre-populate weight fields
+    firstProcess.querySelector('[name="processes[0][input_unit_weight]"]').value = '{{ edit_process.input_unit_weight or 0 }}';
+    firstProcess.querySelector('[name="processes[0][input_weight_uom]"]').value = '{{ edit_process.input_weight_uom or "kg" }}';
+    firstProcess.querySelector('[name="processes[0][output_unit_weight]"]').value = '{{ edit_process.output_unit_weight or 0 }}';
+    firstProcess.querySelector('[name="processes[0][output_weight_uom]"]').value = '{{ edit_process.output_weight_uom or "kg" }}';
+    firstProcess.querySelector('[name="processes[0][input_quantity]"]').value = '{{ edit_process.input_quantity or 1 }}';
+    firstProcess.querySelector('[name="processes[0][output_quantity]"]').value = '{{ edit_process.output_quantity or 1 }}';
+    
+    // Pre-populate scrap fields
+    firstProcess.querySelector('[name="processes[0][scrap_weight_per_unit]"]').value = '{{ edit_process.scrap_weight_per_unit or 0 }}';
+    firstProcess.querySelector('[name="processes[0][estimated_scrap_percent]"]').value = '{{ edit_process.estimated_scrap_percent or 0 }}';
+    
+    // Set scrap tracking checkbox
+    if ('{{ edit_process.scrap_tracking_enabled }}' === 'True') {
+        firstProcess.querySelector('[name="processes[0][scrap_tracking_enabled]"]').checked = true;
+    }
+    
 
     
     // Update the submit button text for editing
