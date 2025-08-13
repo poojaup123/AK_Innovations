@@ -1274,11 +1274,16 @@ def edit_bom(id):
         bom.labor_cost_per_unit = form.labor_cost_per_unit.data or 0.0
         bom.labor_hours_per_unit = form.labor_hours_per_unit.data or 0.0
         bom.labor_rate_per_hour = form.labor_rate_per_hour.data or 0.0
-        bom.overhead_cost_per_unit = form.overhead_cost_per_unit.data or 0.0
-        bom.overhead_percentage = form.overhead_percentage.data or 0.0
-        bom.freight_cost_per_unit = form.freight_cost_per_unit.data or 0.0
+        # Debug: Print form data to see what's being received
+        print(f"DEBUG: Form data - overhead_percentage: {form.overhead_percentage.data}")
+        print(f"DEBUG: Form data - freight_cost_per_unit: {form.freight_cost_per_unit.data}")
+        print(f"DEBUG: Form data - markup_percentage: {form.markup_percentage.data}")
+        
+        bom.overhead_cost_per_unit = form.overhead_cost_per_unit.data if form.overhead_cost_per_unit.data is not None else 0.0
+        bom.overhead_percentage = form.overhead_percentage.data if form.overhead_percentage.data is not None else 0.0
+        bom.freight_cost_per_unit = form.freight_cost_per_unit.data if form.freight_cost_per_unit.data is not None else 0.0
         bom.freight_unit_type = form.freight_unit_type.data or 'per_piece'
-        bom.markup_percentage = form.markup_percentage.data or 0.0
+        bom.markup_percentage = form.markup_percentage.data if form.markup_percentage.data is not None else 0.0
         
         # Multi-level BOM fields - these were missing!
         bom.parent_bom_id = form.parent_bom_id.data if form.parent_bom_id.data != 0 else None
