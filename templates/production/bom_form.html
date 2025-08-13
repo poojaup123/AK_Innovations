@@ -371,60 +371,65 @@
                                                 <hr>
                                                 <h6 class="text-primary">Complete Unit Cost</h6>
                                                 {% if bom and bom.output_quantity %}
+                                                {% set material_cost_per_unit = bom.total_material_cost / bom.output_quantity %}
+                                                {% set labor_cost_per_unit = bom.calculated_labor_cost_per_unit %}
+                                                {% set overhead_cost_per_unit = bom.overhead_cost_per_unit or (material_cost_per_unit * ((bom.overhead_percentage or 0) / 100)) %}
+                                                {% set freight_cost_per_unit = bom.freight_cost_per_unit or 0 %}
+                                                
                                                 <table class="table table-sm">
                                                     <tbody>
                                                         <tr>
                                                             <td>Material Cost:</td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(bom.total_material_cost / bom.output_quantity) }}</strong></td>
+                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(material_cost_per_unit) }}</strong></td>
                                                         </tr>
                                                         <tr>
                                                             <td>Labor Cost:</td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(bom.calculated_labor_cost_per_unit) }}</strong></td>
+                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(labor_cost_per_unit) }}</strong></td>
                                                         </tr>
-                                                        {% if (bom.overhead_cost_per_unit and bom.overhead_cost_per_unit > 0) or (bom.overhead_percentage and bom.overhead_percentage > 0) %}
-                                                        {% set overhead_cost = bom.overhead_cost_per_unit or ((bom.total_material_cost / bom.output_quantity) * (bom.overhead_percentage / 100)) %}
+                                                        {% if overhead_cost_per_unit > 0 %}
                                                         <tr>
                                                             <td>Overhead Cost{% if bom.overhead_percentage %} ({{ bom.overhead_percentage }}%){% endif %}:</td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(overhead_cost) }}</strong></td>
+                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(overhead_cost_per_unit) }}</strong></td>
                                                         </tr>
                                                         {% endif %}
-                                                        {% if bom.freight_cost_per_unit and bom.freight_cost_per_unit > 0 %}
+                                                        {% if freight_cost_per_unit > 0 %}
                                                         <tr>
                                                             <td>Freight Cost:</td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(bom.freight_cost_per_unit) }}</strong></td>
+                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(freight_cost_per_unit) }}</strong></td>
                                                         </tr>
                                                         {% endif %}
+                                                        
+                                                        {% set total_cost_per_unit = material_cost_per_unit + labor_cost_per_unit + overhead_cost_per_unit + freight_cost_per_unit %}
                                                         <tr class="table-secondary">
                                                             <td><strong>Total Cost:</strong></td>
-                                                            {% set total_cost = (bom.total_material_cost / bom.output_quantity) + bom.calculated_labor_cost_per_unit + (bom.overhead_cost_per_unit or ((bom.total_material_cost / bom.output_quantity) * ((bom.overhead_percentage or 0) / 100))) + (bom.freight_cost_per_unit or 0) %}
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(total_cost) }}</strong></td>
+                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(total_cost_per_unit) }}</strong></td>
                                                         </tr>
+                                                        
                                                         {% if bom.scrap_value_recovery_percent and bom.scrap_value_recovery_percent > 0 %}
-                                                        {% set scrap_recovery_per_unit = (bom.calculated_total_scrap_weight / bom.output_quantity) * (bom.total_material_cost / bom.output_quantity) * (bom.scrap_value_recovery_percent / 100) %}
+                                                        {% set scrap_recovery_per_unit = material_cost_per_unit * (bom.scrap_value_recovery_percent / 100) %}
                                                         <tr class="text-success">
                                                             <td>Scrap Recovery ({{ bom.scrap_value_recovery_percent }}%):</td>
                                                             <td class="text-end"><strong>-₹{{ '{:.2f}'.format(scrap_recovery_per_unit) }}</strong></td>
                                                         </tr>
-                                                        {% set overhead_cost = bom.overhead_cost_per_unit or ((bom.total_material_cost / bom.output_quantity) * ((bom.overhead_percentage or 0) / 100)) %}
-                                                        {% set net_cost = (bom.total_material_cost / bom.output_quantity) + bom.calculated_labor_cost_per_unit + overhead_cost + (bom.freight_cost_per_unit or 0) - scrap_recovery_per_unit %}
+                                                        {% set net_cost_per_unit = total_cost_per_unit - scrap_recovery_per_unit %}
                                                         {% else %}
-                                                        {% set overhead_cost = bom.overhead_cost_per_unit or ((bom.total_material_cost / bom.output_quantity) * ((bom.overhead_percentage or 0) / 100)) %}
-                                                        {% set net_cost = (bom.total_material_cost / bom.output_quantity) + bom.calculated_labor_cost_per_unit + overhead_cost + (bom.freight_cost_per_unit or 0) %}
-                                                        {% set scrap_recovery_per_unit = 0 %}
+                                                        {% set net_cost_per_unit = total_cost_per_unit %}
                                                         {% endif %}
+                                                        
                                                         <tr class="table-info">
                                                             <td><strong>Net Manufacturing Cost:</strong></td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(net_cost) }}</strong></td>
+                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(net_cost_per_unit) }}</strong></td>
                                                         </tr>
+                                                        
                                                         {% if bom.markup_percentage and bom.markup_percentage > 0 %}
-                                                        {% set markup_value = net_cost * (bom.markup_percentage / 100) %}
+                                                        {% set markup_value_per_unit = net_cost_per_unit * (bom.markup_percentage / 100) %}
                                                         <tr class="text-warning">
                                                             <td>Markup ({{ bom.markup_percentage }}%):</td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(markup_value) }}</strong></td>
+                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(markup_value_per_unit) }}</strong></td>
                                                         </tr>
                                                         <tr class="table-success">
                                                             <td><strong>Selling Price:</strong></td>
-                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(net_cost + markup_value) }}</strong></td>
+                                                            <td class="text-end"><strong>₹{{ '{:.2f}'.format(net_cost_per_unit + markup_value_per_unit) }}</strong></td>
                                                         </tr>
                                                         {% endif %}
                                                     </tbody>
