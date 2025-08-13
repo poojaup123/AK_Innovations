@@ -1308,12 +1308,9 @@ function fetchPreviousProcessData(currentSequence, processDiv) {
                 }
                 
                 if (inputWeight && prevData.output_unit_weight) {
-                    // Only update if current value is not already the correct value
-                    if (parseFloat(inputWeight.value) !== parseFloat(prevData.output_unit_weight)) {
-                        inputWeight.value = prevData.output_unit_weight;
-                        inputWeight.style.backgroundColor = '#d1ecf1';
-                        inputWeight.readOnly = true;
-                    }
+                    inputWeight.value = prevData.output_unit_weight;
+                    inputWeight.style.backgroundColor = '#d1ecf1';
+                    inputWeight.readOnly = true;
                 }
                 
                 if (inputWeightUom && prevData.output_weight_uom) {
