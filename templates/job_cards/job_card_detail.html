@@ -213,7 +213,7 @@
                                         <th class="align-middle" style="width: 15%;">Description</th>
                                         <th class="align-middle" style="width: 7%;">Est. Time</th>
                                         <th class="align-middle" style="width: 12%;">Status</th>
-                                        <th class="align-middle" style="width: 8%;">Scrap (kg)</th>
+                                        <th class="align-middle" style="width: 8%;">Total Scrap</th>
                                         <th class="align-middle" style="width: 7%;">Scrap %</th>
                                         <th class="align-middle" style="width: 7%;">Out. Sent</th>
                                         <th class="align-middle" style="width: 7%;">Out. Received</th>
@@ -259,10 +259,18 @@
                                             {% endif %}
                                         </td>
                                         
-                                        <!-- Scrap Weight per Unit -->
+                                        <!-- Total Scrap Weight for Job Card Quantity -->
                                         <td class="align-middle text-center">
-                                            {% if step.scrap_weight_per_unit %}
-                                                <span class="badge bg-warning text-dark badge-sm">{{ "%.3f"|format(step.scrap_weight_per_unit) }}</span>
+                                            {% if step.scrap_weight_per_unit and job_card.planned_quantity %}
+                                                {% set total_scrap_weight = step.scrap_weight_per_unit * job_card.planned_quantity %}
+                                                {% if total_scrap_weight > 0 %}
+                                                    <span class="badge bg-warning text-dark badge-sm">{{ "%.2f"|format(total_scrap_weight) }} kg</span>
+                                                    <br><small style="font-size: 0.65rem;">
+                                                        {{ "%.3f"|format(step.scrap_weight_per_unit) }} × {{ "%.0f"|format(job_card.planned_quantity) }} pcs
+                                                    </small>
+                                                {% else %}
+                                                    <small class="text-muted">0.00 kg</small>
+                                                {% endif %}
                                                 {% if step.scrap_tracking_enabled %}
                                                     <br><small class="text-success" style="font-size: 0.65rem;">
                                                         <i class="fas fa-check"></i> Tracked
@@ -273,7 +281,7 @@
                                                     </small>
                                                 {% endif %}
                                             {% else %}
-                                                <small class="text-muted">0.000</small>
+                                                <small class="text-muted">0.00 kg</small>
                                             {% endif %}
                                         </td>
                                         
@@ -288,6 +296,9 @@
                                                 {% else %}
                                                     <span class="badge bg-success badge-sm">{{ "%.1f"|format(scrap_percent) }}%</span>
                                                 {% endif %}
+                                                <br><small class="text-muted" style="font-size: 0.65rem;">
+                                                    Per unit waste
+                                                </small>
                                             {% else %}
                                                 <small class="text-muted">-</small>
                                             {% endif %}
