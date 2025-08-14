@@ -196,11 +196,11 @@ def approve_order():
             
         db.session.commit()
         
-        return jsonify({'success': True, 'message': 'Order approved successfully'})
+        return jsonify({'status': 'success', 'message': 'Order approved successfully'})
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)})
+        return jsonify({'status': 'error', 'message': str(e)})
 
 @admin_bp.route('/approval/reject', methods=['POST'])
 @login_required
@@ -226,11 +226,11 @@ def reject_order():
             
         db.session.commit()
         
-        return jsonify({'success': True, 'message': 'Order rejected successfully'})
+        return jsonify({'status': 'success', 'message': 'Order rejected successfully'})
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)})
+        return jsonify({'status': 'error', 'message': str(e)})
 
 @admin_bp.route('/pending-summary')
 @login_required
