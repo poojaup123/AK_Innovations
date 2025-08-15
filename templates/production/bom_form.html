@@ -221,7 +221,7 @@
                                         <input type="number" class="form-control" id="unit_weight" name="unit_weight" 
                                                step="0.001" onchange="updateUnitWeightDisplay()" 
                                                placeholder="Weight of final product" 
-                                               value="{{ '%.3f'|format(bom.calculated_final_product_unit_weight|float) }}">
+                                               value="{{ '%.3f'|format(bom.unit_weight|float) }}">
                                         {% else %}
                                         {{ form.unit_weight(class="form-control", step="0.001", id="unit_weight", onchange="updateUnitWeightDisplay()", placeholder="Weight of final product") }}
                                         {% endif %}
@@ -230,7 +230,7 @@
                                     <small class="text-info">
                                         <i class="fas fa-info-circle"></i> <strong>Final product weight</strong> - used for scrap % calculations and per kg cost conversions
                                         {% if bom and bom.processes %}
-                                        <br><i class="fas fa-robot text-success"></i> <strong>Auto-calculated from last process:</strong> {{ '{:.3f}'.format(bom.calculated_final_product_unit_weight) }} kg
+                                        <br><i class="fas fa-robot text-success"></i> <strong>Current unit weight:</strong> {{ '{:.3f}'.format(bom.unit_weight) }} kg
                                         {% endif %}
                                     </small>
                                 </div>
@@ -821,9 +821,9 @@
                                         </div>
                                     </td>
                                     <td class="editable" data-field="quantity_required" data-type="number">
-                                        <span class="display-value">{{ bom_item.quantity_required }}</span>
+                                        <span class="display-value">{{ bom_item.qty_required or bom_item.quantity_required }}</span>
                                         <input type="number" class="form-control form-control-sm edit-input" 
-                                               value="{{ bom_item.quantity_required }}" step="0.001" style="display: none;">
+                                               value="{{ bom_item.qty_required or bom_item.quantity_required }}" step="0.001" style="display: none;">
                                     </td>
                                     <td class="editable" data-field="unit" data-type="select">
                                         <span class="display-value">{{ bom_item.unit }}</span>
@@ -844,18 +844,18 @@
                                         </div>
                                     </td>
                                     <td class="calculated-cost">
-                                        <strong>₹{{ "%.2f"|format(bom_item.quantity_required * bom_item.unit_cost) }}</strong>
+                                        <strong>₹{{ "%.2f"|format((bom_item.qty_required or bom_item.quantity_required or 0) * (bom_item.unit_cost or 0)) }}</strong>
                                     </td>
                                     <td>
                                         {% set stock = bom_item.item.total_stock or bom_item.item.current_stock or 0 %}
-                                        {% if stock >= bom_item.quantity_required %}
+                                        {% if stock >= (bom_item.qty_required or bom_item.quantity_required or 0) %}
                                             <span class="badge bg-success">✓ Available</span>
                                         {% elif stock > 0 %}
                                             <span class="badge bg-warning">⚠ Low Stock</span>
                                         {% else %}
                                             <span class="badge bg-danger">✗ Out of Stock</span>
                                         {% endif %}
-                                        <br><small>{{ stock }} {{ bom_item.unit }}</small>
+                                        <br><small>{{ stock }} {{ bom_item.unit or 'pcs' }}</small>
                                     </td>
                                     <td class="editable" data-field="notes" data-type="text">
                                         <span class="display-value">{{ bom_item.notes or '-' }}</span>
