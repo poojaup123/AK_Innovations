@@ -59,7 +59,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default='operator')  # admin, manager, supervisor, operator
+    role = db.Column(db.String(20), nullable=False, default='staff')  # admin, staff
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -71,35 +71,6 @@ class User(UserMixin, db.Model):
     
     def is_admin(self):
         return self.role == 'admin'
-    
-    def is_manager(self):
-        return self.role == 'manager'
-    
-    def is_supervisor(self):
-        return self.role == 'supervisor'
-    
-    def is_operator(self):
-        return self.role == 'operator'
-    
-    def get_role_display(self):
-        role_map = {
-            'admin': 'Administrator',
-            'manager': 'Manager',
-            'supervisor': 'Supervisor',
-            'operator': 'Operator'
-        }
-        return role_map.get(self.role, self.role.title())
-    
-    def get_accessible_modules(self):
-        """Get modules accessible to this user role"""
-        if self.is_admin():
-            return ['dashboard', 'inventory', 'production', 'job_work', 'bom', 'purchase', 'sales', 'hr', 'accounting', 'reports', 'settings']
-        elif self.is_manager():
-            return ['dashboard', 'inventory', 'production', 'job_work', 'bom', 'purchase', 'sales', 'hr', 'reports']
-        elif self.is_supervisor():
-            return ['dashboard', 'production', 'job_work', 'inventory', 'reports']
-        else:  # operator
-            return ['dashboard', 'production', 'job_work']
     
     def has_permission(self, permission_code):
         """Check if user has a specific permission"""
@@ -2237,108 +2208,6 @@ class BOM(db.Model):
             
         return updated_count
     
-    @classmethod
-    def update_all_item_prices_from_bom(cls):
-        """Update all item prices based on their BOM calculations"""
-        all_boms = cls.query.filter_by(is_active=True).all()
-        updated_items = []
-        
-        for bom in all_boms:
-            if bom.product and bom.product.item_type in ['spare part', 'product', 'finished_goods', 'consumable']:
-                try:
-                    # Calculate total cost per unit including material, labor, overhead, freight, markup
-                    total_cost_per_unit = bom.total_cost_per_unit
-                    if bom.output_quantity and bom.output_quantity > 0:
-                        unit_cost = total_cost_per_unit / bom.output_quantity
-                    else:
-                        unit_cost = total_cost_per_unit
-                    
-                    # Update item unit price with BOM-calculated cost
-                    old_price = bom.product.unit_price or 0
-                    new_price = round(unit_cost, 2)
-                    
-                    if old_price != new_price:
-                        bom.product.unit_price = new_price
-                        updated_items.append({
-                            'item_code': bom.product.code,
-                            'item_name': bom.product.name,
-                            'bom_code': bom.bom_code,
-                            'old_price': old_price,
-                            'new_price': new_price,
-                            'material_cost': round(bom.total_material_cost, 2),
-                            'labor_cost': round(bom.total_labor_cost_per_unit, 2),
-                            'total_cost': round(total_cost_per_unit, 2)
-                        })
-                        
-                        # Mark this BOM's product as needing downstream updates
-                        cls._update_dependent_boms(bom.product.id)
-                except Exception as e:
-                    print(f"Error updating price for BOM {bom.bom_code}: {e}")
-                    continue
-        
-        if updated_items:
-            db.session.commit()
-            
-        return updated_items
-    
-    @classmethod
-    def _update_dependent_boms(cls, product_id):
-        """Update BOMs that use this product as a component"""
-        # Find all BOMs that use this product as a material
-        dependent_bom_items = BOMItem.query.filter(
-            (BOMItem.material_id == product_id) | (BOMItem.item_id == product_id)
-        ).all()
-        
-        for bom_item in dependent_bom_items:
-            if bom_item.bom and bom_item.bom.product:
-                try:
-                    # Recalculate the dependent BOM's product price
-                    dependent_bom = bom_item.bom
-                    total_cost_per_unit = dependent_bom.total_cost_per_unit
-                    if dependent_bom.output_quantity and dependent_bom.output_quantity > 0:
-                        unit_cost = total_cost_per_unit / dependent_bom.output_quantity
-                    else:
-                        unit_cost = total_cost_per_unit
-                    
-                    # Update the dependent product's price
-                    dependent_bom.product.unit_price = round(unit_cost, 2)
-                    
-                    # Continue the chain - update BOMs dependent on this one
-                    cls._update_dependent_boms(dependent_bom.product.id)
-                    
-                except Exception as e:
-                    print(f"Error updating dependent BOM {dependent_bom.bom_code}: {e}")
-                    continue
-    
-    def auto_update_product_price(self):
-        """Automatically update the product price when BOM changes"""
-        if self.product and self.product.item_type in ['spare part', 'product', 'finished_goods', 'consumable']:
-            try:
-                # Calculate total cost per unit including material, labor, overhead, freight, markup
-                total_cost_per_unit = self.total_cost_per_unit
-                if self.output_quantity and self.output_quantity > 0:
-                    unit_cost = total_cost_per_unit / self.output_quantity
-                else:
-                    unit_cost = total_cost_per_unit
-                
-                # Update item unit price with BOM-calculated cost
-                new_price = round(unit_cost, 2)
-                old_price = self.product.unit_price or 0
-                
-                if old_price != new_price:
-                    self.product.unit_price = new_price
-                    print(f"Auto-updated {self.product.code} price: ₹{old_price} → ₹{new_price}")
-                    
-                    # Update dependent BOMs that use this product
-                    self._update_dependent_boms(self.product.id)
-                    
-                    return True
-                    
-            except Exception as e:
-                print(f"Error auto-updating price for BOM {self.bom_code}: {e}")
-                
-        return False
-    
     @property
     def expected_scrap_value(self):
         """Calculate expected scrap value recovery per unit"""
@@ -3895,91 +3764,3 @@ class DailyJobWorkEntry(db.Model):
 
 # Add Production-ProductionBatch relationship at the end after all models are defined
 Production.production_batches = db.relationship('ProductionBatch', backref='production', lazy=True, cascade='all, delete-orphan')
-
-# ==============================================================================
-# AUTOMATIC BOM PRICE UPDATE TRIGGERS
-# ==============================================================================
-
-from sqlalchemy import event
-
-@event.listens_for(BOM, 'after_insert')
-@event.listens_for(BOM, 'after_update')
-def auto_update_bom_price_on_change(mapper, connection, target):
-    """Automatically update product price when BOM is created or modified"""
-    try:
-        # Schedule price update to run after transaction commits
-        @event.listens_for(db.session, 'after_commit', once=True)  
-        def update_price_after_commit(session):
-            try:
-                # Create new session for post-commit operation
-                from app import db
-                with db.session.begin():
-                    # Re-query the BOM in the new session
-                    bom = db.session.get(BOM, target.id)
-                    if bom:
-                        bom.auto_update_product_price()
-                        # Session will auto-commit due to begin() context
-            except Exception as e:
-                print(f"Error auto-updating price for BOM {target.bom_code}: {e}")
-    except Exception as e:
-        print(f"Error setting up auto price update for BOM {target.bom_code}: {e}")
-
-@event.listens_for(BOMItem, 'after_insert')
-@event.listens_for(BOMItem, 'after_update')
-@event.listens_for(BOMItem, 'after_delete')
-def auto_update_bom_price_on_item_change(mapper, connection, target):
-    """Automatically update BOM product price when BOM items change"""
-    try:
-        if target.bom:
-            # Schedule price update to run after transaction commits
-            @event.listens_for(db.session, 'after_commit', once=True)
-            def update_price_after_commit(session):
-                try:
-                    target.bom.auto_update_product_price()
-                    session.commit()
-                except Exception as e:
-                    print(f"Error in auto price update for BOM {target.bom.bom_code}: {e}")
-                    session.rollback()
-    except Exception as e:
-        print(f"Error setting up auto price update for BOM item: {e}")
-
-@event.listens_for(Item, 'after_update')
-def auto_update_dependent_bom_prices_on_material_price_change(mapper, connection, target):
-    """Automatically update dependent BOM prices when material prices change"""
-    try:
-        # Check if unit_price was actually changed
-        history = db.inspect(target).attrs.unit_price.history
-        if history.has_changes():
-            # Schedule price update to run after transaction commits
-            @event.listens_for(db.session, 'after_commit', once=True)
-            def update_dependent_prices_after_commit(session):
-                try:
-                    # Update all BOMs that use this item as a material
-                    BOM._update_dependent_boms(target.id)
-                    session.commit()
-                except Exception as e:
-                    print(f"Error updating dependent BOM prices for item {target.code}: {e}")
-                    session.rollback()
-    except Exception as e:
-        print(f"Error setting up dependent price updates for item {target.code}: {e}")
-
-@event.listens_for(BOMProcess, 'after_insert')
-@event.listens_for(BOMProcess, 'after_update')
-@event.listens_for(BOMProcess, 'after_delete')
-def auto_update_bom_price_on_process_change(mapper, connection, target):
-    """Automatically update BOM product price when process costs change"""
-    try:
-        if target.bom:
-            # Schedule price update to run after transaction commits
-            @event.listens_for(db.session, 'after_commit', once=True)
-            def update_price_after_commit(session):
-                try:
-                    target.bom.auto_update_product_price()
-                    session.commit()
-                except Exception as e:
-                    print(f"Error in auto price update for BOM {target.bom.bom_code}: {e}")
-                    session.rollback()
-    except Exception as e:
-        print(f"Error setting up auto price update for BOM process: {e}")
-
-print("✅ Automatic BOM price update triggers enabled - prices will update automatically when BOMs, materials, or processes change")
