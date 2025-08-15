@@ -205,12 +205,6 @@
                 
                 <!-- CORE OPERATIONS -->
                 <div class="nav-section-header px-3 py-1 small text-muted fw-bold">OPERATIONS</div>
-                <a class="nav-link {{ 'active' if 'unified' in request.endpoint and 'manufacturing' in request.endpoint }}" href="{{ url_for('unified.manufacturing_hub') }}">
-                    <i class="fas fa-industry text-primary"></i>
-                    Manufacturing Hub
-                    <span class="badge bg-primary ms-2 small">UNIFIED</span>
-                </a>
-                
                 <a class="nav-link {{ 'active' if 'inventory' in request.endpoint and 'batch' not in request.endpoint }}" href="{{ url_for('inventory.dashboard') }}">
                     <i class="fas fa-boxes"></i>
                     Inventory
