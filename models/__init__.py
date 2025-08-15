@@ -59,7 +59,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default='staff')  # admin, staff
+    role = db.Column(db.String(20), nullable=False, default='operator')  # admin, manager, supervisor, operator
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -71,6 +71,35 @@ class User(UserMixin, db.Model):
     
     def is_admin(self):
         return self.role == 'admin'
+    
+    def is_manager(self):
+        return self.role == 'manager'
+    
+    def is_supervisor(self):
+        return self.role == 'supervisor'
+    
+    def is_operator(self):
+        return self.role == 'operator'
+    
+    def get_role_display(self):
+        role_map = {
+            'admin': 'Administrator',
+            'manager': 'Manager',
+            'supervisor': 'Supervisor',
+            'operator': 'Operator'
+        }
+        return role_map.get(self.role, self.role.title())
+    
+    def get_accessible_modules(self):
+        """Get modules accessible to this user role"""
+        if self.is_admin():
+            return ['dashboard', 'inventory', 'production', 'job_work', 'bom', 'purchase', 'sales', 'hr', 'accounting', 'reports', 'settings']
+        elif self.is_manager():
+            return ['dashboard', 'inventory', 'production', 'job_work', 'bom', 'purchase', 'sales', 'hr', 'reports']
+        elif self.is_supervisor():
+            return ['dashboard', 'production', 'job_work', 'inventory', 'reports']
+        else:  # operator
+            return ['dashboard', 'production', 'job_work']
     
     def has_permission(self, permission_code):
         """Check if user has a specific permission"""

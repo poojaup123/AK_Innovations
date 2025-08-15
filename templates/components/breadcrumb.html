@@ -1,0 +1,129 @@
+<!-- Reusable Breadcrumb Component -->
+<!-- Usage: Include this template and pass breadcrumb_items list -->
+
+<nav aria-label="breadcrumb" class="user-breadcrumb mb-3">
+    <ol class="breadcrumb enhanced-breadcrumb">
+        <!-- Home/Dashboard always first -->
+        <li class="breadcrumb-item">
+            <a href="{{ url_for('main.dashboard') }}" class="breadcrumb-link">
+                <i class="fas fa-home me-1"></i>Dashboard
+            </a>
+        </li>
+        
+        <!-- Dynamic breadcrumb items -->
+        {% if breadcrumb_items %}
+            {% for item in breadcrumb_items %}
+                {% if loop.last %}
+                    <!-- Last item is active (current page) -->
+                    <li class="breadcrumb-item active" aria-current="page">
+                        {% if item.icon %}
+                            <i class="fas fa-{{ item.icon }} me-1"></i>
+                        {% endif %}
+                        {{ item.title }}
+                    </li>
+                {% else %}
+                    <!-- Clickable items -->
+                    <li class="breadcrumb-item">
+                        <a href="{{ item.url }}" class="breadcrumb-link">
+                            {% if item.icon %}
+                                <i class="fas fa-{{ item.icon }} me-1"></i>
+                            {% endif %}
+                            {{ item.title }}
+                        </a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    </ol>
+    
+    <!-- Quick Actions for current page -->
+    {% if quick_actions %}
+    <div class="breadcrumb-actions">
+        {% for action in quick_actions %}
+            <a href="{{ action.url }}" class="btn btn-sm btn-{{ action.style or 'outline-primary' }} me-2">
+                {% if action.icon %}
+                    <i class="fas fa-{{ action.icon }} me-1"></i>
+                {% endif %}
+                {{ action.title }}
+            </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</nav>
+
+<style>
+.user-breadcrumb {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    margin-bottom: 1.5rem;
+}
+
+.enhanced-breadcrumb {
+    background: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.breadcrumb-link {
+    color: #495057;
+    text-decoration: none;
+    transition: color 0.2s ease;
+    font-weight: 500;
+}
+
+.breadcrumb-link:hover {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: '>';
+    color: #6c757d;
+    font-weight: bold;
+    margin: 0 0.5rem;
+}
+
+.breadcrumb-item.active {
+    color: #007bff;
+    font-weight: 600;
+}
+
+.breadcrumb-actions {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #dee2e6;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .user-breadcrumb {
+        padding: 0.75rem 1rem;
+    }
+    
+    .enhanced-breadcrumb {
+        font-size: 0.8rem;
+    }
+    
+    .breadcrumb-actions .btn {
+        margin-bottom: 0.5rem;
+        display: block;
+        width: 100%;
+    }
+    
+    .breadcrumb-actions .btn:last-child {
+        margin-bottom: 0;
+    }
+}
+
+/* Icon styling */
+.breadcrumb-item i {
+    opacity: 0.7;
+}
+
+.breadcrumb-item.active i {
+    opacity: 1;
+}
+</style>
