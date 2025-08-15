@@ -2237,6 +2237,47 @@ class BOM(db.Model):
             
         return updated_count
     
+    @classmethod
+    def update_all_item_prices_from_bom(cls):
+        """Update all item prices based on their BOM calculations"""
+        all_boms = cls.query.filter_by(is_active=True).all()
+        updated_items = []
+        
+        for bom in all_boms:
+            if bom.product and bom.product.item_type in ['spare part', 'product', 'finished_goods', 'consumable']:
+                try:
+                    # Calculate total cost per unit including material, labor, overhead, freight, markup
+                    total_cost_per_unit = bom.total_cost_per_unit
+                    if bom.output_quantity and bom.output_quantity > 0:
+                        unit_cost = total_cost_per_unit / bom.output_quantity
+                    else:
+                        unit_cost = total_cost_per_unit
+                    
+                    # Update item unit price with BOM-calculated cost
+                    old_price = bom.product.unit_price or 0
+                    new_price = round(unit_cost, 2)
+                    
+                    if old_price != new_price:
+                        bom.product.unit_price = new_price
+                        updated_items.append({
+                            'item_code': bom.product.code,
+                            'item_name': bom.product.name,
+                            'bom_code': bom.bom_code,
+                            'old_price': old_price,
+                            'new_price': new_price,
+                            'material_cost': round(bom.total_material_cost, 2),
+                            'labor_cost': round(bom.total_labor_cost_per_unit, 2),
+                            'total_cost': round(total_cost_per_unit, 2)
+                        })
+                except Exception as e:
+                    print(f"Error updating price for BOM {bom.bom_code}: {e}")
+                    continue
+        
+        if updated_items:
+            db.session.commit()
+            
+        return updated_items
+    
     @property
     def expected_scrap_value(self):
         """Calculate expected scrap value recovery per unit"""

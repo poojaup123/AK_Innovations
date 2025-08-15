@@ -190,6 +190,32 @@ def report_issue():
     return render_template('issues/report_issue.html', 
                          breadcrumb_items=breadcrumb_items)
 
+@main_bp.route('/update-bom-prices')
+@login_required
+def update_bom_prices():
+    """Update all item prices based on BOM calculations"""
+    if not (current_user.is_admin() or current_user.is_manager()):
+        flash('Access denied. Only administrators and managers can update BOM prices.', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        from models import BOM
+        updated_items = BOM.update_all_item_prices_from_bom()
+        
+        if updated_items:
+            flash(f'Successfully updated prices for {len(updated_items)} items based on BOM calculations.', 'success')
+            
+            # Log the updates for transparency
+            for item in updated_items:
+                print(f"Updated {item['item_code']} ({item['item_name']}): ₹{item['old_price']} → ₹{item['new_price']}")
+        else:
+            flash('All item prices are already up to date with their BOM calculations.', 'info')
+            
+    except Exception as e:
+        flash(f'Error updating BOM prices: {str(e)}', 'error')
+    
+    return redirect(url_for('main.dashboard'))
+
 @main_bp.route('/customize_dashboard')
 @login_required
 def customize_dashboard():
