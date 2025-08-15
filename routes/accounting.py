@@ -79,20 +79,25 @@ def dashboard():
         current_month = datetime.now().month
         current_year = datetime.now().year
         
-        # Account balances by type - using proper balance calculation
-        asset_accounts = Account.query.join(AccountGroup).filter(AccountGroup.group_type == 'assets').all()
-        liability_accounts = Account.query.join(AccountGroup).filter(AccountGroup.group_type == 'liabilities').all()
-        income_accounts = Account.query.join(AccountGroup).filter(AccountGroup.group_type == 'income').all()
-        expense_accounts = Account.query.join(AccountGroup).filter(AccountGroup.group_type == 'expenses').all()
-        
-        # ✅ FIXED: Use current_balance field with proper liability calculation
-        total_assets = sum(abs(float(account.current_balance or 0)) for account in asset_accounts if account.current_balance and account.current_balance != 0)
-        
-        # For liabilities, take positive balances (amounts we owe)
-        total_liabilities = sum(float(account.current_balance or 0) for account in liability_accounts if account.current_balance and account.current_balance > 0)
-        
-        total_income = sum(abs(float(account.current_balance or 0)) for account in income_accounts if account.current_balance and account.current_balance != 0)
-        total_expenses = sum(abs(float(account.current_balance or 0)) for account in expense_accounts if account.current_balance and account.current_balance != 0)
+        # Optimized account balances calculation using single queries
+        try:
+            from services.query_optimizer import AccountingQueries
+            balances = AccountingQueries.get_account_balances()
+            total_assets = balances['total_assets']
+            total_liabilities = balances['total_liabilities']
+            total_income = balances['total_income']
+            total_expenses = balances['total_expenses']
+        except ImportError:
+            # Fallback to original queries
+            asset_accounts = Account.query.join(AccountGroup).filter(AccountGroup.group_type == 'assets').all()
+            liability_accounts = Account.query.join(AccountGroup).filter(AccountGroup.group_type == 'liabilities').all()
+            income_accounts = Account.query.join(AccountGroup).filter(AccountGroup.group_type == 'income').all()
+            expense_accounts = Account.query.join(AccountGroup).filter(AccountGroup.group_type == 'expenses').all()
+            
+            total_assets = sum(abs(float(account.current_balance or 0)) for account in asset_accounts if account.current_balance and account.current_balance != 0)
+            total_liabilities = sum(float(account.current_balance or 0) for account in liability_accounts if account.current_balance and account.current_balance > 0)
+            total_income = sum(abs(float(account.current_balance or 0)) for account in income_accounts if account.current_balance and account.current_balance != 0)
+            total_expenses = sum(abs(float(account.current_balance or 0)) for account in expense_accounts if account.current_balance and account.current_balance != 0)
         
         # Current month transactions
         month_start = datetime(current_year, current_month, 1).date()
@@ -101,11 +106,15 @@ def dashboard():
         else:
             month_end = datetime(current_year, current_month + 1, 1).date() - timedelta(days=1)
         
-        # Count all vouchers created this month (including drafts)
-        monthly_vouchers = Voucher.query.filter(
-            Voucher.created_at >= datetime(current_year, current_month, 1),
-            Voucher.created_at < datetime(current_year, current_month + 1, 1) if current_month < 12 else datetime(current_year + 1, 1, 1)
-        ).count()
+        # Count monthly vouchers using optimized query
+        try:
+            from services.query_optimizer import AccountingQueries
+            monthly_vouchers = AccountingQueries.get_monthly_vouchers(current_year, current_month)
+        except ImportError:
+            monthly_vouchers = Voucher.query.filter(
+                Voucher.created_at >= datetime(current_year, current_month, 1),
+                Voucher.created_at < datetime(current_year, current_month + 1, 1) if current_month < 12 else datetime(current_year + 1, 1, 1)
+            ).count()
         
         # Outstanding amounts - using proper vendor invoice tracking
         from models.grn import VendorInvoice

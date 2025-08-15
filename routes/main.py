@@ -30,21 +30,28 @@ def dashboard():
     # Get user's customized dashboard modules
     user_modules = get_user_dashboard_modules(current_user.id)
     
-    # Get dashboard statistics
-    stats = {
-        'total_items': Item.query.count(),
-        'low_stock_items': Item.query.filter(Item.current_stock <= Item.minimum_stock).count(),
-        'open_purchase_orders': PurchaseOrder.query.filter_by(status='open').count(),
-        'pending_sales_orders': SalesOrder.query.filter_by(status='pending').count(),
-        'active_employees': Employee.query.filter_by(is_active=True).count(),
-        'open_job_works': JobWork.query.filter_by(status='sent').count(),
-        'planned_productions': Production.query.filter_by(status='planned').count()
-    }
-    
-    # Recent activities
-    recent_pos = PurchaseOrder.query.order_by(PurchaseOrder.created_at.desc()).limit(5).all()
-    recent_sos = SalesOrder.query.order_by(SalesOrder.created_at.desc()).limit(5).all()
-    low_stock_items = Item.query.filter(Item.current_stock <= Item.minimum_stock).limit(10).all()
+    # Get optimized dashboard statistics using single queries
+    try:
+        from services.query_optimizer import DashboardQueries
+        stats = DashboardQueries.get_dashboard_stats()
+        activities = DashboardQueries.get_recent_activities()
+        recent_pos = activities['recent_pos']
+        recent_sos = activities['recent_sos']
+        low_stock_items = activities['low_stock_items']
+    except ImportError:
+        # Fallback to original queries if optimizer not available
+        stats = {
+            'total_items': Item.query.count(),
+            'low_stock_items': Item.query.filter(Item.current_stock <= Item.minimum_stock).count(),
+            'open_purchase_orders': PurchaseOrder.query.filter_by(status='open').count(),
+            'pending_sales_orders': SalesOrder.query.filter_by(status='pending').count(),
+            'active_employees': Employee.query.filter_by(is_active=True).count(),
+            'open_job_works': JobWork.query.filter_by(status='sent').count(),
+            'planned_productions': Production.query.filter_by(status='planned').count()
+        }
+        recent_pos = PurchaseOrder.query.order_by(PurchaseOrder.created_at.desc()).limit(5).all()
+        recent_sos = SalesOrder.query.order_by(SalesOrder.created_at.desc()).limit(5).all()
+        low_stock_items = Item.query.filter(Item.current_stock <= Item.minimum_stock).limit(10).all()
     
     # Validate URLs for each module to prevent build errors
     for user_module in user_modules:

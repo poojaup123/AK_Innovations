@@ -55,6 +55,31 @@ def create_app():
     def load_user(user_id):
         return User.query.get(int(user_id))
     
+    # Add context processor for common template variables
+    @app.context_processor
+    def inject_common_vars():
+        """Inject commonly used variables into all templates"""
+        from datetime import datetime
+        from flask_login import current_user
+        
+        context = {
+            'current_year': datetime.now().year,
+            'current_date': datetime.now().date(),
+            'app_version': '2.0.0'
+        }
+        
+        # Add user-specific context if authenticated
+        if current_user and current_user.is_authenticated:
+            try:
+                context.update({
+                    'user_role': getattr(current_user, 'role', 'user'),
+                    'user_permissions': getattr(current_user, 'get_permissions', lambda: [])()
+                })
+            except:
+                pass
+        
+        return context
+    
     # Register blueprints
     from routes.main import main_bp
     from routes.auth import auth_bp
