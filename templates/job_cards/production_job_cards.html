@@ -300,16 +300,44 @@
 
 
 <style>
-.job-card-item {
+/* Force visible borders on job cards */
+.job-card-item.card {
     transition: transform 0.2s;
     height: 100%;
-    border: 2px solid #dee2e6 !important;
-    border-radius: 0.5rem !important;
+    border: 3px solid #007bff !important;
+    border-radius: 0.75rem !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    background: #ffffff !important;
 }
 
-.job-card-item:hover {
+.job-card-item.card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important;
+    border-color: #0056b3 !important;
+}
+
+/* Process-specific border colors */
+.job-card-item.card[data-job-type="outsourced"] {
+    border-color: #17a2b8 !important;
+    border-left-width: 6px !important;
+}
+
+.job-card-item.card[data-job-type="in_house"] {
+    border-color: #28a745 !important;
+    border-left-width: 6px !important;
+}
+
+/* Status-based borders */
+.job-card-item.card .card-header.bg-success {
+    border-top: 3px solid #28a745 !important;
+}
+
+.job-card-item.card .card-header.bg-warning {
+    border-top: 3px solid #ffc107 !important;
+}
+
+.job-card-item.card .card-header.bg-info {
+    border-top: 3px solid #17a2b8 !important;
 }
 
 .process-routing {
@@ -317,6 +345,7 @@
     padding: 0.75rem;
     border-radius: 0.375rem;
     border-left: 4px solid #007bff;
+    border: 1px solid #e9ecef;
 }
 
 .step-number .badge {
@@ -331,13 +360,17 @@
     opacity: 0.9;
 }
 
-/* Job type indicators */
-.job-card-item[data-job-type="outsourced"] {
-    border-left: 4px solid #17a2b8;
+/* Additional card styling overrides */
+.card.job-card-item .card-body {
+    border-top: 1px solid rgba(0,0,0,0.125) !important;
 }
 
-.job-card-item[data-job-type="in_house"] {
-    border-left: 4px solid #28a745;
+/* Make sure borders are visible on all screen sizes */
+@media (max-width: 768px) {
+    .job-card-item.card {
+        border-width: 2px !important;
+        margin-bottom: 1rem;
+    }
 }
 </style>
 
