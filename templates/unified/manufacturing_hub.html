@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+
+{% block title %}Manufacturing Hub{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Manufacturing Hub Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-industry text-primary"></i> Manufacturing Hub</h2>
+                    <p class="text-muted">Complete production management in one place</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newProductionModal">
+                        <i class="fas fa-plus me-2"></i>New Production Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary h-100">
+                <div class="card-body text-center">
+                    <h3 class="text-primary">{{ stats.active_productions }}</h3>
+                    <small class="text-muted">Active Productions</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning h-100">
+                <div class="card-body text-center">
+                    <h3 class="text-warning">{{ stats.pending_job_cards }}</h3>
+                    <small class="text-muted">Pending Job Cards</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success h-100">
+                <div class="card-body text-center">
+                    <h3 class="text-success">{{ stats.completed_today }}</h3>
+                    <small class="text-muted">Completed Today</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-danger h-100">
+                <div class="card-body text-center">
+                    <h3 class="text-danger">{{ stats.overdue_cards }}</h3>
+                    <small class="text-muted">Overdue</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Tabs -->
+    <div class="card">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs" id="manufacturingTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="productions-tab" data-bs-toggle="tab" 
+                            data-bs-target="#productions" type="button" role="tab">
+                        <i class="fas fa-cogs me-2"></i>Production Orders
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="jobcards-tab" data-bs-toggle="tab" 
+                            data-bs-target="#jobcards" type="button" role="tab">
+                        <i class="fas fa-tasks me-2"></i>Active Job Cards
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="livestatus-tab" data-bs-toggle="tab" 
+                            data-bs-target="#livestatus" type="button" role="tab">
+                        <i class="fas fa-chart-line me-2"></i>Live Status
+                    </button>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="card-body">
+            <div class="tab-content" id="manufacturingTabContent">
+                
+                <!-- Production Orders Tab -->
+                <div class="tab-pane fade show active" id="productions" role="tabpanel">
+                    <div class="row">
+                        {% for production in productions %}
+                        <div class="col-lg-6 mb-4">
+                            <div class="card border-start border-4 border-primary h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0">{{ production.production_number }}</h6>
+                                        <small class="text-muted">{{ production.item.name if production.item else 'Unknown Item' }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge {% if production.status == 'completed' %}bg-success
+                                                              {% elif production.status == 'in_progress' %}bg-warning
+                                                              {% elif production.status == 'approved' %}bg-info
+                                                              {% else %}bg-secondary{% endif %}">
+                                            {{ production.status.title() }}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="card-body">
+                                    <!-- Production Details -->
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <small class="text-muted">Planned Qty</small>
+                                            <div class="h6">{{ production.quantity_planned }}</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">Progress</small>
+                                            <div class="h6 text-primary">{{ "%.1f"|format(production.completion_percentage or 0) }}%</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Job Cards Summary -->
+                                    {% set job_cards = production.job_cards %}
+                                    {% if job_cards %}
+                                    <div class="mb-3">
+                                        <h6><i class="fas fa-tasks me-2"></i>Job Cards ({{ job_cards|length }})</h6>
+                                        <div class="row">
+                                            {% for card in job_cards[:4] %}
+                                            <div class="col-6 mb-2">
+                                                <div class="d-flex align-items-center">
+                                                    <span class="badge {% if card.status == 'completed' %}bg-success
+                                                                        {% elif card.status == 'in_progress' %}bg-warning
+                                                                        {% else %}bg-secondary{% endif %} me-2">
+                                                        {{ "%.0f"|format(card.completion_rate) }}%
+                                                    </span>
+                                                    <small class="text-truncate">{{ card.job_card_number }}</small>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% if job_cards|length > 4 %}
+                                        <small class="text-muted">+{{ job_cards|length - 4 }} more cards</small>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Action Buttons -->
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        {% if not job_cards and production.bom_id %}
+                                        <button class="btn btn-sm btn-success" 
+                                                onclick="generateJobCards({{ production.id }})">
+                                            <i class="fas fa-magic me-1"></i>Generate Job Cards
+                                        </button>
+                                        {% endif %}
+                                        
+                                        {% if job_cards %}
+                                        <button class="btn btn-sm btn-primary" 
+                                                onclick="showJobCardsModal({{ production.id }})">
+                                            <i class="fas fa-eye me-1"></i>View Job Cards
+                                        </button>
+                                        {% endif %}
+                                        
+                                        <button class="btn btn-sm btn-outline-secondary" 
+                                                onclick="showProductionDetails({{ production.id }})">
+                                            <i class="fas fa-info me-1"></i>Details
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Active Job Cards Tab -->
+                <div class="tab-pane fade" id="jobcards" role="tabpanel">
+                    <div class="row">
+                        {% for job_card in active_job_cards %}
+                        <div class="col-lg-4 mb-4">
+                            <div class="card border-start border-4 {% if job_card.job_type == 'outsourced' %}border-info{% else %}border-success{% endif %} h-100">
+                                <div class="card-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">{{ job_card.job_card_number }}</h6>
+                                        <span class="badge {% if job_card.status == 'completed' %}bg-success
+                                                            {% elif job_card.status == 'in_progress' %}bg-warning
+                                                            {% else %}bg-secondary{% endif %}">
+                                            {{ job_card.status.replace('_', ' ').title() }}
+                                        </span>
+                                    </div>
+                                    <small class="text-muted">{{ job_card.item.name if job_card.item else 'Unknown Item' }}</small>
+                                </div>
+                                
+                                <div class="card-body">
+                                    <!-- Progress -->
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between small mb-1">
+                                            <span>Progress</span>
+                                            <span>{{ "%.1f"|format(job_card.completion_rate) }}%</span>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar {% if job_card.completion_rate == 100 %}bg-success
+                                                                      {% elif job_card.completion_rate > 0 %}bg-warning
+                                                                      {% else %}bg-secondary{% endif %}" 
+                                                 style="width: {{ job_card.completion_rate }}%"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Assignment -->
+                                    <div class="mb-3">
+                                        <small class="text-muted">Assigned to</small>
+                                        <div>
+                                            {% if job_card.assigned_worker %}
+                                                <i class="fas fa-user me-1 text-primary"></i>{{ job_card.assigned_worker.name }}
+                                            {% elif job_card.assigned_vendor %}
+                                                <i class="fas fa-building me-1 text-info"></i>{{ job_card.assigned_vendor.name }}
+                                            {% else %}
+                                                <span class="text-muted">Unassigned</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Quick Actions -->
+                                    <div class="d-flex gap-1">
+                                        {% if job_card.status != 'completed' %}
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                onclick="updateProgress({{ job_card.id }})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        {% endif %}
+                                        <button class="btn btn-sm btn-outline-secondary" 
+                                                onclick="viewJobCard({{ job_card.id }})">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Live Status Tab -->
+                <div class="tab-pane fade" id="livestatus" role="tabpanel">
+                    <div class="row mb-4">
+                        <!-- Real-time Production Overview -->
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-clock me-2"></i>
+                                <strong>Live Production Status</strong> - Updates every 30 seconds
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-chart-bar me-2"></i>Today's Production</h6>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="todayProductionChart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-users me-2"></i>Active Workers</h6>
+                                </div>
+                                <div class="card-body">
+                                    {% for worker in active_workers %}
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div>
+                                            <strong>{{ worker.name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ worker.current_job_card or 'No active job' }}</small>
+                                        </div>
+                                        <span class="badge bg-success">Active</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Job Cards Detail Modal -->
+<div class="modal fade" id="jobCardsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Job Cards Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="jobCardsModalBody">
+                <!-- Job cards will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Progress Update Modal -->
+<div class="modal fade" id="progressModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Progress</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="progressModalBody">
+                <!-- Progress form will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.border-start {
+    border-left-width: 4px !important;
+}
+
+.card-header-tabs .nav-link {
+    border: none;
+    color: #6c757d;
+}
+
+.card-header-tabs .nav-link.active {
+    background-color: transparent;
+    border-bottom: 2px solid #0d6efd;
+    color: #0d6efd;
+}
+
+.progress {
+    height: 8px;
+}
+</style>
+
+<script>
+// Unified Manufacturing Hub JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tabs
+    const tabTriggerList = document.querySelectorAll('#manufacturingTabs button');
+    tabTriggerList.forEach(tabTriggerEl => {
+        new bootstrap.Tab(tabTriggerEl);
+    });
+});
+
+function generateJobCards(productionId) {
+    if (confirm('Generate job cards for this production order?')) {
+        window.location.href = `/production/generate-job-cards/${productionId}`;
+    }
+}
+
+function showJobCardsModal(productionId) {
+    fetch(`/api/production/${productionId}/job-cards`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('jobCardsModalBody').innerHTML = html;
+            new bootstrap.Modal(document.getElementById('jobCardsModal')).show();
+        });
+}
+
+function updateProgress(jobCardId) {
+    fetch(`/api/job-cards/${jobCardId}/progress-form`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('progressModalBody').innerHTML = html;
+            new bootstrap.Modal(document.getElementById('progressModal')).show();
+        });
+}
+
+function viewJobCard(jobCardId) {
+    window.location.href = `/job-cards/view/${jobCardId}`;
+}
+
+function showProductionDetails(productionId) {
+    window.location.href = `/production/view/${productionId}`;
+}
+
+// Auto-refresh live status every 30 seconds
+setInterval(function() {
+    if (document.getElementById('livestatus-tab').classList.contains('active')) {
+        // Refresh live status data
+        fetch('/api/live-status/refresh')
+            .then(response => response.json())
+            .then(data => {
+                // Update live status without full page reload
+                updateLiveStatus(data);
+            });
+    }
+}, 30000);
+</script>
+{% endblock %}

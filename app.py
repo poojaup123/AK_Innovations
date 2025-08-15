@@ -126,6 +126,10 @@ def create_app():
     app.register_blueprint(tally_import_bp, url_prefix='/tally')
     app.register_blueprint(job_cards_bp, url_prefix='/job-cards')
     
+    # Register unified manufacturing hub
+    from routes.unified import unified_bp
+    app.register_blueprint(unified_bp)
+    
     from routes.daily_production import daily_production_bp
     app.register_blueprint(daily_production_bp)
     
