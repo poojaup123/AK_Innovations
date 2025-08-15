@@ -631,6 +631,10 @@ def add_production():
                 
                 # Check available quantity from multi-state inventory (Raw + Finished for materials)
                 item = bom_item.item
+                if not item:
+                    print(f"  Warning: BOM item {bom_item.id} has no associated item - skipping")
+                    continue
+                
                 available_qty = 0
                 
                 # For materials, use raw + finished quantities
@@ -638,7 +642,7 @@ def add_production():
                     available_qty = (item.qty_raw or 0) + (item.qty_finished or 0)
                 else:
                     # Fallback to current_stock if multi-state not available
-                    available_qty = item.current_stock or 0
+                    available_qty = getattr(item, 'current_stock', 0) or 0
                 
                 # Also check batch-level availability
                 from models.batch import InventoryBatch
@@ -653,12 +657,12 @@ def add_production():
                 if available_qty < required_qty:
                     shortage_qty = required_qty - available_qty
                     material_shortages.append({
-                        'item_code': bom_item.item.code,
-                        'item_name': bom_item.item.name,
+                        'item_code': getattr(item, 'code', 'Unknown'),
+                        'item_name': getattr(item, 'name', 'Unknown Item'),
                         'required_qty': required_qty,
                         'available_qty': available_qty,
                         'shortage_qty': shortage_qty,
-                        'unit': bom_item.item.unit_of_measure
+                        'unit': getattr(item, 'unit_of_measure', 'Unit')
                     })
         
         # Get smart suggestions but don't block the save process
