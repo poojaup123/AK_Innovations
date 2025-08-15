@@ -18,14 +18,14 @@
                 <div class="mb-3">
                     <div class="d-flex justify-content-between mb-1">
                         <small>Progress</small>
-                        <small>{{ "%.1f"|format(job_card.completion_rate) }}%</small>
+                        <small>{{ "%.1f"|format(job_card.progress_percentage or 0) }}%</small>
                     </div>
                     <div class="progress">
                         <div class="progress-bar 
-                            {% if job_card.completion_rate == 100 %}bg-success
-                            {% elif job_card.completion_rate > 0 %}bg-warning
+                            {% if job_card.progress_percentage == 100 %}bg-success
+                            {% elif job_card.progress_percentage > 0 %}bg-warning
                             {% else %}bg-secondary{% endif %}" 
-                             style="width: {{ job_card.completion_rate }}%"></div>
+                             style="width: {{ job_card.progress_percentage or 0 }}%"></div>
                     </div>
                 </div>
 

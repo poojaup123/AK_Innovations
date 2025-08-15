@@ -14,48 +14,32 @@ def manufacturing_hub():
     """Unified Manufacturing Hub - combines Production, Job Cards, and Live Status"""
     
     # Get all productions with their job cards
-    productions = Production.query.filter_by(
-        company_id=current_user.company_id
-    ).order_by(desc(Production.created_at)).limit(20).all()
+    productions = Production.query.order_by(desc(Production.created_at)).limit(20).all()
     
     # Get active job cards (not completed)
     active_job_cards = JobCard.query.filter(
-        and_(
-            JobCard.company_id == current_user.company_id,
-            JobCard.status.in_(['planned', 'in_progress'])
-        )
+        JobCard.status.in_(['planned', 'in_progress'])
     ).order_by(desc(JobCard.created_at)).limit(12).all()
     
     # Get active workers with current job assignments
-    active_workers = Employee.query.filter_by(
-        company_id=current_user.company_id,
-        is_active=True
-    ).all()
+    active_workers = Employee.query.filter_by(is_active=True).all()
     
     # Calculate statistics
     stats = {
         'active_productions': Production.query.filter(
-            and_(
-                Production.company_id == current_user.company_id,
-                Production.status.in_(['approved', 'in_progress'])
-            )
+            Production.status.in_(['approved', 'in_progress'])
         ).count(),
         'pending_job_cards': JobCard.query.filter(
-            and_(
-                JobCard.company_id == current_user.company_id,
-                JobCard.status == 'planned'
-            )
+            JobCard.status == 'planned'
         ).count(),
         'completed_today': JobCard.query.filter(
             and_(
-                JobCard.company_id == current_user.company_id,
                 JobCard.status == 'completed',
-                JobCard.actual_completion_date == date.today()
+                JobCard.actual_end_date == date.today()
             )
         ).count(),
         'overdue_cards': JobCard.query.filter(
             and_(
-                JobCard.company_id == current_user.company_id,
                 JobCard.status.in_(['planned', 'in_progress']),
                 JobCard.target_completion_date < date.today()
             )
@@ -74,9 +58,6 @@ def get_production_job_cards(production_id):
     """API endpoint to get job cards for a production order"""
     production = Production.query.get_or_404(production_id)
     
-    if production.company_id != current_user.company_id:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
     job_cards = production.job_cards
     
     # Return rendered HTML for the modal
@@ -90,9 +71,6 @@ def get_production_job_cards(production_id):
 def get_progress_form(job_card_id):
     """API endpoint to get progress update form for a job card"""
     job_card = JobCard.query.get_or_404(job_card_id)
-    
-    if job_card.company_id != current_user.company_id:
-        return jsonify({'error': 'Unauthorized'}), 403
     
     # Return rendered HTML for the modal
     html = render_template('unified/partials/progress_form.html', 
@@ -149,13 +127,13 @@ def update_job_card_progress():
         job_card.progress_notes = progress_notes
         
         if status == 'completed':
-            job_card.actual_completion_date = date.today()
+            job_card.actual_end_date = date.today()
         elif status == 'in_progress' and not job_card.actual_start_date:
             job_card.actual_start_date = date.today()
         
         # Calculate completion rate
         if job_card.planned_quantity > 0:
-            job_card.completion_rate = (completed_quantity / job_card.planned_quantity) * 100
+            job_card.progress_percentage = (completed_quantity / job_card.planned_quantity) * 100
         
         db.session.commit()
         
