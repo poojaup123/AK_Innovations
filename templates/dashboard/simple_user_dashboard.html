@@ -97,11 +97,11 @@
                             </a>
                         </div>
                         <div class="col-md-3">
-                            <a href="{{ url_for('main.update_bom_prices') }}" class="btn btn-lg btn-danger w-100 h-100 d-flex flex-column justify-content-center text-decoration-none" 
-                               onclick="return confirm('⚠️ FIX PRICING ISSUE: This will update ITEM-0003 and ITEM-0004 prices based on their BOM calculations. Continue?')">
-                                <i class="fas fa-calculator fa-2x mb-2"></i>
-                                <strong>🔧 Fix BOM Prices</strong>
-                                <small class="opacity-75">Update Base Plate & Mounted Plate costs</small>
+                            <a href="{{ url_for('main.update_bom_prices') }}" class="btn btn-lg btn-success w-100 h-100 d-flex flex-column justify-content-center text-decoration-none" 
+                               onclick="return confirm('This will manually recalculate all BOM-based item prices. Note: Prices now update automatically when BOMs change. Continue?')">
+                                <i class="fas fa-sync-alt fa-2x mb-2"></i>
+                                <strong>Sync BOM Prices</strong>
+                                <small class="opacity-75">Manual price recalculation (auto-update enabled)</small>
                             </a>
                         </div>
                         {% endif %}
