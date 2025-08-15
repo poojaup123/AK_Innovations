@@ -28,6 +28,12 @@ class SmartBOMSuggestionService:
         bom_items = bom.items if hasattr(bom, 'items') and bom.items else []
         for bom_item in bom_items:
             item = bom_item.item
+            
+            # Skip if item is None (invalid BOM item)
+            if not item:
+                print(f"Warning: BOM item {bom_item.id if bom_item else 'Unknown'} has no associated item - skipping")
+                continue
+                
             material_qty_per_output = bom_item.quantity_required or bom_item.qty_required
             bom_output_qty = bom.output_quantity or 1.0
             
@@ -47,15 +53,15 @@ class SmartBOMSuggestionService:
                 
                 # Basic shortage info with PO context
                 shortage_info = {
-                    'item_id': item.id,
-                    'item_code': item.code,
-                    'item_name': item.name,
+                    'item_id': getattr(item, 'id', 0),
+                    'item_code': getattr(item, 'code', 'Unknown'),
+                    'item_name': getattr(item, 'name', 'Unknown Item'),
                     'required_qty': required_qty,
                     'available_qty': available_qty,
                     'inventory_qty': inventory_qty,
                     'pending_po_qty': pending_po_qty,
                     'shortage_qty': shortage_qty,
-                    'unit': item.unit_of_measure,
+                    'unit': getattr(item, 'unit_of_measure', 'Unit'),
                     'item_type': getattr(item, 'item_type', 'material'),
                     'po_status': po_status
                 }
@@ -122,6 +128,8 @@ class SmartBOMSuggestionService:
     @staticmethod
     def _get_pending_po_quantity(item: Item) -> float:
         """Get quantity of item that's ordered in POs but not yet received"""
+        if not item:
+            return 0
         # Get all PO items for this material
         po_items = PurchaseOrderItem.query.filter_by(item_id=item.id).all()
         
@@ -148,14 +156,27 @@ class SmartBOMSuggestionService:
     @staticmethod
     def _get_inventory_only_quantity(item: Item) -> float:
         """Get quantity available in inventory only (excluding pending POs)"""
-        batch_qty = db.session.query(
-            func.sum(InventoryBatch.qty_raw + InventoryBatch.qty_finished + InventoryBatch.qty_wip)
-        ).filter_by(item_id=item.id).scalar() or 0
-        return batch_qty
+        if not item:
+            return 0
+        try:
+            batch_qty = db.session.query(
+                func.sum(InventoryBatch.qty_raw + InventoryBatch.qty_finished + InventoryBatch.qty_wip)
+            ).filter_by(item_id=item.id).scalar() or 0
+            return batch_qty
+        except:
+            return 0
     
     @staticmethod
     def _get_po_status_info(item: Item) -> Dict:
         """Get detailed PO status information for an item"""
+        if not item:
+            return {
+                'has_active_pos': False,
+                'total_ordered': 0,
+                'total_received': 0,
+                'total_pending': 0,
+                'active_pos': []
+            }
         po_items = PurchaseOrderItem.query.filter_by(item_id=item.id).all()
         
         total_ordered = 0
@@ -211,6 +232,12 @@ class SmartBOMSuggestionService:
         
         for bom_item in item_bom.items:
             raw_material = bom_item.item
+            
+            # Skip if raw material is None
+            if not raw_material:
+                print(f"Warning: BOM item {bom_item.id if bom_item else 'Unknown'} has no associated raw material - skipping")
+                continue
+                
             material_qty_per_unit = bom_item.quantity_required or bom_item.qty_required
             bom_output_qty = item_bom.output_quantity or 1.0
             
@@ -224,14 +251,14 @@ class SmartBOMSuggestionService:
             po_status = SmartBOMSuggestionService._get_po_status_info(raw_material)
             
             raw_material_info = {
-                'material_id': raw_material.id,
-                'material_code': raw_material.code,
-                'material_name': raw_material.name,
+                'material_id': getattr(raw_material, 'id', 0),
+                'material_code': getattr(raw_material, 'code', 'Unknown'),
+                'material_name': getattr(raw_material, 'name', 'Unknown Material'),
                 'needed_qty': raw_material_needed,
                 'available_qty': raw_material_available,
                 'sufficient': raw_material_available >= raw_material_needed,
-                'unit': raw_material.unit_of_measure,
-                'estimated_cost': (raw_material.unit_price or 0) * raw_material_needed,
+                'unit': getattr(raw_material, 'unit_of_measure', 'Unit'),
+                'estimated_cost': (getattr(raw_material, 'unit_price', 0) or 0) * raw_material_needed,
                 'po_status': po_status  # Include PO/GRN information
             }
             
@@ -242,12 +269,12 @@ class SmartBOMSuggestionService:
             raw_materials_analysis.append(raw_material_info)
         
         return {
-            'target_item_id': item.id,
-            'target_item_code': item.code,
-            'target_item_name': item.name,
+            'target_item_id': getattr(item, 'id', 0),
+            'target_item_code': getattr(item, 'code', 'Unknown'),
+            'target_item_name': getattr(item, 'name', 'Unknown Item'),
             'target_quantity': required_qty,
-            'bom_id': item_bom.id,
-            'bom_code': item_bom.bom_code,
+            'bom_id': getattr(item_bom, 'id', 0),
+            'bom_code': getattr(item_bom, 'bom_code', 'Unknown BOM'),
             'can_manufacture': can_manufacture,
             'raw_materials': raw_materials_analysis,
             'total_estimated_cost': total_estimated_cost,
