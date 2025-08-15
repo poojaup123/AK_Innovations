@@ -3908,14 +3908,19 @@ def auto_update_bom_price_on_change(mapper, connection, target):
     """Automatically update product price when BOM is created or modified"""
     try:
         # Schedule price update to run after transaction commits
-        @event.listens_for(db.session, 'after_commit', once=True)
+        @event.listens_for(db.session, 'after_commit', once=True)  
         def update_price_after_commit(session):
             try:
-                target.auto_update_product_price()
-                session.commit()
+                # Create new session for post-commit operation
+                from app import db
+                with db.session.begin():
+                    # Re-query the BOM in the new session
+                    bom = db.session.get(BOM, target.id)
+                    if bom:
+                        bom.auto_update_product_price()
+                        # Session will auto-commit due to begin() context
             except Exception as e:
-                print(f"Error in auto price update for BOM {target.bom_code}: {e}")
-                session.rollback()
+                print(f"Error auto-updating price for BOM {target.bom_code}: {e}")
     except Exception as e:
         print(f"Error setting up auto price update for BOM {target.bom_code}: {e}")
 
