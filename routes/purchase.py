@@ -11,6 +11,7 @@ from datetime import datetime
 from utils import generate_po_number
 from services.notification_helpers import send_email_notification, send_whatsapp_notification, send_email_with_attachment
 from services.authentic_accounting_integration import AuthenticAccountingIntegration
+from services.price_management import PriceManagementService
 
 purchase_bp = Blueprint('purchase', __name__)
 
@@ -214,6 +215,10 @@ def add_purchase_order():
             accounting_result = AccountingAutomation.create_purchase_order_voucher(po)
             
             db.session.commit()
+            
+            # Update item prices based on PO rates
+            price_updates = PriceManagementService.update_item_prices_from_po(po)
+            
         except Exception as e:
             db.session.rollback()
             flash(f'Error creating Purchase Order: {str(e)}', 'danger')
@@ -232,10 +237,23 @@ def add_purchase_order():
         except Exception as e:
             print(f"Notification error: {e}")
         
+        # Create comprehensive success message
+        success_message = f'Purchase Order {po.po_number} created successfully'
+        
         if accounting_result:
-            flash('Purchase Order created successfully with accounting entries', 'success')
+            success_message += ' with accounting entries'
         else:
-            flash('Purchase Order created successfully but accounting integration failed', 'warning')
+            success_message += ' but accounting integration failed'
+        
+        if price_updates:
+            updated_items = [f"{update['item'].name} (₹{update['old_price']:.2f} → ₹{update['new_price']:.2f})" for update in price_updates]
+            if len(updated_items) <= 3:
+                success_message += f". Price updates: {', '.join(updated_items)}"
+            else:
+                success_message += f". {len(updated_items)} item prices updated"
+        
+        flash_type = 'success' if accounting_result else 'warning'
+        flash(success_message, flash_type)
         
         return redirect(url_for('purchase.list_purchase_orders'))
     

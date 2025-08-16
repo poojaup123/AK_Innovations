@@ -1031,3 +1031,62 @@ def unified_batch_management():
                          recent_movements=recent_movements,
                          items=items,
                          locations=locations)
+
+@inventory_bp.route('/price-history')
+@login_required
+def price_history():
+    """Show price history for all items with filtering"""
+    from services.price_management import PriceManagementService
+    from models import ItemPriceHistory
+    from datetime import datetime, timedelta
+    
+    # Get filter parameters
+    item_id = request.args.get('item_id', type=int)
+    days = request.args.get('days', 30, type=int)
+    
+    # Calculate date filter
+    cutoff_date = datetime.now().date() - timedelta(days=days)
+    
+    # Base query for price history
+    query = ItemPriceHistory.query.filter(
+        ItemPriceHistory.effective_date >= cutoff_date
+    ).join(Item).order_by(ItemPriceHistory.effective_date.desc())
+    
+    # Apply item filter if specified
+    if item_id:
+        query = query.filter(ItemPriceHistory.item_id == item_id)
+    
+    price_history_records = query.all()
+    
+    # Calculate previous prices and changes for each record
+    price_history = []
+    for record in price_history_records:
+        # Get previous price for this item before this date
+        prev_record = ItemPriceHistory.query.filter(
+            ItemPriceHistory.item_id == record.item_id,
+            ItemPriceHistory.effective_date < record.effective_date,
+            ItemPriceHistory.price_type == record.price_type
+        ).order_by(ItemPriceHistory.effective_date.desc()).first()
+        
+        record.previous_price = prev_record.price if prev_record else None
+        record.price_change = record.price - prev_record.price if prev_record else None
+        record.change_percent = (record.price_change / prev_record.price * 100) if prev_record and prev_record.price > 0 else None
+        
+        price_history.append(record)
+    
+    # Calculate statistics
+    stats = {
+        'total_updates': len(price_history_records),
+        'items_with_changes': len(set(record.item_id for record in price_history_records)),
+        'from_pos': len([r for r in price_history_records if r.source == 'po_creation']),
+        'manual_updates': len([r for r in price_history_records if r.source == 'manual_update'])
+    }
+    
+    # Get all items for filter dropdown
+    items = Item.query.order_by(Item.name).all()
+    
+    return render_template('inventory/price_history.html',
+                         title='Price History',
+                         price_history=price_history,
+                         stats=stats,
+                         items=items)

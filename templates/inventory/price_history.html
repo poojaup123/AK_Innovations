@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Price History{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="fas fa-chart-line me-2"></i>Price History</h2>
+            <p class="text-muted">Track item price changes over time</p>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="item_filter" class="form-label">Filter by Item</label>
+                    <select class="form-select" id="item_filter" name="item_id">
+                        <option value="">All Items</option>
+                        {% for item in items %}
+                        <option value="{{ item.id }}" {% if item.id == request.args.get('item_id', '', type=int) %}selected{% endif %}>
+                            {{ item.name }} ({{ item.code }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="days_filter" class="form-label">Last N Days</label>
+                    <select class="form-select" id="days_filter" name="days">
+                        <option value="30" {% if request.args.get('days', '30') == '30' %}selected{% endif %}>30 Days</option>
+                        <option value="60" {% if request.args.get('days', '30') == '60' %}selected{% endif %}>60 Days</option>
+                        <option value="90" {% if request.args.get('days', '30') == '90' %}selected{% endif %}>90 Days</option>
+                        <option value="180" {% if request.args.get('days', '30') == '180' %}selected{% endif %}>6 Months</option>
+                        <option value="365" {% if request.args.get('days', '30') == '365' %}selected{% endif %}>1 Year</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary d-block">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Items with Price Changes</h5>
+                    <h2 class="text-primary">{{ stats.items_with_changes }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Price Updates (Period)</h5>
+                    <h2 class="text-success">{{ stats.total_updates }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <h5 class="card-title">From Purchase Orders</h5>
+                    <h2 class="text-info">{{ stats.from_pos }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Manual Updates</h5>
+                    <h2 class="text-warning">{{ stats.manual_updates }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Price History Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-history me-2"></i>Price Change History</h5>
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" onclick="exportTable()">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if price_history %}
+            <div class="table-responsive">
+                <table class="table table-hover" id="priceHistoryTable">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th>Date</th>
+                            <th>Item</th>
+                            <th>Previous Price</th>
+                            <th>New Price</th>
+                            <th>Change</th>
+                            <th>Source</th>
+                            <th>Reference</th>
+                            <th>Updated By</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in price_history %}
+                        <tr>
+                            <td>{{ record.effective_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <div class="fw-bold">{{ record.item.name }}</div>
+                                <small class="text-muted">{{ record.item.code }}</small>
+                            </td>
+                            <td>
+                                {% if record.previous_price %}
+                                    <span class="text-muted">₹{{ "%.2f"|format(record.previous_price) }}</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold">₹{{ "%.2f"|format(record.price) }}</td>
+                            <td>
+                                {% if record.price_change %}
+                                    {% if record.price_change > 0 %}
+                                        <span class="badge bg-success">+₹{{ "%.2f"|format(record.price_change) }}</span>
+                                        <br><small class="text-success">{{ "%.1f"|format(record.change_percent) }}%</small>
+                                    {% else %}
+                                        <span class="badge bg-danger">₹{{ "%.2f"|format(record.price_change) }}</span>
+                                        <br><small class="text-danger">{{ "%.1f"|format(record.change_percent) }}%</small>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">New</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if record.source == 'po_creation' %}
+                                    <span class="badge bg-info">Purchase Order</span>
+                                {% elif record.source == 'manual_update' %}
+                                    <span class="badge bg-warning">Manual</span>
+                                {% elif record.source == 'grn_receipt' %}
+                                    <span class="badge bg-success">GRN Receipt</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ record.source|title if record.source else 'Unknown' }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if record.source_reference %}
+                                    <a href="#" class="text-decoration-none">{{ record.source_reference }}</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if record.creator %}
+                                    {{ record.creator.username }}
+                                {% else %}
+                                    <span class="text-muted">System</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if record.notes %}
+                                    <span title="{{ record.notes }}">{{ record.notes[:50] }}{% if record.notes|length > 50 %}...{% endif %}</span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                <h5>No Price History Found</h5>
+                <p class="text-muted">No price changes have been recorded yet. Price history will appear here when items are updated through Purchase Orders or manual updates.</p>
+                <a href="{{ url_for('purchase.add_purchase_order') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create Purchase Order
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function exportTable() {
+    // Simple CSV export functionality
+    var table = document.getElementById('priceHistoryTable');
+    var csv = [];
+    var rows = table.querySelectorAll('tr');
+    
+    for (var i = 0; i < rows.length; i++) {
+        var row = [], cols = rows[i].querySelectorAll('td, th');
+        
+        for (var j = 0; j < cols.length; j++) {
+            row.push(cols[j].innerText);
+        }
+        
+        csv.push(row.join(','));
+    }
+    
+    var csvString = csv.join('\n');
+    var blob = new Blob([csvString], { type: 'text/csv' });
+    var url = window.URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = 'price_history.csv';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

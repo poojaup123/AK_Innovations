@@ -709,6 +709,7 @@ class Item(db.Model):
     sales_order_items = db.relationship('SalesOrderItem', lazy=True)
     # Removed conflicting backref - BOMItem has its own 'item' relationship
     item_type_obj = db.relationship('ItemType', backref='items', lazy=True)
+    price_history = db.relationship('ItemPriceHistory', backref='item', lazy=True, cascade='all, delete-orphan', order_by='ItemPriceHistory.effective_date.desc()')
     
     @property
     def total_stock(self):
@@ -925,6 +926,109 @@ class Item(db.Model):
         if self.item_type_obj:
             return self.item_type_obj.name
         return self.item_type.title() if self.item_type else 'Unknown'
+    
+    def get_current_price(self, price_type='purchase', date=None):
+        """Get current price based on price history"""
+        from datetime import date as date_class
+        if date is None:
+            date = date_class.today()
+        
+        # Get the most recent price entry for the given date and type
+        price_entry = ItemPriceHistory.query.filter(
+            ItemPriceHistory.item_id == self.id,
+            ItemPriceHistory.price_type == price_type,
+            ItemPriceHistory.effective_date <= date
+        ).order_by(ItemPriceHistory.effective_date.desc()).first()
+        
+        if price_entry:
+            return price_entry.price
+        
+        # Fallback to unit_price if no price history found
+        return self.unit_price
+    
+    def update_price(self, new_price, price_type='purchase', effective_date=None, source=None, source_reference=None, notes=None, user_id=None):
+        """Update item price and maintain price history"""
+        from datetime import date as date_class
+        if effective_date is None:
+            effective_date = date_class.today()
+        
+        # Check if a price entry already exists for this date and type
+        existing_entry = ItemPriceHistory.query.filter(
+            ItemPriceHistory.item_id == self.id,
+            ItemPriceHistory.price_type == price_type,
+            ItemPriceHistory.effective_date == effective_date
+        ).first()
+        
+        if existing_entry:
+            # Update existing entry
+            existing_entry.price = new_price
+            existing_entry.source = source
+            existing_entry.source_reference = source_reference
+            existing_entry.notes = notes
+            if user_id:
+                existing_entry.created_by = user_id
+        else:
+            # Create new price history entry
+            price_history = ItemPriceHistory(
+                item_id=self.id,
+                price=new_price,
+                price_type=price_type,
+                effective_date=effective_date,
+                source=source,
+                source_reference=source_reference,
+                notes=notes,
+                created_by=user_id or 1  # Default to admin if no user specified
+            )
+            db.session.add(price_history)
+        
+        # Update the main unit_price field if this is a purchase price update
+        if price_type == 'purchase':
+            self.unit_price = new_price
+        
+        return True
+    
+    def get_price_history(self, price_type=None, limit=10):
+        """Get price history for this item"""
+        query = ItemPriceHistory.query.filter(ItemPriceHistory.item_id == self.id)
+        
+        if price_type:
+            query = query.filter(ItemPriceHistory.price_type == price_type)
+        
+        return query.order_by(ItemPriceHistory.effective_date.desc()).limit(limit).all()
+    
+    @property
+    def latest_purchase_price(self):
+        """Get latest purchase price from history"""
+        return self.get_current_price('purchase')
+    
+    @property
+    def price_trend(self):
+        """Get price trend information"""
+        recent_prices = self.get_price_history('purchase', 5)
+        if len(recent_prices) < 2:
+            return {'trend': 'stable', 'change_percent': 0}
+        
+        latest_price = recent_prices[0].price
+        previous_price = recent_prices[1].price
+        
+        if previous_price > 0:
+            change_percent = ((latest_price - previous_price) / previous_price) * 100
+            if change_percent > 5:
+                trend = 'increasing'
+            elif change_percent < -5:
+                trend = 'decreasing'
+            else:
+                trend = 'stable'
+        else:
+            trend = 'stable'
+            change_percent = 0
+        
+        return {
+            'trend': trend,
+            'change_percent': round(change_percent, 2),
+            'latest_price': latest_price,
+            'previous_price': previous_price
+        }
 
 class PurchaseOrder(db.Model):
     __tablename__ = 'purchase_orders'
@@ -3480,6 +3584,29 @@ class FactoryExpense(db.Model):
         }
         return status_classes.get(self.status, 'bg-secondary')
 
+
+class ItemPriceHistory(db.Model):
+    """Track price changes for items with effective dates"""
+    __tablename__ = 'item_price_history'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    price_type = db.Column(db.String(20), default='purchase')  # purchase, sale, standard
+    effective_date = db.Column(db.Date, nullable=False)
+    source = db.Column(db.String(50))  # po_creation, manual_update, grn_receipt, market_rate
+    source_reference = db.Column(db.String(50))  # PO number, GRN number, etc.
+    notes = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    creator = db.relationship('User', backref='price_updates')
+    
+    def __repr__(self):
+        return f"<ItemPriceHistory {self.item.name}: ₹{self.price} from {self.effective_date}>"
+
+
 class SalaryRecord(db.Model):
     __tablename__ = 'salary_records'
     
@@ -3538,7 +3665,6 @@ class SalaryRecord(db.Model):
         return f"SAL-{year}-{next_num:04d}"
     
     def calculate_attendance_based_salary(self):
-        """Calculate salary based on actual attendance records"""
         from datetime import timedelta
         
         # Get attendance records for the pay period
