@@ -2435,8 +2435,8 @@ class BOM(db.Model):
                     # This means when Castor Wheel needs 1 Base Plate, it gets the full ₹1.005 labor cost
                     total_labor_cost += sub_bom_total_labor_cost * required_qty
         
-        # Add manual labor cost if specified
-        if self.labor_cost_per_unit and self.labor_cost_per_unit > 0:
+        # Add manual labor cost only if no processes are defined (to avoid double-counting)
+        if not self.processes and self.labor_cost_per_unit and self.labor_cost_per_unit > 0:
             total_labor_cost += self.labor_cost_per_unit
         
         return total_labor_cost
