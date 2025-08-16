@@ -418,113 +418,41 @@
                                         </div>
                                     </div>
                                     <div class="col-md-4">
-                                        <div class="card bg-gradient-primary text-white">
-                                            <div class="card-header py-2">
-                                                <h6 class="mb-0 text-white">📊 Manufacturing Analytics</h6>
-                                            </div>
-                                            <div class="card-body py-2">
-                                                <!-- Material Cost -->
-                                                <div class="row g-1 mb-2">
-                                                    <div class="col-6">
-                                                        <div class="text-center p-2 bg-white bg-opacity-15 rounded">
-                                                            <div class="fw-bold">₹{{ '{:,.0f}'.format(bom.total_material_cost) if bom and bom.total_material_cost else '0' }}</div>
-                                                            <small class="opacity-75">Material Cost</small>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-6">
-                                                        <div class="text-center p-2 bg-white bg-opacity-15 rounded">
-                                                            <div class="fw-bold">{{ bom.output_quantity|int if bom and bom.output_quantity else 1 }}</div>
-                                                            <small class="opacity-75">Output Qty</small>
-                                                        </div>
-                                                    </div>
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <h6>Material Cost Summary</h6>
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Total Material Cost:</span>
+                                                    <strong>₹{{ '{:,.2f}'.format(bom.total_material_cost) if bom and bom.total_material_cost else '0.00' }}</strong>
                                                 </div>
                                                 
-                                                <!-- Manufacturing Process Info -->
-                                                {% if bom and bom.processes %}
-                                                <div class="row g-1 mb-2">
-                                                    <div class="col-4">
-                                                        <div class="text-center p-2 bg-white bg-opacity-15 rounded">
-                                                            <div class="fw-bold">{{ bom.processes|length }}</div>
-                                                            <small class="opacity-75">Processes</small>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-4">
-                                                        <div class="text-center p-2 bg-white bg-opacity-15 rounded">
-                                                            <div class="fw-bold">{{ '{:.1f}'.format(bom.calculated_scrap_percent) if bom and bom.calculated_scrap_percent else '0' }}%</div>
-                                                            <small class="opacity-75">Scrap</small>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-4">
-                                                        <div class="text-center p-2 bg-white bg-opacity-15 rounded">
-                                                            <div class="fw-bold">{{ '{:.1f}'.format(bom.labor_hours_per_unit) if bom and bom.labor_hours_per_unit else '0' }}h</div>
-                                                            <small class="opacity-75">Labor</small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                {% endif %}
-                                                
-                                                <!-- Process Flow -->
-                                                {% if bom and bom.processes %}
-                                                <div class="bg-white bg-opacity-15 rounded p-2 mb-2">
-                                                    <small class="opacity-75 d-block mb-1">Manufacturing Flow:</small>
-                                                    <div class="d-flex justify-content-center align-items-center flex-wrap">
-                                                        {% for process in bom.processes|sort(attribute='step_number') %}
-                                                        <span class="badge bg-light text-dark me-1 mb-1" style="font-size: 10px;">{{ process.process_name }}</span>
-                                                        {% if not loop.last %}<i class="fas fa-arrow-right text-white-50 mx-1" style="font-size: 8px;"></i>{% endif %}
-                                                        {% endfor %}
-                                                    </div>
-                                                </div>
-                                                {% endif %}
-                                                
-                                                <!-- Key Metrics -->
+                                                <!-- Output Material Unit Cost -->
                                                 {% if bom and bom.product %}
-                                                <div class="bg-white bg-opacity-20 rounded p-2 mb-2">
-                                                    <div class="row g-1">
-                                                        <div class="col-6">
-                                                            <div class="text-center">
-                                                                <div class="fw-bold text-warning">₹{{ '{:.2f}'.format(bom.total_material_cost / (bom.output_quantity if bom.output_quantity and bom.output_quantity > 0 else 1)) }}</div>
-                                                                <small class="opacity-75">Per Unit Cost</small>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-6">
-                                                            <div class="text-center">
-                                                                <div class="fw-bold text-success">{{ '{:.1f}'.format(bom.unit_weight) if bom and bom.unit_weight else '0' }} {{ bom.unit_weight_uom if bom and bom.unit_weight_uom else 'kg' }}</div>
-                                                                <small class="opacity-75">Unit Weight</small>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <!-- Material Efficiency -->
-                                                {% set efficiency = (100 - (bom.calculated_scrap_percent or 0)) if bom else 100 %}
-                                                <div class="bg-white bg-opacity-15 rounded p-2 mb-2">
+                                                <div class="mt-2 p-2 bg-success bg-opacity-10 rounded">
                                                     <div class="d-flex justify-content-between align-items-center">
-                                                        <span class="small opacity-75">Material Efficiency:</span>
-                                                        <span class="fw-bold text-{{ 'success' if efficiency >= 90 else 'warning' if efficiency >= 80 else 'danger' }}">{{ '{:.1f}'.format(efficiency) }}%</span>
+                                                        <span><i class="fas fa-tag text-success"></i> {{ bom.product.name }} Unit Cost:</span>
+                                                        <strong class="text-success">₹{{ '{:.2f}'.format(bom.total_material_cost / (bom.output_quantity if bom.output_quantity and bom.output_quantity > 0 else 1)) }}</strong>
                                                     </div>
-                                                    <div class="progress mt-1" style="height: 4px;">
-                                                        <div class="progress-bar bg-{{ 'success' if efficiency >= 90 else 'warning' if efficiency >= 80 else 'danger' }}" 
-                                                             style="width: {{ efficiency }}%"></div>
-                                                    </div>
+                                                    <small class="text-success">
+                                                        <i class="fas fa-info-circle"></i> Manufacturing cost per {{ bom.product.name }}
+                                                    </small>
                                                 </div>
                                                 {% endif %}
                                                 
-                                                <!-- Quick Actions -->
-                                                <div class="d-grid gap-1">
-                                                    <button type="button" class="btn btn-outline-light btn-sm" onclick="syncBOMFromProcesses()">
-                                                        <i class="fas fa-sync"></i> Sync from Processes
-                                                    </button>
-                                                    {% if bom and bom.processes %}
-                                                    <button type="button" class="btn btn-outline-light btn-sm" onclick="window.open('/production/bom/{{ bom.id }}/process_report', '_blank')">
-                                                        <i class="fas fa-chart-line"></i> Process Report
-                                                    </button>
-                                                    {% endif %}
+                                                {% if bom and bom.output_quantity and bom.output_quantity > 1 %}
+                                                <div class="d-flex justify-content-between text-primary mt-2">
+                                                    <span>Cost per Unit:</span>
+                                                    <strong>₹{{ '{:.2f}'.format(bom.total_material_cost / bom.output_quantity) }}</strong>
                                                 </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <hr>
+                                                <small class="text-info">
+                                                    <i class="fas fa-calculator"></i> ₹{{ '{:,.0f}'.format(bom.total_material_cost) }} ÷ {{ '{:,.0f}'.format(bom.output_quantity) }} units = ₹{{ '{:.2f}'.format(bom.total_material_cost / bom.output_quantity) }} per unit
+                                                </small>
+                                                {% endif %}
+                                                <hr>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-info-circle"></i> {{ "1 Ms sheet → {} base plates (Cutting → Bending → Zinc Plating)".format(bom.output_quantity|int) if bom and bom.output_quantity else "Component quantities × unit prices" }}
+                                                </small>
+                                                <hr>
                                                 <h6 class="text-primary">Complete Unit Cost <small class="text-muted">(per unit)</small></h6>
                                                 {% if bom and bom.output_quantity %}
                                                 {% set material_cost_per_unit = bom.total_material_cost / (bom.output_quantity if bom.output_quantity and bom.output_quantity > 0 else 1) %}
