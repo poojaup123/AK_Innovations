@@ -87,6 +87,71 @@
                             </div>
                         </div>
 
+                        <!-- Product Details Row -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Product Unit Cost</label>
+                                    {% if bom and bom.product %}
+                                        <div class="input-group">
+                                            <span class="input-group-text">₹</span>
+                                            <input type="number" class="form-control bg-light" 
+                                                   value="{{ '%.2f'|format(bom.product.unit_price or 0) }}" 
+                                                   step="0.01" readonly
+                                                   title="Current unit price from inventory">
+                                            <span class="input-group-text bg-info text-white" 
+                                                  title="Auto-updated from BOM total cost calculations">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </span>
+                                        </div>
+                                        <small class="text-info">
+                                            <i class="fas fa-info-circle"></i> Auto-updated when BOM is saved (Current: ₹{{ '%.2f'|format(bom.product.unit_price or 0) }})
+                                        </small>
+                                    {% else %}
+                                        <div class="input-group">
+                                            <span class="input-group-text">₹</span>
+                                            <input type="number" class="form-control" 
+                                                   placeholder="0.00" step="0.01" readonly>
+                                            <span class="input-group-text bg-secondary text-white">
+                                                <i class="fas fa-lock"></i>
+                                            </span>
+                                        </div>
+                                        <small class="text-muted">Will be calculated after saving BOM</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">BOM Total Cost</label>
+                                    {% if bom %}
+                                        <div class="input-group">
+                                            <span class="input-group-text">₹</span>
+                                            <input type="number" class="form-control bg-light" 
+                                                   value="{{ '%.2f'|format(bom.total_cost_per_unit or 0) }}" 
+                                                   step="0.01" readonly>
+                                            <span class="input-group-text bg-success text-white" 
+                                                  title="Total BOM cost including materials, labor, overhead">
+                                                <i class="fas fa-calculator"></i>
+                                            </span>
+                                        </div>
+                                        <small class="text-success">
+                                            <i class="fas fa-info-circle"></i> Material + Labor + Overhead + Freight costs
+                                        </small>
+                                    {% else %}
+                                        <div class="input-group">
+                                            <span class="input-group-text">₹</span>
+                                            <input type="number" class="form-control" 
+                                                   placeholder="0.00" step="0.01" readonly>
+                                            <span class="input-group-text bg-secondary">
+                                                <i class="fas fa-hourglass-half"></i>
+                                            </span>
+                                        </div>
+                                        <small class="text-muted">Calculated from materials and processes</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="mb-3">
