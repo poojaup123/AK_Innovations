@@ -1927,10 +1927,10 @@ def add_multi_bom_process(bom_id):
                 
                 db.session.commit()
                 
-                # Trigger intelligent sync after editing process
+                # Trigger intelligent sync after editing process (includes weight sync)
                 ProcessIntegrationService.sync_bom_from_processes(bom_id)
                 
-                flash(f'Process "{edit_process.process_name}" updated successfully. BOM costs automatically synchronized!', 'success')
+                flash(f'Process "{edit_process.process_name}" updated successfully. BOM costs and process weights automatically synchronized!', 'success')
                 return redirect(url_for('production.edit_bom', id=bom_id))
                 
             else:
