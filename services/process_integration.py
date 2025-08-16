@@ -130,6 +130,9 @@ class ProcessIntegrationService:
         except Exception as e:
             print(f"Warning: Failed to create BOM accounting entry: {str(e)}")
         
+        # Sync weights between sequential processes and recalculate costs
+        ProcessIntegrationService.sync_process_weights(bom)
+        
         # Recalculate and update all process costs with correct unit weights
         for process in bom.processes:
             if process.cost_unit == 'per_kg':
@@ -137,6 +140,77 @@ class ProcessIntegrationService:
                 process.converted_cost = process.converted_cost_per_unit
         
         db.session.commit()
+        return True
+    
+    @staticmethod
+    def sync_process_weights(bom):
+        """
+        Synchronize input/output weights between sequential processes to maintain consistency
+        """
+        if not bom or not bom.processes:
+            return
+        
+        # Sort processes by step number
+        sorted_processes = sorted(bom.processes, key=lambda p: p.step_number or 0)
+        
+        # Weight conversion factors to standardize units
+        weight_conversions = {
+            'g': 1000,      # kg to g
+            'lbs': 2.20462, # kg to lbs  
+            'oz': 35.274,   # kg to oz
+            'ton': 0.001,   # kg to ton
+            'kg': 1.0       # kg to kg (no conversion)
+        }
+        
+        for i, process in enumerate(sorted_processes):
+            if i == 0:
+                # First process - no previous process to sync from
+                continue
+                
+            previous_process = sorted_processes[i-1]
+            
+            # Get previous process output weight and UOM
+            prev_output_weight = getattr(previous_process, 'output_unit_weight', 0) or 0
+            prev_output_uom = getattr(previous_process, 'output_weight_uom', 'kg') or 'kg'
+            
+            if prev_output_weight and prev_output_weight > 0:
+                # Convert previous output weight to kg first
+                prev_weight_in_kg = prev_output_weight
+                if prev_output_uom == 'g':
+                    prev_weight_in_kg = prev_output_weight / 1000
+                elif prev_output_uom == 'lbs':
+                    prev_weight_in_kg = prev_output_weight * 0.453592
+                elif prev_output_uom == 'oz':
+                    prev_weight_in_kg = prev_output_weight * 0.0283495
+                elif prev_output_uom == 'ton':
+                    prev_weight_in_kg = prev_output_weight * 1000
+                
+                # Get current process input weight UOM
+                current_input_uom = getattr(process, 'input_weight_uom', 'kg') or 'kg'
+                
+                # Convert from kg to the current process input UOM
+                converted_weight = prev_weight_in_kg
+                if current_input_uom == 'g':
+                    converted_weight = prev_weight_in_kg * 1000
+                elif current_input_uom == 'lbs':
+                    converted_weight = prev_weight_in_kg / 0.453592
+                elif current_input_uom == 'oz':
+                    converted_weight = prev_weight_in_kg / 0.0283495
+                elif current_input_uom == 'ton':
+                    converted_weight = prev_weight_in_kg / 1000
+                
+                # Update current process input weight with converted value
+                if hasattr(process, 'input_unit_weight'):
+                    process.input_unit_weight = round(converted_weight, 6)
+                
+                # For coating processes, output weight typically equals input weight
+                if (process.process_name and 
+                    any(coating in process.process_name.lower() for coating in ['zinc', 'paint', 'coating', 'plating', 'galvanizing', 'anodizing'])):
+                    if hasattr(process, 'output_unit_weight'):
+                        # Keep the same weight and UOM for coating processes
+                        process.output_unit_weight = round(converted_weight, 6)
+                        process.output_weight_uom = current_input_uom
+        
         return True
     
     @staticmethod
