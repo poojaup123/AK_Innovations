@@ -205,9 +205,15 @@
                 
                 <!-- CORE OPERATIONS -->
                 <div class="nav-section-header px-3 py-1 small text-muted fw-bold">OPERATIONS</div>
-                <a class="nav-link {{ 'active' if 'inventory' in request.endpoint and 'batch' not in request.endpoint }}" href="{{ url_for('inventory.dashboard') }}">
+                <a class="nav-link {{ 'active' if 'inventory' in request.endpoint and 'batch' not in request.endpoint and 'price-history' not in request.endpoint }}" href="{{ url_for('inventory.dashboard') }}">
                     <i class="fas fa-boxes"></i>
                     Inventory
+                </a>
+                
+                <a class="nav-link {{ 'active' if 'inventory.price_history' in request.endpoint }}" href="{{ url_for('inventory.price_history') }}">
+                    <i class="fas fa-chart-line text-success"></i>
+                    Price History
+                    <span class="badge bg-success ms-2 small">NEW</span>
                 </a>
                 
                 <a class="nav-link {{ 'active' if 'production' in request.endpoint and 'daily_production' not in request.endpoint }}" href="{{ url_for('production.dashboard') }}">

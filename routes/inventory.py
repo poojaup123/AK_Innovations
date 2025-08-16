@@ -973,29 +973,29 @@ def unified_batch_management():
     """Unified batch management combining tracking and analysis"""
     
     # Get all batch data
-    batches = InventoryBatch.query.order_by(desc(InventoryBatch.created_at)).all()
+    batches = ItemBatch.query.order_by(desc(ItemBatch.created_at)).all()
     
     # Get batch statistics
     batch_stats = {
-        'total_batches': InventoryBatch.query.count(),
-        'active_batches': InventoryBatch.query.filter(
+        'total_batches': ItemBatch.query.count(),
+        'active_batches': ItemBatch.query.filter(
             db.or_(
-                InventoryBatch.qty_raw > 0,
-                InventoryBatch.qty_wip > 0,
-                InventoryBatch.qty_finished > 0,
-                InventoryBatch.qty_inspection > 0
+                ItemBatch.qty_raw > 0,
+                ItemBatch.qty_wip_cutting > 0,
+                ItemBatch.qty_wip_bending > 0,
+                ItemBatch.qty_finished > 0
             )
         ).count(),
-        'expired_batches': InventoryBatch.query.filter(
-            InventoryBatch.expiry_date < datetime.now().date()
-        ).count() if InventoryBatch.query.filter(InventoryBatch.expiry_date != None).count() > 0 else 0,
-        'batches_expiring_soon': InventoryBatch.query.filter(
-            InventoryBatch.expiry_date.between(
+        'expired_batches': ItemBatch.query.filter(
+            ItemBatch.expiry_date < datetime.now().date()
+        ).count() if ItemBatch.query.filter(ItemBatch.expiry_date != None).count() > 0 else 0,
+        'batches_expiring_soon': ItemBatch.query.filter(
+            ItemBatch.expiry_date.between(
                 datetime.now().date(),
                 (datetime.now() + timedelta(days=30)).date()
             )
-        ).count() if InventoryBatch.query.filter(InventoryBatch.expiry_date != None).count() > 0 else 0,
-        'quality_issues': InventoryBatch.query.filter(InventoryBatch.inspection_status == 'failed').count(),
+        ).count() if ItemBatch.query.filter(ItemBatch.expiry_date != None).count() > 0 else 0,
+        'quality_issues': ItemBatch.query.filter(ItemBatch.quality_status == 'failed').count(),
         'total_scrap_quantity': sum((batch.qty_scrap or 0) for batch in batches),
         'total_good_quantity': sum((batch.qty_raw or 0) + (batch.qty_finished or 0) for batch in batches)
     }
@@ -1006,7 +1006,7 @@ def unified_batch_management():
     
     # Get filter options
     items = Item.query.order_by(Item.name).all()
-    storage_locations = db.session.query(InventoryBatch.location).distinct().all()
+    storage_locations = db.session.query(ItemBatch.storage_location).distinct().all()
     locations = [loc[0] for loc in storage_locations if loc[0]]
     
     # Process summary by state
@@ -1020,8 +1020,6 @@ def unified_batch_management():
             process_summary['Finished Goods'] = process_summary.get('Finished Goods', 0) + batch.qty_finished
         if batch.qty_scrap and batch.qty_scrap > 0:
             process_summary['Scrap/Rejected'] = process_summary.get('Scrap/Rejected', 0) + batch.qty_scrap
-        if batch.qty_inspection and batch.qty_inspection > 0:
-            process_summary['Under Inspection'] = process_summary.get('Under Inspection', 0) + batch.qty_inspection
     
     return render_template('inventory/unified_batch_management.html',
                          title='Unified Batch Management',
