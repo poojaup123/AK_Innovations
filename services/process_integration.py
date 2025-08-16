@@ -51,8 +51,13 @@ class ProcessIntegrationService:
             # Track the last process for final weight calculation
             last_process = process
         
-        # Get final output weight from the last process (highest step number)
+        # Get final output quantity and weight from the last process (highest step number)
+        final_output_quantity = None
         if last_process:
+            # Sync output quantity from the last process
+            if hasattr(last_process, 'output_quantity') and last_process.output_quantity:
+                final_output_quantity = last_process.output_quantity
+            
             # Check for various possible field names for output weight
             output_weight_field = None
             if hasattr(last_process, 'output_unit_weight') and last_process.output_unit_weight:
@@ -90,6 +95,10 @@ class ProcessIntegrationService:
         bom.labor_cost_per_unit = total_labor_cost
         bom.estimated_scrap_percent = total_scrap_percent
         bom.labor_hours_per_unit = total_time_hours
+        
+        # Update BOM output quantity from last process output
+        if final_output_quantity is not None and final_output_quantity > 0:
+            bom.output_quantity = final_output_quantity
         
         # Update BOM final product unit weight from last process output
         if final_output_weight is not None:
