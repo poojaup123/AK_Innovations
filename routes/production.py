@@ -1806,12 +1806,12 @@ def check_material_availability():
 @production_bp.route('/bom/<int:id>/sync_from_processes', methods=['POST'])
 @login_required
 def sync_bom_from_processes(id):
-    """Intelligent synchronization: Update BOM labor costs and scrap from process workflows"""
+    """Intelligent synchronization: Update BOM costs, scrap, output quantity, and process weights"""
     try:
         success = ProcessIntegrationService.sync_bom_from_processes(id)
         if success:
             bom = BOM.query.get(id)
-            flash(f'Successfully synchronized BOM from process workflow. Labor Cost: ₹{bom.calculated_labor_cost_per_unit:.2f}, Scrap Rate: {bom.calculated_scrap_percent:.2f}%', 'success')
+            flash(f'Successfully synchronized BOM from processes. Output Quantity: {bom.output_quantity}, Labor Cost: ₹{bom.calculated_labor_cost_per_unit:.2f}, Scrap Rate: {bom.calculated_scrap_percent:.2f}%, Process weights aligned', 'success')
         else:
             flash('No processes found or synchronization not needed', 'info')
     except Exception as e:
