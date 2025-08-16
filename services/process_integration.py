@@ -130,6 +130,12 @@ class ProcessIntegrationService:
         except Exception as e:
             print(f"Warning: Failed to create BOM accounting entry: {str(e)}")
         
+        # Recalculate and update all process costs with correct unit weights
+        for process in bom.processes:
+            if process.cost_unit == 'per_kg':
+                # Force recalculation of converted cost
+                process.converted_cost = process.converted_cost_per_unit
+        
         db.session.commit()
         return True
     

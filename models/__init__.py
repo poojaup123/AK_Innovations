@@ -3062,7 +3062,24 @@ class BOMProcess(db.Model):
                 
                 return self.cost_per_unit * unit_weight_kg
             
-            # Fallback to BOM's unit weight for conversion
+            # For coating processes (Zinc, Paint, Galvanizing), use input weight if available
+            # as the weight typically doesn't change significantly during coating
+            if (self.process_name and 
+                any(coating in self.process_name.lower() for coating in ['zinc', 'paint', 'coating', 'plating', 'galvanizing', 'anodizing'])):
+                if hasattr(self, 'input_unit_weight') and self.input_unit_weight and self.input_unit_weight > 0:
+                    unit_weight_kg = self.input_unit_weight
+                    # Convert based on input weight UOM
+                    if hasattr(self, 'input_weight_uom') and self.input_weight_uom:
+                        if self.input_weight_uom == 'g':
+                            unit_weight_kg = self.input_unit_weight / 1000
+                        elif self.input_weight_uom == 'lbs':
+                            unit_weight_kg = self.input_unit_weight * 0.453592
+                        elif self.input_weight_uom == 'oz':
+                            unit_weight_kg = self.input_unit_weight * 0.0283495
+                    
+                    return self.cost_per_unit * unit_weight_kg
+            
+            # Fallback to BOM's unit weight for conversion (divided by output quantity for per-piece weight)
             bom = self.bom
             if not bom or not bom.unit_weight or bom.unit_weight == 0:
                 return self.cost_per_unit  # Can't convert without unit weight
@@ -3074,6 +3091,10 @@ class BOMProcess(db.Model):
                 unit_weight_kg = bom.unit_weight * 0.453592
             elif bom.unit_weight_uom == 'oz':
                 unit_weight_kg = bom.unit_weight * 0.0283495
+            
+            # Adjust for BOM output quantity if it produces multiple units
+            if bom.output_quantity and bom.output_quantity > 0:
+                unit_weight_kg = unit_weight_kg / bom.output_quantity
             
             return self.cost_per_unit * unit_weight_kg
         
