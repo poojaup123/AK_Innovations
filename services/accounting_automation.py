@@ -859,7 +859,7 @@ class AccountingAutomation:
             
             if not purchase_expense_account:
                 # Create Purchase Expense account in Expenses group
-                expense_group = AccountGroup.query.filter_by(name='Direct Expenses').first()
+                expense_group = AccountGroup.query.filter_by(name='Expenses').first()
                 if expense_group:
                     purchase_expense_account = Account(
                         name='Purchase Expenses',
