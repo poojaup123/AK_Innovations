@@ -2362,8 +2362,12 @@ class BOM(db.Model):
     
     @property
     def calculated_labor_cost_per_unit(self):
-        """Get labor cost - from processes if available (with conversions), otherwise from manual entry"""
-        process_labor = self.total_process_cost_per_unit
+        """Get labor cost - from processes if available (labor only), otherwise from manual entry"""
+        if not self.processes:
+            return self.labor_cost_per_unit or 0.0
+        
+        # Sum up only labor costs from processes (not total converted costs)
+        process_labor = sum(process.labor_cost_per_unit for process in self.processes)
         return process_labor if process_labor > 0 else (self.labor_cost_per_unit or 0.0)
     
     @property
