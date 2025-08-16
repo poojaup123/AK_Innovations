@@ -2412,9 +2412,9 @@ class BOM(db.Model):
         """Calculate comprehensive labor cost including all process costs from this BOM and all sub-BOMs"""
         total_labor_cost = 0.0
         
-        # Add process costs from current BOM
+        # Add labor costs only from current BOM processes
         for process in self.processes:
-            total_labor_cost += process.converted_cost_per_unit or 0.0
+            total_labor_cost += process.labor_cost_per_unit or 0.0
         
         # Add process costs from all sub-BOMs
         for bom_item in self.items:
@@ -2426,10 +2426,10 @@ class BOM(db.Model):
                     # Calculate required quantity
                     required_qty = bom_item.qty_required or bom_item.quantity_required or 0
                     
-                    # Get sub-BOM total process costs (without dividing by output quantity)
+                    # Get sub-BOM total labor costs only (without dividing by output quantity)
                     sub_bom_total_labor_cost = 0.0
                     for sub_process in material_bom.processes:
-                        sub_bom_total_labor_cost += sub_process.converted_cost_per_unit or 0.0
+                        sub_bom_total_labor_cost += sub_process.labor_cost_per_unit or 0.0
                     
                     # Add the full labor cost multiplied by quantity required in this BOM
                     # This means when Castor Wheel needs 1 Base Plate, it gets the full ₹1.005 labor cost
