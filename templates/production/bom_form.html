@@ -96,16 +96,16 @@
                                         <div class="input-group">
                                             <span class="input-group-text">₹</span>
                                             <input type="number" class="form-control bg-light" 
-                                                   value="{{ '%.2f'|format(bom.product.unit_price or 0) }}" 
+                                                   value="{{ '%.2f'|format((bom.total_cost_per_unit / bom.output_quantity) if bom.output_quantity and bom.output_quantity > 0 else (bom.product.unit_price or 0)) }}" 
                                                    step="0.01" readonly
-                                                   title="Current unit price from inventory">
-                                            <span class="input-group-text bg-info text-white" 
-                                                  title="Auto-updated from BOM total cost calculations">
-                                                <i class="fas fa-sync-alt"></i>
+                                                   title="Cost per single unit (BOM total cost ÷ output quantity)">
+                                            <span class="input-group-text bg-success text-white" 
+                                                  title="Cost per individual base plate">
+                                                <i class="fas fa-calculator"></i>
                                             </span>
                                         </div>
-                                        <small class="text-info">
-                                            <i class="fas fa-info-circle"></i> Auto-updated when BOM is saved (Current: ₹{{ '%.2f'|format(bom.product.unit_price or 0) }})
+                                        <small class="text-success">
+                                            <i class="fas fa-info-circle"></i> Cost per single base plate (₹{{ '%.2f'|format(bom.total_cost_per_unit) }} ÷ {{ bom.output_quantity }} units)
                                         </small>
                                     {% else %}
                                         <div class="input-group">
