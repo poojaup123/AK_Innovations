@@ -394,8 +394,22 @@
                                                     <span>Total Material Cost:</span>
                                                     <strong>₹{{ '{:,.2f}'.format(bom.total_material_cost) if bom and bom.total_material_cost else '0.00' }}</strong>
                                                 </div>
+                                                
+                                                <!-- Output Material Unit Cost -->
+                                                {% if bom and bom.product %}
+                                                <div class="mt-2 p-2 bg-success bg-opacity-10 rounded">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span><i class="fas fa-tag text-success"></i> {{ bom.product.name }} Unit Cost:</span>
+                                                        <strong class="text-success">₹{{ '{:.2f}'.format(bom.total_material_cost / (bom.output_quantity if bom.output_quantity and bom.output_quantity > 0 else 1)) }}</strong>
+                                                    </div>
+                                                    <small class="text-success">
+                                                        <i class="fas fa-info-circle"></i> Manufacturing cost per {{ bom.product.name }}
+                                                    </small>
+                                                </div>
+                                                {% endif %}
+                                                
                                                 {% if bom and bom.output_quantity and bom.output_quantity > 1 %}
-                                                <div class="d-flex justify-content-between text-primary">
+                                                <div class="d-flex justify-content-between text-primary mt-2">
                                                     <span>Cost per Unit:</span>
                                                     <strong>₹{{ '{:.2f}'.format(bom.total_material_cost / bom.output_quantity) }}</strong>
                                                 </div>
@@ -451,6 +465,12 @@
                                                             <td><strong>Selling Price <small class="text-muted">(per unit)</small>:</strong></td>
                                                             <td class="text-end"><strong>₹<span id="sellingPriceDisplay">{{ '{:.2f}'.format(material_cost_per_unit + labor_cost_per_unit) }}</span></strong></td>
                                                         </tr>
+                                                        {% if bom and bom.product %}
+                                                        <tr class="table-primary border-top-2">
+                                                            <td><strong><i class="fas fa-cube text-primary"></i> {{ bom.product.name }} Final Unit Cost:</strong></td>
+                                                            <td class="text-end"><strong class="fs-6">₹<span id="outputMaterialCost">{{ '{:.2f}'.format(material_cost_per_unit + labor_cost_per_unit) }}</span></strong></td>
+                                                        </tr>
+                                                        {% endif %}
                                                     </tbody>
                                                 </table>
                                                 <small class="text-success">
@@ -510,6 +530,12 @@
                                                     document.getElementById('markupPercentDisplay').textContent = markupPercent.toFixed(1);
                                                     document.getElementById('markupValueDisplay').textContent = markupValue.toFixed(2);
                                                     document.getElementById('sellingPriceDisplay').textContent = sellingPrice.toFixed(2);
+                                                    
+                                                    // Update output material cost
+                                                    const outputMaterialCostElement = document.getElementById('outputMaterialCost');
+                                                    if (outputMaterialCostElement) {
+                                                        outputMaterialCostElement.textContent = sellingPrice.toFixed(2);
+                                                    }
                                                     
                                                     // Show/hide rows based on values
                                                     document.getElementById('overheadRow').style.display = overheadCost > 0 ? '' : 'none';
