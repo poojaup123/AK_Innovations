@@ -2,6 +2,10 @@
 
 {% block title %}Batch Price History{% endblock %}
 
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid mt-4">
     <div class="row mb-4">
@@ -291,7 +295,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <canvas id="priceChart" width="400" height="200"></canvas>
+                <div style="position: relative; height: 400px;">
+                    <canvas id="priceChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -317,10 +323,22 @@ function showPriceChart(batchId, batchCode) {
         modal.dispose();
     }, { once: true });
     
-    // Load chart data
-    fetch(`/batch-price/api/batch-price-chart/${batchId}`)
-        .then(response => response.json())
+    // Load chart data with credentials
+    fetch(`/batch-price/api/batch-price-chart/${batchId}`, {
+        method: 'GET',
+        credentials: 'same-origin',  // Include cookies for authentication
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Chart data received:', data);
             const ctx = document.getElementById('priceChart').getContext('2d');
             
             // Destroy existing chart if any
@@ -328,16 +346,24 @@ function showPriceChart(batchId, batchCode) {
                 window.myChart.destroy();
             }
             
+            // Check if we have data
+            if (!data.datasets || Object.keys(data.datasets).length === 0) {
+                document.getElementById('priceChart').parentElement.innerHTML = 
+                    '<div class="alert alert-info"><i class="fas fa-info-circle"></i> No price history data available for this batch.</div>';
+                return;
+            }
+            
             const datasets = Object.values(data.datasets);
             
             window.myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data.labels,
+                    labels: data.labels || [],
                     datasets: datasets
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         title: {
                             display: true,
@@ -354,6 +380,11 @@ function showPriceChart(batchId, batchCode) {
                             title: {
                                 display: true,
                                 text: 'Price (₹)'
+                            },
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    return '₹' + value.toLocaleString();
+                                }
                             }
                         },
                         x: {
@@ -369,7 +400,7 @@ function showPriceChart(batchId, batchCode) {
         .catch(error => {
             console.error('Error loading chart data:', error);
             document.getElementById('priceChart').parentElement.innerHTML = 
-                '<div class="alert alert-danger">Error loading chart data</div>';
+                '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> Error loading chart data: ' + error.message + '</div>';
         });
 }
 </script>
