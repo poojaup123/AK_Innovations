@@ -254,6 +254,17 @@ def create_app():
     from routes.enhanced_batch_tracking import enhanced_batch_bp
     app.register_blueprint(enhanced_batch_bp)
     
+    # Setup performance monitoring for Tally-like speed
+    from services.performance_monitor import setup_performance_monitoring
+    setup_performance_monitoring(app)
+    
+    # Register CLI commands for performance optimization (skip if import fails)
+    try:
+        from cli import register_cli_commands
+        register_cli_commands(app)
+    except ImportError:
+        pass  # Skip performance CLI commands if not available
+    
     # Template context processors
     @app.context_processor
     def utility_processor():
@@ -269,10 +280,13 @@ def create_app():
     import models.notifications  # Notification system models
     import models.visual_scanning  # Component scanning models
     
-    # Register CLI commands
-    from cli import init_db_command, create_admin_command
-    app.cli.add_command(init_db_command)
-    app.cli.add_command(create_admin_command)
+    # Register CLI commands (skip if import fails)
+    try:
+        from cli import init_db_command, create_admin_command
+        app.cli.add_command(init_db_command)
+        app.cli.add_command(create_admin_command)
+    except ImportError:
+        pass  # Skip CLI commands if not available
     
     # Start notification scheduler in production
     if not app.debug:

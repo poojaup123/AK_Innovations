@@ -13,6 +13,7 @@ from models import Item, User
 from models.batch import InventoryBatch, BatchMovement, BatchTraceability, BatchMovementLedger
 from services.unified_batch_tracking import UnifiedBatchTrackingService
 from services.batch_integration_service import BatchIntegrationService
+from services.optimized_batch_queries import OptimizedBatchQueries
 
 enhanced_batch_bp = Blueprint('enhanced_batch', __name__, url_prefix='/enhanced-batch')
 
@@ -32,68 +33,15 @@ def unified_dashboard():
         date_from_obj = date.today() - timedelta(days=7)
         date_to_obj = date.today()
     
-    # Overall Statistics
-    stats = {
-        'total_batches': InventoryBatch.query.count(),
-        'active_batches': InventoryBatch.query.filter(
-            (InventoryBatch.qty_raw > 0) |
-            (InventoryBatch.qty_wip > 0) |
-            (InventoryBatch.qty_finished > 0)
-        ).count(),
-        'expired_batches': InventoryBatch.query.filter(
-            InventoryBatch.expiry_date < date.today()
-        ).count(),
-        'pending_inspection': InventoryBatch.query.filter(
-            InventoryBatch.qty_inspection > 0
-        ).count(),
-        'movements_today': BatchMovement.query.filter(
-            func.date(BatchMovement.timestamp) == date.today()
-        ).count()
-    }
+    # Ultra-fast statistics using optimized queries
+    stats = OptimizedBatchQueries.get_dashboard_stats_fast()
     
-    # Recent movements
-    recent_movements = BatchMovement.query.filter(
-        BatchMovement.timestamp >= datetime.combine(date_from_obj, datetime.min.time()),
-        BatchMovement.timestamp <= datetime.combine(date_to_obj, datetime.max.time())
-    ).order_by(desc(BatchMovement.timestamp)).limit(20).all()
-    
-    # Batch status summary
-    batch_status = db.session.query(
-        InventoryBatch.inspection_status,
-        func.count(InventoryBatch.id).label('count'),
-        func.sum(InventoryBatch.qty_raw + InventoryBatch.qty_wip + InventoryBatch.qty_finished).label('total_qty')
-    ).group_by(InventoryBatch.inspection_status).all()
-    
-    # Items with low stock batches
-    low_stock_items = db.session.query(
-        Item.id,
-        Item.name,
-        Item.code,
-        func.sum(InventoryBatch.qty_raw + InventoryBatch.qty_finished).label('available_qty'),
-        Item.minimum_stock
-    ).join(InventoryBatch).group_by(Item.id, Item.name, Item.code, Item.minimum_stock).having(
-        func.sum(InventoryBatch.qty_raw + InventoryBatch.qty_finished) <= Item.minimum_stock
-    ).limit(10).all()
-    
-    # Expiring batches (next 30 days)
-    expiring_soon = InventoryBatch.query.filter(
-        InventoryBatch.expiry_date.between(
-            date.today(),
-            date.today() + timedelta(days=30)
-        ),
-        (InventoryBatch.qty_raw > 0) |
-        (InventoryBatch.qty_wip > 0) |
-        (InventoryBatch.qty_finished > 0)
-    ).order_by(InventoryBatch.expiry_date).limit(10).all()
-    
-    # Movement type analysis
-    movement_analysis = db.session.query(
-        BatchMovement.movement_type,
-        func.count(BatchMovement.id).label('count'),
-        func.sum(BatchMovement.quantity).label('total_qty')
-    ).filter(
-        BatchMovement.timestamp >= datetime.combine(date_from_obj, datetime.min.time())
-    ).group_by(BatchMovement.movement_type).order_by(desc(func.count(BatchMovement.id))).all()
+    # Ultra-fast data loading using optimized queries
+    recent_movements = OptimizedBatchQueries.get_recent_movements_fast(date_from_obj, date_to_obj, 10)
+    batch_status = OptimizedBatchQueries.get_batch_status_summary_fast()
+    low_stock_items = OptimizedBatchQueries.get_low_stock_items_fast(5)
+    expiring_soon = OptimizedBatchQueries.get_expiring_batches_fast(30, 10)
+    movement_analysis = OptimizedBatchQueries.get_movement_analysis_fast(date_from_obj, 10)
     
     return render_template('batch_tracking/enhanced_dashboard.html',
                          stats=stats,
@@ -169,6 +117,10 @@ def transfer_batch_location(batch_id):
     try:
         to_location = request.form.get('to_location')
         transfer_qty = request.form.get('transfer_qty')
+        
+        if not to_location:
+            flash('Destination location is required', 'error')
+            return redirect(url_for('enhanced_batch.batch_traceability', batch_id=batch_id))
         
         batch = InventoryBatch.query.get_or_404(batch_id)
         from_location = batch.location
@@ -282,8 +234,15 @@ def consolidate_batches():
     """Consolidate multiple batches into one"""
     
     try:
-        target_batch_id = int(request.form.get('target_batch_id'))
-        source_batch_ids = [int(bid) for bid in request.form.getlist('source_batch_ids')]
+        target_batch_id_str = request.form.get('target_batch_id')
+        source_batch_ids_str = request.form.getlist('source_batch_ids')
+        
+        if not target_batch_id_str or not source_batch_ids_str:
+            flash('Target batch and source batches are required', 'error')
+            return redirect(url_for('enhanced_batch.unified_dashboard'))
+        
+        target_batch_id = int(target_batch_id_str)
+        source_batch_ids = [int(bid) for bid in source_batch_ids_str if bid.isdigit()]
         
         success = UnifiedBatchTrackingService.consolidate_batches(
             source_batch_ids, target_batch_id, current_user.id

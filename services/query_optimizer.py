@@ -80,7 +80,6 @@ class DashboardQueries:
     """Optimized queries for dashboard statistics"""
     
     @staticmethod
-    @cached_query(lambda: "dashboard_stats", duration=180)
     def get_dashboard_stats():
         """Get all dashboard statistics in optimized queries"""
         # Single query to get all counts
@@ -94,56 +93,39 @@ class DashboardQueries:
             ).label('low_stock_items')
         ).first()
         
-        # Order status counts in single queries
-        order_stats = db.session.query(
-            func.sum(
-                case(
-                    (PurchaseOrder.status == 'open', 1),
-                    else_=0
-                )
-            ).label('open_purchase_orders'),
-            func.sum(
-                case(
-                    (SalesOrder.status == 'pending', 1),
-                    else_=0
-                )
-            ).label('pending_sales_orders')
-        ).first()
+        # Order status counts - separate queries to avoid cartesian products
+        purchase_order_stats = db.session.query(
+            func.count(PurchaseOrder.id).label('open_purchase_orders')
+        ).filter(PurchaseOrder.status == 'open').scalar() or 0
         
-        # Job work and production counts
-        work_stats = db.session.query(
-            func.sum(
-                case(
-                    (Employee.is_active == True, 1),
-                    else_=0
-                )
-            ).label('active_employees'),
-            func.sum(
-                case(
-                    (JobWork.status == 'sent', 1),
-                    else_=0
-                )
-            ).label('open_job_works'),
-            func.sum(
-                case(
-                    (Production.status == 'planned', 1),
-                    else_=0
-                )
-            ).label('planned_productions')
-        ).first()
+        sales_order_stats = db.session.query(
+            func.count(SalesOrder.id).label('pending_sales_orders')
+        ).filter(SalesOrder.status == 'pending').scalar() or 0
+        
+        # Job work and production counts - separate queries to avoid cartesian products
+        active_employees = db.session.query(
+            func.count(Employee.id)
+        ).filter(Employee.is_active == True).scalar() or 0
+        
+        open_job_works = db.session.query(
+            func.count(JobWork.id)
+        ).filter(JobWork.status == 'sent').scalar() or 0
+        
+        planned_productions = db.session.query(
+            func.count(Production.id)
+        ).filter(Production.status == 'planned').scalar() or 0
         
         return {
             'total_items': getattr(stats, 'total_items', 0) or 0,
             'low_stock_items': getattr(stats, 'low_stock_items', 0) or 0,
-            'open_purchase_orders': getattr(order_stats, 'open_purchase_orders', 0) or 0,
-            'pending_sales_orders': getattr(order_stats, 'pending_sales_orders', 0) or 0,
-            'active_employees': getattr(work_stats, 'active_employees', 0) or 0,
-            'open_job_works': getattr(work_stats, 'open_job_works', 0) or 0,
-            'planned_productions': getattr(work_stats, 'planned_productions', 0) or 0
+            'open_purchase_orders': purchase_order_stats,
+            'pending_sales_orders': sales_order_stats,
+            'active_employees': active_employees,
+            'open_job_works': open_job_works,
+            'planned_productions': planned_productions
         }
     
     @staticmethod
-    @cached_query(lambda: "recent_activities", duration=120)
     def get_recent_activities():
         """Get recent activities with optimized loading"""
         recent_pos = PurchaseOrder.query.order_by(PurchaseOrder.created_at.desc()).limit(5).all()
