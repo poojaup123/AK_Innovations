@@ -96,6 +96,14 @@ DEFAULT_PERMISSIONS = {
         ('reports_export', 'Export Reports', 'Export data to Excel/PDF'),
         ('reports_financial', 'Financial Reports', 'Access financial reporting'),
     ],
+    'pricing': [
+        ('pricing_view_all', 'View All Prices', 'See item prices, rates, and totals'),
+        ('pricing_view_history', 'View Price History', 'Access historical price changes'),
+        ('pricing_modify', 'Modify Prices', 'Update item prices and rates'),
+        ('pricing_approve_changes', 'Approve Price Changes', 'Approve bulk price modifications'),
+        ('financial_values_view', 'View Financial Values', 'See inventory valuations and totals'),
+        ('cost_analysis_view', 'View Cost Analysis', 'Access profitability and cost reports'),
+    ],
     'settings': [
         ('settings_company', 'Company Settings', 'Modify company information'),
         ('settings_users', 'User Management', 'Manage system users'),

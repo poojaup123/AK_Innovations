@@ -55,6 +55,10 @@ def create_app():
     def load_user(user_id):
         return User.query.get(int(user_id))
     
+    # Initialize price visibility helpers
+    from services.price_visibility import init_price_visibility_helpers
+    init_price_visibility_helpers(app)
+    
     # Add context processor for common template variables
     @app.context_processor
     def inject_common_vars():
@@ -237,6 +241,14 @@ def create_app():
     # Register drawing upload blueprint
     from routes.drawing_upload import drawing_upload_bp
     app.register_blueprint(drawing_upload_bp, url_prefix='/component-scanning')
+    
+    # Register user management blueprint
+    from routes.user_management import user_management_bp
+    app.register_blueprint(user_management_bp)
+    
+    # Register demo blueprint
+    from routes.demo_price_access import demo_price_bp
+    app.register_blueprint(demo_price_bp)
     
     # Template context processors
     @app.context_processor

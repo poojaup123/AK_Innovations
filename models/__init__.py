@@ -148,6 +148,38 @@ class User(UserMixin, db.Model):
             user_permission.granted = False
         
         return True
+    
+    # Price visibility helper methods
+    def can_view_prices(self):
+        """Check if user can view item prices and rates"""
+        return self.is_admin() or self.has_permission('pricing_view_all')
+    
+    def can_view_price_history(self):
+        """Check if user can view historical price changes"""
+        return self.is_admin() or self.has_permission('pricing_view_history')
+    
+    def can_modify_prices(self):
+        """Check if user can modify item prices"""
+        return self.is_admin() or self.has_permission('pricing_modify')
+    
+    def can_view_financial_values(self):
+        """Check if user can view inventory valuations and totals"""
+        return self.is_admin() or self.has_permission('financial_values_view')
+    
+    def can_view_cost_analysis(self):
+        """Check if user can view cost and profitability reports"""
+        return self.is_admin() or self.has_permission('cost_analysis_view')
+    
+    def get_price_display_level(self):
+        """Get user's price visibility level for UI customization"""
+        if self.is_admin():
+            return 'full'  # Can see everything
+        elif self.can_view_financial_values():
+            return 'financial'  # Can see prices and totals
+        elif self.can_view_prices():
+            return 'prices'  # Can see individual prices only
+        else:
+            return 'none'  # Cannot see any pricing information
 
 class Supplier(db.Model):
     __tablename__ = 'suppliers'

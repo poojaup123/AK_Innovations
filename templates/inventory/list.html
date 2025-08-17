@@ -19,8 +19,8 @@
                         <th style="min-width: 60px;">UOM</th>
                         <th style="min-width: 90px;">Unit Weight</th>
                         <th style="min-width: 100px;">Total Weight</th>
-                        <th style="min-width: 90px;">Unit Price</th>
-                        <th style="min-width: 90px;">Stock Value</th>
+                        <th style="min-width: 90px;">{{ price_column_header() }}</th>
+                        <th style="min-width: 90px;">{{ total_column_header() }}</th>
                         <th style="min-width: 80px;">Batches</th>
                         <th style="min-width: 100px;">Actions</th>
                     </tr>
@@ -92,8 +92,8 @@
                                 <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <td>₹{{ item.unit_price or 0 }}</td>
-                        <td>₹{{ "%.2f"|format((item.current_stock or 0) * (item.unit_price or 0)) }}</td>
+                        <td>{{ (item.unit_price or 0)|format_price }}</td>
+                        <td>{{ ((item.current_stock or 0) * (item.unit_price or 0))|format_total }}</td>
                         <td>
                             {% if item.batches and item.batches|length > 0 %}
                                 <span class="badge bg-info">{{ item.batches|length }}</span>
