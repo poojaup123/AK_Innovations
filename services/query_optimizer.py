@@ -7,7 +7,7 @@ to improve performance across the factory management system.
 
 from functools import wraps
 from datetime import datetime, timedelta
-from sqlalchemy import func, and_, or_, case
+from sqlalchemy import func, and_, or_, case, text
 from sqlalchemy.orm import joinedload, selectinload
 from app import db
 from models import Item, PurchaseOrder, SalesOrder, JobWork, Production, Employee
@@ -82,16 +82,18 @@ class DashboardQueries:
     @staticmethod
     def get_dashboard_stats():
         """Get all dashboard statistics in optimized queries"""
-        # Single query to get all counts
-        stats = db.session.query(
-            func.count(Item.id).label('total_items'),
-            func.sum(
-                case(
-                    (Item.current_stock <= Item.minimum_stock, 1),
-                    else_=0
-                )
-            ).label('low_stock_items')
-        ).first()
+        # Single query to get all counts - Using direct SQL to avoid SQLAlchemy case issues
+        stats_result = db.session.execute(text("""
+            SELECT 
+                COUNT(id) as total_items,
+                COUNT(CASE WHEN current_stock <= minimum_stock THEN 1 END) as low_stock_items
+            FROM items
+        """)).fetchone()
+        
+        stats = type('obj', (object,), {
+            'total_items': stats_result[0] or 0,
+            'low_stock_items': stats_result[1] or 0
+        })()
         
         # Order status counts - separate queries to avoid cartesian products
         purchase_order_stats = db.session.query(
@@ -144,6 +146,45 @@ class DashboardQueries:
 
 class AccountingQueries:
     """Optimized queries for accounting operations"""
+    
+    @staticmethod
+    def get_account_balances():
+        """Get optimized account balances for dashboard"""
+        try:
+            # Use direct SQL to avoid complex ORM queries
+            balances_result = db.session.execute(text("""
+                SELECT 
+                    COALESCE(SUM(CASE WHEN ag.group_type = 'assets' THEN ABS(COALESCE(a.current_balance, 0)) END), 0) as total_assets,
+                    COALESCE(SUM(CASE WHEN ag.group_type = 'liabilities' THEN ABS(COALESCE(a.current_balance, 0)) END), 0) as total_liabilities,
+                    COALESCE(SUM(CASE WHEN ag.group_type = 'income' THEN ABS(COALESCE(a.current_balance, 0)) END), 0) as total_income,
+                    COALESCE(SUM(CASE WHEN ag.group_type = 'expenses' THEN ABS(COALESCE(a.current_balance, 0)) END), 0) as total_expenses
+                FROM accounts a
+                LEFT JOIN account_groups ag ON a.group_id = ag.id
+                WHERE a.current_balance != 0
+            """)).fetchone()
+            
+            if balances_result:
+                return {
+                    'total_assets': float(balances_result[0] or 0),
+                    'total_liabilities': float(balances_result[1] or 0),
+                    'total_income': float(balances_result[2] or 0),
+                    'total_expenses': float(balances_result[3] or 0)
+                }
+            else:
+                return {
+                    'total_assets': 0,
+                    'total_liabilities': 0,
+                    'total_income': 0,
+                    'total_expenses': 0
+                }
+        except Exception as e:
+            print(f"Error in AccountingQueries.get_account_balances: {e}")
+            return {
+                'total_assets': 0,
+                'total_liabilities': 0,
+                'total_income': 0,
+                'total_expenses': 0
+            }
     
     @staticmethod
     @cached_query(lambda: "account_balances", duration=300)
