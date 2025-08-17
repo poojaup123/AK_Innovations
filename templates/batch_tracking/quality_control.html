@@ -89,20 +89,20 @@
         </div>
         <div class="card-body">
             <div class="btn-group" role="group">
-                <a href="{{ url_for('batch_tracking.quality_dashboard') }}" 
-                   class="btn {{ 'btn-primary' if status_filter == 'all' else 'btn-outline-primary' }}">
+                <a href="{{ url_for('batch_tracking.quality_control') }}" 
+                   class="btn {{ 'btn-primary' if not status_filter else 'btn-outline-primary' }}">
                     All Batches
                 </a>
-                <a href="{{ url_for('batch_tracking.quality_dashboard', status='pending') }}" 
+                <a href="{{ url_for('batch_tracking.quality_control', status='pending') }}" 
                    class="btn {{ 'btn-warning' if status_filter == 'pending' else 'btn-outline-warning' }}">
                     Pending Review
                 </a>
-                <a href="{{ url_for('batch_tracking.quality_dashboard', status='approved') }}" 
-                   class="btn {{ 'btn-success' if status_filter == 'approved' else 'btn-outline-success' }}">
+                <a href="{{ url_for('batch_tracking.quality_control', status='passed') }}" 
+                   class="btn {{ 'btn-success' if status_filter == 'passed' else 'btn-outline-success' }}">
                     Approved
                 </a>
-                <a href="{{ url_for('batch_tracking.quality_dashboard', status='rejected') }}" 
-                   class="btn {{ 'btn-danger' if status_filter == 'rejected' else 'btn-outline-danger' }}">
+                <a href="{{ url_for('batch_tracking.quality_control', status='failed') }}" 
+                   class="btn {{ 'btn-danger' if status_filter == 'failed' else 'btn-outline-danger' }}">
                     Rejected
                 </a>
             </div>

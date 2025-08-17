@@ -363,17 +363,18 @@ def quality_control():
     
     approval_rate = (approved_count / total_batches * 100) if total_batches > 0 else 0
     
-    quality_stats = {
-        'pending_count': pending_count,
-        'approved_count': approved_count,
-        'rejected_count': rejected_count,
+    stats = {
+        'total_batches': total_batches,
+        'pending_review': pending_count,
+        'approved': approved_count,
+        'rejected': rejected_count,
         'approval_rate': round(approval_rate, 1)
     }
     
     return render_template(
         'batch_tracking/quality_control.html',
         batches=batches,
-        quality_stats=quality_stats
+        stats=stats
     )
 
 # API Endpoints for Batch Tracking Dashboard
