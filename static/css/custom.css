@@ -196,6 +196,7 @@ a:hover {
 
 .modal-backdrop {
     z-index: 1059 !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
 }
 
 .modal-dialog {
@@ -211,6 +212,58 @@ a:hover {
     z-index: 1065 !important;
     position: relative;
     pointer-events: auto !important;
+}
+
+/* Timeline Component Styles for Traceability Modal */
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -45px;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 3px solid #007bff;
+}
+
+.timeline-title {
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.timeline-description {
+    margin-bottom: 5px;
+    color: #666;
+}
+
+/* Fix modal backdrop issue - ensure proper removal */
+.modal.fade .modal-dialog {
+    transition: transform 0.3s ease-out;
+}
+
+body.modal-open {
+    overflow: hidden;
+}
+
+/* Ensure modal shows properly */
+.modal.show .modal-dialog {
+    transform: none;
 }
 
 /* Universal Table Scrolling System */
