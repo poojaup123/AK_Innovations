@@ -264,6 +264,13 @@ def create_app():
     from routes.batch_price_history import batch_price_bp
     app.register_blueprint(batch_price_bp)
     
+    # Price Management
+    try:
+        from routes.price_management import bp as price_management_bp
+        app.register_blueprint(price_management_bp)
+    except ImportError as e:
+        print(f"Price management module import error: {e}")
+    
     # Setup performance monitoring for Tally-like speed
     from services.performance_monitor import setup_performance_monitoring
     setup_performance_monitoring(app)

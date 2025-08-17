@@ -1022,26 +1022,8 @@ class Item(db.Model):
         elif price_type == 'standard':
             self.unit_price = new_price
         
-        # Trigger price cascading if enabled and price actually changed
-        if cascade_update and abs(new_price - old_price) > 0.01:  # Avoid cascading for tiny changes
-            try:
-                from services.price_cascading import PriceCascadingService
-                # Import here to avoid circular imports
-                cascade_result = PriceCascadingService.cascade_price_update(
-                    item_id=self.id,
-                    new_price=new_price,
-                    price_type=price_type,
-                    user_id=user_id,
-                    source=f'Material Price Update ({source or "Manual"})'
-                )
-                # Log cascading results
-                if cascade_result.get('success'):
-                    print(f"Price cascade: Updated {cascade_result.get('items_updated', 0)} items and {cascade_result.get('boms_updated', 0)} BOMs")
-                else:
-                    print(f"Price cascade failed: {cascade_result.get('message', 'Unknown error')}")
-            except Exception as e:
-                print(f"Price cascading error: {str(e)}")
-                # Don't fail the main price update if cascading fails
+        # Note: Price cascading will be handled by PriceCascadingService separately
+        # to avoid circular imports and ensure proper transaction handling
         
         return True
     
