@@ -866,49 +866,37 @@ function updateBatchTable(data) {
     `).join('');
 }
 
-// Utility function to close all modals and remove backdrops
-function closeAllModals() {
-    // Hide all modals
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(modalElement => {
-        const modalInstance = bootstrap.Modal.getInstance(modalElement);
-        if (modalInstance) {
-            modalInstance.hide();
-        }
-    });
-    
-    // Remove all modal backdrops
+// Global cleanup function for modal backdrops
+function forceCleanupBackdrops() {
+    // Remove all modal backdrops immediately
     const backdrops = document.querySelectorAll('.modal-backdrop');
     backdrops.forEach(backdrop => backdrop.remove());
     
-    // Reset body scroll
+    // Reset body state
     document.body.classList.remove('modal-open');
     document.body.style.overflow = '';
     document.body.style.paddingRight = '';
-    
-    // Wait a moment for cleanup
-    setTimeout(() => {
-        // Force remove any remaining backdrops
-        const remainingBackdrops = document.querySelectorAll('.modal-backdrop');
-        remainingBackdrops.forEach(backdrop => backdrop.remove());
-    }, 100);
 }
 
-// Initialize proper modal event listeners
+// Initialize modal event listeners with aggressive backdrop cleanup
 function initializeModalEventListeners() {
     const modalIds = ['batchDetailsModal', 'movementHistoryModal', 'traceabilityModal'];
     
     modalIds.forEach(modalId => {
         const modalElement = document.getElementById(modalId);
         if (modalElement) {
-            // Ensure backdrop is removed when modal is hidden
-            modalElement.addEventListener('hidden.bs.modal', function () {
-                const backdrops = document.querySelectorAll('.modal-backdrop');
-                backdrops.forEach(backdrop => backdrop.remove());
-                document.body.classList.remove('modal-open');
-                document.body.style.overflow = '';
-                document.body.style.paddingRight = '';
-            });
+            // Clean up on all modal events
+            modalElement.addEventListener('show.bs.modal', forceCleanupBackdrops);
+            modalElement.addEventListener('shown.bs.modal', forceCleanupBackdrops);
+            modalElement.addEventListener('hide.bs.modal', forceCleanupBackdrops);
+            modalElement.addEventListener('hidden.bs.modal', forceCleanupBackdrops);
+        }
+    });
+    
+    // Also add click handler to manually remove backdrops on any click
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal-backdrop')) {
+            forceCleanupBackdrops();
         }
     });
 }
@@ -916,6 +904,9 @@ function initializeModalEventListeners() {
 // Action functions for batch operations
 function viewBatchDetails(batchCode) {
     console.log('viewBatchDetails called with:', batchCode);
+    
+    // Force cleanup any existing backdrops first
+    forceCleanupBackdrops();
     
     const modalElement = document.getElementById('batchDetailsModal');
     const content = document.getElementById('batchDetailsContent');
@@ -939,8 +930,11 @@ function viewBatchDetails(batchCode) {
         </div>
     `;
     
-    // Show modal using Bootstrap's data attributes
-    const modal = new bootstrap.Modal(modalElement);
+    // Show modal with backdrop: false to prevent the black overlay
+    const modal = new bootstrap.Modal(modalElement, {
+        backdrop: false,
+        keyboard: true
+    });
     modal.show();
     
     // Load actual content after a delay
@@ -1048,6 +1042,9 @@ function viewBatchDetails(batchCode) {
 function viewMovementHistory(batchCode) {
     console.log('viewMovementHistory called with:', batchCode);
     
+    // Force cleanup any existing backdrops first
+    forceCleanupBackdrops();
+    
     const modalElement = document.getElementById('movementHistoryModal');
     const content = document.getElementById('movementHistoryContent');
     
@@ -1062,7 +1059,11 @@ function viewMovementHistory(batchCode) {
         modalTitle.innerHTML = '<i class="fas fa-history"></i> Movement History - ' + batchCode;
     }
     
-    const modal = new bootstrap.Modal(modalElement);
+    // Show modal with backdrop: false to prevent the black overlay
+    const modal = new bootstrap.Modal(modalElement, {
+        backdrop: false,
+        keyboard: true
+    });
     modal.show();
     content.innerHTML = `
         <div class="text-center py-4">
@@ -1133,6 +1134,9 @@ function viewMovementHistory(batchCode) {
 function viewTraceability(batchCode) {
     console.log('viewTraceability called with:', batchCode);
     
+    // Force cleanup any existing backdrops first
+    forceCleanupBackdrops();
+    
     const modalElement = document.getElementById('traceabilityModal');
     const content = document.getElementById('traceabilityContent');
     
@@ -1147,7 +1151,11 @@ function viewTraceability(batchCode) {
         modalTitle.innerHTML = '<i class="fas fa-search"></i> Batch Traceability - ' + batchCode;
     }
     
-    const modal = new bootstrap.Modal(modalElement);
+    // Show modal with backdrop: false to prevent the black overlay
+    const modal = new bootstrap.Modal(modalElement, {
+        backdrop: false,
+        keyboard: true
+    });
     modal.show();
     content.innerHTML = `
         <div class="text-center py-4">
