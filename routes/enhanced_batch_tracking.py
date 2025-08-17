@@ -20,38 +20,8 @@ enhanced_batch_bp = Blueprint('enhanced_batch', __name__, url_prefix='/enhanced-
 @enhanced_batch_bp.route('/dashboard')
 @login_required
 def unified_dashboard():
-    """Enhanced batch tracking dashboard with real-time information"""
-    
-    # Get date range
-    date_from = request.args.get('date_from', (date.today() - timedelta(days=7)).strftime('%Y-%m-%d'))
-    date_to = request.args.get('date_to', date.today().strftime('%Y-%m-%d'))
-    
-    try:
-        date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
-        date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
-    except:
-        date_from_obj = date.today() - timedelta(days=7)
-        date_to_obj = date.today()
-    
-    # Ultra-fast statistics using optimized queries
-    stats = OptimizedBatchQueries.get_dashboard_stats_fast()
-    
-    # Ultra-fast data loading using optimized queries
-    recent_movements = OptimizedBatchQueries.get_recent_movements_fast(date_from_obj, date_to_obj, 10)
-    batch_status = OptimizedBatchQueries.get_batch_status_summary_fast()
-    low_stock_items = OptimizedBatchQueries.get_low_stock_items_fast(5)
-    expiring_soon = OptimizedBatchQueries.get_expiring_batches_fast(30, 10)
-    movement_analysis = OptimizedBatchQueries.get_movement_analysis_fast(date_from_obj, 10)
-    
-    return render_template('batch_tracking/enhanced_dashboard.html',
-                         stats=stats,
-                         recent_movements=recent_movements,
-                         batch_status=batch_status,
-                         low_stock_items=low_stock_items,
-                         expiring_soon=expiring_soon,
-                         movement_analysis=movement_analysis,
-                         date_from=date_from,
-                         date_to=date_to)
+    """Redirect to the new unified batch tracking dashboard"""
+    return redirect(url_for('batch_tracking.dashboard'))
 
 @enhanced_batch_bp.route('/batch/<int:batch_id>/traceability')
 @login_required

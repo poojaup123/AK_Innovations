@@ -256,9 +256,9 @@ def create_app():
     from routes.demo_price_access import demo_price_bp
     app.register_blueprint(demo_price_bp)
     
-    # Register enhanced batch tracking blueprint (DISABLED - unified with main batch_tracking)
-    # from routes.enhanced_batch_tracking import enhanced_batch_bp
-    # app.register_blueprint(enhanced_batch_bp)
+    # Register enhanced batch tracking blueprint (redirects only - unified with main batch_tracking)
+    from routes.enhanced_batch_tracking import enhanced_batch_bp
+    app.register_blueprint(enhanced_batch_bp)
     
     # Setup performance monitoring for Tally-like speed
     from services.performance_monitor import setup_performance_monitoring
