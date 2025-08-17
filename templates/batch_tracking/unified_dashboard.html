@@ -66,6 +66,56 @@
         font-size: 0.75rem;
     }
     
+    .modal-xl {
+        max-width: 1200px;
+    }
+    
+    .modal-lg {
+        max-width: 800px;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 3rem;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 2rem;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: -2.5rem;
+        top: 0;
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        z-index: 1;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: -2rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: #dee2e6;
+    }
+    
+    .timeline-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .timeline-description {
+        margin-bottom: 5px;
+        color: #6c757d;
+    }
+    
     .status-badge {
         font-size: 0.75rem;
         padding: 0.25rem 0.5rem;
@@ -569,6 +619,66 @@
     </div>
 </div>
 
+<!-- Batch Details Modal -->
+<div class="modal fade" id="batchDetailsModal" tabindex="-1" aria-labelledby="batchDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="batchDetailsModalLabel">
+                    <i class="fas fa-info-circle"></i> Batch Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="batchDetailsContent">
+                <div class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                    <p class="text-muted mt-2">Loading batch details...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Movement History Modal -->
+<div class="modal fade" id="movementHistoryModal" tabindex="-1" aria-labelledby="movementHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="movementHistoryModalLabel">
+                    <i class="fas fa-history"></i> Movement History
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="movementHistoryContent">
+                <div class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                    <p class="text-muted mt-2">Loading movement history...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Traceability Modal -->
+<div class="modal fade" id="traceabilityModal" tabindex="-1" aria-labelledby="traceabilityModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="traceabilityModalLabel">
+                    <i class="fas fa-search"></i> Batch Traceability
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="traceabilityContent">
+                <div class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                    <p class="text-muted mt-2">Loading traceability data...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Auto-refresh functionality
 let refreshInterval;
@@ -757,15 +867,326 @@ function updateBatchTable(data) {
 
 // Action functions for batch operations
 function viewBatchDetails(batchCode) {
-    alert(`View details for batch: ${batchCode}`);
+    const modal = new bootstrap.Modal(document.getElementById('batchDetailsModal'));
+    const content = document.getElementById('batchDetailsContent');
+    
+    // Show modal with loading state
+    modal.show();
+    content.innerHTML = `
+        <div class="text-center py-4">
+            <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+            <p class="text-muted mt-2">Loading batch details...</p>
+        </div>
+    `;
+    
+    // Simulate API call to get batch details
+    setTimeout(() => {
+        const batchData = getBatchData().find(batch => batch.batch_code === batchCode);
+        
+        content.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-info-circle"></i> Basic Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Batch Code:</strong></td>
+                                    <td><span class="badge bg-primary">${batchData.batch_code}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Item Name:</strong></td>
+                                    <td>${batchData.item_name}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Item Code:</strong></td>
+                                    <td>${batchData.item_code}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Material Type:</strong></td>
+                                    <td><span class="badge bg-secondary">${batchData.material_type}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Location:</strong></td>
+                                    <td><span class="badge bg-light text-dark">${batchData.location}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td><span class="badge bg-success">${batchData.status}</span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-chart-bar"></i> Quantity Summary</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center mb-3">
+                                <div class="col-4">
+                                    <div class="p-3 border rounded">
+                                        <h4 class="text-success">${batchData.available.toFixed(1)}</h4>
+                                        <small class="text-muted">Available ${batchData.unit}</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-3 border rounded">
+                                        <h4 class="text-primary">${batchData.wip.toFixed(1)}</h4>
+                                        <small class="text-muted">WIP ${batchData.unit}</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-3 border rounded">
+                                        <h4 class="text-info">${batchData.finished.toFixed(1)}</h4>
+                                        <small class="text-muted">Finished ${batchData.unit}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert alert-info">
+                                <small><i class="fas fa-info-circle"></i> Total Initial Quantity: ${(batchData.available + batchData.wip + batchData.finished).toFixed(1)} ${batchData.unit}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-calendar"></i> Additional Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Created Date:</strong><br>
+                                    <span class="text-muted">2025-01-15 10:30:00</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Expiry Date:</strong><br>
+                                    <span class="text-muted">2025-12-31</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Supplier Batch:</strong><br>
+                                    <span class="text-muted">SUP-${batchData.batch_code}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 500);
 }
 
 function viewMovementHistory(batchCode) {
-    alert(`View movement history for batch: ${batchCode}`);
+    const modal = new bootstrap.Modal(document.getElementById('movementHistoryModal'));
+    const content = document.getElementById('movementHistoryContent');
+    
+    // Show modal with loading state
+    modal.show();
+    content.innerHTML = `
+        <div class="text-center py-4">
+            <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+            <p class="text-muted mt-2">Loading movement history...</p>
+        </div>
+    `;
+    
+    // Simulate API call to get movement history
+    setTimeout(() => {
+        content.innerHTML = `
+            <div class="mb-3">
+                <h6><i class="fas fa-barcode"></i> Movement History for Batch: <span class="badge bg-primary">${batchCode}</span></h6>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Movement Type</th>
+                            <th>Quantity</th>
+                            <th>From Location</th>
+                            <th>To Location</th>
+                            <th>Reference</th>
+                            <th>User</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2025-01-15<br><small class="text-muted">10:30:00</small></td>
+                            <td><span class="badge bg-success">IN</span></td>
+                            <td><strong>800.0 kg</strong></td>
+                            <td><span class="text-muted">-</span></td>
+                            <td>MAIN-STORE</td>
+                            <td>GRN-2025-001</td>
+                            <td><small>admin</small></td>
+                        </tr>
+                        <tr>
+                            <td>2025-01-16<br><small class="text-muted">14:15:00</small></td>
+                            <td><span class="badge bg-info">TRANSFER</span></td>
+                            <td><strong>50.0 kg</strong></td>
+                            <td>MAIN-STORE</td>
+                            <td>PRODUCTION-FLOOR</td>
+                            <td>PROD-2025-003</td>
+                            <td><small>production_user</small></td>
+                        </tr>
+                        <tr>
+                            <td>2025-01-17<br><small class="text-muted">09:45:00</small></td>
+                            <td><span class="badge bg-warning">RESERVE</span></td>
+                            <td><strong>25.0 kg</strong></td>
+                            <td>MAIN-STORE</td>
+                            <td>RESERVED</td>
+                            <td>JOB-2025-005</td>
+                            <td><small>jobwork_user</small></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="alert alert-info mt-3">
+                <small><i class="fas fa-info-circle"></i> Showing last 10 movements. Use filters to view more specific data.</small>
+            </div>
+        `;
+    }, 500);
 }
 
 function viewTraceability(batchCode) {
-    alert(`View traceability for batch: ${batchCode}`);
+    const modal = new bootstrap.Modal(document.getElementById('traceabilityModal'));
+    const content = document.getElementById('traceabilityContent');
+    
+    // Show modal with loading state
+    modal.show();
+    content.innerHTML = `
+        <div class="text-center py-4">
+            <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+            <p class="text-muted mt-2">Loading traceability data...</p>
+        </div>
+    `;
+    
+    // Simulate API call to get traceability data
+    setTimeout(() => {
+        content.innerHTML = `
+            <div class="mb-3">
+                <h6><i class="fas fa-search"></i> Complete Traceability for Batch: <span class="badge bg-primary">${batchCode}</span></h6>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-truck"></i> Source Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Supplier:</strong></td>
+                                    <td>ABC Steel Industries</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Purchase Order:</strong></td>
+                                    <td>PO-2025-001</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>GRN Number:</strong></td>
+                                    <td>GRN-2025-001</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Supplier Batch:</strong></td>
+                                    <td>SUP-${batchCode}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Quality Certificate:</strong></td>
+                                    <td><span class="badge bg-success">Available</span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-cogs"></i> Usage Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Used in Production:</strong></td>
+                                    <td>PROD-2025-003, PROD-2025-007</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Job Work Orders:</strong></td>
+                                    <td>JOB-2025-005, JOB-2025-009</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Sales Orders:</strong></td>
+                                    <td>SO-2025-012</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Current Location:</strong></td>
+                                    <td>MAIN-STORE</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Quality Status:</strong></td>
+                                    <td><span class="badge bg-success">Passed</span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-route"></i> Traceability Timeline</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline">
+                                <div class="timeline-item">
+                                    <div class="timeline-marker bg-primary"></div>
+                                    <div class="timeline-content">
+                                        <h6 class="timeline-title">Material Received</h6>
+                                        <p class="timeline-description">Batch ${batchCode} received from ABC Steel Industries via GRN-2025-001</p>
+                                        <small class="text-muted">2025-01-15 10:30:00</small>
+                                    </div>
+                                </div>
+                                <div class="timeline-item">
+                                    <div class="timeline-marker bg-success"></div>
+                                    <div class="timeline-content">
+                                        <h6 class="timeline-title">Quality Inspection</h6>
+                                        <p class="timeline-description">Quality inspection completed - Status: Passed</p>
+                                        <small class="text-muted">2025-01-15 15:00:00</small>
+                                    </div>
+                                </div>
+                                <div class="timeline-item">
+                                    <div class="timeline-marker bg-info"></div>
+                                    <div class="timeline-content">
+                                        <h6 class="timeline-title">Production Usage</h6>
+                                        <p class="timeline-description">50 kg allocated to Production Order PROD-2025-003</p>
+                                        <small class="text-muted">2025-01-16 14:15:00</small>
+                                    </div>
+                                </div>
+                                <div class="timeline-item">
+                                    <div class="timeline-marker bg-warning"></div>
+                                    <div class="timeline-content">
+                                        <h6 class="timeline-title">Job Work Allocation</h6>
+                                        <p class="timeline-description">25 kg reserved for Job Work Order JOB-2025-005</p>
+                                        <small class="text-muted">2025-01-17 09:45:00</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 500);
 }
 
 // Cleanup when leaving page
