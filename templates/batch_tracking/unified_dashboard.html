@@ -702,6 +702,7 @@ function stopAutoRefresh() {
 document.addEventListener('DOMContentLoaded', function() {
     startAutoRefresh();
     loadBatchDetails();
+    initializeModalEventListeners();
     
     // Stop auto-refresh when user leaves the page
     document.addEventListener('visibilitychange', function() {
@@ -865,9 +866,71 @@ function updateBatchTable(data) {
     `).join('');
 }
 
+// Utility function to close all modals and remove backdrops
+function closeAllModals() {
+    // Hide all modals
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modalElement => {
+        const modalInstance = bootstrap.Modal.getInstance(modalElement);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+    });
+    
+    // Remove all modal backdrops
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+    
+    // Reset body scroll
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    
+    // Wait a moment for cleanup
+    setTimeout(() => {
+        // Force remove any remaining backdrops
+        const remainingBackdrops = document.querySelectorAll('.modal-backdrop');
+        remainingBackdrops.forEach(backdrop => backdrop.remove());
+    }, 100);
+}
+
+// Initialize proper modal event listeners
+function initializeModalEventListeners() {
+    const modalIds = ['batchDetailsModal', 'movementHistoryModal', 'traceabilityModal'];
+    
+    modalIds.forEach(modalId => {
+        const modalElement = document.getElementById(modalId);
+        if (modalElement) {
+            // Ensure backdrop is removed when modal is hidden
+            modalElement.addEventListener('hidden.bs.modal', function () {
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                backdrops.forEach(backdrop => backdrop.remove());
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            });
+        }
+    });
+}
+
 // Action functions for batch operations
 function viewBatchDetails(batchCode) {
-    const modal = new bootstrap.Modal(document.getElementById('batchDetailsModal'));
+    // First close any existing modals and remove all backdrops
+    closeAllModals();
+    
+    const modalElement = document.getElementById('batchDetailsModal');
+    
+    // Destroy existing modal instance if it exists
+    const existingModal = bootstrap.Modal.getInstance(modalElement);
+    if (existingModal) {
+        existingModal.dispose();
+    }
+    
+    const modal = new bootstrap.Modal(modalElement, {
+        backdrop: true,
+        keyboard: true,
+        focus: true
+    });
     const content = document.getElementById('batchDetailsContent');
     
     // Show modal with loading state
@@ -984,7 +1047,22 @@ function viewBatchDetails(batchCode) {
 }
 
 function viewMovementHistory(batchCode) {
-    const modal = new bootstrap.Modal(document.getElementById('movementHistoryModal'));
+    // First close any existing modals and remove all backdrops
+    closeAllModals();
+    
+    const modalElement = document.getElementById('movementHistoryModal');
+    
+    // Destroy existing modal instance if it exists
+    const existingModal = bootstrap.Modal.getInstance(modalElement);
+    if (existingModal) {
+        existingModal.dispose();
+    }
+    
+    const modal = new bootstrap.Modal(modalElement, {
+        backdrop: true,
+        keyboard: true,
+        focus: true
+    });
     const content = document.getElementById('movementHistoryContent');
     
     // Show modal with loading state
@@ -1056,7 +1134,22 @@ function viewMovementHistory(batchCode) {
 }
 
 function viewTraceability(batchCode) {
-    const modal = new bootstrap.Modal(document.getElementById('traceabilityModal'));
+    // First close any existing modals and remove all backdrops
+    closeAllModals();
+    
+    const modalElement = document.getElementById('traceabilityModal');
+    
+    // Destroy existing modal instance if it exists
+    const existingModal = bootstrap.Modal.getInstance(modalElement);
+    if (existingModal) {
+        existingModal.dispose();
+    }
+    
+    const modal = new bootstrap.Modal(modalElement, {
+        backdrop: true,
+        keyboard: true,
+        focus: true
+    });
     const content = document.getElementById('traceabilityContent');
     
     // Show modal with loading state
