@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Price History{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="fas fa-chart-line me-2"></i>Batch-wise Price History</h2>
+            <p class="text-muted">Track price changes for individual batches with complete traceability</p>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#updatePriceModal">
+                <i class="fas fa-plus"></i> Update Batch Price
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="item_filter" class="form-label">Filter by Item</label>
+                    <select class="form-select" id="item_filter" name="item_id">
+                        <option value="">All Items</option>
+                        {% for item in items %}
+                        <option value="{{ item.id }}" {% if item.id == request.args.get('item_id', '', type=int) %}selected{% endif %}>
+                            {{ item.name }} ({{ item.code }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="batch_filter" class="form-label">Filter by Batch</label>
+                    <select class="form-select" id="batch_filter" name="batch_id">
+                        <option value="">All Batches</option>
+                        {% for batch in batches %}
+                        <option value="{{ batch.id }}" {% if batch.id == request.args.get('batch_id', '', type=int) %}selected{% endif %}>
+                            {{ batch.batch_code }} - {{ batch.item.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="price_type_filter" class="form-label">Price Type</label>
+                    <select class="form-select" id="price_type_filter" name="price_type">
+                        <option value="">All Types</option>
+                        {% for price_type in price_types %}
+                        <option value="{{ price_type }}" {% if price_type == request.args.get('price_type', '') %}selected{% endif %}>
+                            {{ price_type.title() }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="days_filter" class="form-label">Last N Days</label>
+                    <select class="form-select" id="days_filter" name="days">
+                        <option value="30" {% if request.args.get('days', '30') == '30' %}selected{% endif %}>30 Days</option>
+                        <option value="60" {% if request.args.get('days', '30') == '60' %}selected{% endif %}>60 Days</option>
+                        <option value="90" {% if request.args.get('days', '30') == '90' %}selected{% endif %}>90 Days</option>
+                        <option value="180" {% if request.args.get('days', '30') == '180' %}selected{% endif %}>6 Months</option>
+                        <option value="365" {% if request.args.get('days', '30') == '365' %}selected{% endif %}>1 Year</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary d-block">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Batches with Price Changes</h5>
+                    <h2 class="text-primary">{{ stats.batches_with_changes }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Price Updates</h5>
+                    <h2 class="text-success">{{ stats.total_updates }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <h5 class="card-title">From GRN Receipts</h5>
+                    <h2 class="text-info">{{ stats.from_grns }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Manual Updates</h5>
+                    <h2 class="text-warning">{{ stats.manual_updates }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Price History Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-table"></i> Batch Price Change History</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th>Date</th>
+                            <th>Batch Code</th>
+                            <th>Item</th>
+                            <th>Price Type</th>
+                            <th class="text-end">Previous Price</th>
+                            <th class="text-end">New Price</th>
+                            <th class="text-center">Change</th>
+                            <th>Source</th>
+                            <th>Reference</th>
+                            <th>Updated By</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in price_history %}
+                        <tr>
+                            <td>
+                                {{ record.effective_date.strftime('%Y-%m-%d') }}
+                                <br><small class="text-muted">{{ record.created_at.strftime('%H:%M') }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ record.batch.batch_code }}</span>
+                                <br><small class="text-muted">{{ record.batch.location }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ record.item.name }}</strong>
+                                <br><small class="text-muted">{{ record.item.code }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if record.price_type == 'purchase' %}info{% elif record.price_type == 'standard' %}secondary{% elif record.price_type == 'actual' %}success{% else %}warning{% endif %}">
+                                    {{ record.price_type.title() }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                {% if record.previous_price %}
+                                    ₹{{ "%.2f"|format(record.previous_price) }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <strong>₹{{ "%.2f"|format(record.new_price) }}</strong>
+                            </td>
+                            <td class="text-center">
+                                {% if record.price_change_amount %}
+                                    <span class="badge bg-{% if record.price_change_amount > 0 %}danger{% else %}success{% endif %}">
+                                        {% if record.price_change_amount > 0 %}+{% endif %}₹{{ "%.2f"|format(record.price_change_amount) }}
+                                        <br>{{ "%.1f"|format(record.price_change_percent or 0) }}%
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark">New</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if record.source == 'grn_creation' %}primary{% elif record.source == 'manual_update' %}warning{% else %}secondary{% endif %}">
+                                    {{ record.source.replace('_', ' ').title() }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if record.source_ref_number %}
+                                    {{ record.source_ref_number }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if record.user %}
+                                    {{ record.user.username }}
+                                {% else %}
+                                    <span class="text-muted">System</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('batch_price.batch_price_details', batch_id=record.batch_id) }}" 
+                                       class="btn btn-outline-info btn-sm" title="View Batch Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="btn btn-outline-primary btn-sm" title="Price Chart" 
+                                            onclick="showPriceChart({{ record.batch_id }}, '{{ record.batch.batch_code }}')">
+                                        <i class="fas fa-chart-line"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        
+                        {% if not price_history %}
+                        <tr>
+                            <td colspan="11" class="text-center py-5">
+                                <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No price history found</h5>
+                                <p class="text-muted">Try adjusting your filter criteria or create some price updates.</p>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Price Modal -->
+<div class="modal fade" id="updatePriceModal" tabindex="-1" aria-labelledby="updatePriceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updatePriceModalLabel">
+                    <i class="fas fa-edit"></i> Update Batch Price
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('batch_price.update_batch_price') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="batch_select" class="form-label">Select Batch</label>
+                        <select class="form-select" id="batch_select" name="batch_id" required>
+                            <option value="">Choose batch...</option>
+                            {% for batch in batches %}
+                            <option value="{{ batch.id }}">
+                                {{ batch.batch_code }} - {{ batch.item.name }} ({{ batch.total_quantity }} {{ batch.uom }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="price_type_select" class="form-label">Price Type</label>
+                        <select class="form-select" id="price_type_select" name="price_type" required>
+                            <option value="">Choose price type...</option>
+                            <option value="purchase">Purchase Rate</option>
+                            <option value="standard">Standard Cost</option>
+                            <option value="actual">Actual Cost</option>
+                            <option value="market">Market Price</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="new_price_input" class="form-label">New Price (₹)</label>
+                        <input type="number" class="form-control" id="new_price_input" name="new_price" 
+                               step="0.01" min="0" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes_input" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes_input" name="notes" rows="3" 
+                                  placeholder="Reason for price change..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Update Price
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Price Chart Modal -->
+<div class="modal fade" id="priceChartModal" tabindex="-1" aria-labelledby="priceChartModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="priceChartModalLabel">
+                    <i class="fas fa-chart-line"></i> Price Trend Chart
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <canvas id="priceChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showPriceChart(batchId, batchCode) {
+    const modal = new bootstrap.Modal(document.getElementById('priceChartModal'));
+    document.getElementById('priceChartModalLabel').innerHTML = 
+        '<i class="fas fa-chart-line"></i> Price Trend Chart - ' + batchCode;
+    modal.show();
+    
+    // Load chart data
+    fetch(`/batch-price/api/batch-price-chart/${batchId}`)
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            
+            // Destroy existing chart if any
+            if (window.myChart) {
+                window.myChart.destroy();
+            }
+            
+            const datasets = Object.values(data.datasets);
+            
+            window.myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Price History - ${batchCode}`
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Price (₹)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading chart data:', error);
+            document.getElementById('priceChart').parentElement.innerHTML = 
+                '<div class="alert alert-danger">Error loading chart data</div>';
+        });
+}
+</script>
+{% endblock %}

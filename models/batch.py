@@ -35,6 +35,8 @@ class InventoryBatch(db.Model):
     expiry_date = db.Column(db.Date)
     supplier_batch_no = db.Column(db.String(50))  # Vendor's batch number
     purchase_rate = db.Column(db.Float, default=0.0)
+    standard_cost = db.Column(db.Float, default=0.0)  # Standard cost for valuation
+    actual_cost = db.Column(db.Float, default=0.0)    # Actual landed cost including freight, etc.
     
     # References
     grn_id = db.Column(db.Integer, db.ForeignKey('grn.id'))  # Source GRN
@@ -48,6 +50,7 @@ class InventoryBatch(db.Model):
     # Relationships
     item = db.relationship('Item', backref='inventory_batches')
     movements = db.relationship('BatchMovement', backref='batch', lazy=True, cascade='all, delete-orphan')
+    price_history = db.relationship('BatchPriceHistory', backref='batch', lazy=True, cascade='all, delete-orphan', order_by='BatchPriceHistory.effective_date.desc()')
     
     @property
     def total_quantity(self):
@@ -130,6 +133,98 @@ class InventoryBatch(db.Model):
     
     def __repr__(self):
         return f'<InventoryBatch {self.batch_code}: {self.item.name if self.item else "Unknown"}>'
+
+class BatchPriceHistory(db.Model):
+    """
+    Track price history for individual batches
+    Each batch can have multiple price updates due to various factors
+    """
+    __tablename__ = 'batch_price_history'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    batch_id = db.Column(db.Integer, db.ForeignKey('inventory_batches.id'), nullable=False)
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
+    
+    # Price information
+    price_type = db.Column(db.String(20), nullable=False)  # purchase, standard, actual, market
+    previous_price = db.Column(db.Float)
+    new_price = db.Column(db.Float, nullable=False)
+    effective_date = db.Column(db.Date, nullable=False, default=date.today)
+    
+    # Source of price change
+    source = db.Column(db.String(50), nullable=False)  # grn_creation, manual_update, market_adjustment, freight_addition
+    source_ref_id = db.Column(db.Integer)  # Reference to GRN, PO, etc.
+    source_ref_number = db.Column(db.String(100))  # Human-readable reference
+    
+    # Change tracking
+    price_change_amount = db.Column(db.Float)
+    price_change_percent = db.Column(db.Float)
+    
+    # Metadata
+    currency = db.Column(db.String(3), default='INR')
+    notes = db.Column(db.Text)
+    updated_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    item = db.relationship('Item')
+    user = db.relationship('User')
+    
+    @classmethod
+    def create_price_update(cls, batch, price_type, new_price, source, source_ref_id=None, source_ref_number=None, notes=None, user_id=None):
+        """Create a new price history record for a batch"""
+        
+        # Get current price for this batch and price type
+        current_price_record = cls.query.filter_by(
+            batch_id=batch.id,
+            price_type=price_type
+        ).order_by(cls.effective_date.desc()).first()
+        
+        previous_price = current_price_record.new_price if current_price_record else None
+        
+        # Calculate change
+        price_change_amount = new_price - previous_price if previous_price else None
+        price_change_percent = (price_change_amount / previous_price * 100) if previous_price and previous_price > 0 else None
+        
+        # Create new record
+        price_history = cls(
+            batch_id=batch.id,
+            item_id=batch.item_id,
+            price_type=price_type,
+            previous_price=previous_price,
+            new_price=new_price,
+            source=source,
+            source_ref_id=source_ref_id,
+            source_ref_number=source_ref_number,
+            price_change_amount=price_change_amount,
+            price_change_percent=price_change_percent,
+            notes=notes,
+            updated_by=user_id
+        )
+        
+        db.session.add(price_history)
+        
+        # Update batch's current price based on type
+        if price_type == 'purchase':
+            batch.purchase_rate = new_price
+        elif price_type == 'standard':
+            batch.standard_cost = new_price
+        elif price_type == 'actual':
+            batch.actual_cost = new_price
+            
+        return price_history
+    
+    @property
+    def formatted_change(self):
+        """Format price change for display"""
+        if not self.price_change_amount:
+            return "New Price"
+        
+        sign = "+" if self.price_change_amount > 0 else ""
+        return f"{sign}₹{self.price_change_amount:.2f} ({sign}{self.price_change_percent:.1f}%)"
+    
+    def __repr__(self):
+        return f'<BatchPriceHistory {self.batch.batch_code if self.batch else "Unknown"} - {self.price_type}: ₹{self.new_price}>'
 
 class BatchMovement(db.Model):
     """

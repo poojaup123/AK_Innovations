@@ -260,6 +260,10 @@ def create_app():
     from routes.enhanced_batch_tracking import enhanced_batch_bp
     app.register_blueprint(enhanced_batch_bp)
     
+    # Register batch price history blueprint for batch-wise price tracking
+    from routes.batch_price_history import batch_price_bp
+    app.register_blueprint(batch_price_bp)
+    
     # Setup performance monitoring for Tally-like speed
     from services.performance_monitor import setup_performance_monitoring
     setup_performance_monitoring(app)

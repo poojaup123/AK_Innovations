@@ -1033,8 +1033,9 @@ def unified_batch_management():
 @inventory_bp.route('/price-history')
 @login_required
 def price_history():
-    """Show price history for all items with filtering"""
-    from services.price_management import PriceManagementService
+    """Redirect to batch-wise price history (new enhanced version)"""
+    flash('Price history is now tracked at the batch level for better accuracy. Redirecting to batch-wise price history.', 'info')
+    return redirect(url_for('batch_price.batch_price_history'))
     from models import ItemPriceHistory
     from datetime import datetime, timedelta
     
