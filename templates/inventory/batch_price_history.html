@@ -299,10 +299,23 @@
 
 <script>
 function showPriceChart(batchId, batchCode) {
-    const modal = new bootstrap.Modal(document.getElementById('priceChartModal'));
+    // Clean up any existing modal instances
+    const existingModal = bootstrap.Modal.getInstance(document.getElementById('priceChartModal'));
+    if (existingModal) {
+        existingModal.dispose();
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('priceChartModal'), {
+        backdrop: false  // Disable backdrop to prevent black overlay
+    });
     document.getElementById('priceChartModalLabel').innerHTML = 
         '<i class="fas fa-chart-line"></i> Price Trend Chart - ' + batchCode;
     modal.show();
+    
+    // Add cleanup on modal hide
+    document.getElementById('priceChartModal').addEventListener('hidden.bs.modal', function () {
+        modal.dispose();
+    }, { once: true });
     
     // Load chart data
     fetch(`/batch-price/api/batch-price-chart/${batchId}`)
