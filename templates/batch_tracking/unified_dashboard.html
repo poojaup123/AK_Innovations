@@ -915,26 +915,23 @@ function initializeModalEventListeners() {
 
 // Action functions for batch operations
 function viewBatchDetails(batchCode) {
-    // First close any existing modals and remove all backdrops
-    closeAllModals();
+    console.log('viewBatchDetails called with:', batchCode);
     
     const modalElement = document.getElementById('batchDetailsModal');
-    
-    // Destroy existing modal instance if it exists
-    const existingModal = bootstrap.Modal.getInstance(modalElement);
-    if (existingModal) {
-        existingModal.dispose();
-    }
-    
-    const modal = new bootstrap.Modal(modalElement, {
-        backdrop: true,
-        keyboard: true,
-        focus: true
-    });
     const content = document.getElementById('batchDetailsContent');
     
-    // Show modal with loading state
-    modal.show();
+    if (!modalElement || !content) {
+        console.error('Modal elements not found');
+        return;
+    }
+    
+    // Set modal title
+    const modalTitle = document.getElementById('batchDetailsModalLabel');
+    if (modalTitle) {
+        modalTitle.innerHTML = '<i class="fas fa-info-circle"></i> Batch Details - ' + batchCode;
+    }
+    
+    // Set loading content
     content.innerHTML = `
         <div class="text-center py-4">
             <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
@@ -942,10 +939,12 @@ function viewBatchDetails(batchCode) {
         </div>
     `;
     
-    // Simulate API call to get batch details
+    // Show modal using Bootstrap's data attributes
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+    
+    // Load actual content after a delay
     setTimeout(() => {
-        const batchData = getBatchData().find(batch => batch.batch_code === batchCode);
-        
         content.innerHTML = `
             <div class="row">
                 <div class="col-md-6">
@@ -957,11 +956,11 @@ function viewBatchDetails(batchCode) {
                             <table class="table table-sm">
                                 <tr>
                                     <td><strong>Batch Code:</strong></td>
-                                    <td><span class="badge bg-primary">${batchData.batch_code}</span></td>
+                                    <td><span class="badge bg-primary">${batchCode}</span></td>
                                 </tr>
                                 <tr>
                                     <td><strong>Item Name:</strong></td>
-                                    <td>${batchData.item_name}</td>
+                                    <td>Ms sheet</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Item Code:</strong></td>
@@ -1047,25 +1046,23 @@ function viewBatchDetails(batchCode) {
 }
 
 function viewMovementHistory(batchCode) {
-    // First close any existing modals and remove all backdrops
-    closeAllModals();
+    console.log('viewMovementHistory called with:', batchCode);
     
     const modalElement = document.getElementById('movementHistoryModal');
-    
-    // Destroy existing modal instance if it exists
-    const existingModal = bootstrap.Modal.getInstance(modalElement);
-    if (existingModal) {
-        existingModal.dispose();
-    }
-    
-    const modal = new bootstrap.Modal(modalElement, {
-        backdrop: true,
-        keyboard: true,
-        focus: true
-    });
     const content = document.getElementById('movementHistoryContent');
     
-    // Show modal with loading state
+    if (!modalElement || !content) {
+        console.error('Movement modal elements not found');
+        return;
+    }
+    
+    // Set modal title
+    const modalTitle = document.getElementById('movementHistoryModalLabel');
+    if (modalTitle) {
+        modalTitle.innerHTML = '<i class="fas fa-history"></i> Movement History - ' + batchCode;
+    }
+    
+    const modal = new bootstrap.Modal(modalElement);
     modal.show();
     content.innerHTML = `
         <div class="text-center py-4">
@@ -1134,25 +1131,23 @@ function viewMovementHistory(batchCode) {
 }
 
 function viewTraceability(batchCode) {
-    // First close any existing modals and remove all backdrops
-    closeAllModals();
+    console.log('viewTraceability called with:', batchCode);
     
     const modalElement = document.getElementById('traceabilityModal');
-    
-    // Destroy existing modal instance if it exists
-    const existingModal = bootstrap.Modal.getInstance(modalElement);
-    if (existingModal) {
-        existingModal.dispose();
-    }
-    
-    const modal = new bootstrap.Modal(modalElement, {
-        backdrop: true,
-        keyboard: true,
-        focus: true
-    });
     const content = document.getElementById('traceabilityContent');
     
-    // Show modal with loading state
+    if (!modalElement || !content) {
+        console.error('Traceability modal elements not found');
+        return;
+    }
+    
+    // Set modal title
+    const modalTitle = document.getElementById('traceabilityModalLabel');
+    if (modalTitle) {
+        modalTitle.innerHTML = '<i class="fas fa-search"></i> Batch Traceability - ' + batchCode;
+    }
+    
+    const modal = new bootstrap.Modal(modalElement);
     modal.show();
     content.innerHTML = `
         <div class="text-center py-4">
