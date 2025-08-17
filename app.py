@@ -123,6 +123,12 @@ def create_app():
     from routes.uom import uom_bp
     from routes.batch_tracking import batch_tracking_bp
     from routes.tally import tally_bp
+    
+    # Import enhanced batch tracking (deprecated - will be merged with main batch_tracking)
+    try:
+        from routes.enhanced_batch_tracking import enhanced_batch_bp
+    except ImportError:
+        enhanced_batch_bp = None
     from routes.packing import packing_bp
     from routes.tally_import import bp as tally_import_bp
     from routes.live_status import live_status_bp
@@ -250,9 +256,9 @@ def create_app():
     from routes.demo_price_access import demo_price_bp
     app.register_blueprint(demo_price_bp)
     
-    # Register enhanced batch tracking blueprint
-    from routes.enhanced_batch_tracking import enhanced_batch_bp
-    app.register_blueprint(enhanced_batch_bp)
+    # Register enhanced batch tracking blueprint (DISABLED - unified with main batch_tracking)
+    # from routes.enhanced_batch_tracking import enhanced_batch_bp
+    # app.register_blueprint(enhanced_batch_bp)
     
     # Setup performance monitoring for Tally-like speed
     from services.performance_monitor import setup_performance_monitoring

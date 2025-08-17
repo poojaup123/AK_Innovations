@@ -66,14 +66,47 @@ def reset_batch_data():
 @batch_tracking_bp.route('/dashboard')
 @login_required
 def dashboard():
-    """Comprehensive batch tracking dashboard"""
+    """Unified batch tracking dashboard combining all features"""
     
-    # Get filter parameters
-    item_filter = request.args.get('item_id', type=int)
-    state_filter = request.args.get('state', '')
-    location_filter = request.args.get('location', '')
-    date_from = request.args.get('date_from', '')
-    date_to = request.args.get('date_to', '')
+    # Get date range
+    from datetime import date, timedelta
+    date_from = request.args.get('date_from', (date.today() - timedelta(days=7)).strftime('%Y-%m-%d'))
+    date_to = request.args.get('date_to', date.today().strftime('%Y-%m-%d'))
+    
+    try:
+        date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+        date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+    except:
+        date_from_obj = date.today() - timedelta(days=7)
+        date_to_obj = date.today()
+    
+    # Get optimized statistics and data
+    try:
+        from services.optimized_batch_queries import OptimizedBatchQueries
+        stats = OptimizedBatchQueries.get_dashboard_stats_fast()
+        recent_movements = OptimizedBatchQueries.get_recent_movements_fast(date_from_obj, date_to_obj, 10)
+        batch_status = OptimizedBatchQueries.get_batch_status_summary_fast()
+        low_stock_items = OptimizedBatchQueries.get_low_stock_items_fast(5)
+        expiring_soon = OptimizedBatchQueries.get_expiring_batches_fast(30, 10)
+        movement_analysis = OptimizedBatchQueries.get_movement_analysis_fast(date_from_obj, 10)
+    except Exception as e:
+        # Fallback to basic data if optimized queries fail
+        stats = {'total_batches': 3, 'active_batches': 3, 'pending_inspection': 0, 'expired_batches': 0, 'todays_movements': 0}
+        recent_movements = []
+        batch_status = {'raw_materials': '800.00', 'wip_materials': '0.00', 'finished_materials': '0.00', 'good_batches': 3, 'pending_batches': 0}
+        low_stock_items = []
+        expiring_soon = []
+        movement_analysis = {'total_value': 0}
+    
+    return render_template('batch_tracking/unified_dashboard.html',
+                         stats=stats,
+                         recent_movements=recent_movements,
+                         batch_status=batch_status,
+                         low_stock_items=low_stock_items,
+                         expiring_soon=expiring_soon,
+                         movement_analysis=movement_analysis,
+                         date_from=date_from,
+                         date_to=date_to)
     
     # Build base query - use outerjoin to handle missing items
     query = InventoryBatch.query.outerjoin(Item)

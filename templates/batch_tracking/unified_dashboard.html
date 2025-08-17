@@ -1,0 +1,531 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Tracking Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: transform 0.2s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .process-summary-card {
+        border-left: 4px solid #007bff;
+        transition: all 0.3s ease;
+    }
+    
+    .process-summary-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .batch-status-card {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: #f8f9fa;
+    }
+    
+    .movement-item {
+        border-left: 3px solid #007bff;
+        background: #f8f9fa;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        border-radius: 0 5px 5px 0;
+    }
+    
+    .batch-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .batch-card {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        background: white;
+        transition: all 0.3s ease;
+    }
+    
+    .batch-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+    }
+    
+    .live-indicator {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-layer-group text-primary"></i> Batch Tracking Dashboard</h2>
+                    <p class="text-muted mb-0">Complete visibility into batch movements, quality, and traceability</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('enhanced_batch.consumption_report') }}" class="btn btn-outline-info">
+                        <i class="fas fa-chart-line"></i> Consumption Report
+                    </a>
+                    <a href="{{ url_for('enhanced_batch.live_movements') }}" class="btn btn-success">
+                        <i class="fas fa-eye live-indicator"></i> Live Movements
+                    </a>
+                    <a href="{{ url_for('batch_tracking.quality_control') }}" class="btn btn-outline-warning">
+                        <i class="fas fa-shield-alt"></i> Quality Control
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label for="date_from" class="form-label">From Date</label>
+                            <input type="date" class="form-control" id="date_from" name="date_from" 
+                                   value="{{ date_from }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_to" class="form-label">To Date</label>
+                            <input type="date" class="form-control" id="date_to" name="date_to" 
+                                   value="{{ date_to }}">
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Update View
+                            </button>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <span class="badge bg-success">{{ stats.total_batches or 0 }} Total Batches</span>
+                            <span class="badge bg-info">{{ stats.active_batches or 0 }} Active</span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Statistics Row -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4 class="mb-1">{{ stats.total_batches or 0 }}</h4>
+                    <small>Total Batches</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4 class="mb-1">{{ stats.active_batches or 0 }}</h4>
+                    <small>Active Batches</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h4 class="mb-1">{{ stats.pending_inspection or 0 }}</h4>
+                    <small>Pending Inspection</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h4 class="mb-1">{{ stats.expired_batches or 0 }}</h4>
+                    <small>Expired Batches</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4 class="mb-1">{{ stats.todays_movements or 0 }}</h4>
+                    <small>Today's Movements</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body text-center">
+                    <h4 class="mb-1">{{ movement_analysis.total_value or 0 }}</h4>
+                    <small>Total Value</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Process-wise Inventory Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card process-summary-card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-cogs"></i> Process-wise Inventory Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded">
+                                <h3 class="text-muted">{{ batch_status.raw_materials or "0.00" }}</h3>
+                                <span class="text-muted">Raw Materials</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded">
+                                <h3 class="text-primary">{{ batch_status.wip_materials or "0.00" }}</h3>
+                                <span class="text-primary">WIP Materials</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded">
+                                <h3 class="text-success">{{ batch_status.finished_materials or "0.00" }}</h3>
+                                <span class="text-success">Finished Materials</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Recent Batch Movements -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-exchange-alt"></i> Recent Batch Movements</h5>
+                    <a href="{{ url_for('enhanced_batch.live_movements') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye"></i> View Live
+                    </a>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    {% if recent_movements %}
+                        {% for movement in recent_movements %}
+                        <div class="movement-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ movement.batch_code }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ movement.item_name }}</small>
+                                    <br>
+                                    <span class="badge 
+                                        {% if movement.movement_type == 'in' %}bg-success
+                                        {% elif movement.movement_type == 'out' %}bg-danger
+                                        {% else %}bg-info{% endif %}">
+                                        {{ movement.movement_type.upper() }}
+                                    </span>
+                                    <span class="ms-2">{{ movement.quantity }} {{ movement.unit }}</span>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">{{ movement.timestamp.strftime('%H:%M') }}</small>
+                                    <br>
+                                    <small class="text-muted">{{ movement.timestamp.strftime('%m/%d') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No recent movements found</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Batch Status Summary -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Batch Status Summary</h5>
+                </div>
+                <div class="card-body">
+                    {% if batch_status %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="batch-status-card">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <span class="badge bg-success">Good</span>
+                                            <h4 class="mt-2">{{ batch_status.good_batches or 0 }}</h4>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="batch-status-card">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <span class="badge bg-warning">Pending</span>
+                                            <h4 class="mt-2">{{ batch_status.pending_batches or 0 }}</h4>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="fas fa-clock fa-2x text-warning"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Low Stock Items -->
+                        {% if low_stock_items %}
+                        <div class="mt-3">
+                            <h6 class="text-danger"><i class="fas fa-exclamation-triangle"></i> Low Stock Alert</h6>
+                            {% for item in low_stock_items %}
+                            <div class="alert alert-warning py-2 mb-1">
+                                <small><strong>{{ item.item_name }}</strong> - Only {{ item.available_quantity }} {{ item.unit }} remaining</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Expiring Soon -->
+                        {% if expiring_soon %}
+                        <div class="mt-3">
+                            <h6 class="text-warning"><i class="fas fa-calendar-times"></i> Expiring Soon</h6>
+                            {% for batch in expiring_soon %}
+                            <div class="alert alert-info py-2 mb-1">
+                                <small><strong>{{ batch.batch_code }}</strong> expires on {{ batch.expiry_date.strftime('%Y-%m-%d') if batch.expiry_date else 'N/A' }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No batch status data available</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Details with Filters -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="mb-0"><i class="fas fa-boxes"></i> Batch Details</h5>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <select class="form-select form-select-sm" id="item-filter">
+                                        <option value="">All Items</option>
+                                        <!-- Will be populated via JavaScript -->
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <select class="form-select form-select-sm" id="state-filter">
+                                        <option value="">All States</option>
+                                        <option value="raw">Raw Material</option>
+                                        <option value="wip">Work in Progress</option>
+                                        <option value="finished">Finished Goods</option>
+                                        <option value="scrap">Scrap</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control form-control-sm" id="location-filter" placeholder="Storage location">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="batch-grid" id="batch-grid">
+                        <!-- Batch cards will be loaded here -->
+                        <div class="text-center py-4">
+                            <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                            <p class="text-muted mt-2">Loading batch details...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh functionality
+let refreshInterval;
+
+function startAutoRefresh() {
+    refreshInterval = setInterval(() => {
+        // Only refresh if user is active on the page
+        if (!document.hidden) {
+            location.reload();
+        }
+    }, 60000); // Refresh every minute
+}
+
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    startAutoRefresh();
+    loadBatchDetails();
+    
+    // Stop auto-refresh when user leaves the page
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            stopAutoRefresh();
+        } else {
+            startAutoRefresh();
+        }
+    });
+    
+    // Filter event listeners
+    document.getElementById('item-filter').addEventListener('change', loadBatchDetails);
+    document.getElementById('state-filter').addEventListener('change', loadBatchDetails);
+    document.getElementById('location-filter').addEventListener('input', debounce(loadBatchDetails, 500));
+});
+
+// Debounce function for search input
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Load batch details with filtering
+function loadBatchDetails() {
+    const batchGrid = document.getElementById('batch-grid');
+    batchGrid.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-muted"></i><p class="text-muted mt-2">Loading batch details...</p></div>';
+    
+    // Simulate loading - in real implementation, this would be an AJAX call
+    setTimeout(() => {
+        batchGrid.innerHTML = `
+            <div class="batch-card">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="badge bg-primary">ITE-2508-003</span>
+                    <span class="status-badge bg-success">Good</span>
+                </div>
+                <h6 class="mb-1">Ms sheet</h6>
+                <small class="text-muted">Material: Raw Material</small>
+                <div class="mt-2">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <small class="text-muted">Available</small>
+                            <div class="fw-bold">800.0</div>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">WIP</small>
+                            <div class="fw-bold text-primary">0.0</div>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">Finished</small>
+                            <div class="fw-bold text-success">0.0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="batch-card">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="badge bg-primary">ITE-2508-002</span>
+                    <span class="status-badge bg-success">Good</span>
+                </div>
+                <h6 class="mb-1">Ms sheet</h6>
+                <small class="text-muted">Material: Raw Material</small>
+                <div class="mt-2">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <small class="text-muted">Available</small>
+                            <div class="fw-bold">0.0</div>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">WIP</small>
+                            <div class="fw-bold text-primary">0.0</div>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">Finished</small>
+                            <div class="fw-bold text-success">0.0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="batch-card">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <span class="badge bg-primary">ITE-2508-001</span>
+                    <span class="status-badge bg-success">Good</span>
+                </div>
+                <h6 class="mb-1">Ms sheet</h6>
+                <small class="text-muted">Material: Raw Material</small>
+                <div class="mt-2">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <small class="text-muted">Available</small>
+                            <div class="fw-bold">0.0</div>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">WIP</small>
+                            <div class="fw-bold text-primary">0.0</div>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted">Finished</small>
+                            <div class="fw-bold text-success">0.0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 500);
+}
+
+// Cleanup when leaving page
+window.addEventListener('beforeunload', function() {
+    stopAutoRefresh();
+});
+</script>
+{% endblock %}
