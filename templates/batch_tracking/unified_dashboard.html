@@ -43,24 +43,27 @@
         border-radius: 0 5px 5px 0;
     }
     
-    .batch-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 1rem;
-        margin-top: 1rem;
+    .table-responsive {
+        border-radius: 0.375rem;
     }
     
-    .batch-card {
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 1rem;
-        background: white;
-        transition: all 0.3s ease;
+    .sticky-top {
+        position: sticky;
+        top: 0;
+        z-index: 10;
     }
     
-    .batch-card:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        transform: translateY(-2px);
+    .table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+    
+    .table tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
     }
     
     .status-badge {
@@ -373,12 +376,191 @@
                         </div>
                     </div>
                 </div>
-                <div class="card-body">
-                    <div class="batch-grid" id="batch-grid">
-                        <!-- Batch cards will be loaded here -->
-                        <div class="text-center py-4">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="batch-details-table">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th>Batch Code</th>
+                                    <th>Item Name</th>
+                                    <th>Material Type</th>
+                                    <th class="text-center">Available</th>
+                                    <th class="text-center">WIP</th>
+                                    <th class="text-center">Finished</th>
+                                    <th class="text-center">Location</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="batch-tbody">
+                                <!-- Sample data showing proper table structure -->
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">ITE-2508-003</span>
+                                    </td>
+                                    <td>
+                                        <strong>Ms sheet</strong>
+                                        <br><small class="text-muted">Item Code: MS-001</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">Raw Material</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong class="text-success">800.0</strong>
+                                        <br><small class="text-muted">kg</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong class="text-primary">0.0</strong>
+                                        <br><small class="text-muted">kg</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong class="text-info">0.0</strong>
+                                        <br><small class="text-muted">kg</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-light text-dark">MAIN-STORE</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success">Good</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-info btn-sm" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-primary btn-sm" title="Movement History">
+                                                <i class="fas fa-history"></i>
+                                            </button>
+                                            <button class="btn btn-outline-success btn-sm" title="Traceability">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">ITE-2508-002</span>
+                                    </td>
+                                    <td>
+                                        <strong>Ms sheet</strong>
+                                        <br><small class="text-muted">Item Code: MS-001</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">Raw Material</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong class="text-muted">0.0</strong>
+                                        <br><small class="text-muted">kg</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong class="text-muted">0.0</strong>
+                                        <br><small class="text-muted">kg</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong class="text-muted">0.0</strong>
+                                        <br><small class="text-muted">kg</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-light text-dark">FINISHED-GOODS</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success">Good</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-info btn-sm" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-primary btn-sm" title="Movement History">
+                                                <i class="fas fa-history"></i>
+                                            </button>
+                                            <button class="btn btn-outline-success btn-sm" title="Traceability">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">ITE-2508-001</span>
+                                    </td>
+                                    <td>
+                                        <strong>Ms sheet</strong>
+                                        <br><small class="text-muted">Item Code: MS-001</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">Raw Material</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong class="text-muted">0.0</strong>
+                                        <br><small class="text-muted">kg</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong class="text-muted">0.0</strong>
+                                        <br><small class="text-muted">kg</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong class="text-muted">0.0</strong>
+                                        <br><small class="text-muted">kg</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-light text-dark">MAIN-STORE</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success">Good</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-info btn-sm" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-primary btn-sm" title="Movement History">
+                                                <i class="fas fa-history"></i>
+                                            </button>
+                                            <button class="btn btn-outline-success btn-sm" title="Traceability">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <!-- Loading state -->
+                        <div id="loading-state" class="text-center py-4" style="display: none;">
                             <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
                             <p class="text-muted mt-2">Loading batch details...</p>
+                        </div>
+                        
+                        <!-- Empty state -->
+                        <div id="empty-state" class="text-center py-5" style="display: none;">
+                            <i class="fas fa-boxes fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No batches found</h5>
+                            <p class="text-muted">Try adjusting your filter criteria or create new batches.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="card-footer bg-light">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <small class="text-muted">Showing 3 batches found</small>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <nav aria-label="Batch pagination">
+                                    <ul class="pagination pagination-sm mb-0">
+                                        <li class="page-item disabled">
+                                            <span class="page-link">Previous</span>
+                                        </li>
+                                        <li class="page-item active">
+                                            <span class="page-link">1</span>
+                                        </li>
+                                        <li class="page-item disabled">
+                                            <span class="page-link">Next</span>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -441,86 +623,149 @@ function debounce(func, wait) {
 
 // Load batch details with filtering
 function loadBatchDetails() {
-    const batchGrid = document.getElementById('batch-grid');
-    batchGrid.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-muted"></i><p class="text-muted mt-2">Loading batch details...</p></div>';
+    const loadingState = document.getElementById('loading-state');
+    const tableBody = document.getElementById('batch-tbody');
+    const emptyState = document.getElementById('empty-state');
     
-    // Simulate loading - in real implementation, this would be an AJAX call
+    // Show loading state
+    loadingState.style.display = 'block';
+    tableBody.style.display = 'none';
+    emptyState.style.display = 'none';
+    
+    // Get filter values
+    const itemFilter = document.getElementById('item-filter').value;
+    const stateFilter = document.getElementById('state-filter').value;
+    const locationFilter = document.getElementById('location-filter').value;
+    
+    // Simulate API call with filtering
     setTimeout(() => {
-        batchGrid.innerHTML = `
-            <div class="batch-card">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <span class="badge bg-primary">ITE-2508-003</span>
-                    <span class="status-badge bg-success">Good</span>
+        loadingState.style.display = 'none';
+        
+        // Apply filters to data (this would be done on backend in real implementation)
+        let filteredData = getBatchData();
+        
+        if (itemFilter) {
+            filteredData = filteredData.filter(batch => batch.item_name.toLowerCase().includes(itemFilter.toLowerCase()));
+        }
+        if (stateFilter) {
+            filteredData = filteredData.filter(batch => batch.material_type.toLowerCase().includes(stateFilter));
+        }
+        if (locationFilter) {
+            filteredData = filteredData.filter(batch => batch.location.toLowerCase().includes(locationFilter.toLowerCase()));
+        }
+        
+        if (filteredData.length === 0) {
+            emptyState.style.display = 'block';
+        } else {
+            tableBody.style.display = 'table-row-group';
+            updateBatchTable(filteredData);
+        }
+    }, 300);
+}
+
+// Get sample batch data
+function getBatchData() {
+    return [
+        {
+            batch_code: 'ITE-2508-003',
+            item_name: 'Ms sheet',
+            item_code: 'MS-001',
+            material_type: 'Raw Material',
+            available: 800.0,
+            wip: 0.0,
+            finished: 0.0,
+            location: 'MAIN-STORE',
+            status: 'Good',
+            unit: 'kg'
+        },
+        {
+            batch_code: 'ITE-2508-002',
+            item_name: 'Ms sheet',
+            item_code: 'MS-001',
+            material_type: 'Raw Material',
+            available: 0.0,
+            wip: 0.0,
+            finished: 0.0,
+            location: 'FINISHED-GOODS',
+            status: 'Good',
+            unit: 'kg'
+        },
+        {
+            batch_code: 'ITE-2508-001',
+            item_name: 'Ms sheet',
+            item_code: 'MS-001',
+            material_type: 'Raw Material',
+            available: 0.0,
+            wip: 0.0,
+            finished: 0.0,
+            location: 'MAIN-STORE',
+            status: 'Good',
+            unit: 'kg'
+        }
+    ];
+}
+
+// Update batch table with data
+function updateBatchTable(data) {
+    const tbody = document.getElementById('batch-tbody');
+    tbody.innerHTML = data.map(batch => `
+        <tr>
+            <td>
+                <span class="badge bg-primary">${batch.batch_code}</span>
+            </td>
+            <td>
+                <strong>${batch.item_name}</strong>
+                <br><small class="text-muted">Item Code: ${batch.item_code}</small>
+            </td>
+            <td>
+                <span class="badge bg-secondary">${batch.material_type}</span>
+            </td>
+            <td class="text-center">
+                <strong class="${batch.available > 0 ? 'text-success' : 'text-muted'}">${batch.available.toFixed(1)}</strong>
+                <br><small class="text-muted">${batch.unit}</small>
+            </td>
+            <td class="text-center">
+                <strong class="${batch.wip > 0 ? 'text-primary' : 'text-muted'}">${batch.wip.toFixed(1)}</strong>
+                <br><small class="text-muted">${batch.unit}</small>
+            </td>
+            <td class="text-center">
+                <strong class="${batch.finished > 0 ? 'text-info' : 'text-muted'}">${batch.finished.toFixed(1)}</strong>
+                <br><small class="text-muted">${batch.unit}</small>
+            </td>
+            <td class="text-center">
+                <span class="badge bg-light text-dark">${batch.location}</span>
+            </td>
+            <td class="text-center">
+                <span class="badge bg-${batch.status === 'Good' ? 'success' : 'warning'}">${batch.status}</span>
+            </td>
+            <td class="text-center">
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-info btn-sm" title="View Details" onclick="viewBatchDetails('${batch.batch_code}')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm" title="Movement History" onclick="viewMovementHistory('${batch.batch_code}')">
+                        <i class="fas fa-history"></i>
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" title="Traceability" onclick="viewTraceability('${batch.batch_code}')">
+                        <i class="fas fa-search"></i>
+                    </button>
                 </div>
-                <h6 class="mb-1">Ms sheet</h6>
-                <small class="text-muted">Material: Raw Material</small>
-                <div class="mt-2">
-                    <div class="row text-center">
-                        <div class="col-4">
-                            <small class="text-muted">Available</small>
-                            <div class="fw-bold">800.0</div>
-                        </div>
-                        <div class="col-4">
-                            <small class="text-muted">WIP</small>
-                            <div class="fw-bold text-primary">0.0</div>
-                        </div>
-                        <div class="col-4">
-                            <small class="text-muted">Finished</small>
-                            <div class="fw-bold text-success">0.0</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="batch-card">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <span class="badge bg-primary">ITE-2508-002</span>
-                    <span class="status-badge bg-success">Good</span>
-                </div>
-                <h6 class="mb-1">Ms sheet</h6>
-                <small class="text-muted">Material: Raw Material</small>
-                <div class="mt-2">
-                    <div class="row text-center">
-                        <div class="col-4">
-                            <small class="text-muted">Available</small>
-                            <div class="fw-bold">0.0</div>
-                        </div>
-                        <div class="col-4">
-                            <small class="text-muted">WIP</small>
-                            <div class="fw-bold text-primary">0.0</div>
-                        </div>
-                        <div class="col-4">
-                            <small class="text-muted">Finished</small>
-                            <div class="fw-bold text-success">0.0</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="batch-card">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <span class="badge bg-primary">ITE-2508-001</span>
-                    <span class="status-badge bg-success">Good</span>
-                </div>
-                <h6 class="mb-1">Ms sheet</h6>
-                <small class="text-muted">Material: Raw Material</small>
-                <div class="mt-2">
-                    <div class="row text-center">
-                        <div class="col-4">
-                            <small class="text-muted">Available</small>
-                            <div class="fw-bold">0.0</div>
-                        </div>
-                        <div class="col-4">
-                            <small class="text-muted">WIP</small>
-                            <div class="fw-bold text-primary">0.0</div>
-                        </div>
-                        <div class="col-4">
-                            <small class="text-muted">Finished</small>
-                            <div class="fw-bold text-success">0.0</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }, 500);
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Action functions for batch operations
+function viewBatchDetails(batchCode) {
+    alert(`View details for batch: ${batchCode}`);
+}
+
+function viewMovementHistory(batchCode) {
+    alert(`View movement history for batch: ${batchCode}`);
+}
+
+function viewTraceability(batchCode) {
+    alert(`View traceability for batch: ${batchCode}`);
 }
 
 // Cleanup when leaving page
