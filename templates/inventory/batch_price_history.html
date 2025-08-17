@@ -2,10 +2,6 @@
 
 {% block title %}Batch Price History{% endblock %}
 
-{% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-{% endblock %}
-
 {% block content %}
 <div class="container-fluid mt-4">
     <div class="row mb-4">
@@ -404,4 +400,8 @@ function showPriceChart(batchId, batchCode) {
         });
 }
 </script>
-{% endblock %}
+{% endblock content %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock scripts %}
