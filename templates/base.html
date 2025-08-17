@@ -9,6 +9,16 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/no-flicker.css') }}" rel="stylesheet">
     <style>
+        html {
+            overflow-y: auto;
+            height: auto;
+        }
+        
+        body {
+            overflow-y: auto;
+            height: auto;
+        }
+        
         .sidebar {
             height: 100vh;
             position: fixed;
@@ -64,10 +74,8 @@
         .main-content {
             margin-left: 250px;
             padding: 1.5rem; /* 24px - Professional medium spacing */
-            min-height: calc(100vh - 80px);
+            min-height: 100vh;
             background-color: #ffffff;
-            overflow-y: auto;
-            max-height: calc(100vh - 80px);
         }
         .nav-item {
             margin-bottom: 0.25rem; /* 4px - Consistent micro spacing */
@@ -180,7 +188,7 @@
         }
     </style>
 </head>
-<body class="d-flex flex-column min-vh-100 preload">
+<body class="preload">
     <!-- Mobile Navigation Toggle -->
     {% if current_user.is_authenticated %}
     <button class="btn btn-primary d-md-none position-fixed" id="sidebarToggle" style="top: 10px; left: 10px; z-index: 1050;">
