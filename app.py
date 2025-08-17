@@ -250,6 +250,10 @@ def create_app():
     from routes.demo_price_access import demo_price_bp
     app.register_blueprint(demo_price_bp)
     
+    # Register enhanced batch tracking blueprint
+    from routes.enhanced_batch_tracking import enhanced_batch_bp
+    app.register_blueprint(enhanced_batch_bp)
+    
     # Template context processors
     @app.context_processor
     def utility_processor():

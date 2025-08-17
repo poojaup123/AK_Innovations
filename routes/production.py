@@ -16,6 +16,7 @@ from utils import generate_production_number
 from services.job_card_generator import generate_job_cards_for_production
 from services.production_service import ProductionService
 from utils.batch_tracking import BatchTracker
+from services.unified_batch_tracking import UnifiedBatchTrackingService
 from datetime import datetime, timedelta, date
 import json
 from forms_daily_production import DailyProductionUpdateForm, QuickStatusUpdateForm

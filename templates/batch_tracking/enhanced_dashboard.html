@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block title %}Enhanced Batch Tracking Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+.batch-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid var(--bs-primary);
+}
+.batch-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+}
+.movement-item {
+    border-left: 3px solid var(--bs-info);
+    margin-bottom: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(13, 202, 240, 0.1);
+    border-radius: 0 8px 8px 0;
+}
+.batch-status-badge {
+    font-size: 0.85em;
+    padding: 0.25rem 0.5rem;
+}
+.quantity-display {
+    font-weight: 600;
+    color: var(--bs-primary);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="fas fa-barcode text-primary"></i> Enhanced Batch Tracking Dashboard</h1>
+            <p class="lead">Complete visibility into batch movements, quality, and traceability</p>
+        </div>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">From Date</label>
+                            <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">To Date</label>
+                            <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="submit" class="btn btn-primary d-block">
+                                <i class="fas fa-filter"></i> Update View
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card stat-card text-center">
+                <div class="card-body">
+                    <h3>{{ stats.total_batches }}</h3>
+                    <small>Total Batches</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stat-card text-center">
+                <div class="card-body">
+                    <h3>{{ stats.active_batches }}</h3>
+                    <small>Active Batches</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stat-card text-center">
+                <div class="card-body">
+                    <h3>{{ stats.pending_inspection }}</h3>
+                    <small>Pending Inspection</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stat-card text-center">
+                <div class="card-body">
+                    <h3>{{ stats.expired_batches }}</h3>
+                    <small>Expired Batches</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stat-card text-center">
+                <div class="card-body">
+                    <h3>{{ stats.movements_today }}</h3>
+                    <small>Today's Movements</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="text-center">
+                <a href="{{ url_for('enhanced_batch.live_movements') }}" class="btn btn-success btn-lg">
+                    <i class="fas fa-eye"></i><br>Live Movements
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Row -->
+    <div class="row">
+        <!-- Recent Movements -->
+        <div class="col-lg-8">
+            <div class="card batch-card">
+                <div class="card-header">
+                    <h5><i class="fas fa-exchange-alt"></i> Recent Batch Movements</h5>
+                </div>
+                <div class="card-body">
+                    <div style="max-height: 400px; overflow-y: auto;">
+                        {% for movement in recent_movements %}
+                        <div class="movement-item">
+                            <div class="row align-items-center">
+                                <div class="col-md-3">
+                                    <strong>{{ movement.batch.batch_code if movement.batch else 'Unknown' }}</strong><br>
+                                    <small class="text-muted">{{ movement.item.name if movement.item else 'Unknown Item' }}</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="quantity-display">{{ movement.quantity }}</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <span class="badge bg-secondary">{{ movement.from_state or 'New' }}</span>
+                                    <i class="fas fa-arrow-right mx-1"></i>
+                                    <span class="badge bg-primary">{{ movement.to_state or 'Consumed' }}</span>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="badge bg-info">{{ movement.movement_type.replace('_', ' ').title() }}</span>
+                                </div>
+                                <div class="col-md-2">
+                                    <small class="text-muted">{{ movement.timestamp.strftime('%H:%M') }}</small><br>
+                                    <small>{{ movement.user.username if movement.user else 'System' }}</small>
+                                </div>
+                            </div>
+                            {% if movement.notes %}
+                            <div class="row mt-1">
+                                <div class="col-12">
+                                    <small class="text-muted"><i class="fas fa-sticky-note"></i> {{ movement.notes }}</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Summary -->
+        <div class="col-lg-4">
+            <div class="card batch-card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie"></i> Batch Status Summary</h5>
+                </div>
+                <div class="card-body">
+                    {% for status in batch_status %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="batch-status-badge badge bg-{% if status.inspection_status == 'passed' %}success{% elif status.inspection_status == 'failed' %}danger{% elif status.inspection_status == 'pending' %}warning{% else %}secondary{% endif %}">
+                            {{ status.inspection_status.title() }}
+                        </span>
+                        <div class="text-end">
+                            <strong>{{ status.count }}</strong> batches<br>
+                            <small class="text-muted">{{ "%.1f"|format(status.total_qty or 0) }} units</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Movement Analysis -->
+            <div class="card batch-card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-bar"></i> Movement Analysis</h5>
+                </div>
+                <div class="card-body">
+                    {% for movement_type, count, total_qty in movement_analysis %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge bg-info">{{ movement_type.replace('_', ' ').title() }}</span>
+                        <div class="text-end">
+                            <strong>{{ count }}</strong> movements<br>
+                            <small class="text-muted">{{ "%.1f"|format(total_qty or 0) }} units</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts Row -->
+    <div class="row mt-4">
+        <!-- Low Stock Items -->
+        <div class="col-lg-6">
+            <div class="card batch-card border-warning">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Low Stock Alert</h5>
+                </div>
+                <div class="card-body">
+                    {% if low_stock_items %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Available</th>
+                                    <th>Min Stock</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in low_stock_items %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.name }}</strong><br>
+                                        <small class="text-muted">{{ item.code }}</small>
+                                    </td>
+                                    <td class="text-danger">{{ "%.1f"|format(item.available_qty or 0) }}</td>
+                                    <td>{{ "%.1f"|format(item.minimum_stock or 0) }}</td>
+                                    <td>
+                                        <a href="{{ url_for('enhanced_batch.item_batch_overview', item_id=item.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No items below minimum stock level</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Expiring Batches -->
+        <div class="col-lg-6">
+            <div class="card batch-card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-clock"></i> Expiring Soon (30 days)</h5>
+                </div>
+                <div class="card-body">
+                    {% if expiring_soon %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Batch Code</th>
+                                    <th>Item</th>
+                                    <th>Quantity</th>
+                                    <th>Expiry Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for batch in expiring_soon %}
+                                <tr class="{% if batch.is_expired %}table-danger{% elif batch.expiry_date <= (moment().date() + timedelta(days=7)) %}table-warning{% endif %}">
+                                    <td><strong>{{ batch.batch_code }}</strong></td>
+                                    <td>{{ batch.item.name if batch.item else 'Unknown' }}</td>
+                                    <td>{{ "%.1f"|format(batch.total_quantity) }}</td>
+                                    <td>
+                                        {{ batch.expiry_date.strftime('%Y-%m-%d') if batch.expiry_date else 'N/A' }}
+                                        {% if batch.is_expired %}
+                                        <span class="badge bg-danger">EXPIRED</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('enhanced_batch.batch_traceability', batch_id=batch.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-search"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No batches expiring in the next 30 days</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('enhanced_batch.pending_inspection') }}" class="btn btn-warning btn-block">
+                                <i class="fas fa-search"></i> Pending Inspections
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('enhanced_batch.consumption_report') }}" class="btn btn-info btn-block">
+                                <i class="fas fa-chart-line"></i> Consumption Report
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('batch_tracking.dashboard') }}" class="btn btn-secondary btn-block">
+                                <i class="fas fa-barcode"></i> Standard Dashboard
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary btn-block" data-bs-toggle="modal" data-bs-target="#batchSearchModal">
+                                <i class="fas fa-search"></i> Find Batch
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Batch Search Modal -->
+<div class="modal fade" id="batchSearchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Find Batch</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="batchSearchInput" placeholder="Enter batch code or supplier batch number...">
+                </div>
+                <div id="batchSearchResults"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Batch search functionality
+document.getElementById('batchSearchInput').addEventListener('input', function() {
+    const query = this.value.trim();
+    if (query.length >= 2) {
+        fetch(`{{ url_for('enhanced_batch.api_batch_search') }}?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                const resultsDiv = document.getElementById('batchSearchResults');
+                if (data.length > 0) {
+                    resultsDiv.innerHTML = data.map(batch => `
+                        <div class="border rounded p-2 mb-2">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>${batch.batch_code}</strong><br>
+                                    <small class="text-muted">${batch.item_name}</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <small>Raw: ${batch.qty_raw} | WIP: ${batch.qty_wip} | Finished: ${batch.qty_finished}</small><br>
+                                    <small>Location: ${batch.location}</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <a href="{{ url_for('enhanced_batch.batch_traceability', batch_id=0) }}".replace('0', batch.id) class="btn btn-sm btn-primary">View</a>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    resultsDiv.innerHTML = '<p class="text-muted">No batches found</p>';
+                }
+            });
+    }
+});
+
+// Auto-refresh every 30 seconds for live data
+setTimeout(function() {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}

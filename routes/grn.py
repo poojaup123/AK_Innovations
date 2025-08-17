@@ -7,6 +7,7 @@ from models.grn import GRN, GRNLineItem
 from models.batch import BatchMovementLedger, BatchConsumptionReport
 from forms_grn import GRNForm, GRNLineItemForm, QuickReceiveForm, QuickReceivePOForm, GRNSearchForm, MultiProcessQuickReceiveForm
 from services.batch_management import BatchManager, BatchValidator
+from services.unified_batch_tracking import UnifiedBatchTrackingService
 from utils.documents import DocumentUploadManager, save_uploaded_documents
 from models.document import create_document_record
 from services.authentic_accounting_integration import AuthenticAccountingIntegration
@@ -134,20 +135,28 @@ def update_inventory_with_batch_tracking(grn):
         add_to_inventory = getattr(grn, 'add_to_inventory', True)
         
         for line_item in grn.line_items:
-            # Create batch using the BatchManager service with proper inventory flag
-            batch, message = BatchManager.create_batch_from_grn(line_item, add_to_inventory=add_to_inventory)
+            # Use unified batch tracking service for consistent batch creation
+            batch = UnifiedBatchTrackingService.create_batch_from_grn(line_item, current_user.id)
             
             if batch:
                 # Store batch reference in line item for traceability
                 line_item.batch_id = batch.id
                 
-                # Update item's main inventory quantities ONLY if add_to_inventory is True
+                # If add_to_inventory is True, approve inspection automatically
                 if add_to_inventory:
-                    item = line_item.item
-                    
-                    # Calculate quantities to add
                     quantity_passed = line_item.quantity_passed or line_item.quantity_received
                     quantity_rejected = line_item.quantity_rejected or 0
+                    
+                    # Approve inspection using unified service
+                    UnifiedBatchTrackingService.approve_inspection(
+                        batch.id, 
+                        quantity_passed, 
+                        quantity_rejected, 
+                        current_user.id
+                    )
+                    
+                    # Update item's main inventory quantities
+                    item = line_item.item
                     
                     # Add passed quantity to appropriate inventory state
                     if hasattr(item, 'qty_raw'):
@@ -159,16 +168,9 @@ def update_inventory_with_batch_tracking(grn):
                     if quantity_rejected > 0:
                         item.qty_scrap = (item.qty_scrap or 0) + quantity_rejected
                     
-                    # Update current_stock to reflect only good stock (excluding scrap)
-                    item.sync_stock()
-                        
                     # Sync current_stock with multi-state inventory
                     if hasattr(item, 'sync_stock'):
                         item.sync_stock()
-                else:
-                    # When add_to_inventory is False, items stay in inspection area
-                    # The batch will have qty_inspection > 0 and qty_raw = 0
-                    pass
                 
         db.session.commit()
         return True
@@ -253,14 +255,14 @@ def create_inspection_batches(grn):
     """Create batches for materials in inspection area (not yet in inventory)"""
     try:
         for line_item in grn.line_items:
-            # Use BatchManager to create inspection batches (NOT added to inventory)
-            batch, message = BatchManager.create_batch_from_grn(line_item, add_to_inventory=False)
+            # Use unified batch tracking service to create inspection batches
+            batch = UnifiedBatchTrackingService.create_batch_from_grn(line_item, current_user.id)
             
             if batch:
                 # Store batch reference in line item for traceability
                 line_item.batch_id = batch.id
             else:
-                print(f"Failed to create inspection batch: {message}")
+                print(f"Failed to create inspection batch for item {line_item.item.name}")
                 return False
             
         db.session.commit()
