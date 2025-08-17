@@ -978,11 +978,14 @@ class Item(db.Model):
         # Fallback to unit_price if no price history found
         return self.unit_price
     
-    def update_price(self, new_price, price_type='purchase', effective_date=None, source=None, source_reference=None, notes=None, user_id=None):
+    def update_price(self, new_price, price_type='purchase', effective_date=None, source=None, source_reference=None, notes=None, user_id=None, cascade_update=True):
         """Update item price and maintain price history"""
         from datetime import date as date_class
         if effective_date is None:
             effective_date = date_class.today()
+        
+        # Store old price for cascading
+        old_price = self.unit_price or 0
         
         # Check if a price entry already exists for this date and type
         existing_entry = ItemPriceHistory.query.filter(
@@ -1016,6 +1019,29 @@ class Item(db.Model):
         # Update the main unit_price field if this is a purchase price update
         if price_type == 'purchase':
             self.unit_price = new_price
+        elif price_type == 'standard':
+            self.unit_price = new_price
+        
+        # Trigger price cascading if enabled and price actually changed
+        if cascade_update and abs(new_price - old_price) > 0.01:  # Avoid cascading for tiny changes
+            try:
+                from services.price_cascading import PriceCascadingService
+                # Import here to avoid circular imports
+                cascade_result = PriceCascadingService.cascade_price_update(
+                    item_id=self.id,
+                    new_price=new_price,
+                    price_type=price_type,
+                    user_id=user_id,
+                    source=f'Material Price Update ({source or "Manual"})'
+                )
+                # Log cascading results
+                if cascade_result.get('success'):
+                    print(f"Price cascade: Updated {cascade_result.get('items_updated', 0)} items and {cascade_result.get('boms_updated', 0)} BOMs")
+                else:
+                    print(f"Price cascade failed: {cascade_result.get('message', 'Unknown error')}")
+            except Exception as e:
+                print(f"Price cascading error: {str(e)}")
+                # Don't fail the main price update if cascading fails
         
         return True
     
