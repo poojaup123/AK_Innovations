@@ -1069,6 +1069,16 @@ def bom_tree_view():
         labor_cost_per_unit = bom.calculated_labor_cost_per_unit or 0
         corrected_total_cost = material_cost + (labor_cost_per_unit * (bom.output_quantity or 1))
         
+        # Debug logging - remove this after fixing
+        if bom.bom_code == 'BOM-2025-0001':
+            print(f"DEBUG BOM Tree View - BOM: {bom.bom_code}")
+            print(f"  Material Cost: {material_cost}")
+            print(f"  Output Quantity: {bom.output_quantity}")
+            print(f"  Material Cost Per Unit: {material_cost / (bom.output_quantity or 1)}")
+            print(f"  Labor Cost Per Unit: {labor_cost_per_unit}")
+            print(f"  Corrected Total Cost: {corrected_total_cost}")
+            print(f"  Total Cost Per Unit: {corrected_total_cost / (bom.output_quantity or 1)}")
+        
         # Add calculated costs to the tree
         tree['calculated_material_cost'] = material_cost
         tree['material_cost_per_unit'] = material_cost / (bom.output_quantity or 1)
