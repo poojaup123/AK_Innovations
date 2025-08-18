@@ -366,8 +366,8 @@
                             <span class="text-muted" style="margin-left: 1rem;">└─ Very small cost due to high-yield Base Plate production (365 pieces)</span><br>
                         {% endif %}
                     {% endif %}
-                    {% if overhead_cost_per_unit > 0 %}
-                        <span class="text-secondary">🏭 Overhead Cost: ₹{{ "%.2f"|format(overhead_cost_per_unit) }}</span><br>
+                    {% if tree.overhead_cost_per_unit and tree.overhead_cost_per_unit > 0 %}
+                        <span class="text-secondary">🏭 Overhead Cost (per unit): ₹{{ "%.2f"|format(tree.overhead_cost_per_unit) }}</span><br>
                     {% endif %}
                     {% if tree.bom.freight_cost_per_unit and tree.bom.freight_cost_per_unit > 0 %}
                         {% set unit_weight = tree.bom.unit_weight or 0.114 %}
