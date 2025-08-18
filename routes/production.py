@@ -1065,9 +1065,15 @@ def bom_tree_view():
             item_cost = (item.qty_required or 0) * (item.item.unit_price or 0) if item.item else 0
             material_cost += item_cost
         
+        # Calculate correct total cost including labor
+        labor_cost_per_unit = bom.calculated_labor_cost_per_unit or 0
+        corrected_total_cost = material_cost + (labor_cost_per_unit * (bom.output_quantity or 1))
+        
         # Add calculated costs to the tree
         tree['calculated_material_cost'] = material_cost
         tree['material_cost_per_unit'] = material_cost / (bom.output_quantity or 1)
+        tree['corrected_total_cost'] = corrected_total_cost
+        tree['total_cost_per_unit'] = corrected_total_cost / (bom.output_quantity or 1)
         
         bom_trees.append(tree)
     
