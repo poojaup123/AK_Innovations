@@ -367,13 +367,36 @@
                         {% endif %}
                     {% endif %}
                     {% if overhead_cost_per_unit > 0 %}
-                        <span class="text-secondary">🏭 Overhead: ₹{{ "%.2f"|format(overhead_cost_per_unit) }}</span><br>
+                        <span class="text-secondary">🏭 Overhead Cost: ₹{{ "%.2f"|format(overhead_cost_per_unit) }}</span><br>
                     {% endif %}
+                    {% if tree.bom.freight_cost_per_unit and tree.bom.freight_cost_per_unit > 0 %}
+                        <span class="text-info">🚚 Freight Cost: ₹{{ "%.2f"|format(tree.bom.freight_cost_per_unit) }}</span><br>
+                    {% endif %}
+                    <hr style="margin: 0.3rem 0;">
+                    <strong class="text-primary">📊 Total Cost: ₹{{ "%.2f"|format(total_cost_per_unit) }}</strong><br>
                     {% if tree.bom.estimated_scrap_percent and tree.bom.estimated_scrap_percent > 0 %}
-                        <span class="text-danger">♻️ Scrap Allowance: {{ '%.3f'|format(tree.bom.estimated_scrap_percent) }}%</span><br>
+                        {% set scrap_recovery_value = (tree.bom.scrap_value_recovery_percent or 30) / 100 * material_cost_per_unit * (tree.bom.estimated_scrap_percent / 100) %}
+                        <span class="text-success">♻️ Scrap Recovery ({{ '%.1f'|format(tree.bom.scrap_value_recovery_percent or 30) }}%): -₹{{ "%.2f"|format(scrap_recovery_value) }}</span><br>
+                        {% set net_cost = total_cost_per_unit - scrap_recovery_value %}
+                        <strong class="text-success">🔧 Net Manufacturing Cost: ₹{{ "%.2f"|format(net_cost) }}</strong><br>
+                        {% if tree.bom.markup_percentage and tree.bom.markup_percentage > 0 %}
+                            {% set markup_value = net_cost * (tree.bom.markup_percentage / 100) %}
+                            <span class="text-warning">📈 Markup ({{ '%.1f'|format(tree.bom.markup_percentage) }}%): ₹{{ "%.2f"|format(markup_value) }}</span><br>
+                            {% set final_cost = net_cost + markup_value %}
+                            <strong class="text-success">🎯 Final Unit Cost: ₹{{ "%.2f"|format(final_cost) }}</strong>
+                        {% else %}
+                            <strong class="text-success">🎯 Final Unit Cost: ₹{{ "%.2f"|format(net_cost) }}</strong>
+                        {% endif %}
+                    {% else %}
+                        {% if tree.bom.markup_percentage and tree.bom.markup_percentage > 0 %}
+                            {% set markup_value = total_cost_per_unit * (tree.bom.markup_percentage / 100) %}
+                            <span class="text-warning">📈 Markup ({{ '%.1f'|format(tree.bom.markup_percentage) }}%): ₹{{ "%.2f"|format(markup_value) }}</span><br>
+                            {% set final_cost = total_cost_per_unit + markup_value %}
+                            <strong class="text-success">🎯 Final Unit Cost: ₹{{ "%.2f"|format(final_cost) }}</strong>
+                        {% else %}
+                            <strong class="text-success">🎯 Final Unit Cost: ₹{{ "%.2f"|format(total_cost_per_unit) }}</strong>
+                        {% endif %}
                     {% endif %}
-                    <hr style="margin: 0.5rem 0;">
-                    <strong class="text-success">💰 Total Cost: ₹{{ "%.2f"|format(tree.total_cost_per_unit if tree.total_cost_per_unit is defined else tree.bom.total_cost_per_unit) }}</strong>
                 </div>
                 {% endif %}
 
