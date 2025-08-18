@@ -1065,9 +1065,15 @@ def bom_tree_view():
             item_cost = (item.qty_required or 0) * (item.item.unit_price or 0) if item.item else 0
             material_cost += item_cost
         
-        # Calculate correct total cost including labor
+        # Calculate correct total cost including labor and freight (per kg basis)
         labor_cost_per_unit = bom.calculated_labor_cost_per_unit or 0
-        corrected_total_cost = material_cost + (labor_cost_per_unit * (bom.output_quantity or 1))
+        unit_weight = bom.unit_weight or 0.114  # kg per unit
+        freight_cost_per_unit_calculated = (bom.freight_cost_per_unit or 10) * unit_weight  # ₹10/kg × 0.114kg = ₹1.14
+        overhead_cost_per_unit = bom.overhead_cost_per_unit or 0
+        
+        # Total cost = Material + Labor + Overhead + Freight (all per unit, then multiply by quantity)
+        cost_per_unit = (material_cost / (bom.output_quantity or 1)) + labor_cost_per_unit + overhead_cost_per_unit + freight_cost_per_unit_calculated
+        corrected_total_cost = cost_per_unit * (bom.output_quantity or 1)
         
 
         # Add calculated costs to the tree
@@ -1078,8 +1084,8 @@ def bom_tree_view():
         
         # Add additional cost components for detailed breakdown
         tree['labor_cost_per_unit'] = labor_cost_per_unit
-        tree['overhead_cost_per_unit'] = bom.overhead_cost_per_unit or 0
-        tree['freight_cost_per_unit'] = bom.freight_cost_per_unit or 0
+        tree['overhead_cost_per_unit'] = overhead_cost_per_unit
+        tree['freight_cost_per_unit_calculated'] = freight_cost_per_unit_calculated
         
         bom_trees.append(tree)
     
