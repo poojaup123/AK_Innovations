@@ -96,7 +96,7 @@
                                         <div class="input-group">
                                             <span class="input-group-text">₹</span>
                                             <input type="number" class="form-control bg-light" 
-                                                   value="{{ '%.2f'|format((bom.total_cost_per_unit / bom.output_quantity) if bom.output_quantity and bom.output_quantity > 0 else (bom.product.unit_price or 0)) }}" 
+                                                   value="{{ '%.2f'|format(product_unit_cost if product_unit_cost is defined else ((bom.total_cost_per_unit / bom.output_quantity) if bom.output_quantity and bom.output_quantity > 0 else (bom.product.unit_price or 0))) }}" 
                                                    step="0.01" readonly
                                                    title="Cost per single unit (BOM total cost ÷ output quantity)">
                                             <span class="input-group-text bg-success text-white" 
@@ -127,7 +127,7 @@
                                         <div class="input-group">
                                             <span class="input-group-text">₹</span>
                                             <input type="number" class="form-control bg-light" 
-                                                   value="{{ '%.2f'|format(bom.total_cost_per_unit or 0) }}" 
+                                                   value="{{ '%.2f'|format(bom_total_cost if bom_total_cost is defined else (bom.total_cost_per_unit or 0)) }}" 
                                                    step="0.01" readonly>
                                             <span class="input-group-text bg-success text-white" 
                                                   title="Total BOM cost including materials, labor, overhead">

@@ -1329,9 +1329,15 @@ def edit_bom(id):
     material_cost = bom.total_material_cost
     total_cost_per_unit = bom.total_cost_per_unit
     
-    # Calculate per-unit costs for template
+    # Calculate per-unit costs for template - CORRECTED for proper unit pricing
     material_cost_per_unit = material_cost / max(bom.output_quantity, 1)
     labor_cost_per_unit = bom.calculated_labor_cost_per_unit
+    
+    # BOM Total Cost should be calculated considering output quantity
+    # Product Unit Cost = total_cost_per_unit ÷ output_quantity for individual unit cost
+    product_unit_cost = total_cost_per_unit / max(bom.output_quantity, 1)
+    # BOM Total Cost = total_cost_per_unit (total cost for the batch)
+    bom_total_cost = total_cost_per_unit
     
     # Get materials for adding new items - include all relevant types
     try:
@@ -1365,6 +1371,8 @@ def edit_bom(id):
                          material_cost_per_unit=material_cost_per_unit,
                          labor_cost_per_unit=labor_cost_per_unit,
                          total_cost_per_unit=total_cost_per_unit,
+                         product_unit_cost=product_unit_cost,
+                         bom_total_cost=bom_total_cost,
                          uom_choices=uom_choices)
 
 @production_bp.route('/bom/<int:bom_id>/add_item', methods=['POST'])
