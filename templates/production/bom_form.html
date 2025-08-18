@@ -520,18 +520,18 @@
                                                 <hr>
                                                 <h6 class="text-primary">Complete Unit Cost <small class="text-muted">(per unit)</small></h6>
                                                 {% if bom and bom.output_quantity %}
-                                                {% set material_cost_per_unit = material_cost_per_unit if material_cost_per_unit is defined else (bom.total_material_cost / (bom.output_quantity if bom.output_quantity and bom.output_quantity > 0 else 1)) %}
-                                                {% set labor_cost_per_unit = labor_cost_per_unit if labor_cost_per_unit is defined else bom.calculated_labor_cost_per_unit %}
+                                                {% set calculated_material_cost_per_unit = material_cost_per_unit if material_cost_per_unit is defined else (material_cost / (bom.output_quantity if bom.output_quantity and bom.output_quantity > 0 else 1)) %}
+                                                {% set calculated_labor_cost_per_unit = labor_cost_per_unit if labor_cost_per_unit is defined else bom.labor_cost_per_unit %}
                                                 
                                                 <table class="table table-sm" id="costBreakdownTable">
                                                     <tbody>
                                                         <tr>
                                                             <td>Material Cost <small class="text-muted">(per unit)</small>:</td>
-                                                            <td class="text-end"><strong>₹<span id="materialCostDisplay">{{ '{:.2f}'.format(material_cost_per_unit) }}</span></strong></td>
+                                                            <td class="text-end"><strong>₹<span id="materialCostDisplay">{{ '{:.2f}'.format(calculated_material_cost_per_unit) }}</span></strong></td>
                                                         </tr>
                                                         <tr>
                                                             <td>Labor Cost <small class="text-muted">(per unit)</small>:</td>
-                                                            <td class="text-end"><strong>₹<span id="laborCostDisplay">{{ '{:.2f}'.format(labor_cost_per_unit) }}</span></strong></td>
+                                                            <td class="text-end"><strong>₹<span id="laborCostDisplay">{{ '{:.2f}'.format(calculated_labor_cost_per_unit) }}</span></strong></td>
                                                         </tr>
                                                         <tr id="overheadRow">
                                                             <td>Overhead Cost <small class="text-muted">(per unit)</small> (<span id="overheadPercentDisplay">0</span>%):</td>
@@ -543,7 +543,7 @@
                                                         </tr>
                                                         <tr class="table-secondary">
                                                             <td><strong>Total Cost <small class="text-muted">(per unit)</small>:</strong></td>
-                                                            <td class="text-end"><strong>₹<span id="totalCostDisplay">{{ '{:.2f}'.format(material_cost_per_unit + labor_cost_per_unit) }}</span></strong></td>
+                                                            <td class="text-end"><strong>₹<span id="totalCostDisplay">{{ '{:.2f}'.format(calculated_material_cost_per_unit + calculated_labor_cost_per_unit) }}</span></strong></td>
                                                         </tr>
                                                         <tr class="text-success" id="scrapRecoveryRow">
                                                             <td>Scrap Recovery <small class="text-muted">(per unit)</small> (<span id="scrapPercentDisplay">0</span>%):</td>
@@ -551,7 +551,7 @@
                                                         </tr>
                                                         <tr class="table-info">
                                                             <td><strong>Net Manufacturing Cost <small class="text-muted">(per unit)</small>:</strong></td>
-                                                            <td class="text-end"><strong>₹<span id="netCostDisplay">{{ '{:.2f}'.format(material_cost_per_unit + labor_cost_per_unit) }}</span></strong></td>
+                                                            <td class="text-end"><strong>₹<span id="netCostDisplay">{{ '{:.2f}'.format(calculated_material_cost_per_unit + calculated_labor_cost_per_unit) }}</span></strong></td>
                                                         </tr>
                                                         <tr class="text-warning" id="markupRow">
                                                             <td>Markup <small class="text-muted">(per unit)</small> (<span id="markupPercentDisplay">0</span>%):</td>
@@ -559,12 +559,12 @@
                                                         </tr>
                                                         <tr class="table-success" id="sellingPriceRow">
                                                             <td><strong>Selling Price <small class="text-muted">(per unit)</small>:</strong></td>
-                                                            <td class="text-end"><strong>₹<span id="sellingPriceDisplay">{{ '{:.2f}'.format(material_cost_per_unit + labor_cost_per_unit) }}</span></strong></td>
+                                                            <td class="text-end"><strong>₹<span id="sellingPriceDisplay">{{ '{:.2f}'.format(calculated_material_cost_per_unit + calculated_labor_cost_per_unit) }}</span></strong></td>
                                                         </tr>
                                                         {% if bom and bom.product %}
                                                         <tr class="table-primary border-top-2">
                                                             <td><strong><i class="fas fa-cube text-primary"></i> {{ bom.product.name }} Final Unit Cost:</strong></td>
-                                                            <td class="text-end"><strong class="fs-6">₹<span id="outputMaterialCost">{{ '{:.2f}'.format(material_cost_per_unit + labor_cost_per_unit) }}</span></strong></td>
+                                                            <td class="text-end"><strong class="fs-6">₹<span id="outputMaterialCost">{{ '{:.2f}'.format(calculated_material_cost_per_unit + calculated_labor_cost_per_unit) }}</span></strong></td>
                                                         </tr>
                                                         {% endif %}
                                                     </tbody>
@@ -575,8 +575,8 @@
                                                 
                                                 <script>
                                                 // Store base costs for calculations (already converted to per-unit)
-                                                const materialCostPerUnit = {{ material_cost_per_unit|default(0) }};
-                                                const laborCostPerUnit = {{ labor_cost_per_unit|default(0) }};
+                                                const materialCostPerUnit = {{ calculated_material_cost_per_unit|default(0) }};
+                                                const laborCostPerUnit = {{ calculated_labor_cost_per_unit|default(0) }};
                                                 const outputQuantity = {{ bom.output_quantity if bom and bom.output_quantity else 1 }};
                                                 
                                                 function updateCostBreakdown() {
