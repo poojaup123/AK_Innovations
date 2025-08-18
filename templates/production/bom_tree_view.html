@@ -308,10 +308,10 @@
 
 
                 <!-- Cost Summary -->
-                {% if tree.bom.total_material_cost and tree.bom.total_material_cost > 0 %}
+                {% if tree.calculated_material_cost and tree.calculated_material_cost > 0 %}
                 <div class="cost-summary">
                     <i class="fas fa-calculator"></i> <strong>Cost Breakdown (Per Unit):</strong><br>
-                    {% set material_cost_per_unit = tree.bom.total_material_cost / (tree.bom.output_quantity or 1.0) %}
+                    {% set material_cost_per_unit = tree.material_cost_per_unit %}
                     {% set comprehensive_labor_cost = tree.bom.total_labor_cost_per_unit %}
                     {% set overhead_cost_per_unit = tree.bom.overhead_cost_per_unit or 0 %}
                     {% set total_cost_per_unit = material_cost_per_unit + comprehensive_labor_cost + overhead_cost_per_unit %}

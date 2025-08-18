@@ -1057,7 +1057,19 @@ def bom_tree_view():
     # Build tree structure for all top-level BOMs
     bom_trees = []
     for bom in top_level_boms:
-        bom_trees.append(build_bom_tree(bom))
+        tree = build_bom_tree(bom)
+        
+        # Calculate correct material cost for this BOM
+        material_cost = 0
+        for item in bom.items:
+            item_cost = (item.qty_required or 0) * (item.item.unit_price or 0) if item.item else 0
+            material_cost += item_cost
+        
+        # Add calculated costs to the tree
+        tree['calculated_material_cost'] = material_cost
+        tree['material_cost_per_unit'] = material_cost / (bom.output_quantity or 1)
+        
+        bom_trees.append(tree)
     
     return render_template('production/bom_tree_view.html', bom_trees=bom_trees)
 
