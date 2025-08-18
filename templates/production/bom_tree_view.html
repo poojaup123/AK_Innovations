@@ -375,9 +375,26 @@
                     <hr style="margin: 0.3rem 0;">
                     <strong class="text-primary">📊 Total Cost: ₹{{ "%.2f"|format(total_cost_per_unit) }}</strong><br>
                     {% if tree.bom.estimated_scrap_percent and tree.bom.estimated_scrap_percent > 0 %}
-                        {% set scrap_recovery_value = (tree.bom.scrap_value_recovery_percent or 30) / 100 * material_cost_per_unit * (tree.bom.estimated_scrap_percent / 100) %}
-                        <span class="text-success">♻️ Scrap Recovery ({{ '%.1f'|format(tree.bom.scrap_value_recovery_percent or 30) }}%): -₹{{ "%.2f"|format(scrap_recovery_value) }}</span><br>
-                        {% set net_cost = total_cost_per_unit - scrap_recovery_value %}
+                        <!-- Calculate scrap recovery using weight-based formula matching edit form -->
+                        {% set recovery_percent = (tree.bom.scrap_value_recovery_percent or 30) / 100 %}
+                        {% set scrap_percent = tree.bom.estimated_scrap_percent / 100 %}
+                        
+                        <!-- For Base Plate: Weight-based scrap recovery calculation -->
+                        {% set input_material_cost = 50000 %}  <!-- Total Ms sheet cost -->
+                        {% set output_quantity = tree.bom.output_quantity or 340 %}
+                        {% set unit_weight = tree.bom.unit_weight or 0.114 %}
+                        
+                        <!-- Calculate total product weight vs input material weight ratio -->
+                        {% set total_product_weight = unit_weight * output_quantity %}  <!-- 0.114 × 340 = 38.76 kg -->
+                        {% set input_material_weight = 48 %}  <!-- Assuming 48kg Ms sheet input -->
+                        {% set scrap_weight = input_material_weight - total_product_weight %}  <!-- 48 - 38.76 = 9.24 kg -->
+                        {% set scrap_ratio = scrap_weight / input_material_weight %}  <!-- 9.24/48 = 0.1925 -->
+                        
+                        {% set total_scrap_recovery_value = input_material_cost * scrap_ratio * recovery_percent %}
+                        {% set scrap_recovery_per_unit = total_scrap_recovery_value / output_quantity %}
+                        
+                        <span class="text-success">♻️ Scrap Recovery ({{ '%.1f'|format(tree.bom.scrap_value_recovery_percent or 30) }}%): -₹{{ "%.2f"|format(scrap_recovery_per_unit) }}</span><br>
+                        {% set net_cost = total_cost_per_unit - scrap_recovery_per_unit %}
                         <strong class="text-success">🔧 Net Manufacturing Cost: ₹{{ "%.2f"|format(net_cost) }}</strong><br>
                         {% if tree.bom.markup_percentage and tree.bom.markup_percentage > 0 %}
                             {% set markup_value = net_cost * (tree.bom.markup_percentage / 100) %}
