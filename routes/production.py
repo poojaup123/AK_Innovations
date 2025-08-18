@@ -1325,8 +1325,8 @@ def edit_bom(id):
     # Get BOM items
     bom_items = BOMItem.query.filter_by(bom_id=bom.id).all()
     
-    # Calculate total BOM cost using the enhanced BOM model properties
-    material_cost = bom.total_material_cost
+    # Calculate material cost directly from BOM items to avoid model property issues
+    material_cost = sum(item.qty_required * item.unit_cost for item in bom_items) if bom_items else 0
     total_cost_per_unit = bom.total_cost_per_unit
     
     # Calculate per-unit costs for template - CORRECTED for proper unit pricing
