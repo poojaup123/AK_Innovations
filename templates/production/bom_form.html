@@ -488,7 +488,7 @@
                                                 <h6>Material Cost Summary</h6>
                                                 <div class="d-flex justify-content-between">
                                                     <span>Total Material Cost:</span>
-                                                    <strong>₹{{ '{:,.2f}'.format(bom.total_material_cost) if bom and bom.total_material_cost else '0.00' }}</strong>
+                                                    <strong>₹{{ '{:,.2f}'.format(material_cost) if material_cost else '0.00' }}</strong>
                                                 </div>
                                                 
                                                 <!-- Output Material Unit Cost -->
@@ -496,7 +496,7 @@
                                                 <div class="mt-2 p-2 bg-success bg-opacity-10 rounded">
                                                     <div class="d-flex justify-content-between align-items-center">
                                                         <span><i class="fas fa-tag text-success"></i> {{ bom.product.name }} Unit Cost:</span>
-                                                        <strong class="text-success">₹{{ '{:.2f}'.format(bom.total_material_cost / (bom.output_quantity if bom.output_quantity and bom.output_quantity > 0 else 1)) }}</strong>
+                                                        <strong class="text-success">₹{{ '{:.2f}'.format(material_cost_per_unit) }}</strong>
                                                     </div>
                                                     <small class="text-success">
                                                         <i class="fas fa-info-circle"></i> Manufacturing cost per {{ bom.product.name }}
@@ -507,10 +507,10 @@
                                                 {% if bom and bom.output_quantity and bom.output_quantity > 1 %}
                                                 <div class="d-flex justify-content-between text-primary mt-2">
                                                     <span>Cost per Unit:</span>
-                                                    <strong>₹{{ '{:.2f}'.format(bom.total_material_cost / bom.output_quantity) }}</strong>
+                                                    <strong>₹{{ '{:.2f}'.format(material_cost_per_unit) }}</strong>
                                                 </div>
                                                 <small class="text-info">
-                                                    <i class="fas fa-calculator"></i> ₹{{ '{:,.0f}'.format(bom.total_material_cost) }} ÷ {{ '{:,.0f}'.format(bom.output_quantity) }} units = ₹{{ '{:.2f}'.format(bom.total_material_cost / bom.output_quantity) }} per unit
+                                                    <i class="fas fa-calculator"></i> ₹{{ '{:,.0f}'.format(material_cost) }} ÷ {{ '{:,.0f}'.format(bom.output_quantity) }} units = ₹{{ '{:.2f}'.format(material_cost_per_unit) }} per unit
                                                 </small>
                                                 {% endif %}
                                                 <hr>
