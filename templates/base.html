@@ -82,30 +82,7 @@
             font-size: 14px;
         }
         
-        /* Quick Action Buttons */
-        .quick-actions {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
-        }
-        
-        .quick-action-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-        }
-        
-        .quick-action-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
-        }
+
         
         /* Loading States */
         .loading-overlay {
@@ -637,20 +614,7 @@
             {% endif %}
         </div>
         
-        <!-- Quick Action Buttons -->
-        {% if current_user.is_authenticated %}
-        <div class="quick-actions">
-            <a href="{{ url_for('inventory.add_item') }}" class="btn btn-primary quick-action-btn" title="Add New Item">
-                <i class="fas fa-plus"></i>
-            </a>
-            <a href="{{ url_for('jobwork.add_job_work') }}" class="btn btn-success quick-action-btn" title="Create Job Work">
-                <i class="fas fa-tools"></i>
-            </a>
-            <a href="{{ url_for('purchase.dashboard') }}" class="btn btn-warning quick-action-btn" title="Purchase Orders">
-                <i class="fas fa-shopping-cart"></i>
-            </a>
-        </div>
-        {% endif %}
+
     </div>
 
     <!-- Loading Overlay -->
