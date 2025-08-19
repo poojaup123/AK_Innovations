@@ -543,6 +543,7 @@ function renderExactCostBreakdown(treeData) {
                 <div class="d-flex align-items-center">
                     <span class="cost-icon me-2">🚚</span>
                     <strong>Freight Cost:</strong>
+                    ${treeData.unit_weight > 0 ? `<span class="text-muted ms-2">(${treeData.unit_weight}kg × ₹${treeData.freight_rate_per_kg}/kg)</span>` : ''}
                 </div>
                 <span class="text-warning fw-bold">₹${freightCost.toFixed(2)}</span>
             </div>

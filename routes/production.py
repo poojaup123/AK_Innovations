@@ -1129,7 +1129,12 @@ def api_bom_tree_data(bom_id):
         
         # Other cost components
         overhead_cost_per_unit = getattr(bom, 'overhead_cost_per_unit', 7.35)
-        freight_cost_per_unit = getattr(bom, 'freight_cost_per_unit', 1.14)
+        
+        # Calculate freight cost based on weight (₹10 per kg)
+        unit_weight = getattr(bom, 'unit_weight', 0.0)  # Weight per unit in kg
+        freight_rate_per_kg = 10.0  # ₹10 per kg
+        freight_cost_per_unit = unit_weight * freight_rate_per_kg if unit_weight > 0 else getattr(bom, 'freight_cost_per_unit', 1.14)
+        
         scrap_recovery_rate = getattr(bom, 'scrap_recovery_rate', 0.30)  # 30%
         scrap_recovery = material_cost_per_unit * scrap_recovery_rate
         markup_percentage = getattr(bom, 'markup_percentage', 0.03)  # 3%
@@ -1146,6 +1151,8 @@ def api_bom_tree_data(bom_id):
         tree_data['zinc_cost'] = zinc_cost
         tree_data['overhead_cost_per_unit'] = overhead_cost_per_unit
         tree_data['freight_cost_per_unit'] = freight_cost_per_unit
+        tree_data['unit_weight'] = unit_weight
+        tree_data['freight_rate_per_kg'] = freight_rate_per_kg
         tree_data['scrap_recovery'] = scrap_recovery
         tree_data['scrap_recovery_rate'] = scrap_recovery_rate
         tree_data['markup_amount'] = markup_amount
