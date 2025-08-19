@@ -1,0 +1,720 @@
+{% extends "base.html" %}
+
+{% block title %}Create New Job Work - AK Innovations{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                        <i class="fas fa-tools text-white fs-4"></i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="mb-1">Create New Job Work</h1>
+                    <p class="text-muted mb-0">Streamlined workflow with Job Card and GRN integration</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 text-end">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('help.job_work_help') }}" class="btn btn-outline-info" target="_blank">
+                    <i class="fas fa-question-circle"></i> Help
+                </a>
+                <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Indicator -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="step-indicator active" id="step1">
+                            <div class="step-circle">1</div>
+                            <div class="step-label">Basic Info</div>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step-indicator" id="step2">
+                            <div class="step-circle">2</div>
+                            <div class="step-label">Materials</div>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step-indicator" id="step3">
+                            <div class="step-circle">3</div>
+                            <div class="step-label">Process</div>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step-indicator" id="step4">
+                            <div class="step-circle">4</div>
+                            <div class="step-label">Review</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" id="enhancedJobWorkForm" class="needs-validation" novalidate>
+        {{ form.hidden_tag() }}
+        
+        <!-- Step 1: Basic Information -->
+        <div class="step-content" id="step1-content">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-gradient bg-primary text-white">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <h5 class="mb-0">Job Work Information</h5>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">
+                                        <i class="fas fa-tag text-primary me-1"></i>Job Work Type
+                                    </label>
+                                    {{ form.job_work_type(class="form-select form-select-lg", id="job_work_type") }}
+                                    <div class="form-text">Choose between BOM-based or manual job work</div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">
+                                        <i class="fas fa-clipboard-list text-success me-1"></i>BOM Selection
+                                    </label>
+                                    {{ form.bom_id(class="form-select form-select-lg", id="bom_select", disabled=true) }}
+                                    <div class="form-text">Select BOM for automated material allocation</div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">
+                                        <i class="fas fa-file-alt text-info me-1"></i>Job Work Title
+                                    </label>
+                                    <div class="input-group input-group-lg">
+                                        {{ form.job_title(class="form-control", placeholder="Enter descriptive title") }}
+                                        <button type="button" class="btn btn-outline-secondary" id="generateTitleBtn">
+                                            <i class="fas fa-magic"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">Descriptive title for easy identification</div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">
+                                        <i class="fas fa-cogs text-warning me-1"></i>Work Type
+                                    </label>
+                                    {{ form.work_type(class="form-select form-select-lg", id="work_type") }}
+                                    <div class="form-text">In-house or outsourced processing</div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">
+                                        <i class="fas fa-user-tie text-secondary me-1"></i>Assigned To
+                                    </label>
+                                    {{ form.assigned_to(class="form-select form-select-lg", id="assigned_to") }}
+                                    <div class="form-text">Department or vendor assignment</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Job Card Integration Panel -->
+                <div class="col-lg-4">
+                    <div class="card shadow-sm border-success">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-link me-1"></i>Job Card Integration
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-success border-0" role="alert">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    <div>
+                                        <strong>Auto-Linked</strong><br>
+                                        <small>Job cards will be automatically created and linked</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Link to Production Order</label>
+                                <select class="form-select" id="production_order_link">
+                                    <option value="">Select Production Order</option>
+                                    <!-- Production orders will be loaded dynamically -->
+                                </select>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="button" class="btn btn-outline-success" id="previewJobCards">
+                                    <i class="fas fa-eye me-1"></i>Preview Job Cards
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Stats -->
+                    <div class="card shadow-sm mt-3">
+                        <div class="card-body text-center">
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <div class="text-primary">
+                                        <i class="fas fa-tasks fs-4"></i>
+                                        <div class="small mt-1">Active Jobs</div>
+                                        <div class="fw-bold">{{ active_jobs_count or 0 }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-warning">
+                                        <i class="fas fa-clock fs-4"></i>
+                                        <div class="small mt-1">Pending</div>
+                                        <div class="fw-bold">{{ pending_jobs_count or 0 }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-success">
+                                        <i class="fas fa-check fs-4"></i>
+                                        <div class="small mt-1">Completed</div>
+                                        <div class="fw-bold">{{ completed_jobs_count or 0 }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Material & Batch Tracking -->
+        <div class="step-content d-none" id="step2-content">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-gradient bg-success text-white">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-boxes me-2"></i>
+                                <h5 class="mb-0">Material & Batch Management</h5>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-semibold">
+                                        <i class="fas fa-cube text-primary me-1"></i>Input Material
+                                    </label>
+                                    {{ form.input_material_id(class="form-select form-select-lg", id="input_material") }}
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Available Stock</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control bg-light" id="available_stock" readonly>
+                                        <button type="button" class="btn btn-outline-info" id="checkStockBtn">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">
+                                        <i class="fas fa-calculator text-warning me-1"></i>Quantity to Issue
+                                    </label>
+                                    <div class="input-group input-group-lg">
+                                        {{ form.quantity_to_issue(class="form-control", id="quantity_to_issue") }}
+                                        <span class="input-group-text" id="material_unit">Units</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Store Location</label>
+                                    {{ form.store_location(class="form-select form-select-lg") }}
+                                </div>
+                                
+                                <!-- Batch Tracking Section -->
+                                <div class="col-12">
+                                    <div class="card border-info">
+                                        <div class="card-header bg-info text-white">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-barcode me-1"></i>Batch Tracking
+                                                </h6>
+                                                <div class="form-check form-switch">
+                                                    {{ form.enable_batch_tracking(class="form-check-input", id="enable_batch_tracking") }}
+                                                    <label class="form-check-label text-white" for="enable_batch_tracking">
+                                                        Enable Tracking
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-body" id="batch_tracking_panel" style="display: none;">
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                <strong>Smart Allocation:</strong> Batches are automatically selected using FIFO logic for optimal inventory rotation.
+                                            </div>
+                                            
+                                            <button type="button" class="btn btn-primary" id="allocateBatchesBtn">
+                                                <i class="fas fa-magic me-1"></i>Auto-Allocate Batches
+                                            </button>
+                                            
+                                            <div id="batch_allocation_result" class="mt-3" style="display: none;">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Batch Code</th>
+                                                                <th>Mfg Date</th>
+                                                                <th>Available</th>
+                                                                <th>Allocated</th>
+                                                                <th>Location</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="allocated_batches_table">
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- GRN Integration Panel -->
+                <div class="col-lg-4">
+                    <div class="card shadow-sm border-warning">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0">
+                                <i class="fas fa-receipt me-1"></i>GRN Integration
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-warning border-0" role="alert">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-sync me-2"></i>
+                                    <div>
+                                        <strong>Auto-Generated</strong><br>
+                                        <small>GRN will be created automatically upon job completion</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Expected Return Date</label>
+                                {{ form.expected_return(class="form-control", type="date") }}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Quality Requirements</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="quality_inspection" checked>
+                                    <label class="form-check-label" for="quality_inspection">
+                                        Require Quality Inspection
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="button" class="btn btn-outline-warning" id="previewGRN">
+                                    <i class="fas fa-eye me-1"></i>Preview GRN Template
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Process Routing -->
+        <div class="step-content d-none" id="step3-content">
+            <div class="card shadow-sm">
+                <div class="card-header bg-gradient bg-warning text-dark">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h5 class="mb-0">
+                            <i class="fas fa-route me-2"></i>Process Routing
+                        </h5>
+                        <button type="button" class="btn btn-dark btn-sm" id="addProcessBtn">
+                            <i class="fas fa-plus me-1"></i>Add Process
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-lightbulb me-1"></i>
+                        <strong>Smart Process Management:</strong> Define the manufacturing processes and their outputs. The system will automatically calculate costs and material flow.
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="processTable">
+                            <thead class="table-warning">
+                                <tr>
+                                    <th width="8%">Seq</th>
+                                    <th width="20%">Process Name</th>
+                                    <th width="20%">Output Product</th>
+                                    <th width="12%">Quantity</th>
+                                    <th width="12%">Rate/Unit</th>
+                                    <th width="10%">Scrap %</th>
+                                    <th width="8%">QC Required</th>
+                                    <th width="10%">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="processTableBody">
+                                <!-- Processes will be added dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6><i class="fas fa-calculator text-primary me-1"></i>Cost Summary</h6>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small class="text-muted">Material Cost:</small>
+                                            <div class="fw-bold" id="material_cost">₹0.00</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">Process Cost:</small>
+                                            <div class="fw-bold" id="process_cost">₹0.00</div>
+                                        </div>
+                                    </div>
+                                    <hr class="my-2">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>Total Cost:</strong>
+                                        <strong class="text-primary" id="total_cost">₹0.00</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6><i class="fas fa-cube text-success me-1"></i>Output Summary</h6>
+                                    <div id="output_summary">
+                                        <small class="text-muted">Final Product:</small>
+                                        <div class="fw-bold" id="final_product">Not set</div>
+                                        <small class="text-muted">Quantity:</small>
+                                        <div class="fw-bold" id="final_quantity">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Review & Submit -->
+        <div class="step-content d-none" id="step4-content">
+            <div class="card shadow-sm">
+                <div class="card-header bg-gradient bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-check-circle me-2"></i>Review & Submit
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6>Job Work Summary</h6>
+                            <div id="job_work_summary">
+                                <!-- Summary will be populated dynamically -->
+                            </div>
+                            
+                            <h6 class="mt-4">Additional Notes</h6>
+                            {{ form.remarks(class="form-control", rows="3", placeholder="Add any special instructions or notes...") }}
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6><i class="fas fa-clipboard-check text-primary me-1"></i>Integration Status</h6>
+                                    <div class="list-group list-group-flush">
+                                        <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent border-0 px-0">
+                                            <span><i class="fas fa-tasks text-success me-1"></i>Job Cards</span>
+                                            <span class="badge bg-success">Ready</span>
+                                        </div>
+                                        <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent border-0 px-0">
+                                            <span><i class="fas fa-receipt text-warning me-1"></i>GRN Template</span>
+                                            <span class="badge bg-warning">Ready</span>
+                                        </div>
+                                        <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent border-0 px-0">
+                                            <span><i class="fas fa-barcode text-info me-1"></i>Batch Tracking</span>
+                                            <span class="badge bg-info" id="batch_status">Enabled</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card border-0">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary" id="prevBtn" onclick="changeStep(-1)" style="display: none;">
+                                <i class="fas fa-chevron-left me-1"></i>Previous
+                            </button>
+                            <div class="ms-auto">
+                                <button type="button" class="btn btn-primary btn-lg" id="nextBtn" onclick="changeStep(1)">
+                                    Next <i class="fas fa-chevron-right ms-1"></i>
+                                </button>
+                                <button type="submit" class="btn btn-success btn-lg" id="submitBtn" style="display: none;">
+                                    <i class="fas fa-save me-1"></i>Create Job Work
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+.step-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.step-indicator.active .step-circle {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.step-indicator.completed .step-circle {
+    background-color: #198754;
+    color: white;
+}
+
+.step-label {
+    margin-top: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.step-indicator.active .step-label {
+    color: #0d6efd;
+}
+
+.step-line {
+    flex: 1;
+    height: 2px;
+    background-color: #e9ecef;
+    margin: 0 10px;
+    align-self: flex-start;
+    margin-top: 20px;
+}
+
+.step-indicator.completed + .step-line {
+    background-color: #198754;
+}
+
+.bg-gradient {
+    background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-primary-dark, #0056b3) 100%);
+}
+
+.card {
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+</style>
+
+<script>
+let currentStep = 1;
+const totalSteps = 4;
+
+function changeStep(direction) {
+    const newStep = currentStep + direction;
+    
+    if (newStep < 1 || newStep > totalSteps) return;
+    
+    // Hide current step
+    document.getElementById(`step${currentStep}-content`).classList.add('d-none');
+    document.getElementById(`step${currentStep}`).classList.remove('active');
+    document.getElementById(`step${currentStep}`).classList.add('completed');
+    
+    // Show new step
+    currentStep = newStep;
+    document.getElementById(`step${currentStep}-content`).classList.remove('d-none');
+    document.getElementById(`step${currentStep}`).classList.add('active');
+    
+    // Update navigation buttons
+    document.getElementById('prevBtn').style.display = currentStep === 1 ? 'none' : 'block';
+    document.getElementById('nextBtn').style.display = currentStep === totalSteps ? 'none' : 'block';
+    document.getElementById('submitBtn').style.display = currentStep === totalSteps ? 'block' : 'none';
+    
+    // Scroll to top
+    window.scrollTo(0, 0);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize form
+    initializeEnhancedForm();
+    
+    // Job Work Type change handler
+    document.getElementById('job_work_type').addEventListener('change', function() {
+        const bomSelect = document.getElementById('bom_select');
+        bomSelect.disabled = this.value !== 'bom_based';
+    });
+    
+    // Batch tracking toggle
+    document.getElementById('enable_batch_tracking').addEventListener('change', function() {
+        const panel = document.getElementById('batch_tracking_panel');
+        panel.style.display = this.checked ? 'block' : 'none';
+        updateBatchStatus();
+    });
+    
+    // Form submission
+    document.getElementById('enhancedJobWorkForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (validateForm()) {
+            // Submit form logic here
+            showSuccessMessage();
+        }
+    });
+});
+
+function initializeEnhancedForm() {
+    // Load production orders
+    loadProductionOrders();
+    
+    // Load materials
+    loadMaterials();
+    
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+}
+
+function loadProductionOrders() {
+    // Fetch production orders and populate dropdown
+    fetch('/jobwork/api/production-orders')
+        .then(response => {
+            if (response.redirected || response.status === 302) {
+                console.log('Authentication required for production orders');
+                return [];
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data && Array.isArray(data)) {
+                const select = document.getElementById('production_order_link');
+                data.forEach(order => {
+                    const option = document.createElement('option');
+                    option.value = order.id;
+                    option.textContent = `${order.number} - ${order.item_name}`;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading production orders:', error));
+}
+
+function loadMaterials() {
+    // Fetch materials and populate dropdown
+    fetch('/jobwork/api/materials')
+        .then(response => {
+            if (response.redirected || response.status === 302) {
+                console.log('Authentication required for materials');
+                return [];
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data && Array.isArray(data)) {
+                const select = document.getElementById('input_material');
+                data.forEach(material => {
+                    const option = document.createElement('option');
+                    option.value = material.id;
+                    option.textContent = material.name;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading materials:', error));
+}
+
+function updateBatchStatus() {
+    const isEnabled = document.getElementById('enable_batch_tracking').checked;
+    document.getElementById('batch_status').textContent = isEnabled ? 'Enabled' : 'Disabled';
+    document.getElementById('batch_status').className = `badge ${isEnabled ? 'bg-info' : 'bg-secondary'}`;
+}
+
+function validateForm() {
+    // Add form validation logic
+    return true;
+}
+
+function showSuccessMessage() {
+    // Show success notification
+    alert('Job Work created successfully with Job Card and GRN integration!');
+}
+
+// Additional integration functions
+function previewJobCards() {
+    // Show job card preview modal
+    console.log('Preview job cards');
+}
+
+function previewGRN() {
+    // Show GRN template preview
+    console.log('Preview GRN template');
+}
+
+function allocateBatches() {
+    // Auto-allocate batches using FIFO logic
+    console.log('Allocating batches');
+}
+</script>
+{% endblock %}

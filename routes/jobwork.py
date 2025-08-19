@@ -431,10 +431,13 @@ def api_receive_from_jobwork():
 # API endpoint handled in inventory module
 
 @jobwork_bp.route('/add', methods=['GET', 'POST'])
-@login_required
+@login_required  
 def add_job_work():
-    """New redesigned job work form with BOM/Manual selection and process routing"""
+    """Enhanced job work creation with Job Card and GRN integration"""
     form = JobWorkForm()
+    
+    # Add API endpoints for production orders and materials
+    from models import Production
     
     # Check if coming from production suggestion
     from_suggestion = request.args.get('from_suggestion')
@@ -583,16 +586,25 @@ def add_job_work():
             flash(f'Error creating job work: {str(e)}', 'error')
             return redirect(url_for('jobwork.add_job_work'))
     
-    # GET request - show form
+    # GET request - show enhanced form
     title = "Create New Job Work"
-    return render_template('jobwork/form.html', 
+    
+    # Get statistics for the enhanced form
+    stats = {
+        'active_jobs_count': JobWork.query.filter(JobWork.status.in_(['sent', 'partial_received'])).count(),
+        'pending_jobs_count': JobWork.query.filter_by(status='sent').count(),
+        'completed_jobs_count': JobWork.query.filter_by(status='completed').count()
+    }
+    
+    return render_template('jobwork/enhanced_form.html', 
                          form=form, 
                          title=title,
                          from_suggestion=from_suggestion,
                          production_id=production_id,
                          suggested_bom_id=suggested_bom_id,
                          suggested_target_item_id=suggested_target_item_id,
-                         suggested_quantity=suggested_quantity)
+                         suggested_quantity=suggested_quantity,
+                         **stats)
 
 @jobwork_bp.route('/api/generate-job-number')
 @login_required
@@ -601,6 +613,45 @@ def api_generate_job_number():
     try:
         job_number = generate_job_number()
         return jsonify({'job_number': job_number})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@jobwork_bp.route('/api/production-orders')
+@login_required
+def api_production_orders():
+    """API endpoint for production orders integration"""
+    try:
+        from models import Production
+        productions = Production.query.filter_by(status='approved').order_by(Production.created_at.desc()).all()
+        orders_data = []
+        for prod in productions:
+            orders_data.append({
+                'id': prod.id,
+                'number': prod.order_number or f'PROD-{prod.id:05d}',
+                'item_name': prod.item.name if prod.item else 'Unknown',
+                'quantity': prod.quantity,
+                'status': prod.status
+            })
+        return jsonify(orders_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@jobwork_bp.route('/api/materials')
+@login_required
+def api_materials():
+    """API endpoint for materials dropdown"""
+    try:
+        items = Item.query.filter(Item.current_stock > 0).order_by(Item.name).all()
+        materials_data = []
+        for item in items:
+            materials_data.append({
+                'id': item.id,
+                'name': f"{item.name} ({item.code})",
+                'code': item.code,
+                'unit': item.unit_of_measure,
+                'stock': item.current_stock or 0
+            })
+        return jsonify(materials_data)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
