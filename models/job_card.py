@@ -145,7 +145,9 @@ class JobCard(db.Model):
     @property
     def completion_rate(self):
         """Calculate completion rate against planned quantity"""
-        if self.planned_quantity == 0:
+        if not self.planned_quantity or self.planned_quantity == 0:
+            return 0
+        if not self.completed_quantity:
             return 0
         return (self.completed_quantity / self.planned_quantity) * 100
     

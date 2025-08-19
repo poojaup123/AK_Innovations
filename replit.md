@@ -9,52 +9,46 @@ UI/UX Preferences: Compact, horizontally-arranged dashboard cards with consisten
 
 ## System Architecture
 
-### Performance Optimizations (August 2025)
-The system now delivers **Tally-like seamless performance** through systematic optimizations:
-- **Database Indexes**: 11+ critical indexes on high-traffic tables (inventory_batches, batch_movements, items, grn)
-- **Query Optimization**: Fixed cartesian products, consolidated dashboard queries from 6+ to 1-2 per page
-- **Intelligent Caching**: In-memory cache with 3-10 minute durations, smart invalidation, 70%+ hit ratio target
-- **Performance Monitoring**: Real-time tracking of page load times, query performance, system resources
-- **User Experience**: Removed auto-refresh overhead, optimized data loading limits, instant navigation
-- **Ultra-Fast Batch Queries**: New `OptimizedBatchQueries` service with direct SQL for complex aggregations
-- **Performance Grade A+**: Sub-second page loads, zero processing delays, smooth responsive interface
+### Performance Optimizations
+The system is optimized for Tally-like seamless performance through systematic optimizations including database indexes, query optimization, intelligent caching with smart invalidation, real-time performance monitoring, optimized data loading, and ultra-fast batch queries via direct SQL.
 
 ### UI/UX Decisions
-The application features a responsive Bootstrap 5 interface with a dark theme. It employs a dashboard-driven navigation with modular template inheritance, consistent styling across all tables (including sticky headers and responsive scrolling), and intelligent form layouts that dynamically show/hide fields based on user selections. Visual cues like color-coded badges, progress indicators, and intuitive icons are used. A customizable dashboard allows users to reorder and toggle the visibility of modules. **Modal System (Aug 2025):** Professional modal dialogs with comprehensive backdrop management, proper instance disposal, and automatic cleanup to prevent black overlay issues when clicking view buttons across the application.
+The application features a responsive Bootstrap 5 interface with a dark theme. It employs a dashboard-driven navigation with modular template inheritance, consistent styling across all tables, and intelligent form layouts. Visual cues like color-coded badges, progress indicators, and intuitive icons are used. A customizable dashboard allows users to reorder and toggle module visibility. A professional modal system prevents black overlay issues.
 
 ### Technical Implementations
-The system is built on a Flask backend using a modern application factory pattern with a professional `app/` package structure (`models/`, `routes/`, `services/`, and `utils/` directories). It uses SQLAlchemy ORM for database interactions, supporting both SQLite for development and PostgreSQL for production. Flask-Login manages authentication with role-based access control (Admin/Staff). Flask-WTF handles form validation and CSRF protection.
+The system is built on a Flask backend using an application factory pattern with a professional `app/` package structure. It uses SQLAlchemy ORM for database interactions, supporting SQLite for development and PostgreSQL for production. Flask-Login manages authentication with role-based access control, and Flask-WTF handles form validation and CSRF protection.
 
 Core features include:
-- **Multi-State Inventory:** Tracks items in Raw Material, Work in Progress (WIP), Finished Goods, and Scrap states, with process-specific WIP tracking.
-- **BOM-Driven Manufacturing:** Supports Bill of Materials for production planning, including material availability checks, automatic labor cost and scrap calculations, and BOM-driven material reservations.
-- **Unified Job Work System:** A single, comprehensive form manages all job work types (in-house/outsourced, single/multi-process), integrating with GRN for material receipt and inventory updates.
+- **Multi-State Inventory:** Tracks items in Raw Material, Work in Progress (WIP), Finished Goods, and Scrap states.
+- **BOM-Driven Manufacturing:** Supports Bill of Materials for production planning, material availability checks, automatic labor cost and scrap calculations, and BOM-driven material reservations.
+- **Unified Job Work System:** Manages all job work types (in-house/outsourced, single/multi-process), integrating with GRN.
 - **Automated Workflows:** Features automated Purchase Order status progression, automatic inventory updates, and GRN-based material receipt.
-- **Data Integrity & Automation:** Implements auto-generation for all unique codes, real-time stock validation, mechanisms to detect and correct data inconsistencies, and comprehensive accounting automation that creates proper journal entries for all financial transactions across modules.
+- **Data Integrity & Automation:** Implements auto-generation for unique codes, real-time stock validation, data inconsistency correction, and comprehensive accounting automation.
 - **Process Management:** Detailed tracking of manufacturing processes within BOMs, including step-by-step workflow, cost calculations, and individual process scrap tracking.
-- **Comprehensive Management Modules:** Includes robust systems for Employee Management, Department Management, Supplier/Business Partner Management, and Job Work Rates.
+- **Comprehensive Management Modules:** Includes systems for Employee, Department, Supplier/Business Partner, and Job Work Rates management.
 - **Reporting & Analytics:** Features a custom report builder, real-time dashboards for manufacturing intelligence, quality control KPIs, and expense analysis.
-- **Integrated Accounting System:** Implements a comprehensive Tally-like accounting system with Chart of Accounts, Journal Entry engine for automatic double-entry bookkeeping, GST-compliant invoice generation, automatic transaction recording, financial reporting (Trial Balance, P&L, Balance Sheet), Bank & Cash management, and comprehensive accounting automation. All financial operations across the entire ERP system are managed through a centralized accounting section with automatic double-entry bookkeeping.
-- **Professional Invoice Management:** Complete invoice creation and management system with Tally-style professional layouts, dynamic item management, automatic GST calculations, invoice finalization with accounting integration, and comprehensive print templates. Supports both sales and purchase invoices with proper tax handling and party management.
-- **3-Step GRN Workflow:** Enterprise-grade procurement workflow with GRN Clearing Account, GST Input Tax tracking, automated voucher generation, and complete Purchase-to-Payment cycle management. Features intelligent template handling for both Job Work and Purchase Order based GRNs.
-- **Authentic Accounting Architecture:** Pure accounting section that remains 100% untouched while all business modules integrate through a dedicated service, using existing authentic account codes without creating duplicates.
-- **Advanced Sheet Nesting Optimization:** AI-powered irregular shape nesting using OpenCV, scikit-image, and polygon3 libraries for complex manufacturing scenarios. Features image-based shape detection, multi-angle rotation optimization, scrap calculation, SVG layout generation, and comprehensive efficiency analysis with history tracking.
-- **Visual Component Scanning System:** Comprehensive AI-powered component detection from product images using computer vision. Features automatic component identification, inventory matching, dimension estimation, SVG layout generation, and BOM creation from detected components. Includes detection history, processing statistics, and integration with existing inventory management.
-- **Technical Drawing Analysis:** CAD file processing system supporting DXF/DWG/STP/STEP formats for precise component extraction. Features geometry-based component detection, annotation processing, dimension extraction, title block information parsing, filename analysis for 3D models, and BOM creation from technical drawings. Includes specialized detection for mechanical fasteners like anchor nuts, bolts, and security components. Complements photo-based detection with engineering precision.
-- **Job Card-Based Production Tracking:** Comprehensive job card system that breaks down production orders into sub-components and process steps. Features include process routing with planned vs actual quantities, worker/vendor assignments, target completion dates, daily status tracking with efficiency monitoring, progress visualization, and seamless integration with the Production Dashboard. Each production order can generate multiple job cards for different processes, enabling detailed tracking of manufacturing workflows and real-time production monitoring at the component level. The system includes automatic job card generation from BOMs, daily progress forms with batch tracking, supervisor and QC approval workflows, and complete integration with the production workflow. Supports complex manufacturing workflows where processes can be done in-house or outsourced, with automatic batch number management and comprehensive GRN integration for outsourced job cards. Includes production order management enhancements like cancel/delete functionality and automatic production updates on job card receipt. **Enhanced with sequential material-flow manufacturing logic:** Process routing enforces proper material dependencies where each manufacturing step can only begin after receiving material output from the previous process step (e.g., Bending waits for cut material from Cutting, Zinc plating waits for bent material from Bending), ensuring proper quantity flow control and preventing premature process initiation. **Outsourcing Quantity Tracking:** Process routing displays dedicated columns for outsourced material tracking, showing quantities sent to vendors and quantities received back via GRN receipts, providing complete visibility into outsourced process material flow with real-time status updates (Pending, Partial, Complete).
-- **Enhanced Process-Level Scrap Tracking System:** Comprehensive scrap tracking at the manufacturing process level with database schema enhancements (BOMProcess fields: scrap_weight_per_unit, scrap_tracking_enabled, input_material_source). Features intelligent material source logic where Process 1 shows BOM Components and Direct Raw Material options, while Process 2+ includes Previous Process Output for sequential manufacturing flow. Displays actual BOM component materials (e.g., "Ms sheet") in blue badges with quantity and unit tooltips. Includes scrap weight per unit (kg) and percentage tracking with automatic BOM total integration, enabling precise manufacturing waste management and cost analysis across multi-step production workflows. **Updated (Aug 2025)**: Sequential material flow now cascades output quantities and weights from Process 1 to Process 2 inputs automatically, while maintaining independent scrap calculations for each process. Enhanced UOM conversion system handles mixed units (g, kg, lbs, oz, ton) with accurate real-time calculations and visual feedback for high scrap percentages.
-- **BOM Output Quantity Synchronization System (Aug 2025):** Automatic synchronization of BOM output quantity with the final manufacturing process output quantity. Features intelligent visual indicators showing sync status (green checkmark when synced, orange warning when out of sync), manual "Sync from Processes" button for instant synchronization, and automatic sync triggers when processes are updated. The ProcessIntegrationService now includes output quantity synchronization along with labor costs, scrap percentages, and unit weights, ensuring complete consistency between BOM specifications and manufacturing process outputs.
-- **Unified Batch Tracking Integration (Aug 2025):** Complete integration of batch tracking across all modules using UnifiedBatchTrackingService and BatchIntegrationService. Features automatic batch creation from GRN receipts, FIFO/LIFO batch allocation for production, job card batch consumption tracking, sales dispatch batch management, and comprehensive traceability from supplier to customer. Includes real-time batch availability checking, automated inspection workflows, batch consolidation capabilities, and live movement tracking. Enhanced dashboard provides complete visibility into batch status, expiry tracking, quality control integration, and efficiency metrics with auto-refresh capabilities.
+- **Integrated Accounting System:** Implements a comprehensive Tally-like accounting system with Chart of Accounts, Journal Entry engine for automatic double-entry bookkeeping, GST-compliant invoice generation, and financial reporting.
+- **Professional Invoice Management:** Complete invoice creation and management system with Tally-style professional layouts, dynamic item management, and automatic GST calculations.
+- **3-Step GRN Workflow:** Enterprise-grade procurement workflow with GRN Clearing Account, GST Input Tax tracking, and automated voucher generation.
+- **Authentic Accounting Architecture:** Pure accounting section that remains untouched, with business modules integrating through a dedicated service.
+- **Advanced Sheet Nesting Optimization:** AI-powered irregular shape nesting using OpenCV, scikit-image, and polygon3 for complex manufacturing scenarios.
+- **Visual Component Scanning System:** AI-powered component detection from product images using computer vision, including automatic identification, inventory matching, and BOM creation.
+- **Technical Drawing Analysis:** CAD file processing system supporting DXF/DWG/STP/STEP formats for precise component extraction and BOM creation.
+- **Job Card-Based Production Tracking:** Comprehensive job card system for breaking down production orders into sub-components and process steps, featuring sequential material-flow manufacturing logic and outsourced quantity tracking.
+- **Job Card-Job Work Integration System:** Seamless integration between Job Cards and Job Work for dynamic workflow transitions between in-house and outsourced manufacturing processes.
+- **Enhanced Process-Level Scrap Tracking System:** Comprehensive scrap tracking at the manufacturing process level with intelligent material source logic and accurate UOM conversion.
+- **BOM Output Quantity Synchronization System:** Automatic synchronization of BOM output quantity with the final manufacturing process output quantity.
+- **Unified Batch Tracking Integration:** Complete integration of batch tracking across all modules for comprehensive traceability from supplier to customer.
 
 ### System Design Choices
 - **Application Factory Pattern:** Modern Flask architecture with proper package structure and organized separation of concerns.
-- **Domain-Driven Model Organization:** Models are organized by business domain (core, accounting, batch, bom, grn, jobwork) for better maintainability.
-- **Modular Blueprint Architecture:** Promotes code organization and scalability by separating features into distinct modules with proper URL prefixes.
-- **Unified Data Models:** A single `suppliers` table manages all business partners (suppliers, customers, vendors, transporters) via a `partner_type` field.
+- **Domain-Driven Model Organization:** Models are organized by business domain for better maintainability.
+- **Modular Blueprint Architecture:** Promotes code organization and scalability by separating features into distinct modules.
+- **Unified Data Models:** A single `suppliers` table manages all business partners via a `partner_type` field.
 - **Transactional Consistency:** Critical operations include comprehensive transaction handling to ensure data integrity.
-- **API-First Design:** Many features leverage dedicated API endpoints for real-time data fetching, supporting dynamic frontend interactions.
-- **Security:** CSRF protection, input validation, environment-based configuration, and role-based access control are fundamental design choices.
-- **Professional Code Structure:** Clean separation of `models/`, `routes/`, `services/`, and `utils/` ensures maintainable, enterprise-grade architecture.
+- **API-First Design:** Many features leverage dedicated API endpoints for real-time data fetching.
+- **Security:** CSRF protection, input validation, environment-based configuration, and role-based access control are fundamental.
+- **Professional Code Structure:** Clean separation of `models/`, `routes/`, `services/`, and `utils/` ensures maintainable architecture.
 
 ## External Dependencies
 
@@ -79,8 +73,10 @@ Core features include:
 
 ### Optimization Libraries
 - **Rectpack**: Python library for 2D rectangle packing optimization.
+- **OpenCV**: For image processing in AI features.
+- **scikit-image**: For image processing in AI features.
+- **polygon3**: For polygon manipulation in AI features.
 
 ### Data Export & Integration
 - **OpenPyXL (or similar)**: For Excel data export functionality.
 - **Tally TDL standards**: For XML export to Tally accounting software.
-```

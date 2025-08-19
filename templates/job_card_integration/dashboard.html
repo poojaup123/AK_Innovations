@@ -150,8 +150,8 @@
                                             </td>
                                             <td>
                                                 <div class="progress" style="height: 20px;">
-                                                    <div class="progress-bar" style="width: {{ detail.progress }}%">
-                                                        {{ "%.1f"|format(detail.progress) }}%
+                                                    <div class="progress-bar" style="width: {{ detail.progress or 0 }}%">
+                                                        {{ "%.1f"|format(detail.progress or 0) }}%
                                                     </div>
                                                 </div>
                                             </td>
