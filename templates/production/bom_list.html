@@ -396,7 +396,7 @@ function renderBOMTree(treeData) {
                 </div>
                 <div>
                     <strong>Total Cost:</strong>
-                    <span class="badge bg-warning ms-1">₹${(materialCostPerUnit + 15947.03).toFixed(2)}</span>
+                    <span class="badge bg-warning ms-1">₹${(treeData.total_cost_per_unit || 0).toFixed(2)}</span>
                 </div>
             </div>
             
@@ -412,7 +412,7 @@ function renderBOMTree(treeData) {
             ${renderExactMaterialsTree(treeData.materials)}
             
             <!-- Cost Breakdown -->
-            ${renderExactCostBreakdown(materialCostPerUnit)}
+            ${renderExactCostBreakdown(treeData)}
         </div>
     `;
     
@@ -473,7 +473,22 @@ function renderSubMaterials(materials, level) {
     return html;
 }
 
-function renderExactCostBreakdown(materialCostPerUnit) {
+function renderExactCostBreakdown(treeData) {
+    const materialCostPerUnit = treeData.material_cost_per_unit || 0;
+    const laborCost = treeData.labor_cost_per_unit || 0;
+    const cuttingCost = treeData.cutting_cost || 0;
+    const bendingCost = treeData.bending_cost || 0;
+    const zincCost = treeData.zinc_cost || 0;
+    const overheadCost = treeData.overhead_cost_per_unit || 0;
+    const freightCost = treeData.freight_cost_per_unit || 0;
+    const scrapRecovery = treeData.scrap_recovery || 0;
+    const scrapRate = ((treeData.scrap_recovery_rate || 0.30) * 100).toFixed(1);
+    const markupAmount = treeData.markup_amount || 0;
+    const markupRate = 3.0; // Default 3%
+    const totalCost = materialCostPerUnit + laborCost + overheadCost + freightCost;
+    const netCost = totalCost - scrapRecovery;
+    const finalCost = treeData.total_cost_per_unit || (netCost + markupAmount);
+    
     return `
         <div class="exact-cost-breakdown">
             <h6 class="cost-header mb-3">
@@ -495,22 +510,22 @@ function renderExactCostBreakdown(materialCostPerUnit) {
                     <span class="cost-icon me-2">👷</span>
                     <strong>Labor Cost (All Processes):</strong>
                 </div>
-                <span class="text-info fw-bold">₹15980</span>
+                <span class="text-info fw-bold">₹${laborCost.toFixed(2)}</span>
             </div>
             
             <!-- Process breakdown -->
             <div class="process-lines ms-4">
                 <div class="process-line d-flex justify-content-between p-1 text-muted">
                     <span>├── Cutting:</span>
-                    <span>₹0.4000</span>
+                    <span>₹${cuttingCost.toFixed(4)}</span>
                 </div>
                 <div class="process-line d-flex justify-content-between p-1 text-muted">
                     <span>├── Bending:</span>
-                    <span>₹0.4000</span>
+                    <span>₹${bendingCost.toFixed(4)}</span>
                 </div>
                 <div class="process-line d-flex justify-content-between p-1 text-muted">
                     <span>└── Zinc:</span>
-                    <span>₹0.7980</span>
+                    <span>₹${zincCost.toFixed(4)}</span>
                 </div>
             </div>
             
@@ -520,7 +535,7 @@ function renderExactCostBreakdown(materialCostPerUnit) {
                     <span class="cost-icon me-2">🏭</span>
                     <strong>Overhead Cost (per unit):</strong>
                 </div>
-                <span class="text-secondary fw-bold">₹7.35</span>
+                <span class="text-secondary fw-bold">₹${overheadCost.toFixed(2)}</span>
             </div>
             
             <!-- Freight Cost -->
@@ -529,7 +544,7 @@ function renderExactCostBreakdown(materialCostPerUnit) {
                     <span class="cost-icon me-2">🚚</span>
                     <strong>Freight Cost:</strong>
                 </div>
-                <span class="text-warning fw-bold">₹1.14</span>
+                <span class="text-warning fw-bold">₹${freightCost.toFixed(2)}</span>
             </div>
             
             <!-- Total Cost -->
@@ -538,16 +553,16 @@ function renderExactCostBreakdown(materialCostPerUnit) {
                     <span class="cost-icon me-2">💰</span>
                     <strong>Total Cost:</strong>
                 </div>
-                <span class="text-success fw-bold">₹${(materialCostPerUnit + 15988.89).toFixed(2)}</span>
+                <span class="text-success fw-bold">₹${totalCost.toFixed(2)}</span>
             </div>
             
             <!-- Scrap Recovery -->
             <div class="cost-line d-flex align-items-center justify-content-between p-2 mb-1">
                 <div class="d-flex align-items-center">
                     <span class="cost-icon me-2">♻️</span>
-                    <strong>Scrap Recovery (30.0%):</strong>
+                    <strong>Scrap Recovery (${scrapRate}%):</strong>
                 </div>
-                <span class="text-info fw-bold">-₹44.12</span>
+                <span class="text-info fw-bold">-₹${scrapRecovery.toFixed(2)}</span>
             </div>
             
             <!-- Net Manufacturing Cost -->
@@ -556,16 +571,16 @@ function renderExactCostBreakdown(materialCostPerUnit) {
                     <span class="cost-icon me-2">📊</span>
                     <strong>Net Manufacturing Cost:</strong>
                 </div>
-                <span class="text-primary fw-bold">₹${(materialCostPerUnit + 15944.77).toFixed(2)}</span>
+                <span class="text-primary fw-bold">₹${netCost.toFixed(2)}</span>
             </div>
             
             <!-- Markup -->
             <div class="cost-line d-flex align-items-center justify-content-between p-2 mb-1">
                 <div class="d-flex align-items-center">
                     <span class="cost-icon me-2">📈</span>
-                    <strong>Markup (3.0%):</strong>
+                    <strong>Markup (${markupRate}%):</strong>
                 </div>
-                <span class="text-warning fw-bold">₹2.26</span>
+                <span class="text-warning fw-bold">₹${markupAmount.toFixed(2)}</span>
             </div>
             
             <!-- Final Unit Cost -->
@@ -574,7 +589,7 @@ function renderExactCostBreakdown(materialCostPerUnit) {
                     <span class="cost-icon me-2">🏷️</span>
                     <strong>Final Unit Cost:</strong>
                 </div>
-                <span class="fw-bold fs-5">₹${(materialCostPerUnit + 15947.03).toFixed(2)}</span>
+                <span class="fw-bold fs-5">₹${finalCost.toFixed(2)}</span>
             </div>
         </div>
     `;
