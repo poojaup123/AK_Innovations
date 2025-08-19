@@ -67,7 +67,7 @@
                                         {% endif %}
                                         <div class="progress" style="height: 8px;">
                                             <div class="progress-bar bg-{{ 'success' if job.status == 'completed' else 'danger' if job.status == 'cancelled' else 'warning' if job.status == 'partial_received' else 'primary' }}" 
-                                                 style="width: {{ (job.quantity_received / job.quantity_sent * 100) if job.quantity_sent > 0 and job.status != 'cancelled' else 100 if job.status == 'cancelled' else 0 }}%"></div>
+                                                 style="width: {{ ((job.quantity_received or 0) / job.quantity_sent * 100) if job.quantity_sent and job.quantity_sent > 0 and job.status != 'cancelled' else 100 if job.status == 'cancelled' else 0 }}%"></div>
                                         </div>
                                     </div>
                                 </td>
