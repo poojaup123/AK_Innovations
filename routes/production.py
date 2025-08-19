@@ -992,10 +992,51 @@ def delete_production(id):
 @login_required
 def list_bom():
     page = request.args.get('page', 1, type=int)
-    boms = BOM.query.filter_by(is_active=True).paginate(
-        page=page, per_page=20, error_out=False)
+    search = request.args.get('search', '', type=str)
+    status_filter = request.args.get('status', '', type=str)
+    product_filter = request.args.get('product', '', type=str)
     
-    return render_template('production/bom_list.html', boms=boms)
+    # Build query with filters
+    query = BOM.query.filter_by(is_active=True)
+    
+    # Search filter - search in BOM code, product name, and product code
+    if search:
+        query = query.join(Item, BOM.product_id == Item.id).filter(
+            or_(
+                BOM.bom_code.ilike(f'%{search}%'),
+                Item.name.ilike(f'%{search}%'),
+                Item.code.ilike(f'%{search}%'),
+                BOM.description.ilike(f'%{search}%')
+            )
+        )
+    
+    # Status filter
+    if status_filter:
+        query = query.filter(BOM.status == status_filter)
+    
+    # Product filter
+    if product_filter:
+        query = query.filter(BOM.product_id == product_filter)
+    
+    # Order by creation date (newest first)
+    query = query.order_by(BOM.created_at.desc())
+    
+    boms = query.paginate(page=page, per_page=20, error_out=False)
+    
+    # Get products for filter dropdown
+    products = Item.query.join(BOM, BOM.product_id == Item.id).distinct().order_by(Item.name).all()
+    
+    # Get unique statuses for filter
+    statuses = db.session.query(BOM.status).filter(BOM.is_active == True).distinct().all()
+    statuses = [status[0] for status in statuses if status[0]]
+    
+    return render_template('production/bom_list.html', 
+                         boms=boms, 
+                         search=search,
+                         status_filter=status_filter,
+                         product_filter=product_filter,
+                         products=products,
+                         statuses=statuses)
 
 @production_bp.route('/bom/tree-view')
 @login_required

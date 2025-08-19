@@ -20,6 +20,78 @@
         </div>
     </div>
 
+    <!-- Search and Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-search"></i> Search & Filter BOMs</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Search BOMs</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" class="form-control" name="search" 
+                                   value="{{ search }}" 
+                                   placeholder="Search by BOM code, product name, or description..."
+                                   id="searchInput">
+                        </div>
+                        <small class="text-muted">Search in BOM codes, product names, and descriptions</small>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="status" id="statusFilter">
+                            <option value="">All Statuses</option>
+                            {% for status in statuses %}
+                            <option value="{{ status }}" {{ 'selected' if status == status_filter }}>
+                                {{ status.title() }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Product</label>
+                        <select class="form-select" name="product" id="productFilter">
+                            <option value="">All Products</option>
+                            {% for product in products %}
+                            <option value="{{ product.id }}" {{ 'selected' if product.id|string == product_filter }}>
+                                {{ product.code }} - {{ product.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                            <a href="{{ url_for('production.list_bom') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Quick Stats -->
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="d-flex gap-3">
+                        <span class="badge bg-primary">{{ boms.total }} Total BOMs</span>
+                        {% if search %}
+                        <span class="badge bg-info">Filtered by: "{{ search }}"</span>
+                        {% endif %}
+                        {% if status_filter %}
+                        <span class="badge bg-warning">Status: {{ status_filter.title() }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- BOMs Table -->
     <div class="card">
         <div class="card-body">
@@ -73,13 +145,13 @@
                     </table>
                 </div>
 
-                <!-- Pagination -->
+                <!-- Pagination with search parameters -->
                 {% if boms.pages > 1 %}
                 <nav aria-label="Page navigation">
                     <ul class="pagination">
                         {% if boms.has_prev %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('production.list_bom', page=boms.prev_num) }}">Previous</a>
+                                <a class="page-link" href="{{ url_for('production.list_bom', page=boms.prev_num, search=search, status=status_filter, product=product_filter) }}">Previous</a>
                             </li>
                         {% endif %}
                         
@@ -87,7 +159,7 @@
                             {% if page_num %}
                                 {% if page_num != boms.page %}
                                     <li class="page-item">
-                                        <a class="page-link" href="{{ url_for('production.list_bom', page=page_num) }}">{{ page_num }}</a>
+                                        <a class="page-link" href="{{ url_for('production.list_bom', page=page_num, search=search, status=status_filter, product=product_filter) }}">{{ page_num }}</a>
                                     </li>
                                 {% else %}
                                     <li class="page-item active">
@@ -103,7 +175,7 @@
                         
                         {% if boms.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('production.list_bom', page=boms.next_num) }}">Next</a>
+                                <a class="page-link" href="{{ url_for('production.list_bom', page=boms.next_num, search=search, status=status_filter, product=product_filter) }}">Next</a>
                             </li>
                         {% endif %}
                     </ul>
@@ -112,14 +184,67 @@
             {% else %}
                 <div class="text-center py-4">
                     <i class="fas fa-sitemap fa-3x text-muted mb-3"></i>
+                    {% if search or status_filter or product_filter %}
+                    <h5>No BOMs match your search criteria</h5>
+                    <p class="text-muted">Try adjusting your search terms or filters.</p>
+                    <a href="{{ url_for('production.list_bom') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Clear Filters
+                    </a>
+                    {% else %}
                     <h5>No Bill of Materials found</h5>
                     <p class="text-muted">Start by creating your first BOM for a product.</p>
                     <a href="{{ url_for('production.add_bom') }}" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Create First BOM
                     </a>
+                    {% endif %}
                 </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<!-- JavaScript for enhanced search functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const filterForm = document.getElementById('filterForm');
+    
+    // Auto-submit form when filters change (except search input)
+    const filterSelects = document.querySelectorAll('#statusFilter, #productFilter');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            filterForm.submit();
+        });
+    });
+    
+    // Add enter key support for search
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            filterForm.submit();
+        }
+    });
+    
+    // Real-time search counter
+    const updateSearchCounter = function() {
+        const searchTerm = searchInput.value.trim();
+        if (searchTerm.length > 0) {
+            searchInput.style.borderColor = '#0d6efd';
+        } else {
+            searchInput.style.borderColor = '';
+        }
+    };
+    
+    searchInput.addEventListener('input', updateSearchCounter);
+    updateSearchCounter(); // Run on page load
+    
+    // Focus search input on Ctrl+F
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            searchInput.focus();
+            searchInput.select();
+        }
+    });
+});
+</script>
 {% endblock %}
