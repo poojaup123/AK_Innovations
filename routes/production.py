@@ -1038,6 +1038,90 @@ def list_bom():
                          products=products,
                          statuses=statuses)
 
+@production_bp.route('/api/bom/<int:bom_id>/tree-data')
+@login_required
+def api_bom_tree_data(bom_id):
+    """API endpoint to get formatted tree view data for modal display"""
+    try:
+        bom = BOM.query.get_or_404(bom_id)
+        
+        def build_single_bom_tree(bom):
+            tree_node = {
+                'bom': {
+                    'id': bom.id,
+                    'bom_code': bom.bom_code,
+                    'output_quantity': bom.output_quantity or 1.0,
+                    'version': bom.version or '1.0',
+                    'description': bom.description,
+                    'is_phantom_bom': bom.is_phantom_bom,
+                    'intermediate_product': bom.intermediate_product
+                },
+                'product': {
+                    'id': bom.product.id,
+                    'name': bom.product.name,
+                    'code': bom.product.code
+                },
+                'materials': [],
+                'sub_boms': []
+            }
+            
+            # Add direct materials and check for intermediate BOMs
+            for bom_item in bom.items:
+                material_item = getattr(bom_item, 'material', None) or getattr(bom_item, 'item', None)
+                if material_item:
+                    quantity = bom_item.qty_required or getattr(bom_item, 'quantity_required', 0) or 0
+                    
+                    try:
+                        unit = bom_item.uom.symbol if bom_item.uom else (bom_item.unit or 'pcs')
+                    except AttributeError:
+                        unit = bom_item.unit or 'pcs'
+                    
+                    material_entry = {
+                        'item': {
+                            'id': material_item.id,
+                            'name': material_item.name,
+                            'code': material_item.code
+                        },
+                        'quantity': quantity,
+                        'unit': unit,
+                        'cost': bom_item.unit_cost or 0,
+                        'sub_materials': []
+                    }
+                    
+                    # Check if this material has its own BOM (intermediate product)
+                    material_bom = BOM.query.filter_by(product_id=material_item.id, is_active=True).first()
+                    if material_bom:
+                        material_tree = build_single_bom_tree(material_bom)
+                        material_entry['intermediate_bom'] = material_tree
+                        material_entry['is_intermediate'] = True
+                    else:
+                        material_entry['is_intermediate'] = False
+                    
+                    tree_node['materials'].append(material_entry)
+            
+            # Add sub-BOMs (child BOMs that have this BOM as parent)
+            child_boms = BOM.query.filter_by(parent_bom_id=bom.id, is_active=True).all()
+            for child_bom in child_boms:
+                tree_node['sub_boms'].append(build_single_bom_tree(child_bom))
+            
+            return tree_node
+        
+        # Build tree structure for this BOM
+        tree_data = build_single_bom_tree(bom)
+        
+        # Calculate costs
+        material_cost = sum(item.qty_required * item.unit_cost for item in bom.items if item.qty_required and item.unit_cost) if bom.items else 0
+        material_cost_per_unit = material_cost / max(bom.output_quantity, 1)
+        
+        tree_data['calculated_material_cost'] = material_cost
+        tree_data['material_cost_per_unit'] = material_cost_per_unit
+        tree_data['total_cost_per_unit'] = material_cost_per_unit  # Simplified for API
+        
+        return jsonify({'success': True, 'data': tree_data})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @production_bp.route('/bom/tree-view')
 @login_required
 def bom_tree_view():
