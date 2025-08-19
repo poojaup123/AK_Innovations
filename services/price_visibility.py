@@ -133,21 +133,21 @@ class PriceVisibilityService:
             user = current_user
         
         if not user.is_authenticated:
-            return '<span class="badge bg-secondary">No Access</span>'
+            return Markup('<span class="badge bg-secondary">No Access</span>')
         
         if user.is_admin():
-            return '<span class="badge bg-success"><i class="fas fa-crown"></i> Full Access</span>'
+            return Markup('<span class="badge bg-success"><i class="fas fa-crown"></i> Full Access</span>')
         
         level = user.get_price_display_level()
         
         badges = {
-            'full': '<span class="badge bg-primary"><i class="fas fa-chart-line"></i> Manager</span>',
-            'financial': '<span class="badge bg-info"><i class="fas fa-calculator"></i> Financial</span>',
-            'prices': '<span class="badge bg-warning"><i class="fas fa-tag"></i> Basic</span>',
-            'none': '<span class="badge bg-secondary"><i class="fas fa-eye-slash"></i> Hidden</span>'
+            'full': Markup('<span class="badge bg-primary"><i class="fas fa-chart-line"></i> Manager</span>'),
+            'financial': Markup('<span class="badge bg-info"><i class="fas fa-calculator"></i> Financial</span>'),
+            'prices': Markup('<span class="badge bg-warning"><i class="fas fa-tag"></i> Basic</span>'),
+            'none': Markup('<span class="badge bg-secondary"><i class="fas fa-eye-slash"></i> Hidden</span>')
         }
         
-        return Markup(badges.get(level, '<span class="badge bg-light">Limited</span>'))
+        return badges.get(level, Markup('<span class="badge bg-light">Limited</span>'))
 
 # Template helper functions
 def init_price_visibility_helpers(app):
