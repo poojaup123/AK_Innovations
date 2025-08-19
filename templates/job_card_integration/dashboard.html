@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Job Card Integration Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-tasks"></i> Job Card & Job Work Integration Dashboard</h4>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Summary Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h5>Total Job Cards</h5>
+                                    <h2>{{ summary.total_job_cards }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h5>In-House</h5>
+                                    <h2>{{ summary.in_house }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body text-center">
+                                    <h5>Outsourced</h5>
+                                    <h2>{{ summary.outsourced }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h5>Completed</h5>
+                                    <h2>{{ summary.completed }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Integration Status -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Integration Status</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <small>Linked to Job Work</small>
+                                            <h4 class="text-primary">{{ summary.linked_job_works }}</h4>
+                                        </div>
+                                        <div class="col-6">
+                                            <small>Pending Receipts</small>
+                                            <h4 class="text-warning">{{ summary.pending_receipts }}</h4>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-6">
+                                            <small>Overdue</small>
+                                            <h4 class="text-danger">{{ summary.overdue }}</h4>
+                                        </div>
+                                        <div class="col-6">
+                                            <small>Pending</small>
+                                            <h4 class="text-secondary">{{ summary.pending }}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Quick Actions</h5>
+                                </div>
+                                <div class="card-body">
+                                    <a href="{{ url_for('job_cards.list_job_cards') }}" class="btn btn-primary btn-sm me-2">
+                                        <i class="fas fa-tasks"></i> Manage Job Cards
+                                    </a>
+                                    <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-success btn-sm me-2">
+                                        <i class="fas fa-cogs"></i> Job Work List
+                                    </a>
+                                    <a href="{{ url_for('production.list_productions') }}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-industry"></i> Production Orders
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Job Cards Details Table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Job Cards Overview</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Job Card #</th>
+                                            <th>Item</th>
+                                            <th>Process</th>
+                                            <th>Type</th>
+                                            <th>Status</th>
+                                            <th>Progress</th>
+                                            <th>Job Work #</th>
+                                            <th>Vendor</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for detail in summary.details %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ detail.job_card_number }}</strong>
+                                                {% if detail.is_overdue %}
+                                                    <span class="badge bg-danger ms-1">Overdue</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ detail.item_name }}</td>
+                                            <td>{{ detail.process }}</td>
+                                            <td>
+                                                {% if detail.type == 'in_house' %}
+                                                    <span class="badge bg-success">In-House</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">Outsourced</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if detail.status == 'completed' %}
+                                                    <span class="badge bg-success">{{ detail.status|title }}</span>
+                                                {% elif detail.status == 'in_progress' %}
+                                                    <span class="badge bg-primary">{{ detail.status|title }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ detail.status|title }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar" style="width: {{ detail.progress }}%">
+                                                        {{ "%.1f"|format(detail.progress) }}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if detail.job_work_number %}
+                                                    <small class="text-primary">{{ detail.job_work_number }}</small>
+                                                {% else %}
+                                                    <small class="text-muted">-</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if detail.vendor_name %}
+                                                    <small>{{ detail.vendor_name }}</small>
+                                                {% else %}
+                                                    <small class="text-muted">-</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="#" onclick="alert('View functionality will be linked to job card details')" 
+                                                       class="btn btn-sm btn-outline-primary" title="View Details">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    {% if detail.type == 'in_house' and detail.status not in ['completed', 'cancelled'] %}
+                                                        <a href="#" onclick="alert('Outsource functionality ready for integration')" 
+                                                           class="btn btn-sm btn-outline-warning" title="Outsource">
+                                                            <i class="fas fa-external-link-alt"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

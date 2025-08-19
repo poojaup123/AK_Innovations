@@ -1330,6 +1330,15 @@ class JobWork(db.Model):
     bom_id = db.Column(db.Integer, db.ForeignKey('boms.id'), nullable=True)  # Reference to BOM for production
     production_quantity = db.Column(db.Integer, nullable=True)  # Quantity to produce from BOM
     
+    # Production Order Integration - Link Job Work to Production Orders
+    production_id = db.Column(db.Integer, db.ForeignKey('productions.id'), nullable=True)
+    production = db.relationship('Production', backref='related_job_works')
+    
+    # Job Card Integration - Source job card that created this job work
+    source_job_card_id = db.Column(db.Integer, db.ForeignKey('job_cards.id'), nullable=True)
+    source_job_card = db.relationship('JobCard', foreign_keys=[source_job_card_id], 
+                                     backref='created_job_works_list')
+    
     # Relationships
     item = db.relationship('Item', backref='job_works')
     bom = db.relationship('BOM', backref='job_works')

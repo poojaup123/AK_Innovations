@@ -95,6 +95,11 @@ class JobCard(db.Model):
     outsource_quantity = db.Column(db.Float, default=0)
     created_from_report_id = db.Column(db.String(50))  # Links to JobCardDailyStatus.report_number
     
+    # Job Work Integration - Link Job Cards to Job Work for outsourcing
+    job_work_id = db.Column(db.Integer, db.ForeignKey('job_works.id'), nullable=True)
+    job_work = db.relationship('JobWork', foreign_keys=[job_work_id], backref='linked_job_cards')
+    auto_created_job_work = db.Column(db.Boolean, default=False)  # True if JobWork was auto-created from this JobCard
+    
     # GRN Integration for Outsourced Work
     grn_id = db.Column(db.Integer, db.ForeignKey('grn.id'))  # Links to GRN when work returns
     grn = db.relationship('GRN', backref='outsourced_job_cards')
