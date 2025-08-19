@@ -439,7 +439,6 @@
                 <a class="nav-link {{ 'active' if 'inventory.price_history' in request.endpoint }}" href="{{ url_for('inventory.price_history') }}">
                     <i class="fas fa-chart-line text-success"></i>
                     Price History
-                    <span class="badge bg-success ms-2 small">NEW</span>
                 </a>
                 
                 <a class="nav-link {{ 'active' if 'production' in request.endpoint and 'daily_production' not in request.endpoint }}" href="{{ url_for('production.dashboard') }}">
@@ -452,7 +451,6 @@
                 <a class="nav-link {{ 'active' if 'job_card_integration' in request.endpoint }}" href="{{ url_for('job_card_integration.integration_dashboard') }}">
                     <i class="fas fa-link text-success"></i>
                     Job Card Integration
-                    <span class="badge bg-success ms-2 small">NEW</span>
                 </a>
                 
                 <a class="nav-link {{ 'active' if 'jobwork' in request.endpoint }}" href="{{ url_for('jobwork.dashboard') }}">
@@ -463,19 +461,16 @@
                 <a class="nav-link {{ 'active' if 'packing' in request.endpoint }}" href="{{ url_for('packing.dashboard') }}">
                     <i class="fas fa-puzzle-piece text-primary"></i>
                     Packing Optimization
-                    <span class="badge bg-primary ms-2 small">NEW</span>
                 </a>
                 
                 <a class="nav-link {{ 'active' if 'component_scanning' in request.endpoint }}" href="{{ url_for('component_scanning.dashboard') }}">
                     <i class="fas fa-search text-warning"></i>
                     Component Scanning
-                    <span class="badge bg-warning text-dark ms-2 small">AI</span>
                 </a>
                 
                 <a class="nav-link {{ 'active' if 'batch_tracking' in request.endpoint }}" href="{{ url_for('batch_tracking.dashboard') }}">
                     <i class="fas fa-layer-group text-info"></i>
                     Batch Tracking
-                    <span class="badge bg-info ms-2 small">UNIFIED</span>
                 </a>
                 
                 <a class="nav-link {{ 'active' if 'live_status' in request.endpoint }}" href="{{ url_for('live_status.process_dashboard') }}">
@@ -505,7 +500,6 @@
                 <a class="nav-link {{ 'active' if 'accounting' in request.endpoint }}" href="{{ url_for('accounting.dashboard') }}">
                     <i class="fas fa-calculator text-success"></i>
                     Accounting & Finance
-                    <span class="badge bg-success ms-2 small">NEW</span>
                 </a>
                 
                 <hr class="my-2 opacity-25">
@@ -540,13 +534,11 @@
                 <a class="nav-link {{ 'active' if 'admin.approvals_dashboard' in request.endpoint }}" href="{{ url_for('admin.approvals_dashboard') }}">
                     <i class="fas fa-clipboard-check text-warning"></i>
                     Approvals
-                    <span class="badge bg-warning text-dark ms-2 small">PENDING</span>
                 </a>
                 
                 <a class="nav-link {{ 'active' if 'notifications' in request.endpoint }}" href="{{ url_for('notifications.admin_dashboard') }}">
                     <i class="fas fa-bell text-info"></i>
                     Notifications
-                    <span class="badge bg-info ms-2 small">NEW</span>
                 </a>
                 
                 <a class="nav-link {{ 'active' if 'documents' in request.endpoint }}" href="{{ url_for('documents.document_list') }}">
@@ -557,7 +549,6 @@
                 <a class="nav-link {{ 'active' if 'tally_import' in request.endpoint }}" href="{{ url_for('tally_import.import_dashboard') }}">
                     <i class="fas fa-file-import text-info"></i>
                     Tally Import
-                    <span class="badge bg-info ms-2 small">NEW</span>
                 </a>
                 
                 <a class="nav-link {{ 'active' if 'settings' in request.endpoint }}" href="{{ url_for('settings.dashboard') }}">
@@ -569,14 +560,12 @@
                 <a class="nav-link {{ 'active' if 'user_management' in request.endpoint }}" href="{{ url_for('user_management.list_users') }}">
                     <i class="fas fa-users-cog text-warning"></i>
                     User Access Control
-                    <span class="badge bg-warning text-dark ms-2 small">NEW</span>
                 </a>
                 {% endif %}
                 
                 <a class="nav-link {{ 'active' if 'demo_price' in request.endpoint }}" href="{{ url_for('demo_price.price_demo') }}">
                     <i class="fas fa-shield-alt text-info"></i>
                     Price Access Demo
-                    <span class="badge bg-info ms-2 small">DEMO</span>
                 </a>
                 
                 <hr class="my-3">
