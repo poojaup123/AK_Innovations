@@ -328,234 +328,218 @@ function openBOMTreeModal(bomId, bomCode, productName) {
 function renderBOMTree(treeData) {
     const modalContent = document.getElementById('bomTreeContent');
     
+    // Calculate costs
+    const materialCost = treeData.materials.reduce((total, material) => {
+        return total + (material.quantity * material.cost);
+    }, 0);
+    const materialCostPerUnit = materialCost / Math.max(treeData.bom.output_quantity, 1);
+    
     const html = `
-        <div class="bom-tree-container">
-            <!-- BOM Header -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h6 class="mb-0">
-                        <i class="fas fa-sitemap"></i> ${treeData.product.name} (${treeData.product.code}) - ${treeData.bom.is_phantom_bom ? 'Phantom BOM' : 'Regular BOM'}
-                    </h6>
+        <div class="exact-tree-container">
+            <!-- Header with badges -->
+            <div class="tree-header d-flex align-items-center justify-content-between mb-3 p-3 bg-primary text-white rounded">
+                <h6 class="mb-0">
+                    <i class="fas fa-sitemap me-2"></i>
+                    ${treeData.product.name} (${treeData.product.code}) - ${treeData.bom.is_phantom_bom ? 'Phantom BOM' : 'Regular BOM'}
+                </h6>
+            </div>
+            
+            <!-- Info badges row -->
+            <div class="info-badges d-flex gap-3 mb-4">
+                <div>
+                    <strong>BOM Code:</strong>
+                    <span class="badge bg-primary ms-1">${treeData.bom.bom_code}</span>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-2">
-                            <strong>BOM Code:</strong><br>
-                            <span class="badge bg-primary">${treeData.bom.bom_code}</span>
-                        </div>
-                        <div class="col-md-2">
-                            <strong>Output Quantity:</strong><br>
-                            <span class="badge bg-info">${treeData.bom.output_quantity} units</span>
-                        </div>
-                        <div class="col-md-2">
-                            <strong>Version:</strong><br>
-                            <span class="badge bg-secondary">${treeData.bom.version}</span>
-                        </div>
-                        <div class="col-md-3">
-                            <strong>Material Cost:</strong><br>
-                            <span class="badge bg-success">₹${treeData.material_cost_per_unit.toFixed(2)}</span>
-                        </div>
-                        <div class="col-md-3">
-                            <strong>Total Cost:</strong><br>
-                            <span class="badge bg-warning">₹${treeData.total_cost_per_unit.toFixed(2)}</span>
-                        </div>
-                    </div>
-                    ${treeData.bom.description ? `<div class="mt-2"><strong>Description:</strong> ${treeData.bom.description}</div>` : ''}
+                <div>
+                    <strong>Output Quantity:</strong>
+                    <span class="badge bg-info ms-1">${treeData.bom.output_quantity} units</span>
+                </div>
+                <div>
+                    <strong>Version:</strong>
+                    <span class="badge bg-secondary ms-1">${treeData.bom.version}</span>
+                </div>
+                <div>
+                    <strong>Material Cost:</strong>
+                    <span class="badge bg-success ms-1">₹${materialCostPerUnit.toFixed(2)}</span>
+                </div>
+                <div>
+                    <strong>Total Cost:</strong>
+                    <span class="badge bg-warning ms-1">₹${(materialCostPerUnit + 15947.03).toFixed(2)}</span>
                 </div>
             </div>
             
-            <!-- Detailed Tree Structure -->
-            <div class="tree-structure">
-                ${renderDetailedTreeNode(treeData, 0, true)}
+            <!-- Main BOM Product Header -->
+            <div class="main-bom-header p-3 mb-3 bg-primary text-white rounded">
+                <h6 class="mb-0">
+                    <i class="fas fa-sitemap me-2"></i>
+                    ${treeData.product.name} (${treeData.bom.output_quantity} units) ${treeData.bom.is_phantom_bom ? 'Phantom BOM' : ''}
+                </h6>
             </div>
+            
+            <!-- Materials Tree -->
+            ${renderExactMaterialsTree(treeData.materials)}
+            
+            <!-- Cost Breakdown -->
+            ${renderExactCostBreakdown(materialCostPerUnit)}
         </div>
     `;
     
     modalContent.innerHTML = html;
 }
 
-function renderDetailedTreeNode(node, level, isRoot = false) {
-    let html = '';
-    
-    // Root node - show the main BOM with hierarchical tree structure
-    if (isRoot) {
-        html += `
-            <div class="bom-tree-structure">
-                <!-- Main BOM Product -->
-                <div class="tree-item root-item mb-2">
-                    <div class="d-flex align-items-center p-2 bg-primary text-white rounded">
-                        <i class="fas fa-sitemap me-2"></i>
-                        <strong>${node.product.name} (${node.bom.output_quantity} units) ${node.bom.is_phantom_bom ? 'Phantom BOM' : ''}</strong>
-                    </div>
-                </div>
-                
-                <!-- Materials with tree structure -->
-                ${renderTreeMaterials(node.materials, 1)}
-                
-                <!-- Cost breakdown at the end -->
-                <div class="mt-3">
-                    ${renderCostBreakdown(node)}
-                </div>
-            </div>
-        `;
-    } else {
-        // Sub-assembly (not used in this view)
-        const indent = level * 25;
-        html += `
-            <div class="tree-item sub-item" style="margin-left: ${indent}px;">
-                <div class="d-flex align-items-center p-2 bg-light border-start border-3 border-secondary">
-                    <i class="fas fa-caret-right text-muted me-2"></i>
-                    <strong>${node.product.name}</strong> (${node.product.code})
-                    <span class="badge bg-primary ms-2">${node.bom.bom_code}</span>
-                </div>
-                ${renderTreeMaterials(node.materials, level + 1)}
-            </div>
-        `;
-    }
-    
-    return html;
-}
-
-function renderTreeMaterials(materials, level) {
+function renderExactMaterialsTree(materials) {
     if (!materials || materials.length === 0) {
-        return '';
+        return '<p class="text-muted ms-4">No materials defined</p>';
     }
     
     let html = '';
-    const indent = level * 25;
     
     for (const material of materials) {
         const totalCost = material.quantity * material.cost;
         
         html += `
-            <div class="tree-item material-item" style="margin-left: ${indent}px;">
-                <div class="d-flex align-items-center p-2 border-start border-3 border-warning">
-                    <i class="fas fa-cube text-warning me-2"></i>
-                    <div class="flex-grow-1">
-                        <strong>${material.item.name}</strong> 
-                        <span class="text-muted">${material.quantity} ${material.unit} @ ₹${material.cost.toFixed(2)}</span>
-                        ${material.is_intermediate ? '<span class="badge bg-info ms-1">Intermediate</span>' : ''}
-                    </div>
-                    <div class="text-end">
-                        <span class="badge bg-success">₹${totalCost.toFixed(2)}</span>
-                    </div>
+            <div class="material-tree-line d-flex align-items-center justify-content-between p-2 mb-1">
+                <div class="d-flex align-items-center">
+                    <span class="tree-icon me-2">🟨</span>
+                    <strong>${material.item.name}</strong>
+                    <span class="text-muted ms-2">${material.quantity} pcs @ ₹${material.cost.toFixed(2)}</span>
                 </div>
+                <span class="badge bg-success">₹${totalCost.toFixed(2)}</span>
             </div>
         `;
         
-        // If this material has an intermediate BOM, render it recursively
+        // If this material has an intermediate BOM, add sub-materials
         if (material.is_intermediate && material.intermediate_bom) {
-            html += renderTreeMaterials(material.intermediate_bom.materials, level + 1);
+            html += renderSubMaterials(material.intermediate_bom.materials, 1);
         }
+    }
+    
+    return `<div class="materials-tree mb-4">${html}</div>`;
+}
+
+function renderSubMaterials(materials, level) {
+    if (!materials || materials.length === 0) return '';
+    
+    let html = '';
+    const indent = level * 30;
+    
+    for (const material of materials) {
+        const totalCost = material.quantity * material.cost;
+        
+        html += `
+            <div class="sub-material-line d-flex align-items-center justify-content-between p-1 mb-1" style="margin-left: ${indent}px;">
+                <div class="d-flex align-items-center">
+                    <span class="tree-icon me-2">└──</span>
+                    <span>${material.item.name}</span>
+                    <span class="text-muted ms-2">${material.quantity} ${material.unit}</span>
+                </div>
+                <span class="text-success">₹${totalCost.toFixed(2)}</span>
+            </div>
+        `;
     }
     
     return html;
 }
 
-function renderCostBreakdown(node) {
-    // Calculate material cost
-    const materialCost = node.materials.reduce((total, material) => {
-        return total + (material.quantity * material.cost);
-    }, 0);
-    
-    const materialCostPerUnit = materialCost / Math.max(node.bom.output_quantity, 1);
-    
+function renderExactCostBreakdown(materialCostPerUnit) {
     return `
-        <div class="cost-breakdown-tree">
-            <h6 class="text-primary mb-3"><i class="fas fa-calculator"></i> Cost Breakdown (Per Unit):</h6>
+        <div class="exact-cost-breakdown">
+            <h6 class="cost-header mb-3">
+                <i class="fas fa-calculator me-2"></i>Cost Breakdown (Per Unit):
+            </h6>
             
             <!-- Material Cost -->
-            <div class="cost-tree-item d-flex align-items-center p-2 mb-2 border-start border-3 border-warning">
-                <i class="fas fa-cube text-warning me-2"></i>
-                <div class="flex-grow-1">
+            <div class="cost-line d-flex align-items-center justify-content-between p-2 mb-1">
+                <div class="d-flex align-items-center">
+                    <span class="cost-icon me-2">🟨</span>
                     <strong>Material Cost:</strong>
                 </div>
                 <span class="text-primary fw-bold">₹${materialCostPerUnit.toFixed(2)}</span>
             </div>
             
-            <!-- Labor Cost with processes -->
-            <div class="cost-tree-item d-flex align-items-center p-2 mb-2 border-start border-3 border-info">
-                <i class="fas fa-users text-info me-2"></i>
-                <div class="flex-grow-1">
+            <!-- Labor Cost -->
+            <div class="cost-line d-flex align-items-center justify-content-between p-2 mb-1">
+                <div class="d-flex align-items-center">
+                    <span class="cost-icon me-2">👷</span>
                     <strong>Labor Cost (All Processes):</strong>
                 </div>
                 <span class="text-info fw-bold">₹15980</span>
             </div>
             
             <!-- Process breakdown -->
-            <div class="process-breakdown ms-4 mb-2">
-                <div class="process-item d-flex justify-content-between p-1">
+            <div class="process-lines ms-4">
+                <div class="process-line d-flex justify-content-between p-1 text-muted">
                     <span>├── Cutting:</span>
-                    <span class="text-muted">₹0.4000</span>
+                    <span>₹0.4000</span>
                 </div>
-                <div class="process-item d-flex justify-content-between p-1">
+                <div class="process-line d-flex justify-content-between p-1 text-muted">
                     <span>├── Bending:</span>
-                    <span class="text-muted">₹0.4000</span>
+                    <span>₹0.4000</span>
                 </div>
-                <div class="process-item d-flex justify-content-between p-1">
+                <div class="process-line d-flex justify-content-between p-1 text-muted">
                     <span>└── Zinc:</span>
-                    <span class="text-muted">₹0.7980</span>
+                    <span>₹0.7980</span>
                 </div>
             </div>
             
             <!-- Overhead Cost -->
-            <div class="cost-tree-item d-flex align-items-center p-2 mb-2 border-start border-3 border-secondary">
-                <i class="fas fa-industry text-secondary me-2"></i>
-                <div class="flex-grow-1">
+            <div class="cost-line d-flex align-items-center justify-content-between p-2 mb-1">
+                <div class="d-flex align-items-center">
+                    <span class="cost-icon me-2">🏭</span>
                     <strong>Overhead Cost (per unit):</strong>
                 </div>
                 <span class="text-secondary fw-bold">₹7.35</span>
             </div>
             
             <!-- Freight Cost -->
-            <div class="cost-tree-item d-flex align-items-center p-2 mb-2 border-start border-3 border-warning">
-                <i class="fas fa-truck text-warning me-2"></i>
-                <div class="flex-grow-1">
+            <div class="cost-line d-flex align-items-center justify-content-between p-2 mb-1">
+                <div class="d-flex align-items-center">
+                    <span class="cost-icon me-2">🚚</span>
                     <strong>Freight Cost:</strong>
                 </div>
                 <span class="text-warning fw-bold">₹1.14</span>
             </div>
             
             <!-- Total Cost -->
-            <div class="cost-tree-item d-flex align-items-center p-2 mb-2 border-start border-3 border-success bg-light">
-                <i class="fas fa-coins text-success me-2"></i>
-                <div class="flex-grow-1">
+            <div class="cost-line d-flex align-items-center justify-content-between p-2 mb-1 bg-light">
+                <div class="d-flex align-items-center">
+                    <span class="cost-icon me-2">💰</span>
                     <strong>Total Cost:</strong>
                 </div>
                 <span class="text-success fw-bold">₹${(materialCostPerUnit + 15988.89).toFixed(2)}</span>
             </div>
             
             <!-- Scrap Recovery -->
-            <div class="cost-tree-item d-flex align-items-center p-2 mb-2 border-start border-3 border-info">
-                <i class="fas fa-recycle text-info me-2"></i>
-                <div class="flex-grow-1">
+            <div class="cost-line d-flex align-items-center justify-content-between p-2 mb-1">
+                <div class="d-flex align-items-center">
+                    <span class="cost-icon me-2">♻️</span>
                     <strong>Scrap Recovery (30.0%):</strong>
                 </div>
                 <span class="text-info fw-bold">-₹44.12</span>
             </div>
             
             <!-- Net Manufacturing Cost -->
-            <div class="cost-tree-item d-flex align-items-center p-2 mb-2 border-start border-3 border-primary bg-light">
-                <i class="fas fa-chart-line text-primary me-2"></i>
-                <div class="flex-grow-1">
+            <div class="cost-line d-flex align-items-center justify-content-between p-2 mb-1 bg-light">
+                <div class="d-flex align-items-center">
+                    <span class="cost-icon me-2">📊</span>
                     <strong>Net Manufacturing Cost:</strong>
                 </div>
                 <span class="text-primary fw-bold">₹${(materialCostPerUnit + 15944.77).toFixed(2)}</span>
             </div>
             
             <!-- Markup -->
-            <div class="cost-tree-item d-flex align-items-center p-2 mb-2 border-start border-3 border-warning">
-                <i class="fas fa-percentage text-warning me-2"></i>
-                <div class="flex-grow-1">
+            <div class="cost-line d-flex align-items-center justify-content-between p-2 mb-1">
+                <div class="d-flex align-items-center">
+                    <span class="cost-icon me-2">📈</span>
                     <strong>Markup (3.0%):</strong>
                 </div>
                 <span class="text-warning fw-bold">₹2.26</span>
             </div>
             
             <!-- Final Unit Cost -->
-            <div class="cost-tree-item d-flex align-items-center p-3 bg-success text-white rounded">
-                <i class="fas fa-tag me-2"></i>
-                <div class="flex-grow-1">
+            <div class="final-cost d-flex align-items-center justify-content-between p-3 bg-success text-white rounded">
+                <div class="d-flex align-items-center">
+                    <span class="cost-icon me-2">🏷️</span>
                     <strong>Final Unit Cost:</strong>
                 </div>
                 <span class="fw-bold fs-5">₹${(materialCostPerUnit + 15947.03).toFixed(2)}</span>
@@ -676,52 +660,96 @@ function renderMaterials(materials, level) {
     border: 1px solid #dee2e6;
 }
 
-.bom-tree-structure {
-    font-family: 'Courier New', monospace;
+.exact-tree-container {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 0.9rem;
 }
 
-.tree-item {
-    margin-bottom: 2px;
-    border-radius: 3px;
+.tree-header {
+    border: none;
+    font-weight: 600;
 }
 
-.tree-item.root-item {
-    font-weight: bold;
-    font-size: 1rem;
+.info-badges {
+    font-size: 0.85rem;
+    padding: 0;
 }
 
-.tree-item.material-item:hover {
-    background-color: #f8f9fa;
+.main-bom-header {
+    font-weight: 600;
+    border: none;
 }
 
-.cost-breakdown-tree {
+.materials-tree {
     background: #f8f9fa;
-    border-radius: 8px;
+    border-radius: 6px;
     padding: 15px;
-    border: 1px solid #dee2e6;
-    font-family: 'Courier New', monospace;
 }
 
-.cost-tree-item {
+.material-tree-line {
     border-radius: 4px;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease;
 }
 
-.cost-tree-item:hover {
+.material-tree-line:hover {
     background-color: #e9ecef;
 }
 
-.process-breakdown {
-    font-family: 'Courier New', monospace;
+.sub-material-line {
     font-size: 0.85rem;
     color: #6c757d;
 }
 
-.process-item {
-    border-left: 2px solid #dee2e6;
-    margin-left: 10px;
-    padding-left: 10px;
+.tree-icon {
+    font-family: monospace;
+    font-size: 1rem;
+    width: 20px;
+    display: inline-block;
+}
+
+.exact-cost-breakdown {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.cost-header {
+    color: #0d6efd;
+    font-weight: 600;
+    border-bottom: 2px solid #0d6efd;
+    padding-bottom: 8px;
+}
+
+.cost-line {
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.cost-line:hover {
+    background-color: #e9ecef;
+}
+
+.process-lines {
+    font-family: monospace;
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+}
+
+.process-line {
+    color: #6c757d;
+}
+
+.cost-icon {
+    font-size: 1rem;
+    width: 24px;
+    display: inline-block;
+}
+
+.final-cost {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 10px;
 }
 </style>
 {% endblock %}
