@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from models import Item, PurchaseOrder, SalesOrder, Employee, JobWork, Production
+from models import Item, PurchaseOrder, SalesOrder, Employee, JobWork, Production, Supplier
 from models.dashboard import DashboardModule, UserDashboardPreference, get_user_dashboard_modules, init_user_default_preferences
 from sqlalchemy import func
 from app import db
