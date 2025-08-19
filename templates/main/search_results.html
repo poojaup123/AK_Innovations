@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Search Results - AK Innovations Factory Management{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Search Results</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="fas fa-search"></i> Search Results for "{{ query }}"
+    </h1>
+    <p class="page-subtitle">Found results across your factory management system</p>
+</div>
+
+<div class="row">
+    <!-- Items -->
+    {% if results.items %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-boxes"></i> Items ({{ results.items|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% for item in results.items %}
+                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                    <div>
+                        <strong>{{ item.name }}</strong>
+                        {% if item.code %}<br><small class="text-muted">Code: {{ item.code }}</small>{% endif %}
+                    </div>
+                    <a href="{{ url_for('inventory.item_details', item_id=item.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Suppliers -->
+    {% if results.suppliers %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-truck"></i> Suppliers ({{ results.suppliers|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% for supplier in results.suppliers %}
+                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                    <div>
+                        <strong>{{ supplier.name }}</strong>
+                        {% if supplier.contact_person %}<br><small class="text-muted">Contact: {{ supplier.contact_person }}</small>{% endif %}
+                    </div>
+                    <a href="{{ url_for('purchase.supplier_details', supplier_id=supplier.id) }}" class="btn btn-sm btn-outline-success">View</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Employees -->
+    {% if results.employees %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-users"></i> Employees ({{ results.employees|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% for employee in results.employees %}
+                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                    <div>
+                        <strong>{{ employee.name }}</strong>
+                        {% if employee.department %}<br><small class="text-muted">{{ employee.department }}</small>{% endif %}
+                    </div>
+                    <a href="{{ url_for('hr.employee_details', employee_id=employee.id) }}" class="btn btn-sm btn-outline-info">View</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Job Works -->
+    {% if results.job_works %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0"><i class="fas fa-tools"></i> Job Works ({{ results.job_works|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% for job in results.job_works %}
+                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                    <div>
+                        <strong>{{ job.job_number }}</strong>
+                        {% if job.customer_name %}<br><small class="text-muted">{{ job.customer_name }}</small>{% endif %}
+                    </div>
+                    <a href="{{ url_for('jobwork.view_job_work', job_id=job.id) }}" class="btn btn-sm btn-outline-warning">View</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Purchase Orders -->
+    {% if results.purchase_orders %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-shopping-cart"></i> Purchase Orders ({{ results.purchase_orders|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% for po in results.purchase_orders %}
+                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                    <div>
+                        <strong>{{ po.order_number }}</strong>
+                        {% if po.supplier %}<br><small class="text-muted">{{ po.supplier.name }}</small>{% endif %}
+                    </div>
+                    <a href="{{ url_for('purchase.view_purchase_order', po_id=po.id) }}" class="btn btn-sm btn-outline-secondary">View</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- No results message -->
+{% if not (results.items or results.suppliers or results.employees or results.job_works or results.purchase_orders) %}
+<div class="text-center py-5">
+    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+    <h4>No results found</h4>
+    <p class="text-muted">Try searching with different keywords or check your spelling.</p>
+    <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">
+        <i class="fas fa-home"></i> Back to Dashboard
+    </a>
+</div>
+{% endif %}
+
+<!-- Back to Dashboard -->
+<div class="mt-4 text-center">
+    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-primary">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+{% endblock %}

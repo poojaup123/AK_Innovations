@@ -71,6 +71,56 @@ def dashboard():
                          low_stock_items=low_stock_items,
                          user_modules=user_modules)
 
+@main_bp.route('/search')
+@login_required
+def search():
+    """Global search functionality"""
+    query = request.args.get('q', '').strip()
+    if not query:
+        flash('Please enter a search term', 'warning')
+        return redirect(url_for('main.dashboard'))
+    
+    results = {'items': [], 'suppliers': [], 'employees': [], 'job_works': [], 'purchase_orders': []}
+    
+    try:
+        # Search items
+        items = Item.query.filter(
+            Item.name.ilike(f'%{query}%') | 
+            Item.code.ilike(f'%{query}%')
+        ).limit(10).all()
+        results['items'] = items
+        
+        # Search suppliers
+        suppliers = Supplier.query.filter(
+            Supplier.name.ilike(f'%{query}%')
+        ).limit(5).all()
+        results['suppliers'] = suppliers
+        
+        # Search employees
+        employees = Employee.query.filter(
+            Employee.name.ilike(f'%{query}%')
+        ).limit(5).all()
+        results['employees'] = employees
+        
+        # Search job works
+        job_works = JobWork.query.filter(
+            JobWork.job_number.ilike(f'%{query}%') | 
+            JobWork.customer_name.ilike(f'%{query}%')
+        ).limit(5).all()
+        results['job_works'] = job_works
+        
+        # Search purchase orders
+        purchase_orders = PurchaseOrder.query.filter(
+            PurchaseOrder.order_number.ilike(f'%{query}%')
+        ).limit(5).all()
+        results['purchase_orders'] = purchase_orders
+        
+    except Exception as e:
+        flash(f'Search error: {str(e)}', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    return render_template('main/search_results.html', query=query, results=results)
+
 @main_bp.route('/customize_dashboard')
 @login_required
 def customize_dashboard():
