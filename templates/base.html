@@ -186,6 +186,89 @@
             opacity: 1 !important;
             visibility: visible !important;
         }
+        
+        /* Enhanced Sidebar Styles */
+        .nav-group {
+            margin-bottom: 0.5rem;
+        }
+        
+        .nav-group-header {
+            cursor: pointer;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 0.5rem;
+            margin-bottom: 0.25rem;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .nav-group-header:hover {
+            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+            border-color: #dee2e6;
+            transform: translateX(2px);
+        }
+        
+        .nav-group-arrow {
+            transition: transform 0.3s ease;
+            font-size: 0.75rem;
+        }
+        
+        .nav-group-header[aria-expanded="true"] .nav-group-arrow {
+            transform: rotate(180deg);
+        }
+        
+        .nav-group-items {
+            padding-left: 0.5rem;
+            border-left: 2px solid #e9ecef;
+            margin-left: 1rem;
+        }
+        
+        .nav-sublink {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            border-radius: 0.25rem;
+            margin-bottom: 0.25rem;
+            transition: all 0.2s ease;
+        }
+        
+        .nav-sublink:hover {
+            background-color: rgba(0, 123, 255, 0.1);
+            transform: translateX(4px);
+            border-left: 3px solid #007bff;
+        }
+        
+        .nav-sublink.active {
+            background-color: rgba(0, 123, 255, 0.15);
+            border-left: 3px solid #007bff;
+            font-weight: 500;
+        }
+        
+        .nav-text {
+            margin-left: 0.5rem;
+        }
+        
+        .text-xs {
+            font-size: 0.65rem;
+        }
+        
+        #menuSearch {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+        }
+        
+        #menuSearch:focus {
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            border-color: #007bff;
+        }
+        
+        .nav-group.filtered {
+            display: none;
+        }
+        
+        .nav-sublink.search-match {
+            background-color: rgba(255, 193, 7, 0.2);
+        }
     </style>
 </head>
 <body class="preload">
@@ -204,17 +287,18 @@
                 <i class="fas fa-industry"></i> AK Innovations
             </div>
             
-            <nav class="nav flex-column">
-                <!-- MAIN DASHBOARD -->
-                <a class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' }}" href="{{ url_for('main.dashboard') }}">
-                    <i class="fas fa-tachometer-alt"></i>
-                    Dashboard
-                </a>
-                
-                <hr class="my-2 opacity-25">
-                
-                <!-- CORE OPERATIONS -->
-                <div class="nav-section-header px-3 py-1 small text-muted fw-bold">OPERATIONS</div>
+            <!-- Global Search -->
+            <div class="px-3 mb-3">
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" placeholder="Search menus..." id="menuSearch">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                </div>
+            </div>
+
+            <nav class="nav flex-column" id="mainNavigation">
+                {% include 'enhanced_sidebar_nav.html' %}
                 <a class="nav-link {{ 'active' if 'inventory' in request.endpoint and 'batch' not in request.endpoint and 'price-history' not in request.endpoint }}" href="{{ url_for('inventory.dashboard') }}">
                     <i class="fas fa-boxes"></i>
                     Inventory
@@ -424,8 +508,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Sidebar toggle functionality
+        // Enhanced Navigation System
         document.addEventListener('DOMContentLoaded', function() {
+            // Sidebar toggle functionality
             const sidebarToggle = document.getElementById('sidebarToggle');
             const sidebar = document.getElementById('sidebar');
             
@@ -441,6 +526,92 @@
                     sidebar.style.display = 'block';
                     sidebar.style.visibility = 'visible';
                 }
+            }
+            
+            // Enhanced Navigation Group Toggle
+            window.toggleNavGroup = function(groupName) {
+                const header = document.querySelector(`[data-bs-target="#${groupName}-collapse"]`);
+                const collapse = document.querySelector(`#${groupName}-collapse`);
+                
+                if (header && collapse) {
+                    const isExpanded = collapse.classList.contains('show');
+                    header.setAttribute('aria-expanded', !isExpanded);
+                    
+                    // Save state to localStorage
+                    localStorage.setItem(`nav-group-${groupName}`, !isExpanded);
+                }
+            };
+            
+            // Restore saved navigation states
+            const navGroups = ['operations', 'inventory', 'manufacturing', 'business', 'management', 'admin'];
+            navGroups.forEach(group => {
+                const saved = localStorage.getItem(`nav-group-${group}`);
+                if (saved !== null) {
+                    const collapse = document.querySelector(`#${group}-collapse`);
+                    const header = document.querySelector(`[data-bs-target="#${group}-collapse"]`);
+                    
+                    if (collapse && header) {
+                        if (saved === 'true') {
+                            collapse.classList.add('show');
+                            header.setAttribute('aria-expanded', 'true');
+                        } else {
+                            collapse.classList.remove('show');
+                            header.setAttribute('aria-expanded', 'false');
+                        }
+                    }
+                }
+            });
+            
+            // Enhanced Menu Search
+            const menuSearch = document.getElementById('menuSearch');
+            if (menuSearch) {
+                menuSearch.addEventListener('input', function() {
+                    const query = this.value.toLowerCase().trim();
+                    const allGroups = document.querySelectorAll('.nav-group');
+                    const allSublinks = document.querySelectorAll('.nav-sublink');
+                    
+                    if (query === '') {
+                        // Reset all visibility
+                        allGroups.forEach(group => {
+                            group.classList.remove('filtered');
+                            group.style.display = '';
+                        });
+                        allSublinks.forEach(link => {
+                            link.classList.remove('search-match');
+                            link.style.display = '';
+                        });
+                        return;
+                    }
+                    
+                    // Filter navigation items
+                    allGroups.forEach(group => {
+                        const groupText = group.textContent.toLowerCase();
+                        const hasMatch = groupText.includes(query);
+                        
+                        if (hasMatch) {
+                            group.classList.remove('filtered');
+                            group.style.display = '';
+                            // Expand group if it has matches
+                            const collapse = group.querySelector('.nav-group-items');
+                            if (collapse) {
+                                collapse.classList.add('show');
+                            }
+                            
+                            // Highlight matching sublinks
+                            const sublinks = group.querySelectorAll('.nav-sublink');
+                            sublinks.forEach(link => {
+                                if (link.textContent.toLowerCase().includes(query)) {
+                                    link.classList.add('search-match');
+                                } else {
+                                    link.classList.remove('search-match');
+                                }
+                            });
+                        } else {
+                            group.classList.add('filtered');
+                            group.style.display = 'none';
+                        }
+                    });
+                });
             }
         });
         

@@ -1,0 +1,222 @@
+<!-- MAIN DASHBOARD -->
+<a class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' }}" href="{{ url_for('main.dashboard') }}">
+    <i class="fas fa-tachometer-alt text-primary"></i>
+    <span class="nav-text">Dashboard</span>
+</a>
+
+<hr class="my-2 opacity-25">
+
+<!-- 📊 OPERATIONS GROUP -->
+<div class="nav-group">
+    <div class="nav-group-header" onclick="toggleNavGroup('operations')" data-bs-toggle="collapse" data-bs-target="#operations-collapse">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <i class="fas fa-cogs text-primary me-2"></i>
+                <span class="fw-semibold">Operations</span>
+                <span class="badge bg-primary ms-2 text-xs">4</span>
+            </div>
+            <i class="fas fa-chevron-down nav-group-arrow"></i>
+        </div>
+    </div>
+    <div class="nav-group-items collapse show" id="operations-collapse">
+        <a class="nav-link nav-sublink {{ 'active' if 'production' in request.endpoint }}" href="{{ url_for('production.dashboard') }}">
+            <i class="fas fa-cogs"></i>
+            <span class="nav-text">Production Orders</span>
+        </a>
+        <a class="nav-link nav-sublink {{ 'active' if 'jobwork' in request.endpoint }}" href="{{ url_for('jobwork.dashboard') }}">
+            <i class="fas fa-tools"></i>
+            <span class="nav-text">Job Work</span>
+        </a>
+        <a class="nav-link nav-sublink {{ 'active' if 'job_card_integration' in request.endpoint }}" href="{{ url_for('job_card_integration.integration_dashboard') }}">
+            <i class="fas fa-link text-success"></i>
+            <span class="nav-text">Job Cards</span>
+            <span class="badge bg-success ms-auto small">NEW</span>
+        </a>
+        <a class="nav-link nav-sublink {{ 'active' if 'live_status' in request.endpoint }}" href="{{ url_for('live_status.process_dashboard') }}">
+            <i class="fas fa-chart-line"></i>
+            <span class="nav-text">Live Status</span>
+        </a>
+    </div>
+</div>
+
+<!-- 📦 INVENTORY GROUP -->
+<div class="nav-group">
+    <div class="nav-group-header" onclick="toggleNavGroup('inventory')" data-bs-toggle="collapse" data-bs-target="#inventory-collapse">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <i class="fas fa-boxes text-info me-2"></i>
+                <span class="fw-semibold">Inventory</span>
+                <span class="badge bg-info ms-2 text-xs">4</span>
+            </div>
+            <i class="fas fa-chevron-down nav-group-arrow"></i>
+        </div>
+    </div>
+    <div class="nav-group-items collapse show" id="inventory-collapse">
+        <a class="nav-link nav-sublink {{ 'active' if 'inventory' in request.endpoint and 'batch' not in request.endpoint and 'price-history' not in request.endpoint }}" href="{{ url_for('inventory.dashboard') }}">
+            <i class="fas fa-boxes"></i>
+            <span class="nav-text">Stock Overview</span>
+        </a>
+        <a class="nav-link nav-sublink {{ 'active' if 'purchase' in request.endpoint }}" href="{{ url_for('purchase.dashboard') }}">
+            <i class="fas fa-shopping-cart"></i>
+            <span class="nav-text">Purchase Orders</span>
+        </a>
+        <a class="nav-link nav-sublink {{ 'active' if 'batch_tracking' in request.endpoint }}" href="{{ url_for('batch_tracking.dashboard') }}">
+            <i class="fas fa-layer-group"></i>
+            <span class="nav-text">Batch Tracking</span>
+        </a>
+        <a class="nav-link nav-sublink {{ 'active' if 'inventory.price_history' in request.endpoint }}" href="{{ url_for('inventory.price_history') }}">
+            <i class="fas fa-chart-line"></i>
+            <span class="nav-text">Price History</span>
+        </a>
+    </div>
+</div>
+
+<!-- 🏭 MANUFACTURING GROUP -->
+<div class="nav-group">
+    <div class="nav-group-header" onclick="toggleNavGroup('manufacturing')" data-bs-toggle="collapse" data-bs-target="#manufacturing-collapse">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <i class="fas fa-industry text-warning me-2"></i>
+                <span class="fw-semibold">Manufacturing</span>
+                <span class="badge bg-warning text-dark ms-2 text-xs">3</span>
+            </div>
+            <i class="fas fa-chevron-down nav-group-arrow"></i>
+        </div>
+    </div>
+    <div class="nav-group-items collapse" id="manufacturing-collapse">
+        <a class="nav-link nav-sublink {{ 'active' if 'quality' in request.endpoint }}" href="{{ url_for('quality.dashboard') }}">
+            <i class="fas fa-shield-alt"></i>
+            <span class="nav-text">Quality Control</span>
+        </a>
+        <a class="nav-link nav-sublink {{ 'active' if 'packing' in request.endpoint }}" href="{{ url_for('packing.dashboard') }}">
+            <i class="fas fa-puzzle-piece"></i>
+            <span class="nav-text">Packing Optimization</span>
+            <span class="badge bg-primary ms-auto small">AI</span>
+        </a>
+        <a class="nav-link nav-sublink {{ 'active' if 'component_scanning' in request.endpoint }}" href="{{ url_for('component_scanning.dashboard') }}">
+            <i class="fas fa-search"></i>
+            <span class="nav-text">Component Scanning</span>
+            <span class="badge bg-warning text-dark ms-auto small">AI</span>
+        </a>
+    </div>
+</div>
+
+<!-- 💼 BUSINESS GROUP -->
+<div class="nav-group">
+    <div class="nav-group-header" onclick="toggleNavGroup('business')" data-bs-toggle="collapse" data-bs-target="#business-collapse">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <i class="fas fa-handshake text-success me-2"></i>
+                <span class="fw-semibold">Business</span>
+                <span class="badge bg-success ms-2 text-xs">3</span>
+            </div>
+            <i class="fas fa-chevron-down nav-group-arrow"></i>
+        </div>
+    </div>
+    <div class="nav-group-items collapse" id="business-collapse">
+        <a class="nav-link nav-sublink {{ 'active' if 'sales' in request.endpoint }}" href="{{ url_for('sales.dashboard') }}">
+            <i class="fas fa-handshake"></i>
+            <span class="nav-text">Sales Orders</span>
+        </a>
+        <a class="nav-link nav-sublink {{ 'active' if 'grn' in request.endpoint }}" href="{{ url_for('grn.dashboard') }}">
+            <i class="fas fa-truck"></i>
+            <span class="nav-text">Goods Receipt</span>
+        </a>
+        <a class="nav-link nav-sublink {{ 'active' if 'accounting' in request.endpoint }}" href="{{ url_for('accounting.dashboard') }}">
+            <i class="fas fa-calculator"></i>
+            <span class="nav-text">Accounting</span>
+            <span class="badge bg-success ms-auto small">NEW</span>
+        </a>
+    </div>
+</div>
+
+<!-- 👥 MANAGEMENT GROUP -->
+<div class="nav-group">
+    <div class="nav-group-header" onclick="toggleNavGroup('management')" data-bs-toggle="collapse" data-bs-target="#management-collapse">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <i class="fas fa-users text-secondary me-2"></i>
+                <span class="fw-semibold">Management</span>
+                <span class="badge bg-secondary ms-2 text-xs">3</span>
+            </div>
+            <i class="fas fa-chevron-down nav-group-arrow"></i>
+        </div>
+    </div>
+    <div class="nav-group-items collapse" id="management-collapse">
+        <a class="nav-link nav-sublink {{ 'active' if 'hr' in request.endpoint }}" href="{{ url_for('hr.dashboard') }}">
+            <i class="fas fa-users"></i>
+            <span class="nav-text">Employees</span>
+        </a>
+        <a class="nav-link nav-sublink {{ 'active' if 'expenses' in request.endpoint }}" href="{{ url_for('expenses.dashboard') }}">
+            <i class="fas fa-receipt"></i>
+            <span class="nav-text">Factory Expenses</span>
+        </a>
+        <a class="nav-link nav-sublink {{ 'active' if 'reports' in request.endpoint }}" href="{{ url_for('reports.dashboard') }}">
+            <i class="fas fa-chart-bar"></i>
+            <span class="nav-text">Reports & Analytics</span>
+        </a>
+    </div>
+</div>
+
+<hr class="my-3 opacity-25">
+
+<!-- ⚙️ ADMIN SECTION - Always collapsed by default -->
+<div class="nav-group">
+    <div class="nav-group-header" onclick="toggleNavGroup('admin')" data-bs-toggle="collapse" data-bs-target="#admin-collapse">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <i class="fas fa-cog text-muted me-2"></i>
+                <span class="fw-semibold text-muted">Administration</span>
+            </div>
+            <i class="fas fa-chevron-down nav-group-arrow"></i>
+        </div>
+    </div>
+    <div class="nav-group-items collapse" id="admin-collapse">
+        <a class="nav-link nav-sublink {{ 'active' if 'admin.approvals_dashboard' in request.endpoint }}" href="{{ url_for('admin.approvals_dashboard') }}">
+            <i class="fas fa-clipboard-check"></i>
+            <span class="nav-text">Approval Requests</span>
+        </a>
+        <a class="nav-link nav-sublink {{ 'active' if 'notifications' in request.endpoint }}" href="{{ url_for('notifications.admin_dashboard') }}">
+            <i class="fas fa-bell"></i>
+            <span class="nav-text">Notifications</span>
+        </a>
+        <a class="nav-link nav-sublink {{ 'active' if 'documents' in request.endpoint }}" href="{{ url_for('documents.document_list') }}">
+            <i class="fas fa-file-alt"></i>
+            <span class="nav-text">Documents</span>
+        </a>
+        <a class="nav-link nav-sublink {{ 'active' if 'tally_import' in request.endpoint }}" href="{{ url_for('tally_import.import_dashboard') }}">
+            <i class="fas fa-file-import"></i>
+            <span class="nav-text">Tally Import</span>
+        </a>
+        <a class="nav-link nav-sublink {{ 'active' if 'settings' in request.endpoint }}" href="{{ url_for('settings.dashboard') }}">
+            <i class="fas fa-cog"></i>
+            <span class="nav-text">Settings</span>
+        </a>
+        {% if current_user.is_admin() %}
+        <a class="nav-link nav-sublink {{ 'active' if 'user_management' in request.endpoint }}" href="{{ url_for('user_management.list_users') }}">
+            <i class="fas fa-users-cog"></i>
+            <span class="nav-text">User Management</span>
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<hr class="my-3 opacity-25">
+
+<!-- User Section -->
+<div class="nav-user-section">
+    <div class="nav-link d-flex align-items-center">
+        <i class="fas fa-user"></i>
+        <span class="flex-grow-1 ms-2">{{ current_user.username }}</span>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-secondary btn-sm ms-2" title="Logout">
+            <i class="fas fa-sign-out-alt"></i>
+        </a>
+    </div>
+    <div class="nav-link small">
+        <div class="text-center">
+            {{ price_access_badge() }}
+        </div>
+    </div>
+</div>
+    </div>
+</div>
