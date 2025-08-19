@@ -211,6 +211,12 @@
             display: none;
         }
         
+        /* Remove click protection that blocks navigation */
+        .nav-link.clicked {
+            pointer-events: auto !important;
+            opacity: 1 !important;
+        }
+        
     </style>
     <style>
         html {
@@ -807,17 +813,7 @@
                 });
             });
             
-            // Enhanced Navigation Hover Effects
-            const navLinks = document.querySelectorAll('.nav-link');
-            navLinks.forEach(link => {
-                link.addEventListener('click', function() {
-                    // Add click protection
-                    this.classList.add('clicked');
-                    setTimeout(() => {
-                        this.classList.remove('clicked');
-                    }, 300);
-                });
-            });
+            // Enhanced Navigation Hover Effects (removed click protection that was blocking navigation)
             
             // Keyboard Shortcuts
             document.addEventListener('keydown', function(e) {
