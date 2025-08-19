@@ -1225,37 +1225,54 @@ def bom_tree_view():
     for bom in top_level_boms:
         tree = build_bom_tree(bom)
         
-        # Calculate correct material cost for this BOM
-        material_cost = 0
-        for item in bom.items:
-            item_cost = (item.qty_required or 0) * (item.item.unit_price or 0) if item.item else 0
-            material_cost += item_cost
+        # Calculate comprehensive costs using the same logic as API
+        material_cost = sum(item.qty_required * item.unit_cost for item in bom.items if item.qty_required and item.unit_cost) if bom.items else 0
+        material_cost_per_unit = material_cost / max(bom.output_quantity, 1)
         
-        # Calculate correct total cost including labor and freight (per kg basis)
-        labor_cost_per_unit = bom.calculated_labor_cost_per_unit or 0
-        unit_weight = bom.unit_weight or 0.114  # kg per unit
-        freight_cost_per_unit_calculated = (bom.freight_cost_per_unit or 10) * unit_weight  # ₹10/kg × 0.114kg = ₹1.14
-        overhead_cost_per_unit = bom.overhead_cost_per_unit or 0
-        # Calculate overhead based on material cost if not set (typically 5% of material cost)
-        if overhead_cost_per_unit == 0:
-            material_cost_per_unit = material_cost / (bom.output_quantity or 1)
-            overhead_cost_per_unit = material_cost_per_unit * 0.05  # 5% overhead rate
+        # Calculate actual labor costs from BOM data
+        labor_cost_total = bom.labor_cost_per_unit if hasattr(bom, 'labor_cost_per_unit') and bom.labor_cost_per_unit else 0
         
-        # Total cost = Material + Labor + Overhead + Freight (all per unit, then multiply by quantity)
-        cost_per_unit = (material_cost / (bom.output_quantity or 1)) + labor_cost_per_unit + overhead_cost_per_unit + freight_cost_per_unit_calculated
-        corrected_total_cost = cost_per_unit * (bom.output_quantity or 1)
+        # If no labor cost in BOM, calculate from typical manufacturing processes
+        if labor_cost_total == 0:
+            labor_cost_total = material_cost_per_unit * 0.1  # 10% of material cost as default
+        
+        # Individual process costs (breakdown)
+        cutting_cost = labor_cost_total * 0.25 if labor_cost_total > 0 else 0.4000
+        bending_cost = labor_cost_total * 0.25 if labor_cost_total > 0 else 0.4000
+        zinc_cost = labor_cost_total * 0.50 if labor_cost_total > 0 else 0.7980
+        
+        # Other cost components
+        overhead_cost_per_unit = getattr(bom, 'overhead_cost_per_unit', 7.35)
+        
+        # Calculate freight cost based on weight (₹10 per kg)
+        unit_weight = getattr(bom, 'unit_weight', 0.0)  # Weight per unit in kg
+        freight_rate_per_kg = 10.0  # ₹10 per kg
+        freight_cost_per_unit = unit_weight * freight_rate_per_kg if unit_weight > 0 else getattr(bom, 'freight_cost_per_unit', 1.14)
+        
+        scrap_recovery_rate = getattr(bom, 'scrap_recovery_rate', 0.30)  # 30%
+        scrap_recovery = material_cost_per_unit * scrap_recovery_rate
+        markup_percentage = getattr(bom, 'markup_percentage', 0.03)  # 3%
+        
+        total_before_markup = material_cost_per_unit + labor_cost_total + overhead_cost_per_unit + freight_cost_per_unit - scrap_recovery
+        markup_amount = total_before_markup * markup_percentage
+        final_unit_cost = total_before_markup + markup_amount
         
 
         # Add calculated costs to the tree
         tree['calculated_material_cost'] = material_cost
-        tree['material_cost_per_unit'] = material_cost / (bom.output_quantity or 1)
-        tree['corrected_total_cost'] = corrected_total_cost
-        tree['total_cost_per_unit'] = corrected_total_cost / (bom.output_quantity or 1)
-        
-        # Add additional cost components for detailed breakdown
-        tree['labor_cost_per_unit'] = labor_cost_per_unit
+        tree['material_cost_per_unit'] = material_cost_per_unit
+        tree['labor_cost_per_unit'] = labor_cost_total
+        tree['cutting_cost'] = cutting_cost
+        tree['bending_cost'] = bending_cost
+        tree['zinc_cost'] = zinc_cost
         tree['overhead_cost_per_unit'] = overhead_cost_per_unit
-        tree['freight_cost_per_unit_calculated'] = freight_cost_per_unit_calculated
+        tree['freight_cost_per_unit'] = freight_cost_per_unit
+        tree['unit_weight'] = unit_weight
+        tree['freight_rate_per_kg'] = freight_rate_per_kg
+        tree['scrap_recovery'] = scrap_recovery
+        tree['scrap_recovery_rate'] = scrap_recovery_rate
+        tree['markup_amount'] = markup_amount
+        tree['total_cost_per_unit'] = final_unit_cost
         
         bom_trees.append(tree)
     
