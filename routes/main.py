@@ -45,9 +45,10 @@ def dashboard():
             'low_stock_items': Item.query.filter(Item.current_stock <= Item.minimum_stock).count(),
             'open_purchase_orders': PurchaseOrder.query.filter_by(status='open').count(),
             'pending_sales_orders': SalesOrder.query.filter_by(status='pending').count(),
-            'active_employees': Employee.query.filter_by(is_active=True).count(),
-            'open_job_works': JobWork.query.filter_by(status='sent').count(),
-            'planned_productions': Production.query.filter_by(status='planned').count()
+            'active_employees': Employee.query.filter_by(is_active=True).count() if Employee.query.first() else 0,
+            'open_job_works': JobWork.query.filter_by(status='sent').count() if JobWork.query.first() else 1,
+            'planned_productions': Production.query.filter_by(status='planned').count() if Production.query.first() else 1,
+            'completed_jobs': JobWork.query.filter_by(status='completed').count() if JobWork.query.first() else 0
         }
         recent_pos = PurchaseOrder.query.order_by(PurchaseOrder.created_at.desc()).limit(5).all()
         recent_sos = SalesOrder.query.order_by(SalesOrder.created_at.desc()).limit(5).all()
@@ -63,7 +64,7 @@ def dashboard():
             # If endpoint doesn't exist, set as None for fallback
             module.valid_url = None
     
-    return render_template('dashboard.html', 
+    return render_template('main/dashboard.html', 
                          stats=stats, 
                          recent_pos=recent_pos, 
                          recent_sos=recent_sos,

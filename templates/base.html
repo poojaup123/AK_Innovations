@@ -8,7 +8,210 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/no-flicker.css') }}" rel="stylesheet">
+    
+    <!-- User-Friendly Enhancements CSS -->
     <style>
+        /* Global Search Bar */
+        .global-search-container {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        
+        .global-search {
+            width: 100%;
+            padding: 8px 12px 8px 35px;
+            border: 1px solid #dee2e6;
+            border-radius: 20px;
+            font-size: 14px;
+            background-color: #f8f9fa;
+        }
+        
+        .global-search:focus {
+            outline: none;
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+        
+        /* Quick Stats Improvements */
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: none;
+            transition: transform 0.2s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card.warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .stat-card.success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .stat-card.info {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        
+        /* Breadcrumb Navigation */
+        .breadcrumb-container {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .breadcrumb {
+            background: transparent;
+            margin-bottom: 0;
+            font-size: 14px;
+        }
+        
+        /* Quick Action Buttons */
+        .quick-actions {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .quick-action-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .quick-action-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        
+        /* Loading States */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0d6efd;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1055;
+            max-width: 300px;
+        }
+        
+        /* Enhanced Sidebar */
+        .nav-link {
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .nav-link:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+            padding-left: 20px;
+        }
+        
+        .nav-link.active {
+            background-color: rgba(13, 110, 253, 0.15);
+            border-left: 3px solid #0d6efd;
+        }
+        
+        /* Recently Viewed Section */
+        .recently-viewed {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        
+        .recently-viewed-item {
+            display: block;
+            padding: 5px 10px;
+            color: #495057;
+            text-decoration: none;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+        
+        .recently-viewed-item:hover {
+            background-color: #dee2e6;
+            color: #212529;
+            text-decoration: none;
+        }
+        
+        /* Page Progress Indicator */
+        .page-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 3px;
+            background: linear-gradient(90deg, #0d6efd, #20c997);
+            z-index: 9999;
+            transition: width 0.3s ease;
+        }
+        
+        /* Auto-save Indicator */
+        .auto-save-status {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 5px 15px;
+            background-color: #28a745;
+            color: white;
+            border-radius: 15px;
+            font-size: 12px;
+            z-index: 1050;
+            display: none;
+        }
+        
+    </style>
         html {
             overflow-y: auto;
             height: auto;
@@ -204,6 +407,12 @@
                 <i class="fas fa-industry"></i> AK Innovations
             </div>
             
+            <!-- Global Search -->
+            <div class="global-search-container px-3">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="global-search" placeholder="Search anything..." id="globalSearch">
+            </div>
+            
             <nav class="nav flex-column">
                 <!-- MAIN DASHBOARD -->
                 <a class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' }}" href="{{ url_for('main.dashboard') }}">
@@ -379,13 +588,39 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Recently Viewed Section -->
+                <div class="recently-viewed px-3">
+                    <div class="small text-muted fw-bold mb-2">RECENTLY VIEWED</div>
+                    <a href="#" class="recently-viewed-item" id="recent-1">Dashboard</a>
+                    <a href="#" class="recently-viewed-item" id="recent-2">Inventory</a>
+                    <a href="#" class="recently-viewed-item" id="recent-3">Job Work</a>
+                </div>
             </nav>
         </div>
         {% endif %}
 
         <!-- Main Content Area -->
         <div class="{% if current_user.is_authenticated %}main-content{% else %}login-container container-fluid{% endif %} flex-grow-1">
+            <!-- Page Progress Indicator -->
+            <div class="page-progress" id="pageProgress"></div>
+            
+            <!-- Auto-save Status -->
+            <div class="auto-save-status" id="autoSaveStatus">
+                <i class="fas fa-check"></i> Auto-saved
+            </div>
+            
             {% if current_user.is_authenticated %}
+            <!-- Breadcrumb Navigation -->
+            <div class="breadcrumb-container">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}"><i class="fas fa-home"></i> Home</a></li>
+                        {% block breadcrumb %}{% endblock %}
+                    </ol>
+                </nav>
+            </div>
+                
                 <!-- Global Flash Messages for authenticated users -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
@@ -411,7 +646,30 @@
             </div>
             {% endif %}
         </div>
+        
+        <!-- Quick Action Buttons -->
+        {% if current_user.is_authenticated %}
+        <div class="quick-actions">
+            <a href="{{ url_for('inventory.add_item') }}" class="btn btn-primary quick-action-btn" title="Add New Item">
+                <i class="fas fa-plus"></i>
+            </a>
+            <a href="{{ url_for('jobwork.enhanced_form') }}" class="btn btn-success quick-action-btn" title="Create Job Work">
+                <i class="fas fa-tools"></i>
+            </a>
+            <a href="{{ url_for('purchase.create_purchase_order') }}" class="btn btn-warning quick-action-btn" title="New Purchase Order">
+                <i class="fas fa-shopping-cart"></i>
+            </a>
+        </div>
+        {% endif %}
     </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <!-- Footer -->
     <footer class="app-footer">
@@ -424,8 +682,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Sidebar toggle functionality
+        // User-Friendly Enhancement JavaScript
         document.addEventListener('DOMContentLoaded', function() {
+            // Sidebar toggle functionality
             const sidebarToggle = document.getElementById('sidebarToggle');
             const sidebar = document.getElementById('sidebar');
             
@@ -442,6 +701,203 @@
                     sidebar.style.visibility = 'visible';
                 }
             }
+            
+            // Global Search Functionality
+            const globalSearch = document.getElementById('globalSearch');
+            if (globalSearch) {
+                globalSearch.addEventListener('input', function(e) {
+                    const query = e.target.value.toLowerCase().trim();
+                    if (query.length > 2) {
+                        // Simulate search functionality
+                        console.log('Searching for:', query);
+                        // You can implement actual search here
+                    }
+                });
+                
+                // Enter key handling
+                globalSearch.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const query = e.target.value;
+                        if (query) {
+                            // Navigate to search results
+                            window.location.href = `/search?q=${encodeURIComponent(query)}`;
+                        }
+                    }
+                });
+            }
+            
+            // Recently Viewed Management
+            function updateRecentlyViewed() {
+                const currentPage = window.location.pathname;
+                const pageTitle = document.title.split(' - ')[0];
+                
+                let recentPages = JSON.parse(localStorage.getItem('recentPages') || '[]');
+                
+                // Remove if already exists
+                recentPages = recentPages.filter(page => page.url !== currentPage);
+                
+                // Add to beginning
+                recentPages.unshift({
+                    url: currentPage,
+                    title: pageTitle,
+                    timestamp: Date.now()
+                });
+                
+                // Keep only last 3
+                recentPages = recentPages.slice(0, 3);
+                
+                localStorage.setItem('recentPages', JSON.stringify(recentPages));
+                
+                // Update UI
+                const recentItems = document.querySelectorAll('.recently-viewed-item');
+                recentPages.forEach((page, index) => {
+                    if (recentItems[index]) {
+                        recentItems[index].href = page.url;
+                        recentItems[index].textContent = page.title;
+                    }
+                });
+            }
+            
+            updateRecentlyViewed();
+            
+            // Page Progress Indicator
+            let pageProgress = 0;
+            const progressBar = document.getElementById('pageProgress');
+            
+            function updateProgress(percent) {
+                if (progressBar) {
+                    progressBar.style.width = percent + '%';
+                }
+            }
+            
+            // Simulate page loading progress
+            window.addEventListener('beforeunload', function() {
+                updateProgress(0);
+            });
+            
+            // Auto-save functionality
+            let autoSaveTimer;
+            const autoSaveStatus = document.getElementById('autoSaveStatus');
+            
+            function showAutoSaveStatus() {
+                if (autoSaveStatus) {
+                    autoSaveStatus.style.display = 'block';
+                    setTimeout(() => {
+                        autoSaveStatus.style.display = 'none';
+                    }, 2000);
+                }
+            }
+            
+            // Auto-save for forms
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                const inputs = form.querySelectorAll('input, textarea, select');
+                inputs.forEach(input => {
+                    input.addEventListener('input', function() {
+                        clearTimeout(autoSaveTimer);
+                        autoSaveTimer = setTimeout(() => {
+                            // Simulate auto-save
+                            const formData = new FormData(form);
+                            localStorage.setItem(`autosave_${form.id || 'form'}`, JSON.stringify(Object.fromEntries(formData)));
+                            showAutoSaveStatus();
+                        }, 2000);
+                    });
+                });
+            });
+            
+            // Enhanced Navigation Hover Effects
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    // Add click protection
+                    this.classList.add('clicked');
+                    setTimeout(() => {
+                        this.classList.remove('clicked');
+                    }, 300);
+                });
+            });
+            
+            // Keyboard Shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Ctrl/Cmd + K for global search
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    if (globalSearch) {
+                        globalSearch.focus();
+                    }
+                }
+                
+                // Ctrl/Cmd + H for home
+                if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+                    e.preventDefault();
+                    window.location.href = '{{ url_for("main.dashboard") }}';
+                }
+                
+                // Ctrl/Cmd + N for new item
+                if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                    e.preventDefault();
+                    window.location.href = '{{ url_for("inventory.add_item") }}';
+                }
+            });
+            
+            // Enhanced Loading States
+            function showLoading() {
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                if (loadingOverlay) {
+                    loadingOverlay.style.display = 'flex';
+                }
+            }
+            
+            function hideLoading() {
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                if (loadingOverlay) {
+                    loadingOverlay.style.display = 'none';
+                }
+            }
+            
+            // Show loading for form submissions
+            forms.forEach(form => {
+                form.addEventListener('submit', function() {
+                    showLoading();
+                });
+            });
+            
+            // Hide loading when page is loaded
+            window.addEventListener('load', function() {
+                hideLoading();
+                updateProgress(100);
+                setTimeout(() => updateProgress(0), 500);
+            });
+            
+            // Toast Notification System
+            function showToast(message, type = 'info') {
+                const toastContainer = document.getElementById('toastContainer');
+                if (!toastContainer) return;
+                
+                const toast = document.createElement('div');
+                toast.className = `toast show`;
+                toast.innerHTML = `
+                    <div class="toast-header">
+                        <i class="fas fa-${type === 'success' ? 'check-circle text-success' : type === 'error' ? 'exclamation-circle text-danger' : 'info-circle text-info'}"></i>
+                        <strong class="me-auto ms-2">${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">${message}</div>
+                `;
+                
+                toastContainer.appendChild(toast);
+                
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    if (toast && toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 5000);
+            }
+            
+            // Show welcome toast
+            showToast('Welcome to AK Innovations Factory Management! Use Ctrl+K to search.', 'success');
         });
         
         // Fix for Bootstrap modal backdrop issues and prevent sidebar flickering

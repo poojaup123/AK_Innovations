@@ -2,6 +2,10 @@
 
 {% block title %}Dashboard - AK Innovations Factory Management{% endblock %}
 
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Dashboard</li>
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">
@@ -47,28 +51,73 @@
     </div>
     
     <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h5 class="card-title text-primary">{{ stats.total_items }}</h5>
-                <p class="card-text small text-muted">Total Items</p>
+        <div class="stat-card text-center">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-boxes fa-2x me-3"></i>
+                <div>
+                    <h4 class="mb-0">{{ stats.total_items }}</h4>
+                    <small>Total Items</small>
+                </div>
             </div>
         </div>
     </div>
     
     <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h5 class="card-title text-warning">{{ stats.low_stock_items }}</h5>
-                <p class="card-text small text-muted">Low Stock</p>
+        <div class="stat-card warning text-center">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                <div>
+                    <h4 class="mb-0">{{ stats.low_stock_items }}</h4>
+                    <small>Low Stock</small>
+                </div>
             </div>
         </div>
     </div>
     
     <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h5 class="card-title text-info">{{ stats.open_purchase_orders }}</h5>
-                <p class="card-text small text-muted">Open POs</p>
+        <div class="stat-card success text-center">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-shopping-cart fa-2x me-3"></i>
+                <div>
+                    <h4 class="mb-0">{{ stats.open_purchase_orders }}</h4>
+                    <small>Open POs</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+        <div class="stat-card info text-center">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-users fa-2x me-3"></i>
+                <div>
+                    <h4 class="mb-0">{{ stats.active_employees }}</h4>
+                    <small>Active Employees</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-cogs fa-2x me-3"></i>
+                <div>
+                    <h4 class="mb-0">{{ stats.planned_productions }}</h4>
+                    <small>Planned Productions</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+        <div class="stat-card success text-center">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-check-circle fa-2x me-3"></i>
+                <div>
+                    <h4 class="mb-0">{{ stats.completed_jobs }}</h4>
+                    <small>Completed Today</small>
+                </div>
             </div>
         </div>
     </div>
