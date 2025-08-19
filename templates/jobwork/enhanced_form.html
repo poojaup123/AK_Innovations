@@ -217,11 +217,12 @@
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold">Available Stock</label>
                                     <div class="input-group">
-                                        <input type="text" class="form-control bg-light" id="available_stock" readonly>
-                                        <button type="button" class="btn btn-outline-info" id="checkStockBtn">
+                                        <input type="text" class="form-control bg-light" id="available_stock" readonly placeholder="Select material first">
+                                        <button type="button" class="btn btn-outline-info" id="checkStockBtn" onclick="checkMaterialStock()">
                                             <i class="fas fa-search"></i>
                                         </button>
                                     </div>
+                                    <div class="form-text" id="stock_info">Stock will be displayed when material is selected</div>
                                 </div>
                                 
                                 <div class="col-md-6">
@@ -678,7 +679,35 @@ function loadMaterials() {
                     const option = document.createElement('option');
                     option.value = material.id;
                     option.textContent = material.name;
+                    option.setAttribute('data-stock', material.stock);
+                    option.setAttribute('data-unit', material.unit);
                     select.appendChild(option);
+                });
+                
+                // Add change handler for material selection
+                select.addEventListener('change', function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    if (selectedOption && selectedOption.value) {
+                        const stock = selectedOption.getAttribute('data-stock') || 0;
+                        const unit = selectedOption.getAttribute('data-unit') || 'Units';
+                        
+                        document.getElementById('available_stock').value = `${stock} ${unit}`;
+                        document.getElementById('material_unit').textContent = unit;
+                        document.getElementById('stock_info').textContent = `Available: ${stock} ${unit}`;
+                        
+                        // Update stock validation
+                        if (parseFloat(stock) <= 0) {
+                            document.getElementById('stock_info').className = 'form-text text-danger';
+                            document.getElementById('stock_info').textContent = 'Warning: No stock available!';
+                        } else {
+                            document.getElementById('stock_info').className = 'form-text text-success';
+                        }
+                    } else {
+                        document.getElementById('available_stock').value = '';
+                        document.getElementById('material_unit').textContent = 'Units';
+                        document.getElementById('stock_info').textContent = 'Stock will be displayed when material is selected';
+                        document.getElementById('stock_info').className = 'form-text';
+                    }
                 });
             }
         })
@@ -715,6 +744,47 @@ function previewGRN() {
 function allocateBatches() {
     // Auto-allocate batches using FIFO logic
     console.log('Allocating batches');
+}
+
+function checkMaterialStock() {
+    const materialSelect = document.getElementById('input_material');
+    const selectedOption = materialSelect.options[materialSelect.selectedIndex];
+    
+    if (selectedOption && selectedOption.value) {
+        const materialId = selectedOption.value;
+        
+        // Show loading state
+        document.getElementById('available_stock').value = 'Checking...';
+        
+        fetch(`/jobwork/api/material-stock/${materialId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('available_stock').value = `${data.stock} ${data.unit}`;
+                    document.getElementById('stock_info').textContent = `Available: ${data.stock} ${data.unit}`;
+                    document.getElementById('stock_info').className = data.stock > 0 ? 'form-text text-success' : 'form-text text-danger';
+                } else {
+                    document.getElementById('available_stock').value = 'Error checking stock';
+                    document.getElementById('stock_info').textContent = 'Could not check stock';
+                    document.getElementById('stock_info').className = 'form-text text-danger';
+                }
+            })
+            .catch(error => {
+                console.error('Error checking stock:', error);
+                document.getElementById('available_stock').value = 'Error';
+                document.getElementById('stock_info').textContent = 'Error checking stock';
+                document.getElementById('stock_info').className = 'form-text text-danger';
+            });
+    } else {
+        alert('Please select a material first');
+    }
+}
+
+function updateMaterialUnit(materialId) {
+    const materialSelect = document.getElementById('input_material');
+    const selectedOption = materialSelect.options[materialSelect.selectedIndex];
+    const unit = selectedOption.getAttribute('data-unit') || 'Units';
+    document.getElementById('material_unit').textContent = unit;
 }
 </script>
 {% endblock %}

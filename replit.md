@@ -39,6 +39,7 @@ Core features include:
 - **Enhanced Process-Level Scrap Tracking System:** Comprehensive scrap tracking at the manufacturing process level with intelligent material source logic and accurate UOM conversion.
 - **BOM Output Quantity Synchronization System:** Automatic synchronization of BOM output quantity with the final manufacturing process output quantity.
 - **Unified Batch Tracking Integration:** Complete integration of batch tracking across all modules for comprehensive traceability from supplier to customer.
+- **Enhanced Job Work Creation Interface:** Modern 4-step wizard interface with real-time Job Card and GRN integration, smart material selection with automatic stock validation, and comprehensive batch tracking capabilities.
 
 ### System Design Choices
 - **Application Factory Pattern:** Modern Flask architecture with proper package structure and organized separation of concerns.

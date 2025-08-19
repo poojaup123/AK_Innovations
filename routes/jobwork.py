@@ -641,19 +641,55 @@ def api_production_orders():
 def api_materials():
     """API endpoint for materials dropdown"""
     try:
-        items = Item.query.filter(Item.current_stock > 0).order_by(Item.name).all()
+        items = Item.query.order_by(Item.name).all()
         materials_data = []
         for item in items:
+            # Get actual stock from different possible fields
+            stock = 0
+            if hasattr(item, 'current_stock') and item.current_stock:
+                stock = item.current_stock
+            elif hasattr(item, 'qty_raw') and item.qty_raw:
+                stock = item.qty_raw
+            elif hasattr(item, 'total_stock') and item.total_stock:
+                stock = item.total_stock
+            
             materials_data.append({
                 'id': item.id,
-                'name': f"{item.name} ({item.code})",
-                'code': item.code,
-                'unit': item.unit_of_measure,
-                'stock': item.current_stock or 0
+                'name': f"{item.name} ({item.code})" if item.code else item.name,
+                'code': item.code or '',
+                'unit': item.unit_of_measure or 'Units',
+                'stock': stock
             })
         return jsonify(materials_data)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@jobwork_bp.route('/api/material-stock/<int:material_id>')
+@login_required
+def api_material_stock(material_id):
+    """API endpoint to get specific material stock"""
+    try:
+        item = Item.query.get_or_404(material_id)
+        
+        # Get actual stock from different possible fields
+        stock = 0
+        if hasattr(item, 'current_stock') and item.current_stock:
+            stock = item.current_stock
+        elif hasattr(item, 'qty_raw') and item.qty_raw:
+            stock = item.qty_raw
+        elif hasattr(item, 'total_stock') and item.total_stock:
+            stock = item.total_stock
+        
+        return jsonify({
+            'success': True,
+            'material_id': material_id,
+            'name': item.name,
+            'code': item.code or '',
+            'stock': stock,
+            'unit': item.unit_of_measure or 'Units'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # BOM Integration API Routes
 @jobwork_bp.route('/api/bom/<int:bom_id>/materials')
