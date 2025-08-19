@@ -1397,10 +1397,66 @@ def edit_bom(id):
             ('sqm', 'Square Meters (sq.m)')
         ]
     
+    # Generate tree data for this specific BOM
+    def build_single_bom_tree(bom):
+        """Build tree structure for a specific BOM"""
+        tree_node = {
+            'bom': bom,
+            'product': bom.product,
+            'materials': [],
+            'sub_boms': []
+        }
+        
+        # Add direct materials and check for intermediate BOMs
+        for bom_item in bom.items:
+            material_item = getattr(bom_item, 'material', None) or getattr(bom_item, 'item', None)
+            if material_item:
+                quantity = bom_item.qty_required or getattr(bom_item, 'quantity_required', 0) or 0
+                
+                try:
+                    unit = bom_item.uom.symbol if bom_item.uom else (bom_item.unit or 'pcs')
+                except AttributeError:
+                    unit = bom_item.unit or 'pcs'
+                
+                material_entry = {
+                    'item': material_item,
+                    'quantity': quantity,
+                    'unit': unit,
+                    'cost': bom_item.unit_cost or 0,
+                    'sub_materials': []
+                }
+                
+                # Check if this material has its own BOM (intermediate product)
+                material_bom = BOM.query.filter_by(product_id=material_item.id, is_active=True).first()
+                if material_bom:
+                    material_tree = build_single_bom_tree(material_bom)
+                    material_entry['intermediate_bom'] = material_tree
+                    material_entry['is_intermediate'] = True
+                else:
+                    material_entry['is_intermediate'] = False
+                
+                tree_node['materials'].append(material_entry)
+        
+        # Add sub-BOMs (child BOMs that have this BOM as parent)
+        child_boms = BOM.query.filter_by(parent_bom_id=bom.id, is_active=True).all()
+        for child_bom in child_boms:
+            tree_node['sub_boms'].append(build_single_bom_tree(child_bom))
+        
+        return tree_node
+    
+    # Build tree structure for this BOM
+    bom_tree = build_single_bom_tree(bom)
+    
+    # Add calculated costs to the tree
+    bom_tree['calculated_material_cost'] = material_cost
+    bom_tree['material_cost_per_unit'] = material_cost_per_unit
+    bom_tree['total_cost_per_unit'] = total_cost_per_unit
+
     return render_template('production/bom_form.html', 
                          form=form, 
                          title='Edit BOM', 
                          bom=bom,
+                         bom_tree=bom_tree,
                          bom_items=bom_items,
                          materials=materials,
                          material_cost=material_cost,
