@@ -208,16 +208,16 @@
 </div>
 
 <!-- BOM Tree Modal -->
-<div class="modal fade" id="bomTreeModal" tabindex="-1" aria-labelledby="bomTreeModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
+<div class="modal fade" id="bomTreeModal" tabindex="-1" aria-labelledby="bomTreeModalLabel" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header sticky-top bg-white">
                 <h5 class="modal-title" id="bomTreeModalLabel">
                     <i class="fas fa-sitemap"></i> BOM Tree Structure
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" style="max-height: 80vh; overflow-y: auto;">
                 <div id="bomTreeContent">
                     <div class="text-center">
                         <div class="spinner-border text-primary" role="status">
@@ -227,7 +227,7 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer sticky-bottom bg-white">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -280,7 +280,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // BOM Tree Modal Functions
 function openBOMTreeModal(bomId, bomCode, productName) {
-    const modal = new bootstrap.Modal(document.getElementById('bomTreeModal'));
+    const modalElement = document.getElementById('bomTreeModal');
+    const modal = new bootstrap.Modal(modalElement, {
+        backdrop: true,
+        keyboard: true,
+        focus: true
+    });
     const modalTitle = document.getElementById('bomTreeModalLabel');
     const modalContent = document.getElementById('bomTreeContent');
     
@@ -297,8 +302,26 @@ function openBOMTreeModal(bomId, bomCode, productName) {
         </div>
     `;
     
+    // Remove any existing backdrop before showing modal
+    const existingBackdrops = document.querySelectorAll('.modal-backdrop');
+    existingBackdrops.forEach(backdrop => backdrop.remove());
+    
     // Show modal
     modal.show();
+    
+    // Ensure body scroll is not disabled
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    
+    // Handle modal events
+    modalElement.addEventListener('hidden.bs.modal', function () {
+        // Cleanup when modal is closed
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => backdrop.remove());
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        document.body.classList.remove('modal-open');
+    });
     
     // Fetch tree data
     fetch(`/production/api/bom/${bomId}/tree-data`)
@@ -611,6 +634,43 @@ function renderMaterials(materials, level) {
 
 .modal-xl {
     max-width: 95%;
+}
+
+/* Fix modal backdrop and scrolling issues */
+.modal {
+    --bs-modal-zindex: 1055;
+}
+
+.modal-backdrop {
+    --bs-backdrop-zindex: 1050;
+}
+
+.modal-dialog-scrollable .modal-body {
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+}
+
+.modal-header.sticky-top {
+    z-index: 1056;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-footer.sticky-bottom {
+    z-index: 1056;
+    border-top: 1px solid #dee2e6;
+}
+
+/* Ensure modal content is scrollable */
+#bomTreeModal .modal-body {
+    padding: 1rem;
+    overflow-y: auto;
+    max-height: 80vh;
+}
+
+/* Prevent backdrop scroll issues */
+body.modal-open {
+    overflow: hidden !important;
+    padding-right: 0 !important;
 }
 
 .tree-node:hover, .tree-material:hover {
