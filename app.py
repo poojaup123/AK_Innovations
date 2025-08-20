@@ -143,8 +143,16 @@ def create_app():
     app.register_blueprint(inventory_unified_bp, url_prefix='/inventory-unified')
     app.register_blueprint(purchase_bp, url_prefix='/purchase')
     app.register_blueprint(sales_bp, url_prefix='/sales')
+    # Job Work Section - All job work related modules
     app.register_blueprint(jobwork_bp, url_prefix='/jobwork')
     app.register_blueprint(jobwork_rates_bp, url_prefix='/jobwork-rates')
+    
+    # Job Cards (part of Job Work section)
+    app.register_blueprint(job_cards_bp, url_prefix='/jobwork/job-cards')
+    
+    # Multi-Process Job Work
+    from routes.multi_process_jobwork import multi_process_jobwork_bp
+    app.register_blueprint(multi_process_jobwork_bp, url_prefix='/jobwork/multi-process')
     app.register_blueprint(production_bp, url_prefix='/production')
     app.register_blueprint(hr_bp, url_prefix='/hr')
     app.register_blueprint(reports_bp, url_prefix='/reports')
@@ -159,19 +167,16 @@ def create_app():
     app.register_blueprint(tally_bp, url_prefix='/tally')
     app.register_blueprint(packing_bp, url_prefix='/packing')
     app.register_blueprint(tally_import_bp, url_prefix='/tally')
-    app.register_blueprint(job_cards_bp, url_prefix='/job-cards')
-    
+    # Production Section - Enhanced with Manufacturing Intelligence  
     from routes.daily_production import daily_production_bp
-    app.register_blueprint(daily_production_bp)
+    app.register_blueprint(daily_production_bp, url_prefix='/production/daily-status')
     
-
-    
-    # Job Card Workflow Management
+    # Job Card Workflow Management (part of Job Work)
     from routes.job_card_workflow import job_card_workflow_bp
-    app.register_blueprint(job_card_workflow_bp)
+    app.register_blueprint(job_card_workflow_bp, url_prefix='/jobwork/workflow')
     
     from routes.job_card_management import job_card_management_bp
-    app.register_blueprint(job_card_management_bp)
+    app.register_blueprint(job_card_management_bp, url_prefix='/jobwork/management')
     app.register_blueprint(live_status_bp)
     from routes.backup import backup_bp
     app.register_blueprint(backup_bp, url_prefix='/backup')
@@ -202,23 +207,21 @@ def create_app():
     except ImportError as e:
         print(f"GRN Workflow blueprint import error: {e}")
     
-    # Register GRN Job Card Integration blueprint
+    # Register GRN Job Card Integration blueprint (part of Job Work)
     try:
         from routes.grn_job_card import grn_job_card_bp
-        app.register_blueprint(grn_job_card_bp, url_prefix='/grn-job-card')
+        app.register_blueprint(grn_job_card_bp, url_prefix='/jobwork/grn-receiving')
     except ImportError as e:
         print(f"GRN Job Card blueprint import error: {e}")
     
-    # Register Job Card Integration blueprint
+    # Register Job Card Integration blueprint (part of Job Work)
     try:
         from routes.job_card_integration import job_card_integration_bp
-        app.register_blueprint(job_card_integration_bp)
+        app.register_blueprint(job_card_integration_bp, url_prefix='/jobwork/integration')
     except ImportError as e:
         print(f"Job Card Integration blueprint import error: {e}")
     
-    # Register Multi-Process Job Work blueprint
-    from routes.multi_process_jobwork import multi_process_jobwork_bp
-    app.register_blueprint(multi_process_jobwork_bp)
+    # Multi-Process Job Work already registered above
     
     # Register Item Types blueprint
     from routes.item_types import item_types_bp
