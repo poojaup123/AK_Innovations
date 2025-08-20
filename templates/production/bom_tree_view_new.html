@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+
+{% block title %}BOM Tree View - Factory Management System{% endblock %}
+
+{% block head %}
+<style>
+.bom-tree-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.bom-tree-header {
+    background: #f8f9fa;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.bom-tree-title {
+    margin: 0;
+    color: #495057;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.bom-info-row {
+    display: flex;
+    gap: 2rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.bom-info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bom-tree-content {
+    padding: 1.5rem;
+}
+
+.main-product-header {
+    background: #0d6efd;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.materials-section {
+    margin-bottom: 1.5rem;
+}
+
+.material-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.material-name {
+    font-weight: 500;
+    color: #495057;
+}
+
+.material-details {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-left: 0.5rem;
+}
+
+.cost-breakdown {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 1.5rem;
+}
+
+.cost-header {
+    color: #495057;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cost-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.cost-item:last-child {
+    border-bottom: none;
+}
+
+.cost-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+.cost-value {
+    font-weight: 600;
+}
+
+.process-breakdown {
+    margin-left: 2rem;
+}
+
+.process-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.final-cost {
+    background: #198754;
+    color: white;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.final-cost-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+.final-cost-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">BOM Tree View</h1>
+                <a href="{{ url_for('production.bom_list') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to BOM List
+                </a>
+            </div>
+
+            {% for tree in bom_trees %}
+            <div class="bom-tree-card">
+                <!-- Header -->
+                <div class="bom-tree-header">
+                    <h5 class="bom-tree-title">
+                        <i class="fas fa-sitemap me-2"></i>
+                        {{ tree.product.name }} ({{ tree.product.code }}) {{ '- Phantom BOM' if tree.bom.is_phantom_bom else '' }}
+                    </h5>
+                    <div class="bom-info-row">
+                        <div class="bom-info-item">
+                            <strong>BOM Code:</strong>
+                            <span class="badge bg-primary">{{ tree.bom.bom_code }}</span>
+                        </div>
+                        <div class="bom-info-item">
+                            <strong>Output Quantity:</strong>
+                            <span class="badge bg-info">{{ tree.bom.output_quantity }} units</span>
+                        </div>
+                        <div class="bom-info-item">
+                            <strong>Version:</strong>
+                            <span class="badge bg-secondary">{{ tree.bom.version }}</span>
+                        </div>
+                        <div class="bom-info-item">
+                            <strong>Material Cost:</strong>
+                            <span class="badge bg-success">₹{{ "%.2f"|format(tree.material_cost_per_unit) }}</span>
+                        </div>
+                        <div class="bom-info-item">
+                            <strong>Total Cost:</strong>
+                            <span class="badge bg-warning">₹{{ "%.2f"|format(tree.total_cost_per_unit) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content -->
+                <div class="bom-tree-content">
+                    <!-- Main Product Header -->
+                    <div class="main-product-header">
+                        <i class="fas fa-sitemap"></i>
+                        <span>{{ tree.product.name }} ({{ tree.bom.output_quantity }} units) {{ 'Phantom BOM' if tree.bom.is_phantom_bom else '' }}</span>
+                    </div>
+
+                    <!-- Materials Section -->
+                    {% if tree.materials %}
+                    <div class="materials-section">
+                        {% for material in tree.materials %}
+                        <div class="material-item">
+                            <div>
+                                <span class="material-name">🟨 {{ material.item.name }}</span>
+                                <span class="material-details">{{ material.quantity }} pcs @ ₹{{ "%.2f"|format(material.cost) }}</span>
+                            </div>
+                            <span class="badge bg-success">₹{{ "%.2f"|format(material.quantity * material.cost) }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Cost Breakdown -->
+                    <div class="cost-breakdown">
+                        <h6 class="cost-header">
+                            <i class="fas fa-calculator"></i>
+                            Cost Breakdown (Per Unit):
+                        </h6>
+
+                        <!-- Material Cost -->
+                        <div class="cost-item">
+                            <div class="cost-label">
+                                <span>🟨</span>
+                                <strong>Material Cost:</strong>
+                            </div>
+                            <span class="cost-value text-primary">₹{{ "%.2f"|format(tree.material_cost_per_unit) }}</span>
+                        </div>
+
+                        <!-- Labor Cost -->
+                        <div class="cost-item">
+                            <div class="cost-label">
+                                <span>👷</span>
+                                <strong>Labor Cost (All Processes):</strong>
+                            </div>
+                            <span class="cost-value text-info">₹{{ "%.2f"|format(tree.labor_cost_per_unit) }}</span>
+                        </div>
+
+                        <!-- Process breakdown -->
+                        <div class="process-breakdown">
+                            <div class="process-item">
+                                <span>├── Cutting:</span>
+                                <span>₹{{ "%.4f"|format(tree.cutting_cost) }}</span>
+                            </div>
+                            <div class="process-item">
+                                <span>├── Bending:</span>
+                                <span>₹{{ "%.4f"|format(tree.bending_cost) }}</span>
+                            </div>
+                            <div class="process-item">
+                                <span>└── Zinc:</span>
+                                <span>₹{{ "%.4f"|format(tree.zinc_cost) }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Overhead Cost -->
+                        <div class="cost-item">
+                            <div class="cost-label">
+                                <span>🏭</span>
+                                <strong>Overhead Cost (per unit):</strong>
+                            </div>
+                            <span class="cost-value text-secondary">₹{{ "%.2f"|format(tree.overhead_cost_per_unit) }}</span>
+                        </div>
+
+                        <!-- Freight Cost -->
+                        <div class="cost-item">
+                            <div class="cost-label">
+                                <span>🚚</span>
+                                <strong>Freight Cost:</strong>
+                                {% if tree.unit_weight > 0 %}
+                                <span class="text-muted">({{ tree.unit_weight }}kg × ₹{{ tree.freight_rate_per_kg }}/kg)</span>
+                                {% endif %}
+                            </div>
+                            <span class="cost-value text-warning">₹{{ "%.2f"|format(tree.freight_cost_per_unit) }}</span>
+                        </div>
+
+                        <!-- Total Cost -->
+                        <div class="cost-item" style="background-color: #f1f3f4; padding: 0.75rem; border-radius: 4px;">
+                            <div class="cost-label">
+                                <span>💰</span>
+                                <strong>Total Cost:</strong>
+                            </div>
+                            <span class="cost-value text-success">₹{{ "%.2f"|format(tree.material_cost_per_unit + tree.labor_cost_per_unit + tree.overhead_cost_per_unit + tree.freight_cost_per_unit) }}</span>
+                        </div>
+
+                        <!-- Scrap Recovery -->
+                        <div class="cost-item">
+                            <div class="cost-label">
+                                <span>♻️</span>
+                                <strong>Scrap Recovery ({{ "%.1f"|format(tree.scrap_recovery_rate * 100) }}%):</strong>
+                            </div>
+                            <span class="cost-value text-info">-₹{{ "%.2f"|format(tree.scrap_recovery) }}</span>
+                        </div>
+
+                        <!-- Net Manufacturing Cost -->
+                        <div class="cost-item" style="background-color: #f1f3f4; padding: 0.75rem; border-radius: 4px;">
+                            <div class="cost-label">
+                                <span>📊</span>
+                                <strong>Net Manufacturing Cost:</strong>
+                            </div>
+                            <span class="cost-value text-primary">₹{{ "%.2f"|format(tree.material_cost_per_unit + tree.labor_cost_per_unit + tree.overhead_cost_per_unit + tree.freight_cost_per_unit - tree.scrap_recovery) }}</span>
+                        </div>
+
+                        <!-- Markup -->
+                        <div class="cost-item">
+                            <div class="cost-label">
+                                <span>📈</span>
+                                <strong>Markup (3.0%):</strong>
+                            </div>
+                            <span class="cost-value text-warning">₹{{ "%.2f"|format(tree.markup_amount) }}</span>
+                        </div>
+
+                        <!-- Final Unit Cost -->
+                        <div class="final-cost">
+                            <div class="final-cost-label">
+                                <span>🏷️</span>
+                                <strong>Final Unit Cost:</strong>
+                            </div>
+                            <span class="final-cost-value">₹{{ "%.2f"|format(tree.total_cost_per_unit) }}</span>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="action-buttons">
+                            <a href="{{ url_for('production.edit_bom', id=tree.bom.id) }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-edit me-1"></i>Edit BOM
+                            </a>
+                            <button class="btn btn-success btn-sm" onclick="startProduction({{ tree.bom.id }})">
+                                <i class="fas fa-play me-1"></i>Start Production
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if not bom_trees %}
+            <div class="text-center py-5">
+                <i class="fas fa-sitemap fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No BOMs Found</h5>
+                <p class="text-muted">Create your first BOM to see the tree structure here.</p>
+                <a href="{{ url_for('production.add_bom') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create First BOM
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function startProduction(bomId) {
+    // Add production start functionality
+    alert('Production start functionality to be implemented');
+}
+</script>
+{% endblock %}
