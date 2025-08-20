@@ -68,45 +68,32 @@
                             <div class="col-12">
                                 <h6 class="text-primary border-bottom pb-2"><i class="fas fa-route me-2"></i>Current Process</h6>
                                 
-                                <!-- Show current process prominently if job card has specific process -->
-                                {% set current_process = None %}
-                                {% if job_card.process_name %}
-                                    {% for process in bom_processes %}
-                                        {% if process.process_name.lower() == job_card.process_name.lower() or 
-                                             job_card.process_name.lower() in process.process_name.lower() or 
-                                             process.process_name.lower() in job_card.process_name.lower() %}
-                                            {% set current_process = process %}
-                                        {% endif %}
-                                    {% endfor %}
-                                {% endif %}
-                                
-                                <!-- Debug info (remove in production) -->
-                                <!-- Job Card Process: {{ job_card.process_name or 'None' }} -->
-                                <!-- Current Process Found: {{ current_process.process_name if current_process else 'None' }} -->
-                                
-                                {% if current_process %}
-                                <!-- Show the matched process as primary -->
-                                <div class="alert alert-info border-primary mb-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="form-check me-3">
-                                            <input class="form-check-input" type="checkbox" name="selected_processes" 
-                                                   value="{{ current_process.id }}" id="process_{{ current_process.id }}" checked>
-                                            <label class="form-check-label fw-bold" for="process_{{ current_process.id }}">
-                                                <i class="fas fa-star text-warning me-2"></i>
-                                                <strong>Step {{ current_process.step_number }}: {{ current_process.process_name }}</strong>
-                                                <span class="badge bg-success ms-2">Current Process</span>
-                                                {% if current_process.is_outsourced %}
-                                                    <span class="badge bg-warning ms-1">Outsourced</span>
-                                                {% else %}
-                                                    <span class="badge bg-primary ms-1">In-house</span>
-                                                {% endif %}
-                                            </label>
+                                {% for process in bom_processes %}
+                                    {% if job_card.process_name and process.process_name.lower() == job_card.process_name.lower() %}
+                                    <!-- Show the matched process as primary -->
+                                    <div class="alert alert-info border-primary mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="form-check me-3">
+                                                <input class="form-check-input" type="checkbox" name="selected_processes" 
+                                                       value="{{ process.id }}" id="process_{{ process.id }}" checked>
+                                                <label class="form-check-label fw-bold" for="process_{{ process.id }}">
+                                                    <i class="fas fa-star text-warning me-2"></i>
+                                                    <strong>Step {{ process.step_number }}: {{ process.process_name }}</strong>
+                                                    <span class="badge bg-success ms-2">Current Process</span>
+                                                    {% if process.is_outsourced %}
+                                                        <span class="badge bg-warning ms-1">Outsourced</span>
+                                                    {% else %}
+                                                        <span class="badge bg-primary ms-1">In-house</span>
+                                                    {% endif %}
+                                                </label>
+                                            </div>
                                         </div>
+                                        {% if process.operation_description %}
+                                            <small class="text-muted d-block mt-2">{{ process.operation_description }}</small>
+                                        {% endif %}
                                     </div>
-                                    {% if current_process.operation_description %}
-                                        <small class="text-muted d-block mt-2">{{ current_process.operation_description }}</small>
                                     {% endif %}
-                                </div>
+                                {% endfor %}
                                 
                                 <!-- Collapsible section for other processes -->
                                 <div class="mb-3">
@@ -120,11 +107,11 @@
                                     <div class="border rounded p-3 bg-light">
                                         <small class="text-muted mb-2 d-block">Select any additional processes you worked on today:</small>
                                         {% for process in bom_processes %}
-                                            {% if process.id != current_process.id %}
+                                            {% if not job_card.process_name or process.process_name.lower() != job_card.process_name.lower() %}
                                             <div class="form-check mb-2">
                                                 <input class="form-check-input" type="checkbox" name="selected_processes" 
-                                                       value="{{ process.id }}" id="process_{{ process.id }}">
-                                                <label class="form-check-label" for="process_{{ process.id }}">
+                                                       value="{{ process.id }}" id="process_other_{{ process.id }}">
+                                                <label class="form-check-label" for="process_other_{{ process.id }}">
                                                     <strong>Step {{ process.step_number }}: {{ process.process_name }}</strong>
                                                     {% if process.is_outsourced %}
                                                         <span class="badge bg-warning ms-2">Outsourced</span>
@@ -137,27 +124,6 @@
                                         {% endfor %}
                                     </div>
                                 </div>
-                                {% else %}
-                                <!-- Fallback: Show all processes if no specific process matched -->
-                                <p class="text-muted small">Select the processes you worked on today:</p>
-                                {% for process in bom_processes %}
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" name="selected_processes" 
-                                           value="{{ process.id }}" id="process_{{ process.id }}">
-                                    <label class="form-check-label" for="process_{{ process.id }}">
-                                        <strong>Step {{ process.step_number }}: {{ process.process_name }}</strong>
-                                        {% if process.is_outsourced %}
-                                            <span class="badge bg-warning ms-2">Outsourced</span>
-                                        {% else %}
-                                            <span class="badge bg-primary ms-2">In-house</span>
-                                        {% endif %}
-                                        {% if process.operation_description %}
-                                            <br><small class="text-muted">{{ process.operation_description }}</small>
-                                        {% endif %}
-                                    </label>
-                                </div>
-                                {% endfor %}
-                                {% endif %}
                             </div>
                         </div>
                         {% endif %}
