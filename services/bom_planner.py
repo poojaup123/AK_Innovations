@@ -52,7 +52,10 @@ class BOMPlanner:
             
             for bom_item in bom.items:
                 material = bom_item.item
-                required_qty = bom_item.quantity_required * planned_quantity
+                # Consider BOM output quantity in calculation
+                # Formula: (material_qty_per_bom * planned_qty) / bom_output_qty
+                bom_output_qty = bom.output_quantity or 1  # Avoid division by zero
+                required_qty = (bom_item.quantity_required * planned_quantity) / bom_output_qty
                 
                 # Convert BOM quantity to inventory UOM if needed
                 if bom_item.unit != material.unit_of_measure:
