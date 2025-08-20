@@ -1127,8 +1127,16 @@ def api_bom_tree_data(bom_id):
         bending_cost = labor_cost_total * 0.25 if labor_cost_total > 0 else 0.4000
         zinc_cost = labor_cost_total * 0.50 if labor_cost_total > 0 else 0.7980
         
-        # Other cost components
+        # Other cost components - check both overhead fields
         overhead_cost_per_unit = getattr(bom, 'overhead_cost_per_unit', 0) or 0
+        overhead_percentage = getattr(bom, 'overhead_percentage', 0) or 0
+        
+        # If overhead is percentage-based, calculate from material cost
+        if overhead_percentage > 0 and overhead_cost_per_unit == 0:
+            overhead_cost_per_unit = material_cost_per_unit * (overhead_percentage / 100.0)
+        elif overhead_cost_per_unit == 0:
+            # Fallback to checking if there's a percentage in the database
+            overhead_cost_per_unit = 0
         
         # Calculate freight cost based on weight (₹10 per kg)
         unit_weight = getattr(bom, 'unit_weight', 0.0)  # Weight per unit in kg
