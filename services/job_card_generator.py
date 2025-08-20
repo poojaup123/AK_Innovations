@@ -43,18 +43,30 @@ class JobCardGenerator:
                 # Create a simple job card for items without BOM
                 return self._create_simple_job_card(production)
             
-            # Explode BOM and generate job cards
+            # Generate job cards for BOM processes
             self.generated_cards = []
             self.card_counter = 1
             
-            # Generate job cards for each BOM level
-            self._explode_bom_and_create_job_cards(
-                production=production,
-                bom=main_bom,
-                level=1,
-                parent_quantity=production.quantity_planned,
-                parent_job_card=None
-            )
+            # Check if BOM has processes defined
+            from models import BOMProcess
+            bom_processes = BOMProcess.query.filter_by(bom_id=main_bom.id).order_by(BOMProcess.step_number).all()
+            
+            if bom_processes:
+                # Create job cards for each manufacturing process
+                self._create_job_cards_from_processes(
+                    production=production,
+                    bom=main_bom,
+                    processes=bom_processes
+                )
+            else:
+                # No processes defined - use material explosion method
+                self._explode_bom_and_create_job_cards(
+                    production=production,
+                    bom=main_bom,
+                    level=1,
+                    parent_quantity=production.quantity_planned,
+                    parent_job_card=None
+                )
             
             # Commit all changes
             db.session.commit()
@@ -98,6 +110,53 @@ class JobCardGenerator:
         db.session.add(job_card)
         self.generated_cards.append(job_card)
         return [job_card]
+    
+    def _create_job_cards_from_processes(self, production, bom, processes):
+        """
+        Create job cards for each manufacturing process in the BOM
+        
+        Args:
+            production: Production order
+            bom: BOM with processes
+            processes: List of BOMProcess objects
+        """
+        for process in processes:
+            job_card_number = self._generate_job_card_number(production)
+            
+            job_card = JobCard()
+            job_card.job_card_number = job_card_number
+            job_card.production_id = production.id
+            job_card.item_id = production.item_id
+            job_card.bom_process_id = process.id
+            job_card.process_name = process.process_name
+            job_card.process_sequence = process.step_number
+            job_card.planned_quantity = production.quantity_planned
+            job_card.planned_start_date = production.created_at.date()
+            job_card.target_completion_date = production.created_at.date() + timedelta(days=process.step_number)  # Stagger completion dates
+            job_card.job_type = 'outsourced' if process.is_outsourced else 'in_house'
+            job_card.status = 'planned'
+            job_card.component_level = 1
+            job_card.operation_description = process.operation_description or f"{process.process_name} operation for {production.produced_item.name if production.produced_item else 'item'}"
+            job_card.process_routing = json.dumps([{
+                "step": process.step_number,
+                "process": process.process_name,
+                "description": process.operation_description or f"{process.process_name} process",
+                "estimated_time": process.setup_time_minutes + process.run_time_minutes,
+                "setup_time": process.setup_time_minutes,
+                "run_time": process.run_time_minutes
+            }])
+            job_card.department = process.department.name if process.department else None
+            job_card.estimated_cost = process.cost_per_unit * production.quantity_planned if process.cost_per_unit else 0
+            job_card.special_instructions = process.notes or ""
+            
+            # Set vendor information for outsourced processes
+            if process.is_outsourced and process.vendor:
+                job_card.vendor_id = process.vendor_id
+                job_card.vendor_name = process.vendor.name
+            
+            db.session.add(job_card)
+            self.generated_cards.append(job_card)
+            self.card_counter += 1
     
     def _explode_bom_and_create_job_cards(self, production, bom, level, parent_quantity, parent_job_card):
         """
