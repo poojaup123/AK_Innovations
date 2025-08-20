@@ -1504,20 +1504,45 @@
                         </div>
                     </div>
 
-                    <div class="tree-view">
-                        <!-- Root Product -->
-                        <div class="tree-node">
-                            <span class="tree-product">{{ bom_tree.product.name }}</span>
-                            {% if bom.output_quantity and bom.output_quantity != 1.0 %}
-                                <span class="tree-quantity">({{ bom.output_quantity }} units)</span>
-                            {% endif %}
-                            {% if bom.intermediate_product %}
-                                <span class="intermediate-badge">Intermediate</span>
-                            {% endif %}
+                    <!-- BOM Header -->
+                    <div class="mb-4">
+                        <div class="bg-primary text-white p-3 rounded">
+                            <h5 class="mb-0">
+                                <i class="fas fa-sitemap me-2"></i>
+                                {{ bom_tree.product.name }} (ITEM-{{ bom_tree.product.code or '0002' }}) 
+                                {% if bom.is_phantom_bom %}Phantom BOM{% endif %}
+                            </h5>
+                        </div>
+                    </div>
+
+                    <!-- BOM Info Badges -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <strong>BOM Code:</strong> 
+                            <span class="badge bg-primary">{{ bom.bom_code }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Output Quantity:</strong> 
+                            <span class="badge bg-info">{{ bom.output_quantity or 1.0 }} units</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Version:</strong> 
+                            <span class="badge bg-secondary">{{ bom.version or '1.0' }}</span>
+                        </div>
+                        <div class="col-md-3">
                             {% if bom.is_phantom_bom %}
-                                <span class="phantom-badge">Phantom BOM</span>
+                            <span class="badge bg-warning">Phantom BOM</span>
                             {% endif %}
                         </div>
+                    </div>
+
+                    <!-- Product Header -->
+                    <div class="bg-primary text-white p-3 rounded mb-3">
+                        <h6 class="mb-0">
+                            <i class="fas fa-cube me-2"></i>
+                            {{ bom_tree.product.name }} ({{ bom.output_quantity or 1.0 }} units) {% if bom.is_phantom_bom %}Phantom BOM{% endif %}
+                        </h6>
+                    </div>
 
                         <!-- Direct Materials -->
                         {% for material in bom_tree.materials %}
@@ -1598,14 +1623,136 @@
                         {% endfor %}
                     </div>
 
-                    <!-- Cost Summary -->
-                    {% if bom_tree.calculated_material_cost and bom_tree.calculated_material_cost > 0 %}
-                    <div class="cost-summary">
-                        <i class="fas fa-calculator"></i> <strong>Cost Breakdown (Per Unit):</strong><br>
-                        <span class="text-primary">📦 Material Cost: ₹{{ "%.2f"|format(bom_tree.material_cost_per_unit) }}</span><br>
-                        <span class="text-success">🔧 Total Cost: ₹{{ "%.2f"|format(bom_tree.total_cost_per_unit) }}</span>
+                    <!-- Comprehensive Cost Breakdown -->
+                    <div class="mt-4">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-calculator me-2"></i>Cost Breakdown (Per Unit):
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <!-- Material Cost -->
+                                <div class="d-flex align-items-center justify-content-between p-2 mb-2 border-bottom">
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">🟨</span>
+                                        <strong>Material Cost:</strong>
+                                    </div>
+                                    <span class="text-primary fw-bold">₹{{ "%.2f"|format(bom_tree.material_cost_per_unit or 0) }}</span>
+                                </div>
+                                
+                                <!-- Labor Cost -->
+                                <div class="d-flex align-items-center justify-content-between p-2 mb-2 border-bottom">
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">👷</span>
+                                        <strong>Labor Cost (All Processes):</strong>
+                                    </div>
+                                    <span class="text-info fw-bold">₹{{ "%.2f"|format(bom.labor_cost_per_unit or 0) }}</span>
+                                </div>
+                                
+                                <!-- Process breakdown -->
+                                <div class="ms-4 mb-2">
+                                    <div class="d-flex justify-content-between p-1 text-muted small">
+                                        <span>├── Cutting:</span>
+                                        <span>₹{{ "%.4f"|format((bom.labor_cost_per_unit or 0) * 0.25) }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between p-1 text-muted small">
+                                        <span>├── Bending:</span>
+                                        <span>₹{{ "%.4f"|format((bom.labor_cost_per_unit or 0) * 0.25) }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between p-1 text-muted small">
+                                        <span>└── Zinc:</span>
+                                        <span>₹{{ "%.4f"|format((bom.labor_cost_per_unit or 0) * 0.50) }}</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Overhead Cost -->
+                                <div class="d-flex align-items-center justify-content-between p-2 mb-2 border-bottom">
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">🏭</span>
+                                        <strong>Overhead Cost (per unit):</strong>
+                                    </div>
+                                    <span class="text-secondary fw-bold">
+                                        {% if bom.overhead_percentage and bom.overhead_percentage > 0 %}
+                                            ₹{{ "%.2f"|format((bom_tree.material_cost_per_unit or 0) * (bom.overhead_percentage / 100)) }}
+                                        {% else %}
+                                            ₹{{ "%.2f"|format(bom.overhead_cost_per_unit or 0) }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                
+                                <!-- Freight Cost -->
+                                <div class="d-flex align-items-center justify-content-between p-2 mb-2 border-bottom">
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">🚚</span>
+                                        <strong>Freight Cost:</strong>
+                                        {% if bom.unit_weight and bom.unit_weight > 0 %}
+                                            <span class="text-muted ms-2 small">({{ bom.unit_weight }}kg × ₹10/kg)</span>
+                                        {% endif %}
+                                    </div>
+                                    <span class="text-warning fw-bold">
+                                        {% if bom.unit_weight and bom.unit_weight > 0 %}
+                                            ₹{{ "%.2f"|format(bom.unit_weight * 10) }}
+                                        {% else %}
+                                            ₹{{ "%.2f"|format(bom.freight_cost_per_unit or 0) }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                
+                                <!-- Total Cost -->
+                                {% set total_cost = (bom_tree.material_cost_per_unit or 0) + (bom.labor_cost_per_unit or 0) + 
+                                    ((bom_tree.material_cost_per_unit or 0) * (bom.overhead_percentage or 0) / 100 if bom.overhead_percentage else (bom.overhead_cost_per_unit or 0)) + 
+                                    ((bom.unit_weight * 10) if bom.unit_weight else (bom.freight_cost_per_unit or 0)) %}
+                                <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-light border-bottom">
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">💰</span>
+                                        <strong>Total Cost:</strong>
+                                    </div>
+                                    <span class="text-success fw-bold">₹{{ "%.2f"|format(total_cost) }}</span>
+                                </div>
+                                
+                                <!-- Scrap Recovery -->
+                                {% set scrap_recovery = (bom_tree.material_cost_per_unit or 0) * 0.30 %}
+                                <div class="d-flex align-items-center justify-content-between p-2 mb-2 border-bottom">
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">♻️</span>
+                                        <strong>Scrap Recovery (30.0%):</strong>
+                                    </div>
+                                    <span class="text-info fw-bold">-₹{{ "%.2f"|format(scrap_recovery) }}</span>
+                                </div>
+                                
+                                <!-- Net Manufacturing Cost -->
+                                {% set net_cost = total_cost - scrap_recovery %}
+                                <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-light border-bottom">
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">📊</span>
+                                        <strong>Net Manufacturing Cost:</strong>
+                                    </div>
+                                    <span class="text-primary fw-bold">₹{{ "%.2f"|format(net_cost) }}</span>
+                                </div>
+                                
+                                <!-- Markup -->
+                                {% set markup_amount = net_cost * ((bom.markup_percentage or 0) / 100) %}
+                                <div class="d-flex align-items-center justify-content-between p-2 mb-2 border-bottom">
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">📈</span>
+                                        <strong>Markup ({{ bom.markup_percentage or 0 }}%):</strong>
+                                    </div>
+                                    <span class="text-warning fw-bold">₹{{ "%.2f"|format(markup_amount) }}</span>
+                                </div>
+                                
+                                <!-- Final Unit Cost -->
+                                {% set final_cost = net_cost + markup_amount %}
+                                <div class="d-flex align-items-center justify-content-between p-3 bg-success text-white rounded">
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">🏷️</span>
+                                        <strong>Final Unit Cost:</strong>
+                                    </div>
+                                    <span class="fw-bold fs-5">₹{{ "%.2f"|format(final_cost) }}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    {% endif %}
 
                     <div class="mt-3">
                         <div class="btn-group">
