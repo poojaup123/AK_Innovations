@@ -1155,7 +1155,9 @@ def api_bom_tree_data(bom_id):
         tree_data['freight_rate_per_kg'] = freight_rate_per_kg
         tree_data['scrap_recovery'] = scrap_recovery
         tree_data['scrap_recovery_rate'] = scrap_recovery_rate
+        tree_data['markup_percentage'] = markup_percentage
         tree_data['markup_amount'] = markup_amount
+        tree_data['net_manufacturing_cost'] = total_before_markup
         tree_data['total_cost_per_unit'] = final_unit_cost
         
         return jsonify({'success': True, 'data': tree_data})

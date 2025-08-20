@@ -484,9 +484,9 @@ function renderExactCostBreakdown(treeData) {
     const scrapRecovery = treeData.scrap_recovery || 0;
     const scrapRate = ((treeData.scrap_recovery_rate || 0.30) * 100).toFixed(1);
     const markupAmount = treeData.markup_amount || 0;
-    const markupRate = 3.0; // Default 3%
+    const markupRate = ((treeData.markup_percentage || 0.03) * 100).toFixed(1); // Convert to percentage
     const totalCost = materialCostPerUnit + laborCost + overheadCost + freightCost;
-    const netCost = totalCost - scrapRecovery;
+    const netCost = treeData.net_manufacturing_cost || (totalCost - scrapRecovery);
     const finalCost = treeData.total_cost_per_unit || (netCost + markupAmount);
     
     return `
