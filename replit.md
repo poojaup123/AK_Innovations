@@ -8,17 +8,6 @@ Preferred communication style: Simple, everyday language.
 UI/UX Preferences: Compact, horizontally-arranged dashboard cards with consistent sizing and professional spacing throughout the application. Job Card Summary should appear on the right side of forms, not at the bottom.
 Enhanced User Experience: Implemented comprehensive user-friendly features including global search, breadcrumb navigation, recently viewed sections, floating quick action buttons, auto-save functionality, toast notifications, keyboard shortcuts, and beautiful gradient stat cards for improved usability and modern interface design.
 
-## Recent Changes (August 2025)
-**Module Reorganization**: Restructured the application modules for better logical organization:
-- **Production Section**: Now contains BOM Management, Production Orders, Manufacturing Intelligence, and Daily Production Status
-- **Job Work Section**: Reorganized to include Job Work Orders, Job Cards Management, Multi-Process Job Work, Team Management, and Job Work GRN
-- **Navigation Updates**: Updated sidebar navigation to reflect the new module organization with job cards properly grouped under job work
-- **URL Structure**: Updated blueprint URL prefixes to organize job card routes under `/jobwork/` path structure
-
-This reorganization provides clearer separation between:
-- Production = Manufacturing your own products using BOMs
-- Job Work = Work done by teams/vendors including detailed job cards and outsourcing
-
 ## System Architecture
 
 ### Performance Optimizations
