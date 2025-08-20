@@ -26,6 +26,26 @@
         </div>
     </div>
 
+    <!-- Process Legend -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card border-0 bg-light">
+                <div class="card-body py-2">
+                    <small class="text-muted me-3"><strong>Process Colors:</strong></small>
+                    <span class="badge me-2" style="background-color: #dc3545; color: white;">
+                        <i class="fas fa-cut me-1"></i>Cutting
+                    </span>
+                    <span class="badge me-2" style="background-color: #fd7e14; color: white;">
+                        <i class="fas fa-tools me-1"></i>Bending
+                    </span>
+                    <span class="badge me-2" style="background-color: #6f42c1; color: white;">
+                        <i class="fas fa-spray-can me-1"></i>Zinc
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Production Summary -->
     <div class="row mb-4">
         <div class="col-md-3">
@@ -114,7 +134,9 @@
         <!-- Display existing job cards -->
         {% for job_card in job_cards %}
         <div class="col-lg-6 mb-4">
-            <div class="card job-card-item border border-2" data-job-type="{{ job_card.job_type }}" style="border-color: #dee2e6 !important;">
+            <div class="card job-card-item border border-3 shadow-sm" data-job-type="{{ job_card.job_type }}" 
+                 style="border-color: 
+                 {% if job_card.process_name and 'cutting' in job_card.process_name.lower() %}#dc3545{% elif job_card.process_name and 'bending' in job_card.process_name.lower() %}#fd7e14{% elif job_card.process_name and 'zinc' in job_card.process_name.lower() %}#6f42c1{% else %}#dee2e6{% endif %} !important;">
                 <div class="card-header d-flex justify-content-between align-items-center
                     {% if job_card.status == 'completed' %}bg-success text-white
                     {% elif job_card.status == 'in_progress' %}bg-warning text-dark
@@ -134,7 +156,18 @@
                     <div class="text-end">
                         <small>Level {{ job_card.component_level }}</small>
                         <br>
-                        <small>{{ job_card.process_name }}</small>
+                        <small>
+                            {% if job_card.process_name and 'cutting' in job_card.process_name.lower() %}
+                                <i class="fas fa-cut text-danger me-1"></i>
+                            {% elif job_card.process_name and 'bending' in job_card.process_name.lower() %}
+                                <i class="fas fa-tools text-warning me-1"></i>
+                            {% elif job_card.process_name and 'zinc' in job_card.process_name.lower() %}
+                                <i class="fas fa-spray-can text-info me-1"></i>
+                            {% else %}
+                                <i class="fas fa-cog me-1"></i>
+                            {% endif %}
+                            {{ job_card.process_name }}
+                        </small>
                     </div>
                 </div>
                 
