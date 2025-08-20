@@ -169,7 +169,7 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1 class="h3 mb-0">BOM Tree View</h1>
-                <a href="{{ url_for('production.bom_list') }}" class="btn btn-secondary">
+                <a href="{{ url_for('production.bom') }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left me-2"></i>Back to BOM List
                 </a>
             </div>
@@ -315,7 +315,8 @@
                                 <span>📊</span>
                                 <strong>Net Manufacturing Cost:</strong>
                             </div>
-                            <span class="cost-value text-primary">₹{{ "%.2f"|format(tree.material_cost_per_unit + tree.labor_cost_per_unit + tree.overhead_cost_per_unit + tree.freight_cost_per_unit - tree.scrap_recovery) }}</span>
+                            {% set net_cost = tree.material_cost_per_unit + tree.labor_cost_per_unit + tree.overhead_cost_per_unit + tree.freight_cost_per_unit - tree.scrap_recovery %}
+                            <span class="cost-value text-primary">₹{{ "%.2f"|format(net_cost) }}</span>
                         </div>
 
                         <!-- Markup -->
@@ -324,7 +325,8 @@
                                 <span>📈</span>
                                 <strong>Markup (3.0%):</strong>
                             </div>
-                            <span class="cost-value text-warning">₹{{ "%.2f"|format(tree.markup_amount) }}</span>
+                            {% set correct_markup = net_cost * 0.03 %}
+                            <span class="cost-value text-warning">₹{{ "%.2f"|format(correct_markup) }}</span>
                         </div>
 
                         <!-- Final Unit Cost -->
@@ -333,7 +335,8 @@
                                 <span>🏷️</span>
                                 <strong>Final Unit Cost:</strong>
                             </div>
-                            <span class="final-cost-value">₹{{ "%.2f"|format(tree.total_cost_per_unit) }}</span>
+                            {% set final_cost = net_cost + correct_markup %}
+                            <span class="final-cost-value">₹{{ "%.2f"|format(final_cost) }}</span>
                         </div>
 
                         <!-- Action Buttons -->
