@@ -12,8 +12,370 @@ quality_bp = Blueprint('quality', __name__)
 @quality_bp.route('/dashboard')
 @login_required
 def dashboard():
-    """Redirect to batch tracking quality control dashboard"""
-    return redirect(url_for('batch_tracking.quality_dashboard'))
+    """Comprehensive Quality Control Dashboard - Centralized quality management"""
+    from models import InventoryBatch, JobCard, JobCardDailyStatus, GRN, GRNLineItem, DailyProductionStatus
+    from sqlalchemy import func, or_, and_
+    
+    # =============================================================================
+    # BATCH QUALITY STATISTICS
+    # =============================================================================
+    
+    # Batch inspection statistics
+    total_batches = InventoryBatch.query.count()
+    pending_batches = InventoryBatch.query.filter_by(inspection_status='pending').count()
+    approved_batches = InventoryBatch.query.filter_by(inspection_status='passed').count()
+    rejected_batches = InventoryBatch.query.filter_by(inspection_status='failed').count()
+    quarantine_batches = InventoryBatch.query.filter_by(inspection_status='quarantine').count()
+    
+    # Calculate batch approval rate
+    batch_approval_rate = (approved_batches / total_batches * 100) if total_batches > 0 else 0
+    
+    # =============================================================================
+    # JOB CARD QUALITY STATISTICS
+    # =============================================================================
+    
+    from datetime import date
+    today = date.today()
+    
+    # QC Approval workflow
+    pending_qc_reports = JobCardDailyStatus.query.filter(
+        JobCardDailyStatus.report_date == today,
+        JobCardDailyStatus.supervisor_approved == True,
+        JobCardDailyStatus.qc_approved == False,
+        JobCardDailyStatus.qc_rejected == False
+    ).count()
+    
+    qc_approved_today = JobCardDailyStatus.query.filter(
+        JobCardDailyStatus.report_date == today,
+        JobCardDailyStatus.qc_approved == True
+    ).count()
+    
+    qc_rejected_today = JobCardDailyStatus.query.filter(
+        JobCardDailyStatus.report_date == today,
+        JobCardDailyStatus.qc_rejected == True
+    ).count()
+    
+    # =============================================================================
+    # GRN MATERIAL INSPECTION STATISTICS
+    # =============================================================================
+    
+    # GRN inspection statistics
+    total_grn_items = GRNLineItem.query.count()
+    pending_inspection_grn = GRNLineItem.query.filter_by(inspection_status='pending').count()
+    passed_inspection_grn = GRNLineItem.query.filter_by(inspection_status='passed').count()
+    rejected_inspection_grn = GRNLineItem.query.filter_by(inspection_status='rejected').count()
+    
+    # GRN material quality rate
+    grn_quality_rate = (passed_inspection_grn / total_grn_items * 100) if total_grn_items > 0 else 0
+    
+    # =============================================================================
+    # PRODUCTION QUALITY STATISTICS  
+    # =============================================================================
+    
+    # Production quality from daily reports
+    total_production_qty = float(db.session.query(func.sum(DailyProductionStatus.qty_completed_today)).scalar() or 0)
+    total_defective_qty = float(db.session.query(func.sum(DailyProductionStatus.qty_defective_today)).scalar() or 0)
+    total_scrap_qty = float(db.session.query(func.sum(DailyProductionStatus.qty_scrap_today)).scalar() or 0)
+    total_good_qty = float(db.session.query(func.sum(DailyProductionStatus.qty_good_today)).scalar() or 0)
+    
+    # Calculate yield percentage
+    yield_percentage = (total_good_qty / total_production_qty * 100) if total_production_qty > 0 else 0
+    defect_rate = (total_defective_qty / total_production_qty * 100) if total_production_qty > 0 else 0
+    scrap_rate = (total_scrap_qty / total_production_qty * 100) if total_production_qty > 0 else 0
+    
+    # =============================================================================
+    # QUALITY ISSUE TRACKING
+    # =============================================================================
+    
+    # Quality issues statistics
+    total_issues = QualityIssue.query.count()
+    open_issues = QualityIssue.query.filter_by(status='open').count()
+    critical_issues = QualityIssue.query.filter_by(severity='critical').count()
+    resolved_this_month = QualityIssue.query.filter(
+        QualityIssue.status == 'resolved',
+        func.date_trunc('month', QualityIssue.updated_at) == func.date_trunc('month', func.now())
+    ).count()
+    
+    # Recent quality issues
+    recent_issues = QualityIssue.query.order_by(desc(QualityIssue.created_at)).limit(10).all()
+    
+    # =============================================================================
+    # RECENT ACTIVITY DATA
+    # =============================================================================
+    
+    # Recent batch inspections  
+    recent_batches = InventoryBatch.query.order_by(desc(InventoryBatch.updated_at)).limit(10).all()
+    
+    # Recent QC reports
+    recent_qc_reports = JobCardDailyStatus.query.filter(
+        or_(
+            JobCardDailyStatus.qc_approved == True,
+            JobCardDailyStatus.qc_rejected == True
+        )
+    ).order_by(desc(JobCardDailyStatus.updated_at)).limit(10).all()
+    
+    # Recent GRN inspections
+    recent_grn_inspections = GRNLineItem.query.filter(
+        GRNLineItem.inspection_status.in_(['passed', 'rejected'])
+    ).order_by(desc(GRNLineItem.updated_at)).limit(10).all()
+    
+    # =============================================================================
+    # DASHBOARD DATA COMPILATION
+    # =============================================================================
+    
+    stats = {
+        # Batch Quality
+        'total_batches': total_batches,
+        'pending_batches': pending_batches,
+        'approved_batches': approved_batches,
+        'rejected_batches': rejected_batches,
+        'batch_approval_rate': round(batch_approval_rate, 1),
+        
+        # Job Card QC
+        'pending_qc_reports': pending_qc_reports,
+        'qc_approved_today': qc_approved_today,
+        'qc_rejected_today': qc_rejected_today,
+        
+        # GRN Material Quality
+        'total_grn_items': total_grn_items,
+        'pending_inspection_grn': pending_inspection_grn,
+        'passed_inspection_grn': passed_inspection_grn,
+        'rejected_inspection_grn': rejected_inspection_grn,
+        'grn_quality_rate': round(grn_quality_rate, 1),
+        
+        # Production Quality
+        'total_production_qty': total_production_qty,
+        'total_good_qty': total_good_qty,
+        'total_defective_qty': total_defective_qty,
+        'total_scrap_qty': total_scrap_qty,
+        'yield_percentage': round(yield_percentage, 1),
+        'defect_rate': round(defect_rate, 1),
+        'scrap_rate': round(scrap_rate, 1),
+        
+        # Quality Issues
+        'total_issues': total_issues,
+        'open_issues': open_issues,
+        'critical_issues': critical_issues,
+        'resolved_this_month': resolved_this_month
+    }
+    
+    return render_template('quality/dashboard.html',
+                         stats=stats,
+                         recent_issues=recent_issues,
+                         recent_batches=recent_batches,
+                         recent_qc_reports=recent_qc_reports,
+                         recent_grn_inspections=recent_grn_inspections,
+                         title='Quality Control Dashboard')
+
+# =============================================================================
+# BATCH QUALITY CONTROL ROUTES (Moved from batch_tracking)
+# =============================================================================
+
+@quality_bp.route('/batches/inspect')
+@login_required
+def batch_inspections():
+    """Batch inspection management page"""
+    from models import InventoryBatch
+    
+    status_filter = request.args.get('status', 'all')
+    query = InventoryBatch.query
+    
+    if status_filter == 'pending':
+        query = query.filter_by(inspection_status='pending')
+    elif status_filter == 'approved':
+        query = query.filter_by(inspection_status='passed')  
+    elif status_filter == 'rejected':
+        query = query.filter_by(inspection_status='failed')
+    
+    batches = query.order_by(desc(InventoryBatch.updated_at)).all()
+    
+    return render_template('quality/batch_inspections.html',
+                         batches=batches,
+                         status_filter=status_filter,
+                         title='Batch Quality Inspections')
+
+@quality_bp.route('/batches/<int:batch_id>/update-quality', methods=['POST'])
+@login_required
+def update_batch_quality(batch_id):
+    """Update batch quality status - moved from batch tracking"""
+    from models import InventoryBatch
+    
+    try:
+        batch = InventoryBatch.query.get_or_404(batch_id)
+        
+        new_status = request.form.get('quality_status')
+        quality_notes = request.form.get('quality_notes', '')
+        
+        if new_status not in ['passed', 'failed', 'pending', 'quarantine']:
+            flash(f'Invalid quality status: {new_status}', 'error')
+            return redirect(url_for('quality.batch_inspections'))
+        
+        # Update batch
+        batch.inspection_status = new_status
+        batch.updated_at = datetime.utcnow()
+        
+        # Automatic quantity movement for approved batches
+        if new_status == 'passed' and batch.qty_inspection > 0:
+            qty_to_move = batch.qty_inspection
+            batch.qty_inspection = 0.0
+            batch.qty_raw += qty_to_move
+        
+        db.session.commit()
+        
+        status_names = {
+            'passed': 'Approved',
+            'failed': 'Rejected', 
+            'pending': 'Pending',
+            'quarantine': 'On Hold'
+        }
+        
+        flash(f'Batch {batch.batch_code} quality status updated to {status_names.get(new_status, new_status)}', 'success')
+        return redirect(url_for('quality.batch_inspections'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating quality status: {str(e)}', 'error')
+        return redirect(url_for('quality.batch_inspections'))
+
+# =============================================================================
+# JOB CARD QUALITY CONTROL ROUTES (Moved from job_card_workflow)
+# =============================================================================
+
+@quality_bp.route('/job-cards/qc-approval')
+@login_required
+def job_card_qc_approval():
+    """QC approval dashboard for job cards"""
+    from models import JobCardDailyStatus, JobCard
+    from datetime import date
+    
+    today = date.today()
+    
+    # Get supervisor-approved reports pending QC
+    pending_qc = JobCardDailyStatus.query.filter(
+        JobCardDailyStatus.report_date == today,
+        JobCardDailyStatus.supervisor_approved == True,
+        JobCardDailyStatus.qc_approved == False,
+        JobCardDailyStatus.qc_rejected == False
+    ).join(JobCard).all()
+    
+    # Get QC approved reports
+    qc_approved_today = JobCardDailyStatus.query.filter(
+        JobCardDailyStatus.report_date == today,
+        JobCardDailyStatus.qc_approved == True
+    ).join(JobCard).all()
+    
+    # Get QC rejected reports
+    qc_rejected_today = JobCardDailyStatus.query.filter(
+        JobCardDailyStatus.report_date == today,
+        JobCardDailyStatus.qc_rejected == True
+    ).join(JobCard).all()
+    
+    stats = {
+        'pending_qc_count': len(pending_qc),
+        'qc_approved_count': len(qc_approved_today),
+        'qc_rejected_count': len(qc_rejected_today),
+        'total_qc_reports': len(pending_qc) + len(qc_approved_today) + len(qc_rejected_today)
+    }
+    
+    return render_template('quality/job_card_qc.html',
+                         pending_qc=pending_qc,
+                         qc_approved_today=qc_approved_today,
+                         qc_rejected_today=qc_rejected_today,
+                         stats=stats,
+                         today=today,
+                         title='Job Card QC Approval')
+
+@quality_bp.route('/job-cards/qc-approve/<int:status_id>', methods=['GET', 'POST'])
+@login_required
+def approve_job_card_qc(status_id):
+    """QC approve or reject a specific daily status report"""
+    from models import JobCardDailyStatus
+    from forms_job_card import QCApprovalForm
+    
+    daily_status = JobCardDailyStatus.query.get_or_404(status_id)
+    form = QCApprovalForm()
+    form.daily_status_id.data = status_id
+    
+    if form.validate_on_submit():
+        if form.qc_decision.data == 'approve':
+            daily_status.approve_by_qc(
+                qc_inspector_id=current_user.id,
+                notes=form.qc_notes.data
+            )
+            flash(f'QC approval completed for Job Card {daily_status.job_card.job_card_number}!', 'success')
+            
+        elif form.qc_decision.data == 'reject':
+            daily_status.reject_by_qc(
+                qc_inspector_id=current_user.id,
+                notes=form.qc_notes.data
+            )
+            flash(f'QC rejected Job Card {daily_status.job_card.job_card_number}.', 'warning')
+        
+        return redirect(url_for('quality.job_card_qc_approval'))
+    
+    return render_template('quality/qc_approval_form.html',
+                         form=form,
+                         daily_status=daily_status,
+                         title='QC Approval')
+
+# =============================================================================
+# GRN QUALITY CONTROL ROUTES
+# =============================================================================
+
+@quality_bp.route('/grn/inspections')
+@login_required
+def grn_inspections():
+    """GRN material inspection management"""
+    from models import GRNLineItem, GRN
+    
+    status_filter = request.args.get('status', 'all')
+    query = GRNLineItem.query.join(GRN)
+    
+    if status_filter == 'pending':
+        query = query.filter(GRNLineItem.inspection_status == 'pending')
+    elif status_filter == 'passed':
+        query = query.filter(GRNLineItem.inspection_status == 'passed')
+    elif status_filter == 'rejected':
+        query = query.filter(GRNLineItem.inspection_status == 'rejected')
+    
+    grn_items = query.order_by(desc(GRNLineItem.updated_at)).all()
+    
+    return render_template('quality/grn_inspections.html',
+                         grn_items=grn_items,
+                         status_filter=status_filter,
+                         title='GRN Material Inspections')
+
+@quality_bp.route('/grn/item/<int:item_id>/update-inspection', methods=['POST'])
+@login_required
+def update_grn_inspection(item_id):
+    """Update GRN item inspection status"""
+    from models import GRNLineItem
+    
+    try:
+        grn_item = GRNLineItem.query.get_or_404(item_id)
+        
+        inspection_status = request.form.get('inspection_status')
+        quantity_passed = float(request.form.get('quantity_passed', 0))
+        quantity_rejected = float(request.form.get('quantity_rejected', 0))
+        rejection_reason = request.form.get('rejection_reason', '')
+        
+        grn_item.inspection_status = inspection_status
+        grn_item.quantity_passed = quantity_passed
+        grn_item.quantity_rejected = quantity_rejected
+        grn_item.rejection_reason = rejection_reason
+        grn_item.inspected_by = current_user.id
+        grn_item.inspected_at = datetime.utcnow()
+        grn_item.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        flash(f'GRN item inspection updated: {inspection_status}', 'success')
+        return redirect(url_for('quality.grn_inspections'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating inspection: {str(e)}', 'error')
+        return redirect(url_for('quality.grn_inspections'))
 
 @quality_bp.route('/issues')
 @login_required

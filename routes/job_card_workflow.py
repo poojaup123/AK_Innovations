@@ -79,42 +79,9 @@ def approve_status(status_id):
 @job_card_workflow_bp.route('/qc-approval')
 @login_required
 def qc_approval_dashboard():
-    """Dashboard for QC approval of daily status reports"""
-    today = date.today()
-    
-    # Get supervisor-approved reports pending QC
-    pending_qc = JobCardDailyStatus.query.filter(
-        JobCardDailyStatus.report_date == today,
-        JobCardDailyStatus.supervisor_approved == True,
-        JobCardDailyStatus.qc_approved == False,
-        JobCardDailyStatus.qc_rejected == False
-    ).join(JobCard).all()
-    
-    # Get QC approved reports
-    qc_approved_today = JobCardDailyStatus.query.filter(
-        JobCardDailyStatus.report_date == today,
-        JobCardDailyStatus.qc_approved == True
-    ).join(JobCard).all()
-    
-    # Get QC rejected reports
-    qc_rejected_today = JobCardDailyStatus.query.filter(
-        JobCardDailyStatus.report_date == today,
-        JobCardDailyStatus.qc_rejected == True
-    ).join(JobCard).all()
-    
-    stats = {
-        'pending_qc_count': len(pending_qc),
-        'qc_approved_count': len(qc_approved_today),
-        'qc_rejected_count': len(qc_rejected_today),
-        'total_qc_reports': len(pending_qc) + len(qc_approved_today) + len(qc_rejected_today)
-    }
-    
-    return render_template('job_cards/qc_approval.html',
-                         pending_qc=pending_qc,
-                         qc_approved_today=qc_approved_today,
-                         qc_rejected_today=qc_rejected_today,
-                         stats=stats,
-                         today=today)
+    """Redirect to centralized Quality Control Dashboard"""
+    flash('QC approval features have been moved to the centralized Quality Control Dashboard', 'info')
+    return redirect(url_for('quality.dashboard'))
 
 @job_card_workflow_bp.route('/qc-approve/<int:status_id>', methods=['GET', 'POST'])
 @login_required

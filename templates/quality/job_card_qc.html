@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-clipboard-check me-2"></i>{{ title }}</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('quality.dashboard') }}">Quality Control</a></li>
+                            <li class="breadcrumb-item active">Job Card QC</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{{ url_for('quality.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Quality Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.pending_qc_count }}</h4>
+                            <p class="mb-0">Pending QC</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.qc_approved_count }}</h4>
+                            <p class="mb-0">QC Approved</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.qc_rejected_count }}</h4>
+                            <p class="mb-0">QC Rejected</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-times-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.total_qc_reports }}</h4>
+                            <p class="mb-0">Total Reports</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-clipboard-list fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending QC Approvals -->
+    {% if pending_qc %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>Pending QC Approval
+                        <span class="badge bg-light text-dark ms-2">{{ pending_qc|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Job Card</th>
+                                    <th>Item</th>
+                                    <th>Quantity Completed</th>
+                                    <th>Report Date</th>
+                                    <th>Supervisor</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for status in pending_qc %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ status.job_card.job_card_number }}</strong>
+                                    </td>
+                                    <td>
+                                        {{ status.job_card.item.name if status.job_card.item else 'N/A' }}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ status.qty_completed_today }}</span>
+                                    </td>
+                                    <td>
+                                        {{ status.report_date.strftime('%Y-%m-%d') if status.report_date else 'N/A' }}
+                                    </td>
+                                    <td>
+                                        {{ status.supervisor_approved_by.username if status.supervisor_approved_by else 'N/A' }}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('quality.approve_job_card_qc', status_id=status.id) }}" 
+                                           class="btn btn-warning btn-sm">
+                                            <i class="fas fa-clipboard-check me-1"></i>Review QC
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- QC Approved Today -->
+    {% if qc_approved_today %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-check-circle me-2"></i>QC Approved Today
+                        <span class="badge bg-light text-dark ms-2">{{ qc_approved_today|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Job Card</th>
+                                    <th>Item</th>
+                                    <th>Quantity</th>
+                                    <th>QC Inspector</th>
+                                    <th>QC Time</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for status in qc_approved_today %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ status.job_card.job_card_number }}</strong>
+                                    </td>
+                                    <td>
+                                        {{ status.job_card.item.name if status.job_card.item else 'N/A' }}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ status.qty_completed_today }}</span>
+                                    </td>
+                                    <td>
+                                        {{ status.qc_approved_by.username if status.qc_approved_by else 'N/A' }}
+                                    </td>
+                                    <td>
+                                        {{ status.qc_approved_at.strftime('%H:%M') if status.qc_approved_at else 'N/A' }}
+                                    </td>
+                                    <td>
+                                        {{ status.qc_notes[:50] + '...' if status.qc_notes and status.qc_notes|length > 50 else status.qc_notes or 'No notes' }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- QC Rejected Today -->
+    {% if qc_rejected_today %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-times-circle me-2"></i>QC Rejected Today
+                        <span class="badge bg-light text-dark ms-2">{{ qc_rejected_today|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Job Card</th>
+                                    <th>Item</th>
+                                    <th>Quantity</th>
+                                    <th>QC Inspector</th>
+                                    <th>QC Time</th>
+                                    <th>Rejection Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for status in qc_rejected_today %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ status.job_card.job_card_number }}</strong>
+                                    </td>
+                                    <td>
+                                        {{ status.job_card.item.name if status.job_card.item else 'N/A' }}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger">{{ status.qty_completed_today }}</span>
+                                    </td>
+                                    <td>
+                                        {{ status.qc_approved_by.username if status.qc_approved_by else 'N/A' }}
+                                    </td>
+                                    <td>
+                                        {{ status.qc_approved_at.strftime('%H:%M') if status.qc_approved_at else 'N/A' }}
+                                    </td>
+                                    <td>
+                                        {{ status.qc_notes[:50] + '...' if status.qc_notes and status.qc_notes|length > 50 else status.qc_notes or 'No reason provided' }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not pending_qc and not qc_approved_today and not qc_rejected_today %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-clipboard-check fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Job Card QC Reports for Today</h5>
+                    <p class="text-muted">All job card daily reports have been processed or no reports are available for today.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

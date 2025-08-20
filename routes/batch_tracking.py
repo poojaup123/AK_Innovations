@@ -498,45 +498,9 @@ def update_batch_quality_direct(batch_id):
 @batch_tracking_bp.route('/quality-dashboard')
 @login_required 
 def quality_dashboard():
-    """Quality control dashboard showing batch inspection statistics"""
-    # Quality statistics from batch inspections
-    total_batches = InventoryBatch.query.count()
-    pending_batches = InventoryBatch.query.filter_by(inspection_status='pending').count()
-    approved_batches = InventoryBatch.query.filter_by(inspection_status='passed').count()
-    rejected_batches = InventoryBatch.query.filter_by(inspection_status='failed').count()
-    quarantine_batches = InventoryBatch.query.filter_by(inspection_status='quarantine').count()
-    
-    # Calculate approval rate
-    approval_rate = 0
-    if total_batches > 0:
-        approval_rate = (approved_batches / total_batches) * 100
-    
-    stats = {
-        'total_batches': total_batches,
-        'pending_review': pending_batches,
-        'approved': approved_batches,
-        'rejected': rejected_batches,
-        'approval_rate': approval_rate
-    }
-    
-    # Recent batch inspections with filters
-    status_filter = request.args.get('status', 'all')
-    query = InventoryBatch.query
-    
-    if status_filter == 'pending':
-        query = query.filter_by(inspection_status='pending')
-    elif status_filter == 'approved':
-        query = query.filter_by(inspection_status='passed')  
-    elif status_filter == 'rejected':
-        query = query.filter_by(inspection_status='failed')
-    
-    batches = query.order_by(desc(InventoryBatch.updated_at)).all()
-    
-    return render_template('batch_tracking/quality_control.html',
-                         stats=stats,
-                         batches=batches,
-                         status_filter=status_filter,
-                         title='Quality Control Dashboard')
+    """Redirect to centralized Quality Control Dashboard"""
+    flash('Quality control features have been moved to the centralized Quality Control Dashboard', 'info')
+    return redirect(url_for('quality.dashboard'))
 
 @batch_tracking_bp.route('/api/batch/<int:batch_id>/update-location', methods=['POST'])
 @login_required

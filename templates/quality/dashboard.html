@@ -4,23 +4,152 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row">
+    <!-- Header -->
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="fas fa-shield-alt me-2"></i>Quality Control Dashboard</h2>
+            <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <a href="{{ url_for('quality.add_issue') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-1"></i>Report Issue
+                    <h2><i class="fas fa-shield-alt me-2"></i>Quality Control Dashboard</h2>
+                    <p class="text-muted mb-0">Centralized quality management for all factory operations</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('quality.add_issue') }}" class="btn btn-danger">
+                        <i class="fas fa-exclamation-triangle me-1"></i>Report Issue
                     </a>
-                    <a href="{{ url_for('quality.add_inspection') }}" class="btn btn-success">
-                        <i class="fas fa-check-circle me-1"></i>Log Inspection
+                    <a href="{{ url_for('quality.batch_inspections') }}" class="btn btn-info">
+                        <i class="fas fa-search me-1"></i>Batch Inspections
+                    </a>
+                    <a href="{{ url_for('quality.job_card_qc_approval') }}" class="btn btn-warning">
+                        <i class="fas fa-tasks me-1"></i>QC Approvals
+                    </a>
+                    <a href="{{ url_for('quality.grn_inspections') }}" class="btn btn-success">
+                        <i class="fas fa-truck me-1"></i>GRN Inspections
                     </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Statistics Cards -->
+    <!-- Quality Overview Statistics -->
+    <div class="row mb-4">
+        <!-- Batch Quality Section -->
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-cubes me-2"></i>Batch Quality</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <h3 class="text-info">{{ stats.batch_approval_rate }}%</h3>
+                        <small class="text-muted">Approval Rate</small>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between small">
+                        <span>Total Batches:</span>
+                        <strong>{{ stats.total_batches }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span>Pending:</span>
+                        <span class="badge bg-warning">{{ stats.pending_batches }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span>Approved:</span>
+                        <span class="badge bg-success">{{ stats.approved_batches }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span>Rejected:</span>
+                        <span class="badge bg-danger">{{ stats.rejected_batches }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Card QC Section -->
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-white">
+                    <h6 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Job Card QC</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <h3 class="text-warning">{{ stats.pending_qc_reports }}</h3>
+                        <small class="text-muted">Pending Today</small>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between small">
+                        <span>QC Approved:</span>
+                        <span class="badge bg-success">{{ stats.qc_approved_today }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span>QC Rejected:</span>
+                        <span class="badge bg-danger">{{ stats.qc_rejected_today }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GRN Material Quality Section -->
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-truck-loading me-2"></i>GRN Material Quality</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <h3 class="text-success">{{ stats.grn_quality_rate }}%</h3>
+                        <small class="text-muted">Pass Rate</small>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between small">
+                        <span>Total Items:</span>
+                        <strong>{{ stats.total_grn_items }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span>Pending:</span>
+                        <span class="badge bg-warning">{{ stats.pending_inspection_grn }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span>Passed:</span>
+                        <span class="badge bg-success">{{ stats.passed_inspection_grn }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span>Rejected:</span>
+                        <span class="badge bg-danger">{{ stats.rejected_inspection_grn }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Production Quality Section -->
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-industry me-2"></i>Production Quality</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <h3 class="text-primary">{{ stats.yield_percentage }}%</h3>
+                        <small class="text-muted">Yield Rate</small>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between small">
+                        <span>Good Qty:</span>
+                        <span class="badge bg-success">{{ "%.0f"|format(stats.total_good_qty) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span>Defect Rate:</span>
+                        <span class="badge bg-warning">{{ stats.defect_rate }}%</span>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span>Scrap Rate:</span>
+                        <span class="badge bg-danger">{{ stats.scrap_rate }}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quality Issues Overview -->
     <div class="row mb-4">
         <div class="col-md-3">
             <div class="card bg-primary text-white">
