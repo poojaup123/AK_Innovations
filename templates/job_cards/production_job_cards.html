@@ -134,9 +134,20 @@
         <!-- Display existing job cards -->
         {% for job_card in job_cards %}
         <div class="col-lg-6 mb-4">
-            <div class="card job-card-item border border-3 shadow-sm" data-job-type="{{ job_card.job_type }}" 
-                 style="border-color: 
-                 {% if job_card.process_name and 'cutting' in job_card.process_name.lower() %}#dc3545{% elif job_card.process_name and 'bending' in job_card.process_name.lower() %}#fd7e14{% elif job_card.process_name and 'zinc' in job_card.process_name.lower() %}#6f42c1{% else %}#dee2e6{% endif %} !important;">
+            {% set process_type = 'default' %}
+            {% if job_card.process_name %}
+                {% if 'cutting' in job_card.process_name.lower() %}{% set process_type = 'cutting' %}
+                {% elif 'bending' in job_card.process_name.lower() %}{% set process_type = 'bending' %}
+                {% elif 'zinc' in job_card.process_name.lower() %}{% set process_type = 'zinc' %}
+                {% endif %}
+            {% endif %}
+            
+            <div class="card job-card-item shadow-sm" data-job-type="{{ job_card.job_type }}" 
+                 style="border: 4px solid 
+                 {% if process_type == 'cutting' %}#dc3545
+                 {% elif process_type == 'bending' %}#fd7e14  
+                 {% elif process_type == 'zinc' %}#6f42c1
+                 {% else %}#dee2e6{% endif %} !important;">
                 <div class="card-header d-flex justify-content-between align-items-center
                     {% if job_card.status == 'completed' %}bg-success text-white
                     {% elif job_card.status == 'in_progress' %}bg-warning text-dark
