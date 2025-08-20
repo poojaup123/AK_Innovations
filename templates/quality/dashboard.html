@@ -12,17 +12,17 @@
                     <h2><i class="fas fa-shield-alt me-2"></i>Quality Control Dashboard</h2>
                     <p class="text-muted mb-0">Centralized quality management for all factory operations</p>
                 </div>
-                <div>
-                    <a href="{{ url_for('quality.add_issue') }}" class="btn btn-danger">
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('quality.add_issue') }}" class="btn btn-danger btn-sm">
                         <i class="fas fa-exclamation-triangle me-1"></i>Report Issue
                     </a>
-                    <a href="{{ url_for('quality.batch_inspections') }}" class="btn btn-info">
+                    <a href="{{ url_for('quality.batch_inspections') }}" class="btn btn-info btn-sm">
                         <i class="fas fa-search me-1"></i>Batch Inspections
                     </a>
-                    <a href="{{ url_for('quality.job_card_qc_approval') }}" class="btn btn-warning">
+                    <a href="{{ url_for('quality.job_card_qc_approval') }}" class="btn btn-warning btn-sm">
                         <i class="fas fa-tasks me-1"></i>QC Approvals
                     </a>
-                    <a href="{{ url_for('quality.grn_inspections') }}" class="btn btn-success">
+                    <a href="{{ url_for('quality.grn_inspections') }}" class="btn btn-success btn-sm">
                         <i class="fas fa-truck me-1"></i>GRN Inspections
                     </a>
                 </div>
@@ -34,11 +34,11 @@
     <div class="row mb-4">
         <!-- Batch Quality Section -->
         <div class="col-md-3">
-            <div class="card border-info">
+            <div class="card border-info h-100">
                 <div class="card-header bg-info text-white">
                     <h6 class="mb-0"><i class="fas fa-cubes me-2"></i>Batch Quality</h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body d-flex flex-column">
                     <div class="text-center">
                         <h3 class="text-info">{{ stats.batch_approval_rate }}%</h3>
                         <small class="text-muted">Approval Rate</small>
@@ -66,11 +66,11 @@
 
         <!-- Job Card QC Section -->
         <div class="col-md-3">
-            <div class="card border-warning">
+            <div class="card border-warning h-100">
                 <div class="card-header bg-warning text-white">
                     <h6 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Job Card QC</h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body d-flex flex-column">
                     <div class="text-center">
                         <h3 class="text-warning">{{ stats.pending_qc_reports }}</h3>
                         <small class="text-muted">Pending Today</small>
@@ -90,11 +90,11 @@
 
         <!-- GRN Material Quality Section -->
         <div class="col-md-3">
-            <div class="card border-success">
+            <div class="card border-success h-100">
                 <div class="card-header bg-success text-white">
                     <h6 class="mb-0"><i class="fas fa-truck-loading me-2"></i>GRN Material Quality</h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body d-flex flex-column">
                     <div class="text-center">
                         <h3 class="text-success">{{ stats.grn_quality_rate }}%</h3>
                         <small class="text-muted">Pass Rate</small>
@@ -122,11 +122,11 @@
 
         <!-- Production Quality Section -->
         <div class="col-md-3">
-            <div class="card border-primary">
+            <div class="card border-primary h-100">
                 <div class="card-header bg-primary text-white">
                     <h6 class="mb-0"><i class="fas fa-industry me-2"></i>Production Quality</h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body d-flex flex-column">
                     <div class="text-center">
                         <h3 class="text-primary">{{ stats.yield_percentage }}%</h3>
                         <small class="text-muted">Yield Rate</small>
