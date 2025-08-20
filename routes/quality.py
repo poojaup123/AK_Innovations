@@ -13,19 +13,29 @@ quality_bp = Blueprint('quality', __name__)
 @login_required
 def dashboard():
     """Comprehensive Quality Control Dashboard - Centralized quality management"""
-    from models import InventoryBatch, JobCard, JobCardDailyStatus, GRN, GRNLineItem, DailyProductionStatus
+    from models import ItemBatch, JobCard, JobCardDailyStatus, DailyProductionStatus
+    from models.grn import GRN, GRNLineItem
+    from models.batch import InventoryBatch
     from sqlalchemy import func, or_, and_
     
     # =============================================================================
     # BATCH QUALITY STATISTICS
     # =============================================================================
     
-    # Batch inspection statistics
-    total_batches = InventoryBatch.query.count()
-    pending_batches = InventoryBatch.query.filter_by(inspection_status='pending').count()
-    approved_batches = InventoryBatch.query.filter_by(inspection_status='passed').count()
-    rejected_batches = InventoryBatch.query.filter_by(inspection_status='failed').count()
-    quarantine_batches = InventoryBatch.query.filter_by(inspection_status='quarantine').count()
+    # Batch inspection statistics (try both InventoryBatch and ItemBatch models)
+    try:
+        total_batches = InventoryBatch.query.count()
+        pending_batches = InventoryBatch.query.filter_by(inspection_status='pending').count()
+        approved_batches = InventoryBatch.query.filter_by(inspection_status='passed').count()
+        rejected_batches = InventoryBatch.query.filter_by(inspection_status='failed').count()
+        quarantine_batches = InventoryBatch.query.filter_by(inspection_status='quarantine').count()
+    except:
+        # Fallback to ItemBatch if InventoryBatch doesn't exist
+        total_batches = ItemBatch.query.count()
+        pending_batches = ItemBatch.query.filter_by(quality_status='pending').count()
+        approved_batches = ItemBatch.query.filter_by(quality_status='good').count()
+        rejected_batches = ItemBatch.query.filter_by(quality_status='defective').count()
+        quarantine_batches = 0
     
     # Calculate batch approval rate
     batch_approval_rate = (approved_batches / total_batches * 100) if total_batches > 0 else 0
@@ -104,7 +114,10 @@ def dashboard():
     # =============================================================================
     
     # Recent batch inspections  
-    recent_batches = InventoryBatch.query.order_by(desc(InventoryBatch.updated_at)).limit(10).all()
+    try:
+        recent_batches = InventoryBatch.query.order_by(desc(InventoryBatch.updated_at)).limit(10).all()
+    except:
+        recent_batches = ItemBatch.query.order_by(desc(ItemBatch.updated_at)).limit(10).all()
     
     # Recent QC reports
     recent_qc_reports = JobCardDailyStatus.query.filter(
@@ -175,19 +188,30 @@ def dashboard():
 @login_required
 def batch_inspections():
     """Batch inspection management page"""
-    from models import InventoryBatch
+    from models import ItemBatch
+    from models.batch import InventoryBatch
     
     status_filter = request.args.get('status', 'all')
-    query = InventoryBatch.query
     
-    if status_filter == 'pending':
-        query = query.filter_by(inspection_status='pending')
-    elif status_filter == 'approved':
-        query = query.filter_by(inspection_status='passed')  
-    elif status_filter == 'rejected':
-        query = query.filter_by(inspection_status='failed')
-    
-    batches = query.order_by(desc(InventoryBatch.updated_at)).all()
+    try:
+        query = InventoryBatch.query
+        if status_filter == 'pending':
+            query = query.filter_by(inspection_status='pending')
+        elif status_filter == 'approved':
+            query = query.filter_by(inspection_status='passed')  
+        elif status_filter == 'rejected':
+            query = query.filter_by(inspection_status='failed')
+        batches = query.order_by(desc(InventoryBatch.updated_at)).all()
+    except:
+        # Fallback to ItemBatch
+        query = ItemBatch.query
+        if status_filter == 'pending':
+            query = query.filter_by(quality_status='pending')
+        elif status_filter == 'approved':
+            query = query.filter_by(quality_status='good')
+        elif status_filter == 'rejected':
+            query = query.filter_by(quality_status='defective')
+        batches = query.order_by(desc(ItemBatch.updated_at)).all()
     
     return render_template('quality/batch_inspections.html',
                          batches=batches,
@@ -198,27 +222,45 @@ def batch_inspections():
 @login_required
 def update_batch_quality(batch_id):
     """Update batch quality status - moved from batch tracking"""
-    from models import InventoryBatch
+    from models import ItemBatch
+    from models.batch import InventoryBatch
     
     try:
-        batch = InventoryBatch.query.get_or_404(batch_id)
+        try:
+            batch = InventoryBatch.query.get_or_404(batch_id)
+            batch_model = 'InventoryBatch'
+        except:
+            batch = ItemBatch.query.get_or_404(batch_id)
+            batch_model = 'ItemBatch'
         
         new_status = request.form.get('quality_status')
         quality_notes = request.form.get('quality_notes', '')
         
-        if new_status not in ['passed', 'failed', 'pending', 'quarantine']:
-            flash(f'Invalid quality status: {new_status}', 'error')
-            return redirect(url_for('quality.batch_inspections'))
-        
-        # Update batch
-        batch.inspection_status = new_status
-        batch.updated_at = datetime.utcnow()
-        
-        # Automatic quantity movement for approved batches
-        if new_status == 'passed' and batch.qty_inspection > 0:
-            qty_to_move = batch.qty_inspection
-            batch.qty_inspection = 0.0
-            batch.qty_raw += qty_to_move
+        if batch_model == 'InventoryBatch':
+            if new_status not in ['passed', 'failed', 'pending', 'quarantine']:
+                flash(f'Invalid quality status: {new_status}', 'error')
+                return redirect(url_for('quality.batch_inspections'))
+            
+            # Update batch
+            batch.inspection_status = new_status
+            batch.updated_at = datetime.utcnow()
+            
+            # Automatic quantity movement for approved batches
+            if new_status == 'passed' and hasattr(batch, 'qty_inspection') and batch.qty_inspection > 0:
+                qty_to_move = batch.qty_inspection
+                batch.qty_inspection = 0.0
+                batch.qty_raw += qty_to_move
+        else:
+            # ItemBatch model
+            status_mapping = {
+                'passed': 'good',
+                'failed': 'defective',
+                'pending': 'pending',
+                'quarantine': 'defective'
+            }
+            mapped_status = status_mapping.get(new_status, 'good')
+            batch.quality_status = mapped_status
+            batch.updated_at = datetime.utcnow()
         
         db.session.commit()
         
@@ -229,7 +271,8 @@ def update_batch_quality(batch_id):
             'quarantine': 'On Hold'
         }
         
-        flash(f'Batch {batch.batch_code} quality status updated to {status_names.get(new_status, new_status)}', 'success')
+        batch_code = getattr(batch, 'batch_code', None) or getattr(batch, 'batch_number', f'Batch {batch_id}')
+        flash(f'Batch {batch_code} quality status updated to {status_names.get(new_status, new_status)}', 'success')
         return redirect(url_for('quality.batch_inspections'))
         
     except Exception as e:
@@ -326,7 +369,7 @@ def approve_job_card_qc(status_id):
 @login_required
 def grn_inspections():
     """GRN material inspection management"""
-    from models import GRNLineItem, GRN
+    from models.grn import GRNLineItem, GRN
     
     status_filter = request.args.get('status', 'all')
     query = GRNLineItem.query.join(GRN)
@@ -349,7 +392,7 @@ def grn_inspections():
 @login_required
 def update_grn_inspection(item_id):
     """Update GRN item inspection status"""
-    from models import GRNLineItem
+    from models.grn import GRNLineItem
     
     try:
         grn_item = GRNLineItem.query.get_or_404(item_id)
