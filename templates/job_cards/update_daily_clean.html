@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Progress - {{ job_card.job_card_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-clipboard-check text-primary"></i> Daily Progress Report</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('job_cards.dashboard') }}">Job Cards</a></li>
+                            <li class="breadcrumb-item active">{{ job_card.job_card_number }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <span class="badge bg-info me-2">{{ job_card.status|title }}</span>
+                    <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Job Card
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Form -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Update Progress</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Basic Production Data -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2"><i class="fas fa-tachometer-alt me-2"></i>Today's Production</h6>
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.qty_completed_today.label(class="form-label") }}
+                                {{ form.qty_completed_today(class="form-control") }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.qty_good_today.label(class="form-label") }}
+                                {{ form.qty_good_today(class="form-control") }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.qty_defective_today.label(class="form-label") }}
+                                {{ form.qty_defective_today(class="form-control") }}
+                            </div>
+                            <div class="col-md-3">
+                                {{ form.qty_scrap_today.label(class="form-label") }}
+                                {{ form.qty_scrap_today(class="form-control") }}
+                            </div>
+                        </div>
+
+                        <!-- Process Routing (Simplified) -->
+                        {% if bom_processes %}
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2"><i class="fas fa-route me-2"></i>Process Steps</h6>
+                                <p class="text-muted small">Select the processes you worked on today:</p>
+                            </div>
+                            <div class="col-12">
+                                {% for process in bom_processes %}
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" name="selected_processes" 
+                                           value="{{ process.id }}" id="process_{{ process.id }}">
+                                    <label class="form-check-label" for="process_{{ process.id }}">
+                                        <strong>Step {{ process.step_number }}: {{ process.process_name }}</strong>
+                                        {% if process.is_outsourced %}
+                                            <span class="badge bg-warning ms-2">Outsourced</span>
+                                        {% else %}
+                                            <span class="badge bg-primary ms-2">In-house</span>
+                                        {% endif %}
+                                        {% if process.operation_description %}
+                                            <br><small class="text-muted">{{ process.operation_description }}</small>
+                                        {% endif %}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Status and Time -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2"><i class="fas fa-clock me-2"></i>Status & Time</h6>
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.daily_status.label(class="form-label") }}
+                                {{ form.daily_status(class="form-select") }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.hours_worked.label(class="form-label") }}
+                                {{ form.hours_worked(class="form-control") }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.current_process_step.label(class="form-label") }}
+                                {{ form.current_process_step(class="form-control") }}
+                            </div>
+                        </div>
+
+                        <!-- Issues (Simplified) -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary border-bottom pb-2"><i class="fas fa-exclamation-triangle me-2"></i>Issues & Notes</h6>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.quality_issues.label(class="form-label") }}
+                                {{ form.quality_issues(class="form-control", rows="3") }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.operator_notes.label(class="form-label") }}
+                                {{ form.operator_notes(class="form-control", rows="3") }}
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save me-2"></i>Save Progress
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Card Summary (Right Side) -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Job Card Summary</h6>
+                </div>
+                <div class="card-body">
+                    <h6>{{ job_card.job_card_number }}</h6>
+                    <p class="text-muted">{{ job_card.item.name if job_card.item else 'Unknown Item' }}</p>
+
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <div class="border rounded p-2 bg-light">
+                                <div class="h4 text-primary mb-0">{{ job_card.planned_quantity or 0 }}</div>
+                                <small class="text-muted">Planned Qty</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-2 bg-light">
+                                <div class="h4 text-success mb-0">{{ job_card.completed_quantity or 0 }}</div>
+                                <small class="text-muted">Completed</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted">Progress</small>
+                        <div class="progress">
+                            {% set progress = ((job_card.completed_quantity or 0) / (job_card.planned_quantity or 1) * 100)|round %}
+                            <div class="progress-bar" role="progressbar" style="width: {{ progress }}%" 
+                                 aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ progress }}%
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <small class="text-muted">Status:</small>
+                        <span class="badge bg-{% if job_card.status == 'completed' %}success{% elif job_card.status == 'in_progress' %}warning{% elif job_card.status == 'planned' %}info{% else %}secondary{% endif %}">
+                            {{ job_card.status|title }}
+                        </span>
+                    </div>
+
+                    <div class="mb-2">
+                        <small class="text-muted">Process:</small>
+                        <span class="badge bg-primary">{{ job_card.process_name or 'General' }}</span>
+                    </div>
+
+                    {% if job_card.target_completion_date %}
+                    <div class="mb-2">
+                        <small class="text-muted">Target Date:</small>
+                        <br><small>{{ job_card.target_completion_date.strftime('%d-%m-%Y') }}</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Process Flow (if BOM processes exist) -->
+            {% if bom_processes %}
+            <div class="card mt-3">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-list-ol me-2"></i>Process Flow</h6>
+                </div>
+                <div class="card-body">
+                    {% for process in bom_processes %}
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="badge bg-primary rounded-circle me-2" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                            {{ process.step_number }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <small class="fw-bold">{{ process.process_name }}</small>
+                            {% if process.is_outsourced %}
+                                <br><span class="badge bg-warning">Outsourced</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

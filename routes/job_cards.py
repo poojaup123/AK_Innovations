@@ -611,7 +611,7 @@ def update_daily_status(job_card_id):
             flash(f'Error updating daily status: {str(e)}', 'danger')
     
     from datetime import date
-    return render_template('job_cards/update_daily.html',
+    return render_template('job_cards/update_daily_clean.html',
                          form=form,
                          job_card=job_card,
                          today_report=today_report,
