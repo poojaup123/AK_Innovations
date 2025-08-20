@@ -581,7 +581,7 @@ function renderExactCostBreakdown(treeData) {
                     <span class="cost-icon me-2">📈</span>
                     <strong>Markup (${markupRate}%):</strong>
                 </div>
-                <span class="text-warning fw-bold">₹${(netCost * 0.03).toFixed(2)}</span>
+                <span class="text-warning fw-bold">₹${markupAmount.toFixed(2)}</span>
             </div>
             
             <!-- Final Unit Cost -->
@@ -590,7 +590,7 @@ function renderExactCostBreakdown(treeData) {
                     <span class="cost-icon me-2">🏷️</span>
                     <strong>Final Unit Cost:</strong>
                 </div>
-                <span class="fw-bold fs-5">₹${(netCost + (netCost * 0.03)).toFixed(2)}</span>
+                <span class="fw-bold fs-5">₹${finalCost.toFixed(2)}</span>
             </div>
         </div>
     `;
