@@ -1115,7 +1115,7 @@ def api_bom_tree_data(bom_id):
         
         # Calculate actual labor costs from BOM data
         # Get labor costs from BOM's labor_cost field or calculate from processes
-        labor_cost_total = bom.labor_cost_per_unit if hasattr(bom, 'labor_cost_per_unit') and bom.labor_cost_per_unit else 0
+        labor_cost_total = getattr(bom, 'labor_cost_per_unit', 0) or 0
         
         # If no labor cost in BOM, calculate from typical manufacturing processes
         if labor_cost_total == 0:
@@ -1128,7 +1128,7 @@ def api_bom_tree_data(bom_id):
         zinc_cost = labor_cost_total * 0.50 if labor_cost_total > 0 else 0.7980
         
         # Other cost components
-        overhead_cost_per_unit = getattr(bom, 'overhead_cost_per_unit', 7.35)
+        overhead_cost_per_unit = getattr(bom, 'overhead_cost_per_unit', 0) or 0
         
         # Calculate freight cost based on weight (₹10 per kg)
         unit_weight = getattr(bom, 'unit_weight', 0.0)  # Weight per unit in kg
@@ -1137,7 +1137,7 @@ def api_bom_tree_data(bom_id):
         
         scrap_recovery_rate = getattr(bom, 'scrap_recovery_rate', 0.30)  # 30%
         scrap_recovery = material_cost_per_unit * scrap_recovery_rate
-        markup_percentage = getattr(bom, 'markup_percentage', 0.03)  # 3%
+        markup_percentage = (getattr(bom, 'markup_percentage', 3) or 3) / 100.0  # Convert percentage to decimal
         
         total_before_markup = material_cost_per_unit + labor_cost_total + overhead_cost_per_unit + freight_cost_per_unit - scrap_recovery
         markup_amount = total_before_markup * markup_percentage
