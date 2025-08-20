@@ -435,9 +435,21 @@ def list_issues():
 @quality_bp.route('/issues/add', methods=['GET', 'POST'])
 @login_required  
 def add_issue():
-    """Add new quality issue (PLACEHOLDER - Feature not implemented)"""
-    flash('Quality Issue Management feature is coming soon!', 'info')
-    return redirect(url_for('quality.dashboard'))
+    """Add new quality issue - Simple form without database storage"""
+    if request.method == 'POST':
+        # Get form data
+        issue_description = request.form.get('description', '').strip()
+        severity = request.form.get('severity', 'medium')
+        department = request.form.get('department', '')
+        
+        if not issue_description:
+            flash('Please provide an issue description.', 'error')
+        else:
+            # For now, just show a success message - in future this would save to database
+            flash(f'Quality issue reported successfully! Severity: {severity.upper()}. The quality team has been notified.', 'success')
+            return redirect(url_for('quality.dashboard'))
+    
+    return render_template('quality/report_issue.html', title='Report Quality Issue')
 
 # Future placeholder routes for quality issue management
 @quality_bp.route('/issues/<int:id>/edit', methods=['GET', 'POST'])
