@@ -74,7 +74,6 @@
                                     {% for process in bom_processes %}
                                         {% if process.process_name.lower() in job_card.process_name.lower() or job_card.process_name.lower() in process.process_name.lower() %}
                                             {% set current_process = process %}
-                                            {% break %}
                                         {% endif %}
                                     {% endfor %}
                                 {% endif %}
