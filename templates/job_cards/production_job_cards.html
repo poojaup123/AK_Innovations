@@ -114,7 +114,7 @@
         <!-- Display existing job cards -->
         {% for job_card in job_cards %}
         <div class="col-lg-6 mb-4">
-            <div class="card job-card-item" data-job-type="{{ job_card.job_type }}">
+            <div class="card job-card-item border border-2" data-job-type="{{ job_card.job_type }}" style="border-color: #dee2e6 !important;">
                 <div class="card-header d-flex justify-content-between align-items-center
                     {% if job_card.status == 'completed' %}bg-success text-white
                     {% elif job_card.status == 'in_progress' %}bg-warning text-dark
