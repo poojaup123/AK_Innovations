@@ -152,15 +152,11 @@
         {% for job_card in job_cards %}
         <div class="col-lg-6 mb-4">
             <!-- DEBUG: Process name is: {{ job_card.process_name }} -->
-            {% if job_card.process_name and 'cutting' in job_card.process_name.lower() %}
-                <div class="card job-card-item shadow-sm process-cutting" data-job-type="{{ job_card.job_type }}">
-            {% elif job_card.process_name and 'bending' in job_card.process_name.lower() %}
-                <div class="card job-card-item shadow-sm process-bending" data-job-type="{{ job_card.job_type }}">
-            {% elif job_card.process_name and 'zinc' in job_card.process_name.lower() %}
-                <div class="card job-card-item shadow-sm process-zinc" data-job-type="{{ job_card.job_type }}">
-            {% else %}
-                <div class="card job-card-item shadow-sm" data-job-type="{{ job_card.job_type }}" style="border: 3px solid #dee2e6;">
-            {% endif %}
+            <div class="card job-card-item shadow-sm 
+                 {% if job_card.process_name and 'cutting' in job_card.process_name.lower() %}process-cutting
+                 {% elif job_card.process_name and 'bending' in job_card.process_name.lower() %}process-bending
+                 {% elif job_card.process_name and 'zinc' in job_card.process_name.lower() %}process-zinc
+                 {% endif %}" data-job-type="{{ job_card.job_type }}" style="border: 5px solid red !important;"
                 <div class="card-header d-flex justify-content-between align-items-center
                     {% if job_card.status == 'completed' %}bg-success text-white
                     {% elif job_card.status == 'in_progress' %}bg-warning text-dark
