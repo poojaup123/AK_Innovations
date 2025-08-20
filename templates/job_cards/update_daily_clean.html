@@ -72,11 +72,17 @@
                                 {% set current_process = None %}
                                 {% if job_card.process_name %}
                                     {% for process in bom_processes %}
-                                        {% if process.process_name.lower() in job_card.process_name.lower() or job_card.process_name.lower() in process.process_name.lower() %}
+                                        {% if process.process_name.lower() == job_card.process_name.lower() or 
+                                             job_card.process_name.lower() in process.process_name.lower() or 
+                                             process.process_name.lower() in job_card.process_name.lower() %}
                                             {% set current_process = process %}
                                         {% endif %}
                                     {% endfor %}
                                 {% endif %}
+                                
+                                <!-- Debug info (remove in production) -->
+                                <!-- Job Card Process: {{ job_card.process_name or 'None' }} -->
+                                <!-- Current Process Found: {{ current_process.process_name if current_process else 'None' }} -->
                                 
                                 {% if current_process %}
                                 <!-- Show the matched process as primary -->
