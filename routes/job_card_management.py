@@ -16,7 +16,7 @@ from app import db
 from datetime import date, datetime
 import json
 
-job_card_management_bp = Blueprint('job_card_management', __name__, url_prefix='/job-cards')
+job_card_management_bp = Blueprint('job_card_management', __name__)
 
 @job_card_management_bp.route('/production/<int:production_id>')
 @login_required
@@ -37,10 +37,11 @@ def production_job_cards(production_id):
                          job_cards=job_cards,
                          title=f'Job Cards - {production.production_number}')
 
-@job_card_management_bp.route('/view/<int:job_card_id>')
+@job_card_management_bp.route('/job-card-detail/<int:job_card_id>')
 @login_required  
 def view_job_card(job_card_id):
     """View detailed job card information"""
+    print(f"DEBUG job_card_management: Viewing job card ID {job_card_id}")
     job_card = JobCard.query.get_or_404(job_card_id)
     
     # Get job card item and production

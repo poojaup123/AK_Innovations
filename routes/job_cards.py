@@ -730,9 +730,9 @@ def outsourcing_workflow(job_card_id, report_id=None):
 @login_required
 def view_job_card(id):
     """View job card details"""
-    print(f"DEBUG: Attempting to view job card ID: {id}")
+    print(f"DEBUG job_cards: Attempting to view job card ID: {id}")
     job_card = JobCard.query.get(id)
-    print(f"DEBUG: Found job card: {job_card}")
+    print(f"DEBUG job_cards: Found job card: {job_card}")
     if not job_card:
         # If job card doesn't exist, redirect to the first available one
         first_available = JobCard.query.order_by(JobCard.id.desc()).first()
