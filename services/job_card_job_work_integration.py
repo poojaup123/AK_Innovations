@@ -238,6 +238,7 @@ class JobCardJobWorkIntegration:
             
             # Add to details
             summary['details'].append({
+                'id': job_card.id,
                 'job_card_number': job_card.job_card_number,
                 'item_name': job_card.item.name if job_card.item else 'Unknown',
                 'process': job_card.process_name,
