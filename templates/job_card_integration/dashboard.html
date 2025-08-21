@@ -171,8 +171,9 @@
                                             </td>
                                             <td>
                                                 <div class="btn-group" role="group">
-                                                    <a href="/job-card-integration/view-job-card/{{ detail.id }}" 
-                                                       class="btn btn-sm btn-outline-primary" title="View Details">
+                                                    <a href="/job-card-integration/view-job-card/{{ detail.id }}?t={{ detail.id }}{{ loop.index }}" 
+                                                       class="btn btn-sm btn-outline-primary" title="View Details"
+                                                       onclick="console.log('Clicking view for job card ID: {{ detail.id }}'); return true;">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
                                                     {% if detail.type == 'in_house' and detail.status not in ['completed', 'cancelled'] %}
