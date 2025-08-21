@@ -83,7 +83,7 @@
                                         <tr>
                                             <td><strong>Quantity Received:</strong></td>
                                             <td>
-                                                <span class="{% if job.quantity_received > 0 %}text-success fw-bold{% else %}text-muted{% endif %}">
+                                                <span class="{% if job.quantity_received and job.quantity_received > 0 %}text-success fw-bold{% else %}text-muted{% endif %}">
                                                     {{ job.quantity_received or 0 }} {{ job.item.unit_of_measure }}
                                                 </span>
                                             </td>
@@ -91,7 +91,7 @@
                                         <tr>
                                             <td><strong>Pending Quantity:</strong></td>
                                             <td>
-                                                <span class="{% if job.pending_quantity > 0 %}text-warning fw-bold{% else %}text-muted{% endif %}">
+                                                <span class="{% if job.pending_quantity and job.pending_quantity > 0 %}text-warning fw-bold{% else %}text-muted{% endif %}">
                                                     {{ job.pending_receipt_display }}
                                                 </span>
                                             </td>
