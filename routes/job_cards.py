@@ -726,8 +726,9 @@ def outsourcing_workflow(job_card_id, report_id=None):
                          available_quantity=available_quantity,
                          selected_report=selected_report)
 
-@job_cards_bp.route('/view/<int:id>')
-@login_required
+# Route completely removed to fix conflicts
+# @job_cards_bp.route('/view/<int:id>')
+# @login_required
 def view_job_card_old_disabled(id):
     """View job card details"""
     print(f"DEBUG job_cards: Attempting to view job card ID: {id}")
