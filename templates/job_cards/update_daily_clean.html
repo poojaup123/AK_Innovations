@@ -195,7 +195,7 @@
                         </div>
                         <div class="col-6">
                             <div class="border rounded p-2 bg-light">
-                                <div class="h4 text-success mb-0">{{ job_card.completed_quantity or 0 }}</div>
+                                <div class="h4 text-success mb-0" id="completed-quantity">{{ job_card.completed_quantity or 0 }}</div>
                                 <small class="text-muted">Completed</small>
                             </div>
                         </div>
@@ -205,9 +205,9 @@
                         <small class="text-muted">Progress</small>
                         <div class="progress">
                             {% set progress = ((job_card.completed_quantity or 0) / (job_card.planned_quantity or 1) * 100)|round %}
-                            <div class="progress-bar" role="progressbar" style="width: {{ progress }}%" 
+                            <div class="progress-bar bg-success" role="progressbar" id="progress-bar" style="width: {{ progress }}%" 
                                  aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100">
-                                {{ progress }}%
+                                <span id="progress-text">{{ progress }}%</span>
                             </div>
                         </div>
                     </div>
@@ -259,4 +259,48 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const qtyCompletedInput = document.querySelector('input[name="qty_completed_today"]');
+    const completedQuantityDisplay = document.getElementById('completed-quantity');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    
+    // Current values from template
+    const plannedQuantity = {{ job_card.planned_quantity or 0 }};
+    const currentCompleted = {{ job_card.completed_quantity or 0 }};
+    
+    if (qtyCompletedInput) {
+        qtyCompletedInput.addEventListener('input', function() {
+            const todayQuantity = parseFloat(this.value) || 0;
+            const newCompleted = currentCompleted + todayQuantity;
+            
+            // Update completed quantity display
+            completedQuantityDisplay.textContent = newCompleted;
+            
+            // Calculate progress percentage
+            const progressPercent = plannedQuantity > 0 ? 
+                Math.round((newCompleted / plannedQuantity) * 100) : 0;
+            
+            // Update progress bar
+            progressBar.style.width = progressPercent + '%';
+            progressBar.setAttribute('aria-valuenow', progressPercent);
+            progressText.textContent = progressPercent + '%';
+            
+            // Update progress bar color based on completion
+            progressBar.className = 'progress-bar';
+            if (progressPercent >= 100) {
+                progressBar.classList.add('bg-success');
+            } else if (progressPercent >= 75) {
+                progressBar.classList.add('bg-info');
+            } else if (progressPercent >= 50) {
+                progressBar.classList.add('bg-warning');
+            } else {
+                progressBar.classList.add('bg-primary');
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
