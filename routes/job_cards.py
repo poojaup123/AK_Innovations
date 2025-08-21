@@ -728,7 +728,7 @@ def outsourcing_workflow(job_card_id, report_id=None):
 
 @job_cards_bp.route('/view/<int:id>')
 @login_required
-def view_job_card(id):
+def view_job_card_old_disabled(id):
     """View job card details"""
     print(f"DEBUG job_cards: Attempting to view job card ID: {id}")
     job_card = JobCard.query.get(id)
@@ -738,7 +738,7 @@ def view_job_card(id):
         first_available = JobCard.query.order_by(JobCard.id.desc()).first()
         if first_available:
             flash(f'Job card {id} not found. Redirecting to latest job card.', 'info')
-            return redirect(url_for('job_cards.view_job_card', id=first_available.id))
+            return redirect(url_for('job_card_management.view_job_card', job_card_id=first_available.id))
         else:
             flash('No job cards found in the system.', 'warning')
             return redirect(url_for('job_cards.dashboard'))
