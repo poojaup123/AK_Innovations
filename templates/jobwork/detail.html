@@ -167,7 +167,7 @@
                                             <div class="row">
                                                 <div class="col-md-4">
                                                     <strong>Sent Date:</strong><br>
-                                                    {{ job.sent_date.strftime('%d %b %Y') }}
+                                                    {{ job.sent_date.strftime('%d %b %Y') if job.sent_date else 'Not specified' }}
                                                 </div>
                                                 <div class="col-md-4">
                                                     <strong>Expected Return:</strong><br>
@@ -175,7 +175,7 @@
                                                 </div>
                                                 <div class="col-md-4">
                                                     <strong>Created:</strong><br>
-                                                    {{ job.created_at.strftime('%d %b %Y at %I:%M %p') }}
+                                                    {{ job.created_at.strftime('%d %b %Y at %I:%M %p') if job.created_at else 'Not specified' }}
                                                 </div>
                                             </div>
                                         </div>
