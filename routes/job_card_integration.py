@@ -39,6 +39,12 @@ def integration_dashboard():
                          recent_job_works=recent_job_works,
                          productions=productions_with_jobs)
 
+@job_card_integration_bp.route('/view-job-card/<int:job_card_id>')
+@login_required
+def view_job_card(job_card_id):
+    """View job card details - redirect to working route"""
+    return redirect(url_for('job_card_management.view_job_card', job_card_id=job_card_id))
+
 @job_card_integration_bp.route('/outsource/<int:job_card_id>', methods=['GET', 'POST'])
 @login_required
 def outsource_job_card(job_card_id):
