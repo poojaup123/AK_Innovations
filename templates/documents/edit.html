@@ -11,15 +11,15 @@
         </div>
         <div class="col-auto">
             {% if document.reference_type == 'purchase_order' %}
-                <a href="{{ url_for('purchase.po_detail', id=document.reference_id) }}" class="btn btn-secondary">
+                <a href="{{ url_for('purchase.po_detail', job_card_id=document.reference_id) }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Purchase Order
                 </a>
             {% elif document.reference_type == 'sales_order' %}
-                <a href="{{ url_for('sales.so_detail', id=document.reference_id) }}" class="btn btn-secondary">
+                <a href="{{ url_for('sales.so_detail', job_card_id=document.reference_id) }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Sales Order
                 </a>
             {% elif document.reference_type == 'job_work' %}
-                <a href="{{ url_for('jobwork.job_detail', id=document.reference_id) }}" class="btn btn-secondary">
+                <a href="{{ url_for('jobwork.job_detail', job_card_id=document.reference_id) }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Job Work
                 </a>
             {% endif %}
@@ -62,15 +62,15 @@
 
                         <div class="d-flex justify-content-between">
                             {% if document.reference_type == 'purchase_order' %}
-                                <a href="{{ url_for('purchase.po_detail', id=document.reference_id) }}" class="btn btn-secondary">
+                                <a href="{{ url_for('purchase.po_detail', job_card_id=document.reference_id) }}" class="btn btn-secondary">
                                     <i class="fas fa-times"></i> Cancel
                                 </a>
                             {% elif document.reference_type == 'sales_order' %}
-                                <a href="{{ url_for('sales.so_detail', id=document.reference_id) }}" class="btn btn-secondary">
+                                <a href="{{ url_for('sales.so_detail', job_card_id=document.reference_id) }}" class="btn btn-secondary">
                                     <i class="fas fa-times"></i> Cancel
                                 </a>
                             {% elif document.reference_type == 'job_work' %}
-                                <a href="{{ url_for('jobwork.job_detail', id=document.reference_id) }}" class="btn btn-secondary">
+                                <a href="{{ url_for('jobwork.job_detail', job_card_id=document.reference_id) }}" class="btn btn-secondary">
                                     <i class="fas fa-times"></i> Cancel
                                 </a>
                             {% else %}

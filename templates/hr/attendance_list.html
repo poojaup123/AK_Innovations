@@ -168,16 +168,16 @@
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
-                                                <a href="{{ url_for('hr.attendance_detail', id=record.id) }}" 
+                                                <a href="{{ url_for('hr.attendance_detail', job_card_id=record.id) }}" 
                                                    class="btn btn-outline-info" title="View Details">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                <a href="{{ url_for('hr.edit_attendance', id=record.id) }}" 
+                                                <a href="{{ url_for('hr.edit_attendance', job_card_id=record.id) }}" 
                                                    class="btn btn-outline-primary" title="Edit">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                                 {% if current_user.is_admin() %}
-                                                <a href="{{ url_for('hr.delete_attendance', id=record.id) }}" 
+                                                <a href="{{ url_for('hr.delete_attendance', job_card_id=record.id) }}" 
                                                    class="btn btn-outline-danger" title="Delete"
                                                    onclick="return confirm('Delete this attendance record?')">
                                                     <i class="fas fa-trash"></i>

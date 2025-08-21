@@ -87,7 +87,7 @@
                                 <tr>
                                     <td>{{ entry.transaction_date.strftime('%d-%m-%Y') }}</td>
                                     <td>
-                                        <a href="{{ url_for('accounting.view_voucher', id=entry.voucher_id) }}" class="text-decoration-none">
+                                        <a href="{{ url_for('accounting.view_voucher', job_card_id=entry.voucher_id) }}" class="text-decoration-none">
                                             {{ entry.voucher.voucher_number }}
                                         </a>
                                     </td>

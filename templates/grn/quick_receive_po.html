@@ -8,7 +8,7 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-plus me-2"></i>Quick Receive Materials</h2>
-                <a href="{{ url_for('purchase.edit_purchase_order', id=purchase_order.id) }}" class="btn btn-outline-secondary">
+                <a href="{{ url_for('purchase.edit_purchase_order', job_card_id=purchase_order.id) }}" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left me-1"></i>Back to Purchase Order
                 </a>
             </div>
@@ -76,7 +76,7 @@
                             <div class="col-md-6">
                                 <label class="form-label">Received Quantity</label>
                                 <div class="input-group">
-                                    {{ form.quantity_received(class="form-control", id="quantity_received") }}
+                                    {{ form.quantity_received(class="form-control", job_card_id="quantity_received") }}
                                     <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
                                 </div>
                                 {% if form.quantity_received.errors %}
@@ -97,7 +97,7 @@
                             <div class="col-md-6">
                                 <label class="form-label">Passed/Good Quantity</label>
                                 <div class="input-group">
-                                    {{ form.quantity_passed(class="form-control", id="quantity_passed", readonly=True) }}
+                                    {{ form.quantity_passed(class="form-control", job_card_id="quantity_passed", readonly=True) }}
                                     <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
                                 </div>
                                 <small class="text-muted">Auto-calculated</small>
@@ -105,7 +105,7 @@
                             <div class="col-md-6">
                                 <label class="form-label">Rejected Quantity</label>
                                 <div class="input-group">
-                                    {{ form.quantity_rejected(class="form-control", id="quantity_rejected") }}
+                                    {{ form.quantity_rejected(class="form-control", job_card_id="quantity_rejected") }}
                                     <span class="input-group-text">{{ po_item.uom or item.unit_of_measure }}</span>
                                 </div>
                                 {% if form.quantity_rejected.errors %}
@@ -187,7 +187,7 @@
                         </div>
 
                         <div class="d-flex justify-content-end">
-                            <a href="{{ url_for('purchase.edit_purchase_order', id=purchase_order.id) }}" class="btn btn-secondary me-2">Cancel</a>
+                            <a href="{{ url_for('purchase.edit_purchase_order', job_card_id=purchase_order.id) }}" class="btn btn-secondary me-2">Cancel</a>
                             <button type="submit" class="btn btn-success">
                                 <i class="fas fa-check me-1"></i>Receive Materials & Create Batch
                             </button>

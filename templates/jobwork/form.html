@@ -41,7 +41,7 @@
                             <tr>
                                 <td><strong>Job Work Type</strong></td>
                                 <td>
-                                    {{ form.job_work_type(class="form-select", id="job_work_type") }}
+                                    {{ form.job_work_type(class="form-select", job_card_id="job_work_type") }}
                                     {% for error in form.job_work_type.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
@@ -51,7 +51,7 @@
                             <tr id="bom_row" style="display: none;">
                                 <td><strong>Select BOM (if any)</strong></td>
                                 <td>
-                                    {{ form.bom_id(class="form-select", id="bom_select") }}
+                                    {{ form.bom_id(class="form-select", job_card_id="bom_select") }}
                                     {% for error in form.bom_id.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
@@ -71,7 +71,7 @@
                             <tr>
                                 <td><strong>Work Type</strong></td>
                                 <td>
-                                    {{ form.work_type(class="form-select", id="work_type") }}
+                                    {{ form.work_type(class="form-select", job_card_id="work_type") }}
                                     {% for error in form.work_type.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
@@ -81,7 +81,7 @@
                             <tr>
                                 <td><strong>Assigned To</strong></td>
                                 <td>
-                                    {{ form.assigned_to(class="form-select", id="assigned_to") }}
+                                    {{ form.assigned_to(class="form-select", job_card_id="assigned_to") }}
                                     {% for error in form.assigned_to.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
@@ -113,7 +113,7 @@
                             <tr>
                                 <td><strong>Input Material</strong></td>
                                 <td>
-                                    {{ form.input_material_id(class="form-select", id="input_material") }}
+                                    {{ form.input_material_id(class="form-select", job_card_id="input_material") }}
                                     {% for error in form.input_material_id.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
@@ -124,7 +124,7 @@
                                 <td><strong>Enable Batch Tracking</strong></td>
                                 <td>
                                     <div class="form-check">
-                                        {{ form.enable_batch_tracking(class="form-check-input", id="enable_batch_tracking") }}
+                                        {{ form.enable_batch_tracking(class="form-check-input", job_card_id="enable_batch_tracking") }}
                                         <label class="form-check-label" for="enable_batch_tracking">
                                             Track material by batch
                                         </label>
@@ -175,7 +175,7 @@
                                     
                                     <!-- Hidden inputs to store batch selections -->
                                     <div id="hidden_batch_inputs"></div>
-                                    {{ form.batch_id(style="display: none;", id="hidden_batch_input") }}
+                                    {{ form.batch_id(style="display: none;", job_card_id="hidden_batch_input") }}
                                     {% for error in form.batch_id.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
@@ -186,7 +186,7 @@
                                 <td><strong>Quantity to Issue</strong></td>
                                 <td>
                                     <div class="input-group">
-                                        {{ form.quantity_to_issue(class="form-control", id="quantity_to_issue") }}
+                                        {{ form.quantity_to_issue(class="form-control", job_card_id="quantity_to_issue") }}
                                         <span class="input-group-text" id="input_material_unit">Units</span>
                                     </div>
                                     {% for error in form.quantity_to_issue.errors %}
@@ -204,7 +204,7 @@
                                 <td><strong>Create Output Batch</strong></td>
                                 <td>
                                     <div class="form-check">
-                                        {{ form.create_output_batch(class="form-check-input", id="create_output_batch") }}
+                                        {{ form.create_output_batch(class="form-check-input", job_card_id="create_output_batch") }}
                                         <label class="form-check-label" for="create_output_batch">
                                             Auto-create output batch
                                         </label>

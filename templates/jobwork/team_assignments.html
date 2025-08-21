@@ -9,7 +9,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-users"></i> Team Assignments - {{ job.job_number }}</h2>
                 <div>
-                    <a href="{{ url_for('jobwork.detail', id=job.id) }}" class="btn btn-secondary">
+                    <a href="{{ url_for('jobwork.detail', job_card_id=job.id) }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Back to Job Work
                     </a>
                     {% if assignments|length < job.max_team_members %}

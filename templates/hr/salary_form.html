@@ -53,7 +53,7 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 {{ form.employee_id.label(class="form-label") }}
-                                {{ form.employee_id(class="form-select", id="employee_id", onchange="loadEmployeeHireDate()") }}
+                                {{ form.employee_id(class="form-select", job_card_id="employee_id", onchange="loadEmployeeHireDate()") }}
                                 {% if form.employee_id.errors %}
                                     <div class="text-danger">
                                         {% for error in form.employee_id.errors %}
@@ -64,7 +64,7 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 {{ form.pay_period_start.label(class="form-label") }}
-                                {{ form.pay_period_start(class="form-control", id="pay_period_start") }}
+                                {{ form.pay_period_start(class="form-control", job_card_id="pay_period_start") }}
                                 {% if form.pay_period_start.errors %}
                                     <div class="text-danger">
                                         {% for error in form.pay_period_start.errors %}
@@ -101,7 +101,7 @@
                                 {{ form.daily_rate.label(class="form-label") }}
                                 <div class="input-group">
                                     <span class="input-group-text">₹</span>
-                                    {{ form.daily_rate(class="form-control", id="daily_rate") }}
+                                    {{ form.daily_rate(class="form-control", job_card_id="daily_rate") }}
                                 </div>
                                 {% if form.daily_rate.errors %}
                                     <div class="text-danger">
@@ -133,7 +133,7 @@
                                 {{ form.basic_amount.label(class="form-label") }}
                                 <div class="input-group">
                                     <span class="input-group-text">₹</span>
-                                    {{ form.basic_amount(class="form-control bg-light", id="basic_amount", readonly=True) }}
+                                    {{ form.basic_amount(class="form-control bg-light", job_card_id="basic_amount", readonly=True) }}
                                 </div>
                                 {% if form.basic_amount.errors %}
                                     <div class="text-danger">
@@ -155,7 +155,7 @@
                             </div>
                             <div class="col-md-3 mb-3">
                                 {{ form.overtime_hours.label(class="form-label") }}
-                                {{ form.overtime_hours(class="form-control bg-light", id="overtime_hours", readonly=True) }}
+                                {{ form.overtime_hours(class="form-control bg-light", job_card_id="overtime_hours", readonly=True) }}
                                 {% if form.overtime_hours.errors %}
                                     <div class="text-danger">
                                         {% for error in form.overtime_hours.errors %}
@@ -169,7 +169,7 @@
                                 {{ form.overtime_rate.label(class="form-label") }}
                                 <div class="input-group">
                                     <span class="input-group-text">₹</span>
-                                    {{ form.overtime_rate(class="form-control", id="overtime_rate", onchange="calculateTotals()") }}
+                                    {{ form.overtime_rate(class="form-control", job_card_id="overtime_rate", onchange="calculateTotals()") }}
                                 </div>
                                 {% if form.overtime_rate.errors %}
                                     <div class="text-danger">
@@ -184,7 +184,7 @@
                                 {{ form.bonus_amount.label(class="form-label") }}
                                 <div class="input-group">
                                     <span class="input-group-text">₹</span>
-                                    {{ form.bonus_amount(class="form-control", id="bonus_amount", onchange="calculateTotals()") }}
+                                    {{ form.bonus_amount(class="form-control", job_card_id="bonus_amount", onchange="calculateTotals()") }}
                                 </div>
                                 {% if form.bonus_amount.errors %}
                                     <div class="text-danger">
@@ -198,7 +198,7 @@
                                 {{ form.deduction_amount.label(class="form-label") }}
                                 <div class="input-group">
                                     <span class="input-group-text">₹</span>
-                                    {{ form.deduction_amount(class="form-control", id="deduction_amount", onchange="calculateTotals()") }}
+                                    {{ form.deduction_amount(class="form-control", job_card_id="deduction_amount", onchange="calculateTotals()") }}
                                 </div>
                                 {% if form.deduction_amount.errors %}
                                     <div class="text-danger">
@@ -212,7 +212,7 @@
                                 {{ form.advance_deduction.label(class="form-label") }}
                                 <div class="input-group">
                                     <span class="input-group-text">₹</span>
-                                    {{ form.advance_deduction(class="form-control", id="advance_deduction", onchange="calculateTotals()") }}
+                                    {{ form.advance_deduction(class="form-control", job_card_id="advance_deduction", onchange="calculateTotals()") }}
                                 </div>
                                 {% if form.advance_deduction.errors %}
                                     <div class="text-danger">

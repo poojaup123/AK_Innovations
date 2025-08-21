@@ -95,7 +95,7 @@
                                     </td>
                                     <td>
                                         {% if job.parent_job_card %}
-                                            <a href="{{ url_for('job_cards.view_job_card', id=job.parent_job_card.id) }}" class="text-decoration-none">
+                                            <a href="{{ url_for('job_card_management.view_job_card', job_card_id=job.parent_job_card.id) }}" class="text-decoration-none">
                                                 {{ job.parent_job_card.job_card_number }}
                                             </a>
                                         {% else %}
@@ -156,7 +156,7 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{{ url_for('job_cards.view_job_card', id=job.id) }}" 
+                                            <a href="{{ url_for('job_card_management.view_job_card', job_card_id=job.id) }}" 
                                                class="btn btn-outline-primary" title="View Job Card">
                                                 <i class="fas fa-eye"></i>
                                             </a>

@@ -38,7 +38,7 @@
                             <tr>
                                 <td><strong>Job Work Type</strong></td>
                                 <td>
-                                    {{ form.job_work_type(class="form-select", id="job_work_type") }}
+                                    {{ form.job_work_type(class="form-select", job_card_id="job_work_type") }}
                                     {% for error in form.job_work_type.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
@@ -48,7 +48,7 @@
                             <tr id="bom_row" style="display: none;">
                                 <td><strong>Select BOM (if any)</strong></td>
                                 <td>
-                                    {{ form.bom_id(class="form-select", id="bom_select") }}
+                                    {{ form.bom_id(class="form-select", job_card_id="bom_select") }}
                                     {% for error in form.bom_id.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
@@ -73,7 +73,7 @@
                             <tr>
                                 <td><strong>Work Type</strong></td>
                                 <td>
-                                    {{ form.work_type(class="form-select", id="work_type") }}
+                                    {{ form.work_type(class="form-select", job_card_id="work_type") }}
                                     {% for error in form.work_type.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}
@@ -140,7 +140,7 @@
                         <tbody>
                             <tr>
                                 <td>
-                                    {{ form.input_material_id(class="form-select", id="input_material") }}
+                                    {{ form.input_material_id(class="form-select", job_card_id="input_material") }}
                                     {% for error in form.input_material_id.errors %}
                                         <div class="text-danger small">{{ error }}</div>
                                     {% endfor %}

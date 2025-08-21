@@ -10,7 +10,7 @@
             <p class="text-muted">Update progress for {{ process.process_name }} process</p>
         </div>
         <div class="col-auto">
-            <a href="{{ url_for('multi_process_jobwork.detail', id=process.job_work_id) }}" class="btn btn-secondary">
+            <a href="{{ url_for('multi_process_jobwork.detail', job_card_id=process.job_work_id) }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Back to Job Work
             </a>
         </div>
@@ -196,7 +196,7 @@
                         </div>
                         
                         <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('multi_process_jobwork.detail', id=process.job_work_id) }}" class="btn btn-secondary">
+                            <a href="{{ url_for('multi_process_jobwork.detail', job_card_id=process.job_work_id) }}" class="btn btn-secondary">
                                 <i class="fas fa-times"></i> Cancel
                             </a>
                             <button type="submit" class="btn btn-primary">

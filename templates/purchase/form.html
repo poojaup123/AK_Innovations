@@ -131,7 +131,7 @@
                                 <i class="fas fa-save"></i> {{ 'Update' if po else 'Create' }} Purchase Order
                             </button>
                             {% if po %}
-                            <a href="{{ url_for('purchase.print_purchase_order', id=po.id) }}" class="btn btn-success" target="_blank">
+                            <a href="{{ url_for('purchase.print_purchase_order', job_card_id=po.id) }}" class="btn btn-success" target="_blank">
                                 <i class="fas fa-print"></i> Print PO
                             </a>
                             {% endif %}

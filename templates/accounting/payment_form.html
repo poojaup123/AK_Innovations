@@ -51,7 +51,7 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">{{ form.payment_mode.label.text }} <span class="text-danger">*</span></label>
-                                {{ form.payment_mode(class="form-select" + (" is-invalid" if form.payment_mode.errors else ""), id="paymentMode") }}
+                                {{ form.payment_mode(class="form-select" + (" is-invalid" if form.payment_mode.errors else ""), job_card_id="paymentMode") }}
                                 {% if form.payment_mode.errors %}
                                     <div class="invalid-feedback">
                                         {% for error in form.payment_mode.errors %}{{ error }}{% endfor %}

@@ -88,11 +88,11 @@
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{{ url_for('hr.edit_employee', id=employee.id) }}" class="btn btn-outline-primary btn-sm">
+                                        <a href="{{ url_for('hr.edit_employee', job_card_id=employee.id) }}" class="btn btn-outline-primary btn-sm">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         {% if current_user.is_admin() %}
-                                        <a href="{{ url_for('hr.toggle_employee_status', id=employee.id) }}" class="btn btn-outline-{{ 'danger' if employee.is_active else 'success' }} btn-sm"
+                                        <a href="{{ url_for('hr.toggle_employee_status', job_card_id=employee.id) }}" class="btn btn-outline-{{ 'danger' if employee.is_active else 'success' }} btn-sm"
                                            onclick="return confirm('Are you sure you want to {{ 'deactivate' if employee.is_active else 'activate' }} this employee?')">
                                             <i class="fas fa-{{ 'user-slash' if employee.is_active else 'user-check' }}"></i>
                                         </a>

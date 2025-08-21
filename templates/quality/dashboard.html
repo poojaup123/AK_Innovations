@@ -237,7 +237,7 @@
                                     {% for issue in critical_issues %}
                                     <tr>
                                         <td>
-                                            <a href="{{ url_for('quality.view_issue', id=issue.id) }}">
+                                            <a href="{{ url_for('quality.view_issue', job_card_id=issue.id) }}">
                                                 {{ issue.issue_number }}
                                             </a>
                                         </td>
@@ -288,7 +288,7 @@
                                     {% for issue in recent_issues %}
                                     <tr>
                                         <td>
-                                            <a href="{{ url_for('quality.view_issue', id=issue.id) }}">
+                                            <a href="{{ url_for('quality.view_issue', job_card_id=issue.id) }}">
                                                 {{ issue.issue_number }}
                                             </a>
                                         </td>

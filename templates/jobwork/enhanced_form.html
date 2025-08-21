@@ -82,7 +82,7 @@
                                     <label class="form-label fw-semibold">
                                         <i class="fas fa-tag text-primary me-1"></i>Job Work Type
                                     </label>
-                                    {{ form.job_work_type(class="form-select form-select-lg", id="job_work_type") }}
+                                    {{ form.job_work_type(class="form-select form-select-lg", job_card_id="job_work_type") }}
                                     <div class="form-text">Choose between BOM-based or manual job work</div>
                                 </div>
                                 
@@ -90,7 +90,7 @@
                                     <label class="form-label fw-semibold">
                                         <i class="fas fa-clipboard-list text-success me-1"></i>BOM Selection
                                     </label>
-                                    {{ form.bom_id(class="form-select form-select-lg", id="bom_select", disabled=true) }}
+                                    {{ form.bom_id(class="form-select form-select-lg", job_card_id="bom_select", disabled=true) }}
                                     <div class="form-text">Select BOM for automated material allocation</div>
                                 </div>
                                 
@@ -111,7 +111,7 @@
                                     <label class="form-label fw-semibold">
                                         <i class="fas fa-cogs text-warning me-1"></i>Work Type
                                     </label>
-                                    {{ form.work_type(class="form-select form-select-lg", id="work_type") }}
+                                    {{ form.work_type(class="form-select form-select-lg", job_card_id="work_type") }}
                                     <div class="form-text">In-house or outsourced processing</div>
                                 </div>
                                 
@@ -119,7 +119,7 @@
                                     <label class="form-label fw-semibold">
                                         <i class="fas fa-user-tie text-secondary me-1"></i>Assigned To
                                     </label>
-                                    {{ form.assigned_to(class="form-select form-select-lg", id="assigned_to") }}
+                                    {{ form.assigned_to(class="form-select form-select-lg", job_card_id="assigned_to") }}
                                     <div class="form-text">Department or vendor assignment</div>
                                 </div>
                             </div>
@@ -211,7 +211,7 @@
                                     <label class="form-label fw-semibold">
                                         <i class="fas fa-cube text-primary me-1"></i>Input Material
                                     </label>
-                                    {{ form.input_material_id(class="form-select form-select-lg", id="input_material") }}
+                                    {{ form.input_material_id(class="form-select form-select-lg", job_card_id="input_material") }}
                                 </div>
                                 
                                 <div class="col-md-4">
@@ -230,7 +230,7 @@
                                         <i class="fas fa-calculator text-warning me-1"></i>Quantity to Issue
                                     </label>
                                     <div class="input-group input-group-lg">
-                                        {{ form.quantity_to_issue(class="form-control", id="quantity_to_issue") }}
+                                        {{ form.quantity_to_issue(class="form-control", job_card_id="quantity_to_issue") }}
                                         <span class="input-group-text" id="material_unit">Units</span>
                                     </div>
                                 </div>
@@ -249,7 +249,7 @@
                                                     <i class="fas fa-barcode me-1"></i>Batch Tracking
                                                 </h6>
                                                 <div class="form-check form-switch">
-                                                    {{ form.enable_batch_tracking(class="form-check-input", id="enable_batch_tracking") }}
+                                                    {{ form.enable_batch_tracking(class="form-check-input", job_card_id="enable_batch_tracking") }}
                                                     <label class="form-check-label text-white" for="enable_batch_tracking">
                                                         Enable Tracking
                                                     </label>

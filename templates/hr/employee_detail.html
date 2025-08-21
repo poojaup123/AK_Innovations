@@ -21,7 +21,7 @@
                 <a href="{{ url_for('hr.list_employees') }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to List
                 </a>
-                <a href="{{ url_for('hr.edit_employee', id=employee.id) }}" class="btn btn-primary">
+                <a href="{{ url_for('hr.edit_employee', job_card_id=employee.id) }}" class="btn btn-primary">
                     <i class="fas fa-edit"></i> Edit Employee
                 </a>
             </div>
@@ -173,7 +173,7 @@
                                 <div class="text-success">
                                     <strong>₹{{ "%.2f"|format(salary.net_amount) }}</strong>
                                 </div>
-                                <a href="{{ url_for('hr.salary_detail', id=salary.id) }}" 
+                                <a href="{{ url_for('hr.salary_detail', job_card_id=salary.id) }}" 
                                    class="btn btn-outline-primary btn-sm">View Details</a>
                             </div>
                         {% endfor %}
@@ -220,7 +220,7 @@
                                 {% if advance.status == 'active' and advance.remaining_amount > 0 %}
                                     <small class="text-danger">Remaining: ₹{{ "%.2f"|format(advance.remaining_amount) }}</small>
                                 {% endif %}
-                                <a href="{{ url_for('hr.advance_detail', id=advance.id) }}" 
+                                <a href="{{ url_for('hr.advance_detail', job_card_id=advance.id) }}" 
                                    class="btn btn-outline-primary btn-sm">View Details</a>
                             </div>
                         {% endfor %}

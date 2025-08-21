@@ -26,7 +26,7 @@
                                 <div class="mb-3">
                                     {{ form.purchase_order_id.label(class="form-label") }}
                                     {% if request.args.get('po_id') %}
-                                        {{ form.purchase_order_id(class="form-select", id="poSelect", disabled=True) }}
+                                        {{ form.purchase_order_id(class="form-select", job_card_id="poSelect", disabled=True) }}
                                         <!-- Hidden field to preserve the value when disabled -->
                                         <input type="hidden" name="purchase_order_id" value="{{ form.purchase_order_id.data }}">
                                         <div class="form-text">
@@ -34,7 +34,7 @@
                                             Purchase Order pre-selected from detail page. Items will be auto-loaded.
                                         </div>
                                     {% else %}
-                                        {{ form.purchase_order_id(class="form-select", id="poSelect") }}
+                                        {{ form.purchase_order_id(class="form-select", job_card_id="poSelect") }}
                                     {% endif %}
                                     {% for error in form.purchase_order_id.errors %}
                                         <div class="text-danger">{{ error }}</div>
@@ -47,7 +47,7 @@
                                 <div class="mb-3">
                                     {{ form.job_work_id.label(class="form-label") }}
                                     {% if request.args.get('job_id') %}
-                                        {{ form.job_work_id(class="form-select", id="jobSelect", disabled=True) }}
+                                        {{ form.job_work_id(class="form-select", job_card_id="jobSelect", disabled=True) }}
                                         <!-- Hidden field to preserve the value when disabled -->
                                         <input type="hidden" name="job_work_id" value="{{ form.job_work_id.data }}">
                                         <div class="form-text">
@@ -55,7 +55,7 @@
                                             Job Work pre-selected from detail page. Item will be auto-loaded.
                                         </div>
                                     {% else %}
-                                        {{ form.job_work_id(class="form-select", id="jobSelect") }}
+                                        {{ form.job_work_id(class="form-select", job_card_id="jobSelect") }}
                                     {% endif %}
                                     {% for error in form.job_work_id.errors %}
                                         <div class="text-danger">{{ error }}</div>
@@ -79,7 +79,7 @@
                             <div class="col-md-8">
                                 <div class="mb-3">
                                     {{ form.item_id.label(class="form-label") }}
-                                    {{ form.item_id(class="form-select", id="itemSelect") }}
+                                    {{ form.item_id(class="form-select", job_card_id="itemSelect") }}
                                     {% for error in form.item_id.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
@@ -149,7 +149,7 @@
                                 <div class="mb-3">
                                     {{ form.received_quantity.label(class="form-label") }}
                                     <div class="input-group">
-                                        {{ form.received_quantity(class="form-control", step="0.01", id="receivedQty", autocomplete="off") }}
+                                        {{ form.received_quantity(class="form-control", step="0.01", job_card_id="receivedQty", autocomplete="off") }}
                                         <span class="input-group-text" id="receivedUnit">Unit</span>
                                     </div>
                                     {% for error in form.received_quantity.errors %}
@@ -161,7 +161,7 @@
                                 <div class="mb-3">
                                     {{ form.inspected_quantity.label(class="form-label") }}
                                     <div class="input-group">
-                                        {{ form.inspected_quantity(class="form-control", step="0.01", id="inspectedQty", autocomplete="off") }}
+                                        {{ form.inspected_quantity(class="form-control", step="0.01", job_card_id="inspectedQty", autocomplete="off") }}
                                         <span class="input-group-text" id="inspectedUnit">Unit</span>
                                     </div>
                                     {% for error in form.inspected_quantity.errors %}
@@ -173,7 +173,7 @@
                                 <div class="mb-3">
                                     {{ form.passed_quantity.label(class="form-label") }}
                                     <div class="input-group">
-                                        {{ form.passed_quantity(class="form-control", step="0.01", id="passedQty", autocomplete="off") }}
+                                        {{ form.passed_quantity(class="form-control", step="0.01", job_card_id="passedQty", autocomplete="off") }}
                                         <span class="input-group-text" id="passedUnit">Unit</span>
                                     </div>
                                     {% for error in form.passed_quantity.errors %}
@@ -189,7 +189,7 @@
                                 <div class="mb-3">
                                     {{ form.rejected_quantity.label(class="form-label") }}
                                     <div class="input-group">
-                                        {{ form.rejected_quantity(class="form-control", step="0.01", id="rejectedQty", readonly=true, autocomplete="off") }}
+                                        {{ form.rejected_quantity(class="form-control", step="0.01", job_card_id="rejectedQty", readonly=true, autocomplete="off") }}
                                         <span class="input-group-text" id="rejectedUnit">Unit</span>
                                     </div>
                                     <div class="form-text">Auto-calculated: Inspected Quantity - Passed Quantity</div>

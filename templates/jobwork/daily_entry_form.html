@@ -46,7 +46,7 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 {{ form.worker_name.label(class="form-label") }}
-                                {{ form.worker_name(class="form-select", id="worker_name_input") }}
+                                {{ form.worker_name(class="form-select", job_card_id="worker_name_input") }}
                                 <small class="text-muted">Select your name from the employee database</small>
                                 {% if form.worker_name.errors %}
                                     <div class="text-danger small">
@@ -78,7 +78,7 @@
                             </div>
                             <div class="col-md-12 mb-3">
                                 {{ form.job_work_id.label(class="form-label") }}
-                                {{ form.job_work_id(class="form-select", id="job_work_select") }}
+                                {{ form.job_work_id(class="form-select", job_card_id="job_work_select") }}
                                 <small class="text-muted">Select the in-house job work order you worked on today</small>
                                 {% if form.job_work_id.errors %}
                                     <div class="text-danger small">
@@ -205,7 +205,7 @@
                             <div class="col-md-4 mb-3">
                                 {{ form.inspected_quantity.label(class="form-label") }}
                                 <div class="input-group">
-                                    {{ form.inspected_quantity(class="form-control", id="inspected_quantity") }}
+                                    {{ form.inspected_quantity(class="form-control", job_card_id="inspected_quantity") }}
                                     <span class="input-group-text" id="inspected_unit">Unit</span>
                                 </div>
                                 <small class="text-muted">Quantity inspected for quality</small>
@@ -220,7 +220,7 @@
                             <div class="col-md-4 mb-3">
                                 {{ form.passed_quantity.label(class="form-label") }}
                                 <div class="input-group">
-                                    {{ form.passed_quantity(class="form-control", id="passed_quantity") }}
+                                    {{ form.passed_quantity(class="form-control", job_card_id="passed_quantity") }}
                                     <span class="input-group-text" id="passed_unit">Unit</span>
                                 </div>
                                 <small class="text-muted">Quantity that passed inspection</small>
@@ -235,7 +235,7 @@
                             <div class="col-md-4 mb-3">
                                 {{ form.rejected_quantity.label(class="form-label") }}
                                 <div class="input-group">
-                                    {{ form.rejected_quantity(class="form-control", id="rejected_quantity", readonly=true) }}
+                                    {{ form.rejected_quantity(class="form-control", job_card_id="rejected_quantity", readonly=true) }}
                                     <span class="input-group-text" id="rejected_unit">Unit</span>
                                 </div>
                                 <small class="text-muted">Auto-calculated: Inspected Quantity - Passed Quantity</small>

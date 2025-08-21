@@ -46,7 +46,7 @@
                                     {% set job = summary.job %}
                                     <tr>
                                         <td>
-                                            <a href="{{ url_for('multi_process_jobwork.detail', id=job.id) }}" 
+                                            <a href="{{ url_for('multi_process_jobwork.detail', job_card_id=job.id) }}" 
                                                class="text-decoration-none fw-bold">
                                                 {{ job.job_number }}
                                             </a>
@@ -95,7 +95,7 @@
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
-                                                <a href="{{ url_for('multi_process_jobwork.detail', id=job.id) }}" 
+                                                <a href="{{ url_for('multi_process_jobwork.detail', job_card_id=job.id) }}" 
                                                    class="btn btn-sm btn-outline-primary" title="View Details">
                                                     <i class="fas fa-eye"></i>
                                                 </a>

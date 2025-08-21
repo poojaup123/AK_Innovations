@@ -25,10 +25,10 @@
                         </div>
                         <div class="mt-2">
                             <div class="btn-group btn-group-sm" role="group">
-                                <a href="{{ url_for('documents.view', id=document.id) }}" class="btn btn-outline-primary btn-sm" target="_blank">
+                                <a href="{{ url_for('documents.view', job_card_id=document.id) }}" class="btn btn-outline-primary btn-sm" target="_blank">
                                     <i class="fas fa-eye"></i> View
                                 </a>
-                                <a href="{{ url_for('documents.download', id=document.id) }}" class="btn btn-outline-success btn-sm">
+                                <a href="{{ url_for('documents.download', job_card_id=document.id) }}" class="btn btn-outline-success btn-sm">
                                     <i class="fas fa-download"></i> Download
                                 </a>
                                 {% if current_user.role == 'admin' %}

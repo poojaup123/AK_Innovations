@@ -11,10 +11,10 @@
         </div>
         <div class="col-auto">
             <div class="btn-group">
-                <a href="{{ url_for('accounting.edit_invoice', id=invoice.id) }}" class="btn btn-outline-primary">
+                <a href="{{ url_for('accounting.edit_invoice', job_card_id=invoice.id) }}" class="btn btn-outline-primary">
                     <i class="fas fa-edit"></i> Edit
                 </a>
-                <a href="{{ url_for('accounting.print_invoice', id=invoice.id) }}" class="btn btn-outline-info" target="_blank">
+                <a href="{{ url_for('accounting.print_invoice', job_card_id=invoice.id) }}" class="btn btn-outline-info" target="_blank">
                     <i class="fas fa-print"></i> Print
                 </a>
                 <a href="{{ url_for('accounting.list_invoices') }}" class="btn btn-secondary">
@@ -191,7 +191,7 @@
                     
                     {% if invoice.status == 'draft' %}
                     <div class="d-grid gap-2 mt-3">
-                        <form method="POST" action="{{ url_for('accounting.finalize_invoice', id=invoice.id) }}">
+                        <form method="POST" action="{{ url_for('accounting.finalize_invoice', job_card_id=invoice.id) }}">
                             <button type="submit" class="btn btn-success w-100" onclick="return confirm('Are you sure you want to finalize this invoice?')">
                                 <i class="fas fa-check"></i> Finalize Invoice
                             </button>

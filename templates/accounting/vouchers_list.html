@@ -98,16 +98,16 @@
                                 <td>{{ voucher.creator.username if voucher.creator else '-' }}</td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{{ url_for('accounting.view_voucher', id=voucher.id) }}" 
+                                        <a href="{{ url_for('accounting.view_voucher', job_card_id=voucher.id) }}" 
                                            class="btn btn-outline-primary btn-sm">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         {% if voucher.status == 'draft' %}
-                                        <a href="{{ url_for('accounting.edit_voucher', id=voucher.id) }}" 
+                                        <a href="{{ url_for('accounting.edit_voucher', job_card_id=voucher.id) }}" 
                                            class="btn btn-outline-secondary btn-sm">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <form method="POST" action="{{ url_for('accounting.post_voucher', id=voucher.id) }}" 
+                                        <form method="POST" action="{{ url_for('accounting.post_voucher', job_card_id=voucher.id) }}" 
                                               style="display: inline;" onsubmit="return confirm('Post this voucher? This action cannot be undone.')">
                                             <button type="submit" class="btn btn-outline-success btn-sm">
                                                 <i class="fas fa-check"></i> Post

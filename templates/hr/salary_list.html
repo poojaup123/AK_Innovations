@@ -106,7 +106,7 @@
                             {% for salary in salaries.items %}
                             <tr>
                                 <td>
-                                    <a href="{{ url_for('hr.salary_detail', id=salary.id) }}" class="text-decoration-none">
+                                    <a href="{{ url_for('hr.salary_detail', job_card_id=salary.id) }}" class="text-decoration-none">
                                         <strong>{{ salary.salary_number }}</strong>
                                     </a>
                                 </td>
@@ -142,12 +142,12 @@
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{{ url_for('hr.salary_detail', id=salary.id) }}" 
+                                        <a href="{{ url_for('hr.salary_detail', job_card_id=salary.id) }}" 
                                            class="btn btn-outline-primary btn-sm">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         {% if salary.status == 'pending' and current_user.is_admin() %}
-                                            <a href="{{ url_for('hr.approve_salary', id=salary.id) }}" 
+                                            <a href="{{ url_for('hr.approve_salary', job_card_id=salary.id) }}" 
                                                class="btn btn-outline-success btn-sm"
                                                onclick="return confirm('Approve this salary record?')">
                                                 <i class="fas fa-check"></i>

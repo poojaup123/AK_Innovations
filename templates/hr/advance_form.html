@@ -66,7 +66,7 @@
                                 {{ form.amount.label(class="form-label") }}
                                 <div class="input-group">
                                     <span class="input-group-text">₹</span>
-                                    {{ form.amount(class="form-control", id="advance_amount", onchange="calculateRepayment()") }}
+                                    {{ form.amount(class="form-control", job_card_id="advance_amount", onchange="calculateRepayment()") }}
                                 </div>
                                 {% if form.amount.errors %}
                                     <div class="text-danger">
@@ -109,7 +109,7 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 {{ form.repayment_months.label(class="form-label") }}
-                                {{ form.repayment_months(class="form-control", id="repayment_months", onchange="calculateRepayment()") }}
+                                {{ form.repayment_months(class="form-control", job_card_id="repayment_months", onchange="calculateRepayment()") }}
                                 <small class="form-text text-muted">Number of months to repay this advance</small>
                                 {% if form.repayment_months.errors %}
                                     <div class="text-danger">

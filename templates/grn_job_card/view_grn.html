@@ -29,7 +29,7 @@
                                 <tr>
                                     <td><strong>Job Card:</strong></td>
                                     <td>
-                                        <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <a href="{{ url_for('job_card_management.view_job_card', job_card_id=job_card.id) }}" class="btn btn-sm btn-outline-primary">
                                             {{ job_card.job_card_number }}
                                         </a>
                                     </td>
@@ -134,10 +134,10 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-outline-primary">
+                        <a href="{{ url_for('job_card_management.view_job_card', job_card_id=job_card.id) }}" class="btn btn-outline-primary">
                             <i class="fas fa-id-card me-2"></i>View Job Card
                         </a>
-                        <a href="{{ url_for('grn.detail', id=grn.id) }}" class="btn btn-outline-info">
+                        <a href="{{ url_for('grn.detail', job_card_id=grn.id) }}" class="btn btn-outline-info">
                             <i class="fas fa-eye me-2"></i>View Full GRN Details
                         </a>
                         <a href="{{ url_for('grn.dashboard') }}" class="btn btn-outline-secondary">

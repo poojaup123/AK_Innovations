@@ -99,7 +99,7 @@
                                     {{ form.base_amount.label(class="form-label") }}
                                     <div class="input-group">
                                         <span class="input-group-text">₹</span>
-                                        {{ form.base_amount(class="form-control", id="base_amount", onchange="calculateTotal()") }}
+                                        {{ form.base_amount(class="form-control", job_card_id="base_amount", onchange="calculateTotal()") }}
                                     </div>
                                     {% if form.base_amount.errors %}
                                         <div class="text-danger">
@@ -116,7 +116,7 @@
                                     {{ form.gst_amount.label(class="form-label") }}
                                     <div class="input-group">
                                         <span class="input-group-text">₹</span>
-                                        {{ form.gst_amount(class="form-control", id="gst_amount", onchange="calculateTotal()") }}
+                                        {{ form.gst_amount(class="form-control", job_card_id="gst_amount", onchange="calculateTotal()") }}
                                     </div>
                                     {% if form.gst_amount.errors %}
                                         <div class="text-danger">
@@ -133,7 +133,7 @@
                                     {{ form.freight_amount.label(class="form-label") }}
                                     <div class="input-group">
                                         <span class="input-group-text">₹</span>
-                                        {{ form.freight_amount(class="form-control", id="freight_amount", onchange="calculateTotal()") }}
+                                        {{ form.freight_amount(class="form-control", job_card_id="freight_amount", onchange="calculateTotal()") }}
                                     </div>
                                     {% if form.freight_amount.errors %}
                                         <div class="text-danger">
@@ -150,7 +150,7 @@
                                     {{ form.other_charges.label(class="form-label") }}
                                     <div class="input-group">
                                         <span class="input-group-text">₹</span>
-                                        {{ form.other_charges(class="form-control", id="other_charges", onchange="calculateTotal()") }}
+                                        {{ form.other_charges(class="form-control", job_card_id="other_charges", onchange="calculateTotal()") }}
                                     </div>
                                     {% if form.other_charges.errors %}
                                         <div class="text-danger">
@@ -169,7 +169,7 @@
                                     {{ form.total_amount.label(class="form-label") }}
                                     <div class="input-group">
                                         <span class="input-group-text">₹</span>
-                                        {{ form.total_amount(class="form-control", id="total_amount", readonly=true) }}
+                                        {{ form.total_amount(class="form-control", job_card_id="total_amount", readonly=true) }}
                                     </div>
                                     {% if form.total_amount.errors %}
                                         <div class="text-danger">

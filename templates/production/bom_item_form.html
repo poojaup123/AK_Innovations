@@ -12,7 +12,7 @@
                     <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('production.dashboard') }}">Production</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('production.list_bom') }}">Bill of Materials</a></li>
-                    <li class="breadcrumb-item"><a href="{{ url_for('production.edit_bom', id=bom.id) }}">{{ bom.bom_code }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('production.edit_bom', job_card_id=bom.id) }}">{{ bom.bom_code }}</a></li>
                     <li class="breadcrumb-item active">{{ title }}</li>
                 </ol>
             </nav>
@@ -230,7 +230,7 @@
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-save"></i> Save Material
                                 </button>
-                                <a href="{{ url_for('production.edit_bom', id=bom.id) }}" class="btn btn-secondary">
+                                <a href="{{ url_for('production.edit_bom', job_card_id=bom.id) }}" class="btn btn-secondary">
                                     <i class="fas fa-arrow-left"></i> Back to BOM
                                 </a>
                             </div>

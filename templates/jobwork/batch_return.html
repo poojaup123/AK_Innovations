@@ -28,14 +28,14 @@
                 <div class="row">
                     <div class="col-md-6">
                         <label for="job_work_id" class="form-label">Job Work</label>
-                        {{ form.job_work_id(class="form-select", id="job_work_id", onchange="loadJobWorkBatches(this.value)") }}
+                        {{ form.job_work_id(class="form-select", job_card_id="job_work_id", onchange="loadJobWorkBatches(this.value)") }}
                         {% for error in form.job_work_id.errors %}
                             <div class="text-danger small">{{ error }}</div>
                         {% endfor %}
                     </div>
                     <div class="col-md-6">
                         <label for="batch_record_id" class="form-label">Batch Record</label>
-                        {{ form.batch_record_id(class="form-select", id="batch_record_id", onchange="generateOutputBatchCode()") }}
+                        {{ form.batch_record_id(class="form-select", job_card_id="batch_record_id", onchange="generateOutputBatchCode()") }}
                         {% for error in form.batch_record_id.errors %}
                             <div class="text-danger small">{{ error }}</div>
                         {% endfor %}
@@ -94,7 +94,7 @@
                 <div class="row">
                     <div class="col-md-4">
                         <label for="output_batch_code" class="form-label">Output Batch Code</label>
-                        {{ form.output_batch_code(class="form-control", id="output_batch_code") }}
+                        {{ form.output_batch_code(class="form-control", job_card_id="output_batch_code") }}
                         {% for error in form.output_batch_code.errors %}
                             <div class="text-danger small">{{ error }}</div>
                         {% endfor %}

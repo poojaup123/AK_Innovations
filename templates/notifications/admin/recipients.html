@@ -108,11 +108,11 @@
                             {% endif %}
                         </div>
                         <div class="btn-group btn-group-sm">
-                            <a href="{{ url_for('notifications.edit_recipient', id=recipient.id) }}" 
+                            <a href="{{ url_for('notifications.edit_recipient', job_card_id=recipient.id) }}" 
                                class="btn btn-outline-primary" title="Edit">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            <a href="{{ url_for('notifications.delete_recipient', id=recipient.id) }}" 
+                            <a href="{{ url_for('notifications.delete_recipient', job_card_id=recipient.id) }}" 
                                class="btn btn-outline-danger" title="Delete"
                                onclick="return confirm('Are you sure you want to delete this recipient?')">
                                 <i class="fas fa-trash"></i>

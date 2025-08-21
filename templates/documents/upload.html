@@ -23,7 +23,7 @@
                     <i class="fas fa-arrow-left"></i> Back to Job Works
                 </a>
             {% elif transaction_type == 'factory_expense' %}
-                <a href="{{ url_for('expenses.expense_detail', id=transaction.id) }}" class="btn btn-secondary">
+                <a href="{{ url_for('expenses.expense_detail', job_card_id=transaction.id) }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Expense
                 </a>
             {% endif %}

@@ -106,7 +106,7 @@
                             <div id="supplier_dropdown" class="dropdown-menu w-100" style="max-height: 200px; overflow-y: auto; display: none;">
                                 <!-- Suppliers will be populated here -->
                             </div>
-                            {{ form.supplier_id(style="display: none;", id="supplier_id_hidden", required=False) }}
+                            {{ form.supplier_id(style="display: none;", job_card_id="supplier_id_hidden", required=False) }}
                         </div>
                         <small class="text-muted">Type to search suppliers by name</small>
                     </div>
@@ -375,7 +375,7 @@
                     <i class="fas fa-times"></i> Cancel
                 </a>
                 {% if po %}
-                <a href="{{ url_for('purchase.print_purchase_order', id=po.id) }}" class="btn btn-info" target="_blank">
+                <a href="{{ url_for('purchase.print_purchase_order', job_card_id=po.id) }}" class="btn btn-info" target="_blank">
                     <i class="fas fa-print"></i> Print
                 </a>
                 {% endif %}

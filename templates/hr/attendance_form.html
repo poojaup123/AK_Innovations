@@ -99,7 +99,7 @@
                                     <i class="fas fa-clipboard-check me-1"></i>{{ form.status.label.text }}
                                     <span class="text-danger">*</span>
                                 </label>
-                                {{ form.status(class="form-select" + (" is-invalid" if form.status.errors else ""), id="attendance_status") }}
+                                {{ form.status(class="form-select" + (" is-invalid" if form.status.errors else ""), job_card_id="attendance_status") }}
                                 {% if form.status.errors %}
                                     <div class="invalid-feedback">
                                         {% for error in form.status.errors %}{{ error }}{% endfor %}

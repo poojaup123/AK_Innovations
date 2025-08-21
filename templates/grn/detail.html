@@ -41,7 +41,7 @@
                         {% if grn.job_work %}
                         <div class="col-md-4">
                             <strong>Job Work:</strong><br>
-                            <a href="{{ url_for('jobwork.detail', id=grn.job_work.id) }}" class="text-decoration-none">
+                            <a href="{{ url_for('jobwork.detail', job_card_id=grn.job_work.id) }}" class="text-decoration-none">
                                 {{ grn.job_work.job_number }}
                             </a>
                         </div>
@@ -52,7 +52,7 @@
                         {% elif grn.purchase_order %}
                         <div class="col-md-4">
                             <strong>Purchase Order:</strong><br>
-                            <a href="{{ url_for('purchase.edit_purchase_order', id=grn.purchase_order.id) }}" class="text-decoration-none">
+                            <a href="{{ url_for('purchase.edit_purchase_order', job_card_id=grn.purchase_order.id) }}" class="text-decoration-none">
                                 {{ grn.purchase_order.po_number }}
                             </a>
                         </div>

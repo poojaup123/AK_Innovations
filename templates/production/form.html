@@ -87,7 +87,7 @@
                             
                             <div class="col-md-6 mb-3">
                                 {{ form.item_id.label(class="form-label") }}
-                                {{ form.item_id(class="form-select", id="item_id") }}
+                                {{ form.item_id(class="form-select", job_card_id="item_id") }}
                                 {% if form.item_id.errors %}
                                     <div class="text-danger small">
                                         {% for error in form.item_id.errors %}
@@ -106,7 +106,7 @@
                                     <span class="input-group-text" id="planned-unit-display">
                                         <span id="unit-text">Select Item First</span>
                                     </span>
-                                    {{ form.planned_uom(class="d-none", id="planned_uom_hidden") }}
+                                    {{ form.planned_uom(class="d-none", job_card_id="planned_uom_hidden") }}
                                 </div>
                                 {% if form.quantity_planned.errors %}
                                     <div class="text-danger small">

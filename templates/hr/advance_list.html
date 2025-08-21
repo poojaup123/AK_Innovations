@@ -104,7 +104,7 @@
                             {% for advance in advances.items %}
                             <tr>
                                 <td>
-                                    <a href="{{ url_for('hr.advance_detail', id=advance.id) }}" class="text-decoration-none">
+                                    <a href="{{ url_for('hr.advance_detail', job_card_id=advance.id) }}" class="text-decoration-none">
                                         <strong>{{ advance.advance_number }}</strong>
                                     </a>
                                 </td>
@@ -151,12 +151,12 @@
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{{ url_for('hr.advance_detail', id=advance.id) }}" 
+                                        <a href="{{ url_for('hr.advance_detail', job_card_id=advance.id) }}" 
                                            class="btn btn-outline-primary btn-sm">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         {% if advance.status == 'pending' and current_user.is_admin() %}
-                                            <a href="{{ url_for('hr.approve_advance', id=advance.id) }}" 
+                                            <a href="{{ url_for('hr.approve_advance', job_card_id=advance.id) }}" 
                                                class="btn btn-outline-success btn-sm"
                                                onclick="return confirm('Approve this advance request?')">
                                                 <i class="fas fa-check"></i>

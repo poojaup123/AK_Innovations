@@ -39,7 +39,7 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.total_inspected.label(class="form-label") }}
-                                    {{ form.total_inspected(class="form-control", step="0.01", id="totalInspected") }}
+                                    {{ form.total_inspected(class="form-control", step="0.01", job_card_id="totalInspected") }}
                                     {% for error in form.total_inspected.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
@@ -48,7 +48,7 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.passed_quantity.label(class="form-label") }}
-                                    {{ form.passed_quantity(class="form-control", step="0.01", id="passedQuantity") }}
+                                    {{ form.passed_quantity(class="form-control", step="0.01", job_card_id="passedQuantity") }}
                                     {% for error in form.passed_quantity.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
@@ -57,7 +57,7 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.failed_quantity.label(class="form-label") }}
-                                    {{ form.failed_quantity(class="form-control", step="0.01", id="failedQuantity") }}
+                                    {{ form.failed_quantity(class="form-control", step="0.01", job_card_id="failedQuantity") }}
                                     {% for error in form.failed_quantity.errors %}
                                         <div class="text-danger">{{ error }}</div>
                                     {% endfor %}

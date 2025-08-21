@@ -385,7 +385,7 @@ function addJournalEntry() {
 
 function postVoucher() {
     if (confirm('Post this voucher? This action cannot be undone.')) {
-        window.location.href = '{{ url_for("accounting.post_voucher", id=voucher.id if voucher else 0) }}';
+        window.location.href = '{{ url_for("accounting.post_voucher", job_card_id=voucher.id if voucher else 0) }}';
     }
 }
 

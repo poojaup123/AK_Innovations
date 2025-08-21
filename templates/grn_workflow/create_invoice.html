@@ -67,7 +67,7 @@
                                     {{ form.base_amount.label(class="form-label") }}
                                     <div class="input-group">
                                         <span class="input-group-text">₹</span>
-                                        {{ form.base_amount(class="form-control", id="base_amount") }}
+                                        {{ form.base_amount(class="form-control", job_card_id="base_amount") }}
                                     </div>
                                     {% if form.base_amount.errors %}
                                         <div class="text-danger">
@@ -84,7 +84,7 @@
                                     {{ form.gst_amount.label(class="form-label") }}
                                     <div class="input-group">
                                         <span class="input-group-text">₹</span>
-                                        {{ form.gst_amount(class="form-control", id="gst_amount") }}
+                                        {{ form.gst_amount(class="form-control", job_card_id="gst_amount") }}
                                     </div>
                                 </div>
                             </div>
@@ -96,7 +96,7 @@
                                     {{ form.freight_amount.label(class="form-label") }}
                                     <div class="input-group">
                                         <span class="input-group-text">₹</span>
-                                        {{ form.freight_amount(class="form-control", id="freight_amount") }}
+                                        {{ form.freight_amount(class="form-control", job_card_id="freight_amount") }}
                                     </div>
                                 </div>
                             </div>
@@ -106,7 +106,7 @@
                                     {{ form.other_charges.label(class="form-label") }}
                                     <div class="input-group">
                                         <span class="input-group-text">₹</span>
-                                        {{ form.other_charges(class="form-control", id="other_charges") }}
+                                        {{ form.other_charges(class="form-control", job_card_id="other_charges") }}
                                     </div>
                                 </div>
                             </div>
@@ -116,7 +116,7 @@
                             {{ form.total_amount.label(class="form-label") }}
                             <div class="input-group">
                                 <span class="input-group-text">₹</span>
-                                {{ form.total_amount(class="form-control", id="total_amount", readonly="readonly") }}
+                                {{ form.total_amount(class="form-control", job_card_id="total_amount", readonly="readonly") }}
                                 <button type="button" class="btn btn-outline-secondary" onclick="calculateTotal()" title="Recalculate Total">
                                     <i class="fas fa-calculator"></i>
                                 </button>
