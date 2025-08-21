@@ -175,7 +175,7 @@
                                 <div class="row">
                                     <div class="col-md-8">
                                         <h6 class="card-title mb-2">
-                                            <a href="{{ url_for('jobwork.detail', job_card_id=job.id) }}" class="text-decoration-none">
+                                            <a href="{{ url_for('jobwork.detail', id=job.id) }}" class="text-decoration-none">
                                                 {{ job.job_number }} - {{ job.item.name }}
                                             </a>
                                             <span class="badge bg-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' }} ms-2">
@@ -252,7 +252,7 @@
                                     
                                     <div class="col-md-4 text-end">
                                         <div class="btn-group-vertical btn-group-sm">
-                                            <a href="{{ url_for('jobwork.detail', job_card_id=job.id) }}" class="btn btn-outline-primary btn-sm">
+                                            <a href="{{ url_for('jobwork.detail', id=job.id) }}" class="btn btn-outline-primary btn-sm">
                                                 <i class="fas fa-eye"></i> View Details
                                             </a>
                                             <a href="{{ url_for('jobwork.generate_challan', job_id=job.id) }}" class="btn btn-outline-info btn-sm" target="_blank">
