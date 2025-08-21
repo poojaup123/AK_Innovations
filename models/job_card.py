@@ -373,7 +373,7 @@ class JobCardDailyStatus(db.Model):
         
         return f"RPT-JC-{next_num:03d}"
     
-    __table_args__ = (db.UniqueConstraint('job_card_id', 'report_date'),)
+    # Allow multiple reports per day - removed unique constraint
     
     def __repr__(self):
         return f'<JobCardDailyStatus {self.job_card.job_card_number} - {self.report_date}>'
@@ -395,23 +395,14 @@ class JobCardDailyStatus(db.Model):
     
     @classmethod
     def create_or_update_today(cls, job_card_id, **kwargs):
-        """Create or update today's report"""
-        today_report = cls.get_today_report(job_card_id)
-        
-        if today_report:
-            # Update existing report
-            for key, value in kwargs.items():
-                if hasattr(today_report, key):
-                    setattr(today_report, key, value)
-            today_report.updated_at = datetime.utcnow()
-        else:
-            # Create new report
-            today_report = cls(
-                job_card_id=job_card_id,
-                report_date=date.today(),
-                **kwargs
-            )
-            db.session.add(today_report)
+        """Always create a new progress report - supports multiple reports per day"""
+        # Always create new report instead of updating existing one
+        new_report = cls(
+            job_card_id=job_card_id,
+            report_date=date.today(),
+            **kwargs
+        )
+        db.session.add(new_report)
         
         # Update job card quantities
         job_card = JobCard.query.get(job_card_id)
@@ -423,7 +414,7 @@ class JobCardDailyStatus(db.Model):
             job_card.update_progress()
         
         db.session.commit()
-        return today_report
+        return new_report
     
     def approve_by_supervisor(self, supervisor_id, notes=None):
         """Approve daily status by supervisor"""

@@ -530,11 +530,20 @@ def update_daily_status(job_card_id):
     
     if form.validate_on_submit():
         try:
-            # Calculate cumulative values
-            cumulative_completed = (today_report.cumulative_completed if today_report else 0) + form.qty_completed_today.data
-            cumulative_good = (today_report.cumulative_good if today_report else 0) + form.qty_good_today.data
-            cumulative_defective = (today_report.cumulative_defective if today_report else 0) + form.qty_defective_today.data
-            cumulative_scrap = (today_report.cumulative_scrap if today_report else 0) + form.qty_scrap_today.data
+            # Calculate cumulative values from ALL previous reports for this job card
+            from sqlalchemy import func
+            previous_totals = db.session.query(
+                func.sum(JobCardDailyStatus.qty_completed_today).label('total_completed'),
+                func.sum(JobCardDailyStatus.qty_good_today).label('total_good'),
+                func.sum(JobCardDailyStatus.qty_defective_today).label('total_defective'),
+                func.sum(JobCardDailyStatus.qty_scrap_today).label('total_scrap')
+            ).filter_by(job_card_id=job_card_id).first()
+            
+            # Add today's quantities to the cumulative totals
+            cumulative_completed = (previous_totals.total_completed or 0) + form.qty_completed_today.data
+            cumulative_good = (previous_totals.total_good or 0) + form.qty_good_today.data
+            cumulative_defective = (previous_totals.total_defective or 0) + form.qty_defective_today.data
+            cumulative_scrap = (previous_totals.total_scrap or 0) + form.qty_scrap_today.data
             
             # Handle process selection for BOM-based tracking
             selected_processes = request.form.getlist('selected_processes')
