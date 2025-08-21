@@ -20,7 +20,7 @@
                 </div>
                 <div>
                     <span class="badge bg-info me-2">{{ job_card.status|title }}</span>
-                    <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('job_card_management.view_job_card', job_card_id=job_card.id) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back to Job Card
                     </a>
                 </div>
@@ -164,7 +164,7 @@
 
                         <!-- Submit Button -->
                         <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('job_cards.view_job_card', id=job_card.id) }}" class="btn btn-secondary">
+                            <a href="{{ url_for('job_card_management.view_job_card', job_card_id=job_card.id) }}" class="btn btn-secondary">
                                 <i class="fas fa-times me-2"></i>Cancel
                             </a>
                             <button type="submit" class="btn btn-primary btn-lg">
