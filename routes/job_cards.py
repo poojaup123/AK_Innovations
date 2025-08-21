@@ -530,6 +530,11 @@ def update_daily_status(job_card_id):
     
     if form.validate_on_submit():
         try:
+            # Check if this is an outsourced job card - outsourced work progress should only be updated via GRN
+            if job_card.job_type == 'outsourced' or job_card.assigned_vendor_id:
+                flash('Outsourced job card progress can only be updated through GRN (Goods Receipt Note) when materials are received from the vendor.', 'error')
+                return redirect(url_for('job_cards.job_card_detail', job_card_id=job_card_id))
+            
             # Calculate cumulative values from ALL previous reports for this job card
             from sqlalchemy import func
             previous_totals = db.session.query(

@@ -614,9 +614,16 @@
                             </a>
                         {% endif %}
                         {% endif %}
+                        <!-- Only show Add Progress Report for in-house work, not outsourced -->
+                        {% if job_card.job_type != 'outsourced' and not job_card.assigned_vendor_id %}
                         <a href="{{ url_for('job_cards.update_daily_status', job_card_id=job_card.id) }}" class="btn btn-primary btn-sm">
                             <i class="fas fa-plus me-2"></i>Add Progress Report
                         </a>
+                        {% else %}
+                        <span class="text-muted small">
+                            <i class="fas fa-truck me-1"></i>Progress updated via GRN
+                        </span>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="card-body">

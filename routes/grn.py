@@ -224,6 +224,9 @@ def process_grn_with_batch_tracking(grn, add_to_inventory=True):
         if grn.job_work:
             update_job_work_status_from_grn(grn)
         
+        # Update outsourced job card progress if applicable
+        update_outsourced_job_card_progress_from_grn(grn)
+        
         # Update purchase order status if applicable  
         if grn.purchase_order:
             update_po_status_based_on_grn(grn.purchase_order_id)
@@ -296,6 +299,84 @@ def update_job_work_status_from_grn(grn):
         job_work.notes += f"\n{completion_note}"
     else:
         job_work.notes = completion_note
+
+
+def update_outsourced_job_card_progress_from_grn(grn):
+    """Update outsourced job card progress when materials are received via GRN"""
+    from models.job_card import JobCard, JobCardDailyStatus
+    from datetime import datetime, date
+    
+    try:
+        # Check if this GRN is for outsourced job work
+        if not grn.grn_type == 'job_work' or not grn.remarks:
+            return
+        
+        # Extract job card reference from GRN remarks
+        import re
+        job_card_match = re.search(r'JC-\d{4}-\d{3}', grn.remarks)
+        if not job_card_match:
+            return
+            
+        job_card_number = job_card_match.group()
+        job_card = JobCard.query.filter_by(job_card_number=job_card_number).first()
+        
+        if not job_card or job_card.job_type != 'outsourced':
+            return
+        
+        # Calculate total quantities received from this GRN
+        total_received = sum(line_item.quantity_received for line_item in grn.line_items)
+        total_accepted = sum(line_item.quantity_accepted for line_item in grn.line_items)
+        total_rejected = sum(line_item.quantity_rejected for line_item in grn.line_items)
+        
+        # Create automatic daily status report for GRN receipt
+        report_notes = f"Outsourced work received via GRN {grn.grn_number} from {grn.supplier.name if grn.supplier else 'vendor'}"
+        
+        # Get previous cumulative totals for this job card
+        from sqlalchemy import func
+        previous_totals = db.session.query(
+            func.sum(JobCardDailyStatus.qty_completed_today).label('total_completed'),
+            func.sum(JobCardDailyStatus.qty_good_today).label('total_good'),
+            func.sum(JobCardDailyStatus.qty_defective_today).label('total_defective'),
+            func.sum(JobCardDailyStatus.qty_scrap_today).label('total_scrap')
+        ).filter_by(job_card_id=job_card.id).first()
+        
+        # Calculate new cumulative totals
+        cumulative_completed = (previous_totals.total_completed or 0) + total_received
+        cumulative_good = (previous_totals.total_good or 0) + total_accepted
+        cumulative_defective = (previous_totals.total_defective or 0) + total_rejected
+        cumulative_scrap = (previous_totals.total_scrap or 0) + 0  # Scrap handled separately in QC
+        
+        # Create daily status report for the GRN receipt
+        daily_report = JobCardDailyStatus.create_or_update_today(
+            job_card_id=job_card.id,
+            qty_completed_today=total_received,
+            qty_good_today=total_accepted,
+            qty_defective_today=total_rejected,
+            qty_scrap_today=0,
+            cumulative_completed=cumulative_completed,
+            cumulative_good=cumulative_good,
+            cumulative_defective=cumulative_defective,
+            cumulative_scrap=cumulative_scrap,
+            daily_status='completed',  # GRN receipt is a completed activity
+            operator_notes=report_notes,
+            grn_id=grn.id,
+            grn_auto_created=True,
+            reported_by_id=1  # System generated
+        )
+        
+        # Update job card quantities
+        job_card.completed_quantity = cumulative_good
+        job_card.good_quantity = cumulative_good
+        job_card.defective_quantity = cumulative_defective
+        job_card.scrap_quantity = cumulative_scrap
+        job_card.update_progress()
+        
+        db.session.commit()
+        print(f"Updated job card {job_card_number} progress from GRN {grn.grn_number}: {total_received} received, {total_accepted} accepted")
+        
+    except Exception as e:
+        print(f"Error updating job card progress from GRN: {str(e)}")
+        db.session.rollback()
 
 def approve_inspection_and_move_to_inventory(batch_id, inspection_result='passed'):
     """Move batch from inspection area to inventory after inspection approval"""
