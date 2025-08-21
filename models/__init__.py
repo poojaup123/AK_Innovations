@@ -1499,7 +1499,7 @@ class JobWork(db.Model):
                 pass
         
         # For regular jobs, use standard calculation (received / sent)
-        if self.quantity_sent > 0:
+        if self.quantity_sent and self.quantity_sent > 0 and self.quantity_received is not None:
             return min((self.quantity_received / self.quantity_sent) * 100, 100)
         return 0
     
