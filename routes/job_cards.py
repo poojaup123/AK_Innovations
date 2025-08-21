@@ -566,6 +566,7 @@ def update_daily_status(job_card_id):
             # No more inline outsourcing - handled in separate workflow
                 
             # Update daily status report
+            # Once submitted, daily progress reports should show as "completed"
             updated_report = JobCardDailyStatus.create_or_update_today(
                 job_card_id=job_card_id,
                 qty_completed_today=form.qty_completed_today.data,
@@ -580,7 +581,7 @@ def update_daily_status(job_card_id):
                 setup_time_actual=form.setup_time_actual.data,
                 run_time_actual=form.run_time_actual.data,
                 downtime_minutes=form.downtime_minutes.data,
-                daily_status=form.daily_status.data,
+                daily_status='completed',  # Always mark as completed when submitted
                 quality_issues=form.quality_issues.data,
                 production_issues=form.production_issues.data,
                 material_issues=form.material_issues.data,
