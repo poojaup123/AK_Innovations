@@ -690,14 +690,10 @@
                                             {% endif %}
                                         </td>
                                         <td>
-                                            {% if status.qty_good_today > 0 and status.daily_status == 'completed' and not status.outsourced_jobs %}
-                                                <a href="{{ url_for('job_cards.outsourcing_workflow', job_card_id=job_card.id, report_id=status.report_number) }}" 
-                                                   class="btn btn-sm btn-info">
-                                                    <i class="fas fa-external-link-alt me-1"></i>Outsource
-                                                </a>
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
+                                            <!-- Daily progress reports are historical records - no actions needed -->
+                                            <span class="text-muted">
+                                                <i class="fas fa-check-circle text-success me-1"></i>Reported
+                                            </span>
                                         </td>
                                     </tr>
                                     
