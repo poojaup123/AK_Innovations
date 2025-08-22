@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from forms import JobWorkForm, JobWorkQuantityUpdateForm, DailyJobWorkForm, JobWorkTeamAssignmentForm, JobWorkBatchReturnForm
 from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings, DailyJobWorkEntry, JobWorkTeamAssignment, Employee, JobWorkBatch, ItemBatch
+from models.job_card import JobCard
 from models.batch import BatchMovementLedger, BatchConsumptionReport
 from utils.batch_tracking import BatchTracker, BatchValidator, get_batch_options_for_item_api, validate_batch_selection_api
 from services.batch_management import BatchManager, BatchValidator as BatchValidatorService
@@ -17,32 +18,96 @@ jobwork_bp = Blueprint('jobwork', __name__)
 @jobwork_bp.route('/dashboard')
 @login_required
 def dashboard():
-    # Job work statistics
+    # Job work statistics (include both JobWork and outsourced JobCards)
+    jobwork_count = JobWork.query.count()
+    outsourced_jobcard_count = JobCard.query.filter_by(job_type='outsourced').count()
+    
     stats = {
-        'total_jobs': JobWork.query.count(),
-        'sent_jobs': JobWork.query.filter_by(status='sent').count(),
+        'total_jobs': jobwork_count + outsourced_jobcard_count,
+        'sent_jobs': JobWork.query.filter_by(status='sent').count() + JobCard.query.filter_by(job_type='outsourced', status='in_progress').count(),
         'partial_received': JobWork.query.filter_by(status='partial_received').count(),
-        'completed_jobs': JobWork.query.filter_by(status='completed').count(),
-        'in_house_jobs': JobWork.query.filter_by(work_type='in_house').count(),
-        'outsourced_jobs': JobWork.query.filter_by(work_type='outsourced').count(),
+        'completed_jobs': JobWork.query.filter_by(status='completed').count() + JobCard.query.filter_by(job_type='outsourced', status='completed').count(),
+        'in_house_jobs': JobWork.query.filter_by(work_type='in_house').count() + JobCard.query.filter_by(job_type='in_house').count(),
+        'outsourced_jobs': JobWork.query.filter_by(work_type='outsourced').count() + outsourced_jobcard_count,
         'team_jobs': JobWork.query.filter_by(is_team_work=True).count()
     }
     
     # Get all active job works with progress information
-    active_jobs = JobWork.query.filter(JobWork.status.in_(['sent', 'partial_received'])).order_by(JobWork.created_at.desc()).all()
+    active_jobworks = JobWork.query.filter(JobWork.status.in_(['sent', 'partial_received'])).order_by(JobWork.created_at.desc()).all()
+    
+    # Get all active outsourced job cards
+    active_jobcards = JobCard.query.filter_by(job_type='outsourced').filter(
+        JobCard.status.in_(['in_progress', 'planned'])
+    ).order_by(JobCard.created_at.desc()).all()
+    
+    # Convert JobCards to a format compatible with JobWork for the template
+    active_jobs = []
+    
+    # Add JobWork records
+    for job in active_jobworks:
+        active_jobs.append(job)
+    
+    # Add JobCard records (outsourced) with compatible attributes
+    for job_card in active_jobcards:
+        # Create a wrapper object with JobWork-like attributes
+        job_wrapper = type('JobWrapper', (), {})()
+        job_wrapper.id = job_card.id
+        job_wrapper.job_number = job_card.job_card_number
+        job_wrapper.item = job_card.item
+        job_wrapper.status = 'sent' if job_card.status == 'in_progress' else job_card.status
+        job_wrapper.work_type = 'outsourced'
+        job_wrapper.customer_name = job_card.assigned_vendor.name if job_card.assigned_vendor else 'Unknown Vendor'
+        job_wrapper.department = job_card.department
+        job_wrapper.quantity_sent = job_card.planned_quantity
+        job_wrapper.quantity_received = job_card.completed_quantity
+        job_wrapper.pending_quantity = job_card.planned_quantity - job_card.completed_quantity
+        job_wrapper.pending_receipt_display = f"{job_wrapper.pending_quantity:.2f}"
+        job_wrapper.sent_date = job_card.actual_start_date or job_card.planned_start_date
+        job_wrapper.is_team_work = False
+        job_wrapper.has_pending_quantity = job_wrapper.pending_quantity > 0
+        job_wrapper.created_at = job_card.created_at
+        job_wrapper.source_type = 'job_card'  # To distinguish from JobWork records
+        
+        active_jobs.append(job_wrapper)
+    
+    # Sort all jobs by creation date (handle None values)
+    active_jobs.sort(key=lambda x: x.created_at or datetime.now(), reverse=True)
     
     # Get team assignments for team jobs
     team_assignments = {}
-    for job in active_jobs:
+    for job in active_jobworks:  # Only JobWork records have team assignments
         if job.is_team_work:
             assignments = JobWorkTeamAssignment.query.filter_by(job_work_id=job.id).all()
             team_assignments[job.id] = assignments
     
-    # Recent job works
-    recent_jobs = JobWork.query.order_by(JobWork.created_at.desc()).limit(10).all()
+    # Recent job works (include both JobWork and JobCard records)
+    recent_jobworks = JobWork.query.order_by(JobWork.created_at.desc()).limit(5).all()
+    recent_jobcards = JobCard.query.filter_by(job_type='outsourced').order_by(JobCard.created_at.desc()).limit(5).all()
     
-    # Pending returns (jobs sent but not completed)
-    pending_jobs = JobWork.query.filter(JobWork.status.in_(['sent', 'partial_received'])).all()
+    # Combine and sort recent jobs
+    recent_jobs = []
+    for job in recent_jobworks:
+        recent_jobs.append(job)
+    
+    for job_card in recent_jobcards:
+        # Create wrapper for recent jobs display
+        job_wrapper = type('JobWrapper', (), {})()
+        job_wrapper.id = job_card.id
+        job_wrapper.job_number = job_card.job_card_number
+        job_wrapper.item = job_card.item
+        job_wrapper.status = 'sent' if job_card.status == 'in_progress' else job_card.status
+        job_wrapper.work_type = 'outsourced'
+        job_wrapper.customer_name = job_card.assigned_vendor.name if job_card.assigned_vendor else 'Unknown Vendor'
+        job_wrapper.created_at = job_card.created_at
+        job_wrapper.source_type = 'job_card'
+        recent_jobs.append(job_wrapper)
+    
+    # Sort and limit to 10 most recent (handle None values)
+    recent_jobs.sort(key=lambda x: x.created_at or datetime.now(), reverse=True)
+    recent_jobs = recent_jobs[:10]
+    
+    # Pending returns (jobs sent but not completed) - use active_jobs list
+    pending_jobs = active_jobs
     
     # Top job work customers
     top_customers = db.session.query(

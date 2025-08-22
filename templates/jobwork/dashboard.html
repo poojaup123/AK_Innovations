@@ -175,7 +175,11 @@
                                 <div class="row">
                                     <div class="col-md-8">
                                         <h6 class="card-title mb-2">
-                                            <a href="{{ url_for('jobwork.detail', id=job.id) }}" class="text-decoration-none">
+                                            {% if job.source_type == 'job_card' %}
+                                                <a href="{{ url_for('job_card_integration.integration_dashboard') }}" class="text-decoration-none">
+                                            {% else %}
+                                                <a href="{{ url_for('jobwork.detail', id=job.id) }}" class="text-decoration-none">
+                                            {% endif %}
                                                 {{ job.job_number }} - {{ job.item.name }}
                                             </a>
                                             <span class="badge bg-{{ 'success' if job.status == 'completed' else 'warning' if job.status == 'partial_received' else 'primary' }} ms-2">
@@ -252,23 +256,39 @@
                                     
                                     <div class="col-md-4 text-end">
                                         <div class="btn-group-vertical btn-group-sm">
-                                            <a href="{{ url_for('jobwork.detail', id=job.id) }}" class="btn btn-outline-primary btn-sm">
-                                                <i class="fas fa-eye"></i> View Details
-                                            </a>
-                                            <a href="{{ url_for('jobwork.generate_challan', job_id=job.id) }}" class="btn btn-outline-info btn-sm" target="_blank">
-                                                <i class="fas fa-file-invoice"></i> Challan
-                                            </a>
-                                            {% if job.is_team_work %}
-                                            <a href="{{ url_for('jobwork.team_assignments', job_id=job.id) }}" class="btn btn-outline-success btn-sm">
-                                                <i class="fas fa-users"></i> Team Assignments
-                                            </a>
-                                            {% endif %}
-                                            {% if job.has_pending_quantity %}
-                                            <a href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}" class="btn btn-outline-success btn-sm">
-                                                <i class="fas fa-receipt"></i> Receive Materials
-                                            </a>
+                                            {% if job.source_type == 'job_card' %}
+                                                <!-- Job Card (Outsourced) -->
+                                                <a href="{{ url_for('job_card_integration.integration_dashboard') }}" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-eye"></i> View Job Card
+                                                </a>
+                                                <span class="badge bg-info">Outsourced Job Card</span>
+                                                {% if job.has_pending_quantity %}
+                                                <a href="{{ url_for('grn.quick_receive', job_card_id=job.id) }}" class="btn btn-outline-success btn-sm">
+                                                    <i class="fas fa-receipt"></i> Receive via GRN
+                                                </a>
+                                                {% else %}
+                                                <span class="badge bg-success">Completed</span>
+                                                {% endif %}
                                             {% else %}
-                                            <span class="badge bg-success">Materials Received</span>
+                                                <!-- Job Work (Traditional) -->
+                                                <a href="{{ url_for('jobwork.detail', id=job.id) }}" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-eye"></i> View Details
+                                                </a>
+                                                <a href="{{ url_for('jobwork.generate_challan', job_id=job.id) }}" class="btn btn-outline-info btn-sm" target="_blank">
+                                                    <i class="fas fa-file-invoice"></i> Challan
+                                                </a>
+                                                {% if job.is_team_work %}
+                                                <a href="{{ url_for('jobwork.team_assignments', job_id=job.id) }}" class="btn btn-outline-success btn-sm">
+                                                    <i class="fas fa-users"></i> Team Assignments
+                                                </a>
+                                                {% endif %}
+                                                {% if job.has_pending_quantity %}
+                                                <a href="{{ url_for('grn.quick_receive', job_work_id=job.id) }}" class="btn btn-outline-success btn-sm">
+                                                    <i class="fas fa-receipt"></i> Receive Materials
+                                                </a>
+                                                {% else %}
+                                                <span class="badge bg-success">Materials Received</span>
+                                                {% endif %}
                                             {% endif %}
                                         </div>
                                     </div>
