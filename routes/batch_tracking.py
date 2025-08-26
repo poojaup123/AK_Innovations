@@ -599,3 +599,9 @@ def api_search_batches():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@batch_tracking_bp.route('/consumption-report')
+@login_required
+def consumption_report():
+    """Batch consumption report"""
+    return render_template('batch_tracking/consumption_report.html')
