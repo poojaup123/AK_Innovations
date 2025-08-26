@@ -250,6 +250,54 @@
         .sidebar.d-none {
             display: none !important;
         }
+        
+        /* Force desktop layout on all screen sizes */
+        @media (max-width: 768px) {
+            .main-content {
+                margin-left: 250px !important;
+            }
+            .sidebar {
+                transform: translateX(0) !important;
+                display: block !important;
+                position: fixed !important;
+                width: 250px !important;
+                left: 0 !important;
+                top: 0 !important;
+            }
+            /* Override Bootstrap responsive classes */
+            .container-fluid {
+                padding-left: 15px !important;
+                padding-right: 15px !important;
+            }
+            /* Force desktop button layout */
+            .btn-group .btn {
+                flex: none !important;
+                min-width: auto !important;
+                margin-bottom: 0 !important;
+                display: inline-block !important;
+            }
+            /* Force desktop card layout */
+            .card {
+                margin-bottom: 1.5rem !important;
+            }
+            /* Force desktop table layout */
+            .table-responsive .table {
+                display: table !important;
+            }
+            .mobile-table-card {
+                display: none !important;
+            }
+        }
+        
+        /* When sidebar is hidden on mobile, expand content */
+        @media (max-width: 768px) {
+            .sidebar-hidden .main-content {
+                margin-left: 0 !important;
+            }
+            .sidebar-hidden .sidebar {
+                display: none !important;
+            }
+        }
         .nav-item {
             margin-bottom: 0.25rem; /* 4px - Consistent micro spacing */
         }
