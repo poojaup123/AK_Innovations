@@ -138,9 +138,6 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
     
-    # Register unified inventory routes
-    from routes.inventory_unified import inventory_unified_bp
-    app.register_blueprint(inventory_unified_bp, url_prefix='/inventory-unified')
     app.register_blueprint(purchase_bp, url_prefix='/purchase')
     app.register_blueprint(sales_bp, url_prefix='/sales')
     app.register_blueprint(jobwork_bp, url_prefix='/jobwork')
@@ -233,11 +230,6 @@ def create_app():
     # from routes.manufacturing_intelligence import manufacturing_intelligence_bp  
     # app.register_blueprint(manufacturing_intelligence_bp)
     
-    # Register PO/SO Accounting blueprints
-    from routes.po_accounting import po_accounting_bp
-    from routes.so_accounting import so_accounting_bp
-    app.register_blueprint(po_accounting_bp, url_prefix='/po_accounting')
-    app.register_blueprint(so_accounting_bp, url_prefix='/so_accounting')
     
 
     
@@ -247,9 +239,6 @@ def create_app():
     from routes.notifications import notifications_bp
     app.register_blueprint(notifications_bp, url_prefix='/notifications')
     
-    # Register help blueprint
-    from routes.help import help_bp
-    app.register_blueprint(help_bp, url_prefix='/help')
     
     # Register drawing upload blueprint
     from routes.drawing_upload import drawing_upload_bp
@@ -259,17 +248,8 @@ def create_app():
     from routes.user_management import user_management_bp
     app.register_blueprint(user_management_bp)
     
-    # Register demo blueprint
-    from routes.demo_price_access import demo_price_bp
-    app.register_blueprint(demo_price_bp)
     
-    # Register enhanced batch tracking blueprint (redirects only - unified with main batch_tracking)
-    from routes.enhanced_batch_tracking import enhanced_batch_bp
-    app.register_blueprint(enhanced_batch_bp)
     
-    # Register batch price history blueprint for batch-wise price tracking
-    from routes.batch_price_history import batch_price_bp
-    app.register_blueprint(batch_price_bp)
     
     # Price Management
     try:
@@ -282,9 +262,6 @@ def create_app():
     from routes.api_dropdowns import api_dropdowns_bp
     app.register_blueprint(api_dropdowns_bp)
     
-    # Register demo searchable dropdowns blueprint
-    from routes.demo_searchable import demo_searchable_bp
-    app.register_blueprint(demo_searchable_bp)
     
     # Setup performance monitoring for Tally-like speed
     from services.performance_monitor import setup_performance_monitoring
