@@ -86,15 +86,20 @@
                                     <h5>Quick Actions</h5>
                                 </div>
                                 <div class="card-body">
-                                    <a href="{{ url_for('job_cards.list_job_cards') }}" class="btn btn-primary btn-sm me-2">
-                                        <i class="fas fa-tasks"></i> Manage Job Cards
-                                    </a>
-                                    <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-success btn-sm me-2">
-                                        <i class="fas fa-cogs"></i> Job Work List
-                                    </a>
-                                    <a href="{{ url_for('production.list_productions') }}" class="btn btn-info btn-sm">
-                                        <i class="fas fa-industry"></i> Production Orders
-                                    </a>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <a href="{{ url_for('job_cards.list_job_cards') }}" class="btn btn-primary btn-sm flex-fill">
+                                            <i class="fas fa-tasks"></i> 
+                                            <span class="d-none d-md-inline">Manage </span>Job Cards
+                                        </a>
+                                        <a href="{{ url_for('jobwork.list_job_works') }}" class="btn btn-success btn-sm flex-fill">
+                                            <i class="fas fa-cogs"></i> 
+                                            <span class="d-none d-md-inline">Job Work </span>List
+                                        </a>
+                                        <a href="{{ url_for('production.list_productions') }}" class="btn btn-info btn-sm flex-fill">
+                                            <i class="fas fa-industry"></i> 
+                                            <span class="d-none d-md-inline">Production </span>Orders
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
