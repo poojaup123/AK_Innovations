@@ -278,6 +278,14 @@ def create_app():
     except ImportError as e:
         print(f"Price management module import error: {e}")
     
+    # Register API dropdowns blueprint for searchable dropdown data
+    from routes.api_dropdowns import api_dropdowns_bp
+    app.register_blueprint(api_dropdowns_bp)
+    
+    # Register demo searchable dropdowns blueprint
+    from routes.demo_searchable import demo_searchable_bp
+    app.register_blueprint(demo_searchable_bp)
+    
     # Setup performance monitoring for Tally-like speed
     from services.performance_monitor import setup_performance_monitoring
     setup_performance_monitoring(app)

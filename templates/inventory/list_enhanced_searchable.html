@@ -1,0 +1,567 @@
+{% extends "base.html" %}
+
+{% block title %}Items List - Enhanced with Smart Filtering - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-boxes"></i> Items Inventory <small class="text-muted">(Smart Filtering Enabled)</small></h1>
+            <p class="text-muted">
+                <i class="fas fa-filter"></i> Click on column headers to filter data | 
+                <i class="fas fa-search"></i> Use the search dropdowns for precise filtering
+            </p>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('inventory.add_item') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Item
+                </a>
+                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#filterOffcanvas">
+                    <i class="fas fa-filter"></i> Advanced Filters
+                </button>
+                <button class="btn btn-outline-info" onclick="exportData()">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Filter Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-end">
+                <div class="col-md-3 mb-2">
+                    <label class="form-label">Quick Search</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" id="quickSearch" placeholder="Search items...">
+                    </div>
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label class="form-label">Item Type</label>
+                    <select class="form-select" id="typeFilter" data-searchable-dropdown='{"placeholder": "All Types", "allowEmpty": true}'>
+                        <option value="">All Types</option>
+                        <option value="raw_material">Raw Material</option>
+                        <option value="finished_good">Finished Good</option>
+                        <option value="work_in_progress">Work in Progress</option>
+                        <option value="scrap">Scrap</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label class="form-label">Stock Status</label>
+                    <select class="form-select" id="stockFilter" data-searchable-dropdown='{"placeholder": "All Stock", "allowEmpty": true}'>
+                        <option value="">All Stock</option>
+                        <option value="in_stock">In Stock</option>
+                        <option value="low_stock">Low Stock</option>
+                        <option value="out_of_stock">Out of Stock</option>
+                        <option value="overstocked">Overstocked</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label class="form-label">UOM Category</label>
+                    <select class="form-select" id="uomFilter" data-searchable-dropdown='{"apiUrl": "/api/dropdowns/uom", "placeholder": "All UOMs", "allowEmpty": true}'>
+                        <option value="">All UOMs</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-2">
+                    <button class="btn btn-outline-danger w-100" onclick="clearAllFilters()">
+                        <i class="fas fa-times"></i> Clear All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Data Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-table"></i> Items Data
+                <span class="badge bg-primary ms-2" id="itemCount">Loading...</span>
+            </h5>
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" onclick="resetColumnWidths()">
+                    <i class="fas fa-arrows-alt-h"></i> Reset Columns
+                </button>
+                <button class="btn btn-outline-secondary" onclick="toggleDensity()">
+                    <i class="fas fa-compress-alt"></i> Compact View
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <!-- Enhanced table with filterable columns -->
+                <table class="table table-hover table-sm mb-0" id="itemsTable" data-enable-filters="true">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th data-column="code" style="position: relative;">
+                                Code
+                                <div class="table-filter-btn-container"></div>
+                            </th>
+                            <th data-column="name" style="position: relative;">
+                                Name
+                                <div class="table-filter-btn-container"></div>
+                            </th>
+                            <th data-column="type" style="position: relative;">
+                                Type
+                                <div class="table-filter-btn-container"></div>
+                            </th>
+                            <th data-column="current_stock" style="position: relative;">
+                                Current Stock
+                                <div class="table-filter-btn-container"></div>
+                            </th>
+                            <th data-column="min_stock" style="position: relative;">
+                                Min Stock
+                                <div class="table-filter-btn-container"></div>
+                            </th>
+                            <th data-column="uom" style="position: relative;">
+                                UOM
+                                <div class="table-filter-btn-container"></div>
+                            </th>
+                            <th data-column="unit_price" style="position: relative;">
+                                Unit Price
+                                <div class="table-filter-btn-container"></div>
+                            </th>
+                            <th data-column="total_value" style="position: relative;">
+                                Total Value
+                                <div class="table-filter-btn-container"></div>
+                            </th>
+                            <th data-column="status" style="position: relative;">
+                                Status
+                                <div class="table-filter-btn-container"></div>
+                            </th>
+                            <th data-filterable="false">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsTableBody">
+                        <!-- Sample data for demonstration -->
+                        <tr>
+                            <td>RM001</td>
+                            <td>Steel Pipe 2"</td>
+                            <td><span class="badge bg-primary">Raw Material</span></td>
+                            <td>150</td>
+                            <td>50</td>
+                            <td>Meters</td>
+                            <td>₹250.00</td>
+                            <td>₹37,500.00</td>
+                            <td><span class="badge bg-success">In Stock</span></td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>FG001</td>
+                            <td>Cabinet Door Assembly</td>
+                            <td><span class="badge bg-success">Finished Good</span></td>
+                            <td>25</td>
+                            <td>10</td>
+                            <td>Pieces</td>
+                            <td>₹1,250.00</td>
+                            <td>₹31,250.00</td>
+                            <td><span class="badge bg-success">In Stock</span></td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="table-warning">
+                            <td>RM002</td>
+                            <td>Aluminum Sheet 3mm</td>
+                            <td><span class="badge bg-primary">Raw Material</span></td>
+                            <td>8</td>
+                            <td>20</td>
+                            <td>Square Feet</td>
+                            <td>₹180.00</td>
+                            <td>₹1,440.00</td>
+                            <td><span class="badge bg-warning">Low Stock</span></td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>WIP001</td>
+                            <td>Partially Machined Bracket</td>
+                            <td><span class="badge bg-warning">Work in Progress</span></td>
+                            <td>45</td>
+                            <td>15</td>
+                            <td>Pieces</td>
+                            <td>₹350.00</td>
+                            <td>₹15,750.00</td>
+                            <td><span class="badge bg-success">In Stock</span></td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="table-danger">
+                            <td>RM003</td>
+                            <td>Copper Wire 12 AWG</td>
+                            <td><span class="badge bg-primary">Raw Material</span></td>
+                            <td>0</td>
+                            <td>100</td>
+                            <td>Meters</td>
+                            <td>₹45.00</td>
+                            <td>₹0.00</td>
+                            <td><span class="badge bg-danger">Out of Stock</span></td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="row align-items-center">
+                <div class="col">
+                    <small class="text-muted">
+                        Showing <span id="displayedCount">5</span> of <span id="totalCount">5</span> items
+                    </small>
+                </div>
+                <div class="col-auto">
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary" onclick="previousPage()" disabled>
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="nextPage()">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Filters Offcanvas -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="filterOffcanvas">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Advanced Filters</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="mb-3">
+            <label class="form-label">Price Range</label>
+            <div class="row">
+                <div class="col-6">
+                    <input type="number" class="form-control" placeholder="Min" id="minPrice">
+                </div>
+                <div class="col-6">
+                    <input type="number" class="form-control" placeholder="Max" id="maxPrice">
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Stock Range</label>
+            <div class="row">
+                <div class="col-6">
+                    <input type="number" class="form-control" placeholder="Min Stock" id="minStock">
+                </div>
+                <div class="col-6">
+                    <input type="number" class="form-control" placeholder="Max Stock" id="maxStock">
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Date Added</label>
+            <div class="row">
+                <div class="col-12 mb-2">
+                    <input type="date" class="form-control" id="dateFrom">
+                </div>
+                <div class="col-12">
+                    <input type="date" class="form-control" id="dateTo">
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Tags</label>
+            <select class="form-select" id="tagsFilter" data-searchable-dropdown='{"multiSelect": true, "placeholder": "Select tags..."}'>
+                <option value="high_demand">High Demand</option>
+                <option value="critical">Critical</option>
+                <option value="imported">Imported</option>
+                <option value="custom_made">Custom Made</option>
+            </select>
+        </div>
+        
+        <div class="d-grid gap-2">
+            <button class="btn btn-primary" onclick="applyAdvancedFilters()">
+                <i class="fas fa-filter"></i> Apply Filters
+            </button>
+            <button class="btn btn-outline-secondary" onclick="clearAdvancedFilters()">
+                <i class="fas fa-times"></i> Clear All
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let tableFilters = {};
+    let currentSort = { column: null, direction: 'asc' };
+    let isCompactView = false;
+    
+    // Initialize table filters
+    initializeTableFilters();
+    
+    // Update item count
+    updateItemCount();
+    
+    // Quick search functionality
+    document.getElementById('quickSearch').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        filterTableRows();
+    });
+    
+    // Initialize searchable dropdowns for filters
+    document.querySelectorAll('[data-searchable-dropdown]').forEach(element => {
+        const options = JSON.parse(element.dataset.searchableDropdown || '{}');
+        new SearchableDropdown(element, {
+            ...options,
+            onSelect: function() {
+                filterTableRows();
+            }
+        });
+    });
+    
+    function initializeTableFilters() {
+        const table = document.getElementById('itemsTable');
+        const headers = table.querySelectorAll('th[data-column]');
+        
+        headers.forEach((header, index) => {
+            // Create filter dropdown for each column
+            new TableFilterDropdown(table, index, {
+                placeholder: `Filter ${header.textContent.trim()}...`
+            });
+        });
+    }
+    
+    function filterTableRows() {
+        const quickSearch = document.getElementById('quickSearch').value.toLowerCase();
+        const typeFilter = document.getElementById('typeFilter').value;
+        const stockFilter = document.getElementById('stockFilter').value;
+        
+        const rows = document.querySelectorAll('#itemsTableBody tr');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            let visible = true;
+            const cells = row.querySelectorAll('td');
+            
+            // Quick search across all columns
+            if (quickSearch) {
+                const text = Array.from(cells).map(cell => cell.textContent.toLowerCase()).join(' ');
+                if (!text.includes(quickSearch)) {
+                    visible = false;
+                }
+            }
+            
+            // Type filter
+            if (typeFilter && visible) {
+                const typeCell = cells[2]; // Type column
+                const typeBadge = typeCell.querySelector('.badge');
+                if (typeBadge) {
+                    const typeText = typeBadge.textContent.toLowerCase().replace(/\s+/g, '_');
+                    if (typeText !== typeFilter) {
+                        visible = false;
+                    }
+                }
+            }
+            
+            // Stock status filter
+            if (stockFilter && visible) {
+                const stockCell = cells[8]; // Status column
+                const statusBadge = stockCell.querySelector('.badge');
+                if (statusBadge) {
+                    const statusText = statusBadge.textContent.toLowerCase().replace(/\s+/g, '_');
+                    if (statusText !== stockFilter) {
+                        visible = false;
+                    }
+                }
+            }
+            
+            // Show/hide row
+            if (visible) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('displayedCount').textContent = visibleCount;
+        updateItemCount();
+    }
+    
+    function updateItemCount() {
+        const totalRows = document.querySelectorAll('#itemsTableBody tr').length;
+        const visibleRows = document.querySelectorAll('#itemsTableBody tr:not([style*="display: none"])').length;
+        
+        document.getElementById('totalCount').textContent = totalRows;
+        document.getElementById('itemCount').textContent = `${visibleRows} of ${totalRows}`;
+    }
+    
+    function clearAllFilters() {
+        // Clear quick search
+        document.getElementById('quickSearch').value = '';
+        
+        // Reset dropdown filters
+        document.getElementById('typeFilter').value = '';
+        document.getElementById('stockFilter').value = '';
+        document.getElementById('uomFilter').value = '';
+        
+        // Clear table column filters
+        document.querySelectorAll('.table-filter-dropdown').forEach(dropdown => {
+            const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+            dropdown.querySelector('.clear-filter').click();
+        });
+        
+        // Show all rows
+        document.querySelectorAll('#itemsTableBody tr').forEach(row => {
+            row.style.display = '';
+        });
+        
+        updateItemCount();
+    }
+    
+    function toggleDensity() {
+        const table = document.getElementById('itemsTable');
+        isCompactView = !isCompactView;
+        
+        if (isCompactView) {
+            table.classList.add('table-sm');
+        } else {
+            table.classList.remove('table-sm');
+        }
+    }
+    
+    function resetColumnWidths() {
+        const table = document.getElementById('itemsTable');
+        const ths = table.querySelectorAll('th');
+        ths.forEach(th => {
+            th.style.width = 'auto';
+        });
+    }
+    
+    function exportData() {
+        // Gather visible rows data
+        const visibleRows = Array.from(document.querySelectorAll('#itemsTableBody tr:not([style*="display: none"])'));
+        const data = visibleRows.map(row => {
+            const cells = row.querySelectorAll('td');
+            return {
+                code: cells[0].textContent,
+                name: cells[1].textContent,
+                type: cells[2].textContent,
+                current_stock: cells[3].textContent,
+                min_stock: cells[4].textContent,
+                uom: cells[5].textContent,
+                unit_price: cells[6].textContent,
+                total_value: cells[7].textContent,
+                status: cells[8].textContent
+            };
+        });
+        
+        // Create CSV content
+        const headers = ['Code', 'Name', 'Type', 'Current Stock', 'Min Stock', 'UOM', 'Unit Price', 'Total Value', 'Status'];
+        const csv = [headers.join(',')];
+        
+        data.forEach(row => {
+            csv.push([
+                row.code,
+                `"${row.name}"`,
+                `"${row.type}"`,
+                row.current_stock,
+                row.min_stock,
+                row.uom,
+                row.unit_price,
+                row.total_value,
+                `"${row.status}"`
+            ].join(','));
+        });
+        
+        // Download CSV
+        const csvContent = csv.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'inventory_items_' + new Date().toISOString().split('T')[0] + '.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+    
+    function applyAdvancedFilters() {
+        // Implement advanced filtering logic
+        const minPrice = document.getElementById('minPrice').value;
+        const maxPrice = document.getElementById('maxPrice').value;
+        const minStock = document.getElementById('minStock').value;
+        const maxStock = document.getElementById('maxStock').value;
+        
+        // Apply advanced filters
+        filterTableRows();
+        
+        // Close offcanvas
+        const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('filterOffcanvas'));
+        offcanvas.hide();
+    }
+    
+    function clearAdvancedFilters() {
+        document.getElementById('minPrice').value = '';
+        document.getElementById('maxPrice').value = '';
+        document.getElementById('minStock').value = '';
+        document.getElementById('maxStock').value = '';
+        document.getElementById('dateFrom').value = '';
+        document.getElementById('dateTo').value = '';
+    }
+    
+    // Expose functions globally for onclick handlers
+    window.clearAllFilters = clearAllFilters;
+    window.toggleDensity = toggleDensity;
+    window.resetColumnWidths = resetColumnWidths;
+    window.exportData = exportData;
+    window.applyAdvancedFilters = applyAdvancedFilters;
+    window.clearAdvancedFilters = clearAdvancedFilters;
+    window.previousPage = function() { /* Implement pagination */ };
+    window.nextPage = function() { /* Implement pagination */ };
+});
+</script>
+{% endblock %}

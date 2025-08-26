@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Factory Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-shopping-cart"></i> {{ title }} <small class="text-muted">(Enhanced with Searchable Dropdowns)</small></h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('help.purchase_orders_help') }}" class="btn btn-info me-2" target="_blank">
+                <i class="fas fa-question-circle"></i> Help
+            </a>
+            <a href="{{ url_for('purchase.list_purchase_orders') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Purchase Orders
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-search"></i> Purchase Order Details - Smart Search Enabled</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.po_number.label(class="form-label") }}
+                                {{ form.po_number(class="form-control") }}
+                                {% if form.po_number.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.po_number.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.supplier_id.label(class="form-label") }}
+                                <div class="searchable-supplier-container">
+                                    <!-- Original select will be hidden by JavaScript -->
+                                    {{ form.supplier_id(class="form-select", style="display: none;") }}
+                                    <!-- Searchable dropdown will be inserted here by JavaScript -->
+                                </div>
+                                {% if form.supplier_id.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.supplier_id.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i> Start typing to search suppliers by name, contact, or phone
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.order_date.label(class="form-label") }}
+                                {{ form.order_date(class="form-control") }}
+                                {% if form.order_date.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.order_date.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                {{ form.expected_delivery.label(class="form-label") }}
+                                {{ form.expected_delivery(class="form-control") }}
+                                {% if form.expected_delivery.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.expected_delivery.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Enhanced Items Section -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6><i class="fas fa-boxes"></i> Purchase Order Items</h6>
+                                <button type="button" class="btn btn-primary btn-sm" onclick="addPOItem()">
+                                    <i class="fas fa-plus"></i> Add Item
+                                </button>
+                            </div>
+                            
+                            <div id="po-items-container">
+                                <!-- Items will be added here -->
+                                <div class="po-item-row mb-3 p-3 border rounded">
+                                    <div class="row align-items-end">
+                                        <div class="col-md-4 mb-2">
+                                            <label class="form-label">Item</label>
+                                            <div class="searchable-item-container">
+                                                <select class="form-select item-select" name="item_id[]" style="display: none;">
+                                                    <option value="">Select Item...</option>
+                                                </select>
+                                            </div>
+                                            <small class="text-muted">
+                                                <i class="fas fa-search"></i> Search by name, code, or description
+                                            </small>
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <label class="form-label">Quantity</label>
+                                            <input type="number" class="form-control" name="quantity[]" step="0.01" min="0">
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <label class="form-label">Unit Price</label>
+                                            <input type="number" class="form-control" name="unit_price[]" step="0.01" min="0">
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <label class="form-label">Total</label>
+                                            <input type="number" class="form-control total-amount" readonly>
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <button type="button" class="btn btn-danger btn-sm remove-item">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                {{ form.remarks.label(class="form-label") }}
+                                {{ form.remarks(class="form-control", rows="3") }}
+                                {% if form.remarks.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.remarks.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Order Summary</h6>
+                                        <div class="row">
+                                            <div class="col-6">Total Items:</div>
+                                            <div class="col-6 text-end" id="total-items">0</div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6">Subtotal:</div>
+                                            <div class="col-6 text-end" id="subtotal">₹0.00</div>
+                                        </div>
+                                        <hr class="my-2">
+                                        <div class="row fw-bold">
+                                            <div class="col-6">Total:</div>
+                                            <div class="col-6 text-end" id="grand-total">₹0.00</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('purchase.list_purchase_orders') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Save Purchase Order
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right sidebar with recent items and suppliers -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-clock"></i> Quick Access</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>Recent Suppliers</h6>
+                        <div id="recent-suppliers" class="list-group list-group-flush">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Recent Items</h6>
+                        <div id="recent-items" class="list-group list-group-flush">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize searchable dropdown for suppliers
+    const supplierSelect = document.querySelector('select[name="supplier_id"]');
+    if (supplierSelect) {
+        new SearchableDropdown(supplierSelect, {
+            apiUrl: '/api/dropdowns/suppliers?partner_type=supplier',
+            placeholder: 'Search suppliers...',
+            showRecent: true,
+            enableFavorites: true,
+            recentItemsKey: 'recent-suppliers',
+            onSelect: function(supplier) {
+                console.log('Selected supplier:', supplier);
+                updateRecentSuppliers();
+            }
+        });
+    }
+    
+    // Initialize searchable dropdowns for items
+    function initializeItemDropdowns() {
+        document.querySelectorAll('.item-select').forEach(select => {
+            if (!select.classList.contains('searchable-initialized')) {
+                new SearchableDropdown(select, {
+                    apiUrl: '/api/dropdowns/items',
+                    placeholder: 'Search items...',
+                    showRecent: true,
+                    enableFavorites: true,
+                    recentItemsKey: 'recent-po-items',
+                    onSelect: function(item) {
+                        console.log('Selected item:', item);
+                        updateItemDetails(select, item);
+                        calculateRowTotal(select.closest('.po-item-row'));
+                        updateRecentItems();
+                    }
+                });
+                select.classList.add('searchable-initialized');
+            }
+        });
+    }
+    
+    // Initialize existing item dropdowns
+    initializeItemDropdowns();
+    
+    // Add new PO item row
+    window.addPOItem = function() {
+        const container = document.getElementById('po-items-container');
+        const newRow = container.querySelector('.po-item-row').cloneNode(true);
+        
+        // Clear values in new row
+        newRow.querySelectorAll('input, select').forEach(input => {
+            input.value = '';
+        });
+        
+        // Remove initialization class so it gets reinitiatized
+        newRow.querySelector('.item-select').classList.remove('searchable-initialized');
+        
+        container.appendChild(newRow);
+        initializeItemDropdowns();
+        updateCalculations();
+    };
+    
+    // Remove PO item row
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('.remove-item, .remove-item *')) {
+            const row = e.target.closest('.po-item-row');
+            if (document.querySelectorAll('.po-item-row').length > 1) {
+                row.remove();
+                updateCalculations();
+            }
+        }
+    });
+    
+    // Update item details when item is selected
+    function updateItemDetails(select, item) {
+        const row = select.closest('.po-item-row');
+        const unitPriceInput = row.querySelector('input[name="unit_price[]"]');
+        
+        if (item.unit_price && unitPriceInput) {
+            unitPriceInput.value = item.unit_price;
+        }
+    }
+    
+    // Calculate row total
+    function calculateRowTotal(row) {
+        const qty = parseFloat(row.querySelector('input[name="quantity[]"]').value) || 0;
+        const unitPrice = parseFloat(row.querySelector('input[name="unit_price[]"]').value) || 0;
+        const total = qty * unitPrice;
+        
+        row.querySelector('.total-amount').value = total.toFixed(2);
+        updateCalculations();
+    }
+    
+    // Update overall calculations
+    function updateCalculations() {
+        const rows = document.querySelectorAll('.po-item-row');
+        let totalItems = 0;
+        let subtotal = 0;
+        
+        rows.forEach(row => {
+            const qty = parseFloat(row.querySelector('input[name="quantity[]"]').value) || 0;
+            const total = parseFloat(row.querySelector('.total-amount').value) || 0;
+            
+            if (qty > 0) totalItems++;
+            subtotal += total;
+        });
+        
+        document.getElementById('total-items').textContent = totalItems;
+        document.getElementById('subtotal').textContent = '₹' + subtotal.toFixed(2);
+        document.getElementById('grand-total').textContent = '₹' + subtotal.toFixed(2);
+    }
+    
+    // Listen for quantity and price changes
+    document.addEventListener('input', function(e) {
+        if (e.target.matches('input[name="quantity[]"], input[name="unit_price[]"]')) {
+            calculateRowTotal(e.target.closest('.po-item-row'));
+        }
+    });
+    
+    // Load recent suppliers
+    function updateRecentSuppliers() {
+        fetch('/api/dropdowns/suppliers?limit=5')
+            .then(response => response.json())
+            .then(suppliers => {
+                const container = document.getElementById('recent-suppliers');
+                container.innerHTML = '';
+                suppliers.slice(0, 5).forEach(supplier => {
+                    const item = document.createElement('div');
+                    item.className = 'list-group-item list-group-item-action py-2';
+                    item.innerHTML = `
+                        <div class="fw-bold">${supplier.name}</div>
+                        ${supplier.subtitle ? `<small class="text-muted">${supplier.subtitle}</small>` : ''}
+                    `;
+                    item.addEventListener('click', () => {
+                        // Set supplier in form
+                        document.querySelector('select[name="supplier_id"]').value = supplier.id;
+                    });
+                    container.appendChild(item);
+                });
+            });
+    }
+    
+    // Load recent items
+    function updateRecentItems() {
+        fetch('/api/dropdowns/recent-items?limit=5')
+            .then(response => response.json())
+            .then(items => {
+                const container = document.getElementById('recent-items');
+                container.innerHTML = '';
+                items.slice(0, 5).forEach(item => {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'list-group-item list-group-item-action py-2';
+                    itemEl.innerHTML = `
+                        <div class="fw-bold">${item.name}</div>
+                        <small class="text-muted">Code: ${item.code || 'N/A'} | Stock: ${item.current_stock || 0}</small>
+                    `;
+                    container.appendChild(itemEl);
+                });
+            });
+    }
+    
+    // Load initial data
+    updateRecentSuppliers();
+    updateRecentItems();
+});
+</script>
+{% endblock %}
