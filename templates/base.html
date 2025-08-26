@@ -238,6 +238,17 @@
             padding: 0.5rem; /* Reduced padding for fullscreen */
             min-height: 100vh;
             background-color: #ffffff;
+            transition: margin-left 0.3s ease;
+        }
+        
+        /* When sidebar is hidden, expand main content to full width */
+        .sidebar-hidden .main-content {
+            margin-left: 0;
+        }
+        
+        /* Desktop sidebar toggle */
+        .sidebar.d-none {
+            display: none !important;
         }
         .nav-item {
             margin-bottom: 0.25rem; /* 4px - Consistent micro spacing */
@@ -375,7 +386,7 @@
 <body class="preload">
     <!-- Mobile Navigation Toggle -->
     {% if current_user.is_authenticated %}
-    <button class="btn btn-primary d-md-none position-fixed" id="sidebarToggle" style="top: 10px; left: 10px; z-index: 1050;">
+    <button class="btn btn-primary position-fixed" id="sidebarToggle" style="top: 10px; left: 10px; z-index: 1050;">
         <i class="fas fa-bars"></i>
     </button>
     {% endif %}
@@ -657,7 +668,14 @@
             
             if (sidebarToggle && sidebar) {
                 sidebarToggle.addEventListener('click', function() {
-                    sidebar.classList.toggle('show');
+                    if (window.innerWidth >= 768) {
+                        // Desktop: toggle visibility and main content margin
+                        sidebar.classList.toggle('d-none');
+                        document.body.classList.toggle('sidebar-hidden');
+                    } else {
+                        // Mobile: slide sidebar in/out
+                        sidebar.classList.toggle('show');
+                    }
                 });
             }
             
