@@ -10,6 +10,18 @@ Enhanced User Experience: Implemented comprehensive user-friendly features inclu
 
 ## System Architecture
 
+## Recent Changes
+
+### Legacy Cleanup & Streamlining (August 2025)
+Successfully completed comprehensive legacy cleanup initiative to streamline the codebase:
+- **Removed 50+ legacy files:** One-time migration scripts, fix scripts, test/debug utilities, and setup scripts that had already served their purpose
+- **Consolidated redundant files:** Removed duplicate sample data scripts and archive files, keeping only essential ones  
+- **Cleaned up commented code:** Removed legacy code sections and outdated comments from route files
+- **Removed redundant entry points:** Eliminated `run.py`, `config.py` to standardize on `main.py`
+- **Streamlined navigation:** Updated sidebar to remove broken links and organized into logical groups
+- **Reduced codebase by ~25-30%** while maintaining all functionality
+- **Enhanced maintainability:** Cleaner code structure with reduced cognitive load for developers
+
 ### Performance Optimizations
 The system is optimized for Tally-like seamless performance through systematic optimizations including database indexes, query optimization, intelligent caching with smart invalidation, real-time performance monitoring, optimized data loading, and ultra-fast batch queries via direct SQL.
 

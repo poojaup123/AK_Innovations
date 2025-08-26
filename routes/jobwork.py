@@ -428,7 +428,6 @@ def api_receive_from_jobwork():
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error receiving materials: {str(e)}'})
 
-# API endpoint handled in inventory module
 
 @jobwork_bp.route('/add', methods=['GET', 'POST'])
 @login_required  
@@ -802,7 +801,6 @@ def api_receive_material_with_batches():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
-# Batch traceability API moved to inventory module to avoid conflicts
 
 @jobwork_bp.route('/api/transfer-batches-between-processes', methods=['POST'])
 @login_required
@@ -1300,7 +1298,6 @@ Expected Return: {job.expected_return or 'Not specified'}
     
     return render_template('jobwork/send.html', job=job, title=f'Send Job Work {job.job_number}')
 
-# BOM rate auto-filling API removed as requested - users will manually enter rates
 
 @jobwork_bp.route('/daily-entry', methods=['GET', 'POST'])
 @login_required
