@@ -597,20 +597,19 @@ def add_item():
             return render_template('inventory/form.html', form=form, title='Add Item')
         
         item_type_obj = ItemType.query.get(int(form.item_type.data))
-        item = Item(
-            code=form.code.data,
-            name=form.name.data,
-            description=form.description.data,
-            unit_of_measure=form.unit_of_measure.data,
-            hsn_code=form.hsn_code.data,
-            gst_rate=form.gst_rate.data,
-            current_stock=form.current_stock.data,
-            minimum_stock=form.minimum_stock.data,
-            unit_price=form.unit_price.data,
-            unit_weight=form.unit_weight.data,
-            item_type_id=int(form.item_type.data),
-            item_type=item_type_obj.name.lower() if item_type_obj else 'material'
-        )
+        item = Item()
+        item.code = form.code.data
+        item.name = form.name.data
+        item.description = form.description.data
+        item.unit_of_measure = form.unit_of_measure.data
+        item.hsn_code = form.hsn_code.data
+        item.gst_rate = form.gst_rate.data
+        item.current_stock = form.current_stock.data
+        item.minimum_stock = form.minimum_stock.data
+        item.unit_price = form.unit_price.data
+        item.unit_weight = form.unit_weight.data
+        item.item_type_id = int(form.item_type.data)
+        item.item_type = item_type_obj.name.lower() if item_type_obj else 'material'
         db.session.add(item)
         db.session.commit()
         flash('Item added successfully', 'success')
