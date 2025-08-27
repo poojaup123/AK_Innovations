@@ -142,7 +142,15 @@
                                                     {% endif %}
                                                 </td>
                                                 <td>{{ sorted_records[0].date.strftime('%Y-%m-%d %H:%M') if sorted_records[0].date else 'N/A' }}</td>
-                                                <td><span class="fw-bold text-primary">₹{{ "%.2f"|format(sorted_records[0].price or 0) }}</span></td>
+                                                <td>
+                                                    <span class="fw-bold text-primary">₹{{ "%.2f"|format(sorted_records[0].price or 0) }}</span>
+                                                    {% if sorted_records[0].change_icon %}
+                                                        <br>
+                                                        <small class="text-{{ sorted_records[0].change_color }}">
+                                                            {{ sorted_records[0].change_icon }} {{ sorted_records[0].change_percentage }}
+                                                        </small>
+                                                    {% endif %}
+                                                </td>
                                                 <td><span class="badge bg-secondary">{{ sorted_records[0].price_type }}</span></td>
                                                 <td><span class="badge bg-info">{{ sorted_records[0].vendor_name }}</span></td>
                                                 <td><small>{{ sorted_records[0].details }}</small></td>
@@ -164,7 +172,15 @@
                                                     {% endif %}
                                                 </td>
                                                 <td>{{ record.date.strftime('%Y-%m-%d %H:%M') if record.date else 'N/A' }}</td>
-                                                <td><span class="fw-bold text-secondary">₹{{ "%.2f"|format(record.price or 0) }}</span></td>
+                                                <td>
+                                                    <span class="fw-bold text-secondary">₹{{ "%.2f"|format(record.price or 0) }}</span>
+                                                    {% if record.change_icon %}
+                                                        <br>
+                                                        <small class="text-{{ record.change_color }}">
+                                                            {{ record.change_icon }} {{ record.change_percentage }}
+                                                        </small>
+                                                    {% endif %}
+                                                </td>
                                                 <td><span class="badge bg-secondary">{{ record.price_type }}</span></td>
                                                 <td><span class="badge bg-info">{{ record.vendor_name }}</span></td>
                                                 <td><small>{{ record.details }}</small></td>

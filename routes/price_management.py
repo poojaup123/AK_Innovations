@@ -501,17 +501,17 @@ def price_history():
                             record['price_change'] = 'increase'
                             record['change_icon'] = '↗️'
                             record['change_color'] = 'success'
-                            record['change_percentage'] = f'+{percentage_change:.1f}%'
+                            record['change_percentage'] = f'+₹{price_diff:.2f} (+{percentage_change:.1f}%)'
                         elif price_diff < 0:
                             record['price_change'] = 'decrease'
                             record['change_icon'] = '↘️'
                             record['change_color'] = 'danger'
-                            record['change_percentage'] = f'{percentage_change:.1f}%'
+                            record['change_percentage'] = f'₹{price_diff:.2f} ({percentage_change:.1f}%)'
                         else:
                             record['price_change'] = 'same'
                             record['change_icon'] = '➡️'
                             record['change_color'] = 'secondary'
-                            record['change_percentage'] = '0.0%'
+                            record['change_percentage'] = '₹0.00 (0.0%)'
                     else:
                         record['price_change'] = 'new'
                         record['change_icon'] = '🆕'
