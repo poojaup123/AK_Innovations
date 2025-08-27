@@ -1905,45 +1905,54 @@ document.addEventListener('DOMContentLoaded', function() {
     convertScrapValues();
     
     // Handle auto-fetch weight button
-    $('#autoFetchWeightBtn').on('click', function() {
-        {% if bom and bom.id %}
-        const $btn = $(this);
-        const originalText = $btn.html();
-        
-        // Show loading state
-        $btn.html('<i class="fas fa-spinner fa-spin"></i> Fetching...').prop('disabled', true);
-        
-        // Fetch calculated weight from last process
-        fetch('/production/api/bom/{{ bom.id }}/final_weight')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    $('#unit_weight').val(data.final_weight.toFixed(3));
-                    updateUnitWeightDisplay();
-                    
-                    // Show success notification
-                    $btn.html('<i class="fas fa-check text-success"></i> Updated')
-                         .removeClass('btn-outline-primary')
-                         .addClass('btn-success');
-                    
-                    setTimeout(() => {
-                        $btn.html(originalText)
-                             .removeClass('btn-success')
-                             .addClass('btn-outline-primary')
-                             .prop('disabled', false);
-                    }, 2000);
-                } else {
-                    alert('Unable to fetch weight from processes: ' + data.message);
-                    $btn.html(originalText).prop('disabled', false);
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching final weight:', error);
-                alert('Error fetching weight from last process');
-                $btn.html(originalText).prop('disabled', false);
-            });
-        {% endif %}
-    });
+    var autoFetchWeightBtn = document.getElementById('autoFetchWeightBtn');
+    if (autoFetchWeightBtn) {
+        autoFetchWeightBtn.addEventListener('click', function() {
+            {% if bom and bom.id %}
+            var btn = this;
+            var originalText = btn.innerHTML;
+            
+            // Show loading state
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching...';
+            btn.disabled = true;
+            
+            // Fetch calculated weight from last process
+            fetch('/production/api/bom/{{ bom.id }}/final_weight')
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        var unitWeightInput = document.getElementById('unit_weight');
+                        if (unitWeightInput) {
+                            unitWeightInput.value = data.final_weight.toFixed(3);
+                        }
+                        updateUnitWeightDisplay();
+                        
+                        // Show success notification
+                        btn.innerHTML = '<i class="fas fa-check text-success"></i> Updated';
+                        btn.classList.remove('btn-outline-primary');
+                        btn.classList.add('btn-success');
+                        
+                        setTimeout(function() {
+                            btn.innerHTML = originalText;
+                            btn.classList.remove('btn-success');
+                            btn.classList.add('btn-outline-primary');
+                            btn.disabled = false;
+                        }, 2000);
+                    } else {
+                        alert('Unable to fetch weight from processes: ' + data.message);
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error fetching final weight:', error);
+                    alert('Error fetching weight from last process');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
+            {% endif %}
+        });
+    }
 });
     
     // Activate tab based on URL fragment on page load
