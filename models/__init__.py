@@ -2406,6 +2406,7 @@ class BOM(db.Model):
             return self.estimated_scrap_percent or 0.0
         
         total_yield = 1.0  # Start with 100% yield
+        process_scrap_found = False
         
         # Apply compound scrap effect from each process
         for process in self.processes:
@@ -2413,10 +2414,16 @@ class BOM(db.Model):
                 # Convert scrap percentage to yield (e.g., 10% scrap = 90% yield)
                 current_yield = 1.0 - (process.estimated_scrap_percent / 100.0)
                 total_yield *= current_yield
+                process_scrap_found = True
             elif hasattr(process, 'scrap_percentage') and process.scrap_percentage:
                 # Convert scrap percentage to yield (e.g., 10% scrap = 90% yield)
                 current_yield = 1.0 - (process.scrap_percentage / 100.0)
                 total_yield *= current_yield
+                process_scrap_found = True
+        
+        # If no process scrap was found, return the BOM-level estimated scrap
+        if not process_scrap_found:
+            return self.estimated_scrap_percent or 0.0
         
         # Convert final yield back to scrap percentage
         final_scrap_percent = (1.0 - total_yield) * 100.0
@@ -2996,30 +3003,9 @@ class BOM(db.Model):
     
     @property
     def calculated_total_scrap_percent(self):
-        """Calculate total scrap percentage based on input material weight"""
-        # For scrap percentage, we need to compare scrap weight to input material weight
-        # Not to final product unit weight
-        
-        if not self.items or len(self.items) == 0:
-            return self.estimated_scrap_percent or 0.0
-        
-        # Get total input material weight
-        total_input_weight = 0.0
-        for bom_item in self.items:
-            if bom_item.material and bom_item.material.unit_weight:
-                item_total_weight = bom_item.qty_required * bom_item.material.unit_weight
-                total_input_weight += item_total_weight
-        
-        if total_input_weight == 0:
-            return self.estimated_scrap_percent or 0.0
-        
-        total_scrap_weight = self.calculated_total_scrap_weight
-        if total_scrap_weight > 0:
-            # Calculate scrap percentage based on input material weight
-            scrap_percent = (total_scrap_weight / total_input_weight) * 100
-            return scrap_percent
-        
-        return self.estimated_scrap_percent or 0.0
+        """Calculate total scrap percentage using compound yield logic from processes"""
+        # Use the same logic as calculated_scrap_percent but for compatibility
+        return self.calculated_scrap_percent
 
 # New model for BOM Process routing
 class BOMProcess(db.Model):
