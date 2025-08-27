@@ -4,6 +4,8 @@
 
 {% block head %}
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<!-- Add jQuery to fix $ is not defined errors -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -2717,12 +2719,27 @@ function printTreeView() {
 <script>
 // Product search functionality
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔍 Product search initializing...');
+    
     var searchInput = document.getElementById('product-search');
     var searchResults = document.getElementById('search-results');
     var productSelect = document.getElementById('product_id');
     var selectedProductDiv = document.getElementById('selected-product');
     var selectedProductName = document.getElementById('selected-product-name');
     var clearBtn = document.getElementById('clear-search');
+    
+    console.log('🔍 Elements found:', {
+        searchInput: !!searchInput,
+        searchResults: !!searchResults,
+        productSelect: !!productSelect,
+        selectedProductDiv: !!selectedProductDiv,
+        clearBtn: !!clearBtn
+    });
+    
+    if (!searchInput || !searchResults || !productSelect) {
+        console.error('❌ Required search elements not found!');
+        return;
+    }
     
     // Get all products from the hidden select
     var allProducts = [];
@@ -2736,7 +2753,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    console.log('Loaded', allProducts.length, 'products for search');
+    console.log('✅ Loaded', allProducts.length, 'products for search:', allProducts.slice(0, 3));
     
     // Search function
     function searchProducts(term) {
