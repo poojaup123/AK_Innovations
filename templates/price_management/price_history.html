@@ -41,18 +41,37 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    {% set grouped_items = {} %}
                                     {% for record in history.items %}
-                                    <tr>
-                                        <td>
-                                            <strong>{{ record.item.name }}</strong>
-                                            <br><small class="text-muted">{{ record.item.code }}</small>
-                                        </td>
-                                        <td>{{ record.created_at.strftime('%Y-%m-%d %H:%M') if record.created_at else 'N/A' }}</td>
-                                        <td><span class="fw-bold text-primary">₹{{ "%.2f"|format(record.price or 0) }}</span></td>
-                                        <td><span class="badge bg-secondary">{{ record.price_type or 'standard' }}</span></td>
-                                        <td><span class="badge bg-info">{{ record.source or 'Manual' }}</span></td>
-                                        <td>{{ record.user.username if record.user else 'System' }}</td>
-                                    </tr>
+                                        {% set item_key = record.item.name %}
+                                        {% if item_key not in grouped_items %}
+                                            {% set _ = grouped_items.update({item_key: {'item': record.item, 'records': []}}) %}
+                                        {% endif %}
+                                        {% set _ = grouped_items[item_key].records.append(record) %}
+                                    {% endfor %}
+                                    
+                                    {% for item_name, item_data in grouped_items.items() %}
+                                        {% set sorted_records = item_data.records|sort(attribute='created_at', reverse=true) %}
+                                        <tr>
+                                            <td rowspan="{{ sorted_records|length }}">
+                                                <strong>{{ item_data.item.name }}</strong>
+                                                <br><small class="text-muted">{{ item_data.item.code }}</small>
+                                            </td>
+                                            <td>{{ sorted_records[0].created_at.strftime('%Y-%m-%d %H:%M') if sorted_records[0].created_at else 'N/A' }}</td>
+                                            <td><span class="fw-bold text-primary">₹{{ "%.2f"|format(sorted_records[0].price or 0) }}</span></td>
+                                            <td><span class="badge bg-secondary">{{ sorted_records[0].price_type or 'standard' }}</span></td>
+                                            <td><span class="badge bg-info">{{ sorted_records[0].source or 'Manual' }}</span></td>
+                                            <td>{{ sorted_records[0].user.username if sorted_records[0].user else 'System' }}</td>
+                                        </tr>
+                                        {% for record in sorted_records[1:] %}
+                                        <tr class="table-light">
+                                            <td>{{ record.created_at.strftime('%Y-%m-%d %H:%M') if record.created_at else 'N/A' }}</td>
+                                            <td><span class="fw-bold text-secondary">₹{{ "%.2f"|format(record.price or 0) }}</span></td>
+                                            <td><span class="badge bg-secondary">{{ record.price_type or 'standard' }}</span></td>
+                                            <td><span class="badge bg-info">{{ record.source or 'Manual' }}</span></td>
+                                            <td>{{ record.user.username if record.user else 'System' }}</td>
+                                        </tr>
+                                        {% endfor %}
                                     {% endfor %}
                                 </tbody>
                             </table>
