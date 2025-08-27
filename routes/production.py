@@ -1111,8 +1111,8 @@ def api_bom_tree_data(bom_id):
         
         # Calculate comprehensive costs using BOM item unit costs, not item purchase prices
         material_cost = sum(
-            (bom_item.quantity_required or bom_item.qty_required or 0) * 
-            (bom_item.unit_cost or (bom_item.item.unit_price if bom_item.item else 0) or 0)
+            (bom_item.qty_required or bom_item.quantity_required or 0) * 
+            (bom_item.unit_cost or (bom_item.material.unit_price if bom_item.material else 0) or 0)
             for bom_item in bom.items if bom_item
         ) if bom.items else 0
         material_cost_per_unit = material_cost / max(bom.output_quantity, 1)
