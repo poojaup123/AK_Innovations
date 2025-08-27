@@ -327,29 +327,6 @@ def edit_sales_order(id):
                          so_items=so_items, 
                          items=enhanced_items)
 
-@sales_bp.route('/generate-delivery-challan/<int:sales_order_id>')
-@login_required
-def generate_delivery_challan(sales_order_id):
-    """Generate Delivery Challan for Sales Order"""
-    from models.settings import CompanySettings
-    
-    sales_order = SalesOrder.query.get_or_404(sales_order_id)
-    
-    # Get company settings for sender information
-    company_settings = CompanySettings.query.first()
-    
-    # Generate challan number based on SO number
-    challan_number = f"DC-{sales_order.so_number.replace('SO-', '')}"
-    
-    # Current date
-    current_date = datetime.now()
-    
-    return render_template('sales/delivery_challan.html', 
-                         sales_order=sales_order,
-                         company_settings=company_settings,
-                         challan_number=challan_number,
-                         current_date=current_date)
-
 @sales_bp.route('/customers')
 @login_required
 def list_customers():
