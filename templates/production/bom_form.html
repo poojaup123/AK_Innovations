@@ -1696,22 +1696,13 @@
                                     <div class="d-flex align-items-center">
                                         <span class="me-2">🚚</span>
                                         <strong>Freight Cost:</strong>
-                                        {% if bom.unit_weight and bom.unit_weight > 0 %}
-                                            <span class="text-muted ms-2 small">({{ bom.unit_weight }}kg × ₹10/kg)</span>
-                                        {% endif %}
                                     </div>
-                                    <span class="text-warning fw-bold">
-                                        {% if bom.unit_weight and bom.unit_weight > 0 %}
-                                            ₹{{ "%.2f"|format(bom.unit_weight * 10) }}
-                                        {% else %}
-                                            ₹{{ "%.2f"|format(bom.freight_cost_per_unit or 0) }}
-                                        {% endif %}
-                                    </span>
+                                    <span class="text-warning fw-bold">₹{{ "%.2f"|format(bom.freight_cost_per_unit or 0) }}</span>
                                 </div>
                                 
                                 <!-- Total Cost -->
                                 {% set overhead_cost = ((bom_tree.material_cost_per_unit or 0) * (bom.overhead_percentage or 0) / 100) if bom.overhead_percentage else (bom.overhead_cost_per_unit or 0) %}
-                                {% set freight_cost = (bom.unit_weight * 10) if bom.unit_weight else (bom.freight_cost_per_unit or 0) %}
+                                {% set freight_cost = bom.freight_cost_per_unit or 0 %}
                                 {% set total_cost = (bom_tree.material_cost_per_unit or 0) + total_process_cost + overhead_cost + freight_cost %}
                                 <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-light border-bottom">
                                     <div class="d-flex align-items-center">
