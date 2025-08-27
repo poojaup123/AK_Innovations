@@ -27,82 +27,61 @@
         </div>
         <div class="card-body">
             <form method="GET" id="filterForm">
-                <!-- Custom alignment styles -->
-                <style>
-                    #filterForm .form-control, 
-                    #filterForm .form-select, 
-                    #filterForm .input-group,
-                    #filterForm .btn {
-                        height: 38px !important;
-                    }
-                    #filterForm .form-label {
-                        margin-bottom: 8px;
-                        height: 20px;
-                        line-height: 20px;
-                    }
-                    #filterForm .col-md-2, 
-                    #filterForm .col-md-3 {
-                        display: flex;
-                        flex-direction: column;
-                    }
-                    #filterForm .input-group {
-                        display: flex;
-                        align-items: center;
-                    }
-                </style>
-                
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">Search BOMs</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-search"></i></span>
-                            <input type="text" class="form-control" name="search" 
-                                   value="{{ search }}" 
-                                   placeholder="Search by BOM code, product name..."
-                                   id="searchInput">
-                        </div>
-                        <small class="text-muted">Search in BOM codes, product names, and descriptions</small>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Status</label>
-                        <select class="form-select" name="status" id="statusFilter">
-                            <option value="">All Statuses</option>
-                            <option value="planning" {{ 'selected' if status_filter == 'planning' }}>⏳ Planning</option>
-                            <option value="in_progress" {{ 'selected' if status_filter == 'in_progress' }}>▶️ In Progress</option>
-                            <option value="completed" {{ 'selected' if status_filter == 'completed' }}>✅ Completed</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Product</label>
-                        <select class="form-select" name="product" id="productFilter">
-                            <option value="">All Products</option>
-                            {% for product in products %}
-                            <option value="{{ product.id }}" {{ 'selected' if product.id|string == product_filter }}>
-                                {{ product.code }} - {{ product.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Priority</label>
-                        <select class="form-select" name="priority" id="priorityFilter">
-                            <option value="">All</option>
-                            <option value="high" {{ 'selected' if request.args.get('priority') == 'high' }}>🔴 High</option>
-                            <option value="medium" {{ 'selected' if request.args.get('priority') == 'medium' }}>🟡 Medium</option>
-                            <option value="low" {{ 'selected' if request.args.get('priority') == 'low' }}>🟢 Low</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">&nbsp;</label>
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary flex-fill">
-                                <i class="fas fa-filter"></i> Filter
-                            </button>
-                            <a href="{{ url_for('production.list_bom') }}" class="btn btn-outline-secondary">
-                                <i class="fas fa-times"></i> Clear
-                            </a>
-                        </div>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td style="width: 25%;">
+                                <label class="form-label fw-bold">Search BOMs</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    <input type="text" class="form-control" name="search" 
+                                           value="{{ search }}" 
+                                           placeholder="Search by BOM code, product name..."
+                                           id="searchInput">
+                                </div>
+                            </td>
+                            <td style="width: 15%;">
+                                <label class="form-label fw-bold">Status</label>
+                                <select class="form-select" name="status" id="statusFilter">
+                                    <option value="">All Statuses</option>
+                                    <option value="planning" {{ 'selected' if status_filter == 'planning' }}>⏳ Planning</option>
+                                    <option value="in_progress" {{ 'selected' if status_filter == 'in_progress' }}>▶️ In Progress</option>
+                                    <option value="completed" {{ 'selected' if status_filter == 'completed' }}>✅ Completed</option>
+                                </select>
+                            </td>
+                            <td style="width: 25%;">
+                                <label class="form-label fw-bold">Product</label>
+                                <select class="form-select" name="product" id="productFilter">
+                                    <option value="">All Products</option>
+                                    {% for product in products %}
+                                    <option value="{{ product.id }}" {{ 'selected' if product.id|string == product_filter }}>
+                                        {{ product.code }} - {{ product.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td style="width: 15%;">
+                                <label class="form-label fw-bold">Priority</label>
+                                <select class="form-select" name="priority" id="priorityFilter">
+                                    <option value="">All</option>
+                                    <option value="high" {{ 'selected' if request.args.get('priority') == 'high' }}>🔴 High</option>
+                                    <option value="medium" {{ 'selected' if request.args.get('priority') == 'medium' }}>🟡 Medium</option>
+                                    <option value="low" {{ 'selected' if request.args.get('priority') == 'low' }}>🟢 Low</option>
+                                </select>
+                            </td>
+                            <td style="width: 20%;">
+                                <label class="form-label fw-bold">&nbsp;</label>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-filter"></i> Filter
+                                    </button>
+                                    <a href="{{ url_for('production.list_bom') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times"></i> Clear
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
                 </div>
             </form>
             
