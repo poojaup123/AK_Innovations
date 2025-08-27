@@ -216,15 +216,73 @@ def api_bulk_update():
 @login_required
 def price_history():
     """Price change history with cascading information"""
-    page = request.args.get('page', 1, type=int)
+    from datetime import datetime, timedelta
     
-    # Get price history with cascading information
-    history = ItemPriceHistory.query\
-        .join(Item)\
-        .order_by(ItemPriceHistory.created_at.desc())\
+    page = request.args.get('page', 1, type=int)
+    price_type = request.args.get('price_type', '')
+    date_range = request.args.get('date_range', '')
+    start_date = request.args.get('start_date', '')
+    end_date = request.args.get('end_date', '')
+    
+    # Build the base query
+    query = ItemPriceHistory.query.join(Item)
+    
+    # Apply price type filter
+    if price_type:
+        query = query.filter(ItemPriceHistory.price_type == price_type)
+    
+    # Apply date filters
+    if date_range:
+        today = datetime.now()
+        if date_range == '6months':
+            start_filter = today - timedelta(days=180)
+        elif date_range == '1year':
+            start_filter = today - timedelta(days=365)
+        elif date_range == '2years':
+            start_filter = today - timedelta(days=730)
+        elif date_range == '5years':
+            start_filter = today - timedelta(days=1825)
+        else:
+            start_filter = None
+            
+        if start_filter:
+            query = query.filter(ItemPriceHistory.created_at >= start_filter)
+    
+    # Apply custom date range if provided
+    if start_date:
+        try:
+            start_filter = datetime.strptime(start_date, '%Y-%m-%d')
+            query = query.filter(ItemPriceHistory.created_at >= start_filter)
+        except ValueError:
+            pass
+    
+    if end_date:
+        try:
+            end_filter = datetime.strptime(end_date, '%Y-%m-%d')
+            # Add one day to include the end date
+            end_filter = end_filter + timedelta(days=1)
+            query = query.filter(ItemPriceHistory.created_at < end_filter)
+        except ValueError:
+            pass
+    
+    # Get price history with pagination
+    history = query.order_by(ItemPriceHistory.created_at.desc())\
         .paginate(page=page, per_page=50, error_out=False)
     
-    return render_template('price_management/price_history.html', history=history)
+    # Get unique price types for filter dropdown
+    price_types = db.session.query(ItemPriceHistory.price_type)\
+        .distinct()\
+        .order_by(ItemPriceHistory.price_type)\
+        .all()
+    price_types = [pt[0] for pt in price_types if pt[0]]
+    
+    return render_template('price_management/price_history.html', 
+                         history=history, 
+                         price_types=price_types,
+                         current_price_type=price_type,
+                         current_date_range=date_range,
+                         current_start_date=start_date,
+                         current_end_date=end_date)
 
 @bp.route('/dashboard')
 @login_required

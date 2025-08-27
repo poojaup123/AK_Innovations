@@ -23,9 +23,51 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-history"></i> Recent Price Changes</h5>
-                    <button id="expandAllBtn" class="btn btn-sm btn-outline-primary" onclick="toggleAllGroups()">Expand All</button>
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0"><i class="fas fa-history"></i> Recent Price Changes</h5>
+                        <button id="expandAllBtn" class="btn btn-sm btn-outline-primary" onclick="toggleAllGroups()">Expand All</button>
+                    </div>
+                    
+                    <!-- Filters -->
+                    <form method="GET" class="row g-2">
+                        <div class="col-md-3">
+                            <select name="price_type" class="form-select form-select-sm">
+                                <option value="">All Price Types</option>
+                                {% for ptype in price_types %}
+                                <option value="{{ ptype }}" {% if ptype == current_price_type %}selected{% endif %}>
+                                    {{ ptype.title() }} Price
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="date_range" class="form-select form-select-sm" id="dateRangeSelect">
+                                <option value="">All Time</option>
+                                <option value="6months" {% if current_date_range == '6months' %}selected{% endif %}>Last 6 Months</option>
+                                <option value="1year" {% if current_date_range == '1year' %}selected{% endif %}>Last 1 Year</option>
+                                <option value="2years" {% if current_date_range == '2years' %}selected{% endif %}>Last 2 Years</option>
+                                <option value="5years" {% if current_date_range == '5years' %}selected{% endif %}>Last 5 Years</option>
+                                <option value="custom" {% if current_start_date or current_end_date %}selected{% endif %}>Custom Range</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2" id="startDateCol" style="display: {% if current_start_date or current_end_date %}block{% else %}none{% endif %};">
+                            <input type="date" name="start_date" class="form-control form-control-sm" 
+                                   placeholder="Start Date" value="{{ current_start_date }}">
+                        </div>
+                        <div class="col-md-2" id="endDateCol" style="display: {% if current_start_date or current_end_date %}block{% else %}none{% endif %};">
+                            <input type="date" name="end_date" class="form-control form-control-sm" 
+                                   placeholder="End Date" value="{{ current_end_date }}">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary btn-sm me-1">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                            <a href="{{ url_for('price_management.price_history') }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                        </div>
+                    </form>
                 </div>
                 <div class="card-body">
                     {% if history and history.items %}
@@ -206,6 +248,20 @@ function toggleAllGroups() {
     expandAllBtn.textContent = isExpandingAll ? 'Collapse All' : 'Expand All';
     expandAllBtn.className = isExpandingAll ? 'btn btn-sm btn-outline-secondary' : 'btn btn-sm btn-outline-primary';
 }
+
+// Handle date range selection
+document.getElementById('dateRangeSelect').addEventListener('change', function() {
+    const startDateCol = document.getElementById('startDateCol');
+    const endDateCol = document.getElementById('endDateCol');
+    
+    if (this.value === 'custom') {
+        startDateCol.style.display = 'block';
+        endDateCol.style.display = 'block';
+    } else {
+        startDateCol.style.display = 'none';
+        endDateCol.style.display = 'none';
+    }
+});
 </script>
 
 <style>
