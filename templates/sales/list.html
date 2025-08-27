@@ -120,6 +120,9 @@
                                         <a href="{{ url_for('sales.edit_sales_order', job_card_id=so.id) }}" class="btn btn-outline-primary btn-sm" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        <a href="{{ url_for('sales.generate_delivery_challan', sales_order_id=so.id) }}" class="btn btn-outline-success btn-sm" title="Generate Delivery Challan" target="_blank">
+                                            <i class="fas fa-file-invoice"></i>
+                                        </a>
                                         <a href="{{ url_for('documents.upload_document', transaction_type='sales_order', transaction_id=so.id) }}" class="btn btn-outline-warning btn-sm" title="Upload Documents">
                                             <i class="fas fa-paperclip"></i>
                                         </a>

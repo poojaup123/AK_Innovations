@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Challan - {{ challan_number }}</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            color: #000;
+            background: white;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .challan-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+        }
+        .dashed-line {
+            border: none;
+            border-top: 1px dashed #666;
+            margin: 10px 0;
+        }
+        .company-header {
+            text-align: left;
+            margin-bottom: 5px;
+        }
+        .company-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        .company-details {
+            font-size: 14px;
+            line-height: 1.3;
+        }
+        .phone-email {
+            color: #e74c3c;
+            font-size: 14px;
+        }
+        .challan-info {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0 5px 0;
+        }
+        .customer-info {
+            margin: 10px 0;
+        }
+        .type-header {
+            color: #e74c3c;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .items-table {
+            width: 100%;
+            margin: 15px 0;
+        }
+        .items-table th {
+            text-align: left;
+            padding: 5px 10px 5px 0;
+            font-weight: normal;
+        }
+        .items-table td {
+            padding: 3px 10px 3px 0;
+            vertical-align: top;
+        }
+        .total-section {
+            margin: 15px 0;
+        }
+        .transport-section {
+            margin: 15px 0;
+        }
+        .remarks-section {
+            margin: 15px 0;
+        }
+        .signature-section {
+            margin-top: 30px;
+            text-align: left;
+        }
+        .copy-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        @media print {
+            .copy-button {
+                display: none;
+            }
+            body {
+                margin: 0;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="copy-button" onclick="window.print()">📄 Copy code</button>
+    
+    <div class="challan-container">
+        <!-- Company Header -->
+        <div class="company-header">
+            <div class="company-name">
+                {% if company_settings and company_settings.company_name %}
+                    {{ company_settings.company_name }}
+                {% else %}
+                    AK Innovations
+                {% endif %}
+            </div>
+            <div class="company-details">
+                {% if company_settings and company_settings.address %}
+                    {{ company_settings.address }}
+                {% else %}
+                    Yusufganj Barhadwari, Aligarh, Uttar Pradesh 202001
+                {% endif %}<br>
+                {% if company_settings and company_settings.gstin %}
+                    GSTIN: {{ company_settings.gstin }}
+                {% else %}
+                    GSTIN: 09ABCDE1234F1Z5
+                {% endif %}
+            </div>
+            <div class="phone-email">
+                Phone: {% if company_settings and company_settings.phone %}{{ company_settings.phone }}{% else %}+91-XXXXXXXXXX{% endif %} | Email: {% if company_settings and company_settings.email %}{{ company_settings.email }}{% else %}info@akinnovations.com{% endif %}
+            </div>
+        </div>
+        
+        <hr class="dashed-line">
+        
+        <!-- Challan Information -->
+        <div class="challan-info">
+            <div>
+                <strong>Delivery Challan No: {{ challan_number }}</strong>
+            </div>
+            <div>
+                <strong>Date: {{ current_date.strftime('%d-%b-%Y') }}</strong>
+            </div>
+        </div>
+        
+        <!-- Customer Information -->
+        <div class="customer-info">
+            <strong>Customer: {% if sales_order.customer %}{{ sales_order.customer.name }}{% else %}Customer Name{% endif %}</strong><br>
+            Address: {% if sales_order.customer and sales_order.customer.address %}{{ sales_order.customer.address }}{% else %}Industrial Estate, Location{% endif %}<br>
+            GSTIN: {% if sales_order.customer and sales_order.customer.gstin %}{{ sales_order.customer.gstin }}{% else %}09PQRSX9876Z3M1{% endif %}
+        </div>
+        
+        <!-- Type Header -->
+        <div class="type-header">Type: Delivery Challan</div>
+        
+        <hr class="dashed-line">
+        
+        <!-- Items Table -->
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>| Qty</th>
+                    <th>| UOM</th>
+                    <th>| Remarks</th>
+                </tr>
+            </thead>
+        </table>
+        
+        <hr class="dashed-line">
+        
+        <!-- Items List -->
+        {% if sales_order.items %}
+            {% for item in sales_order.items %}
+            <table class="items-table">
+                <tr>
+                    <td style="width: 40%;">{{ item.item.name if item.item else 'Item Name' }}</td>
+                    <td style="width: 15%;">| {{ item.quantity_ordered or 0 }}</td>
+                    <td style="width: 15%;">| {{ item.item.unit_of_measure if item.item else 'pcs' }}</td>
+                    <td style="width: 30%;">| For Job Work</td>
+                </tr>
+            </table>
+            {% endfor %}
+        {% else %}
+        <table class="items-table">
+            <tr>
+                <td style="width: 40%;">Castor Wheel</td>
+                <td style="width: 15%;">| 50</td>
+                <td style="width: 15%;">| pcs</td>
+                <td style="width: 30%;">| For Job Work</td>
+            </tr>
+            <tr>
+                <td>Base Plate (Ph)</td>
+                <td>| 20</td>
+                <td>| pcs</td>
+                <td>| For Assembly</td>
+            </tr>
+            <tr>
+                <td style="color: #e74c3c;">Mounted Plate</td>
+                <td style="color: #e74c3c;">| 20</td>
+                <td style="color: #e74c3c;">| pcs</td>
+                <td style="color: #e74c3c;">| For Assembly</td>
+            </tr>
+        </table>
+        {% endif %}
+        
+        <hr class="dashed-line">
+        
+        <!-- Total Quantity -->
+        <div class="total-section">
+            <strong>Total Qty: 
+            {% if sales_order.items %}
+                {% set total_qty = sales_order.items|map(attribute='quantity_ordered')|sum %}
+                {{ total_qty|int }} pcs
+            {% else %}
+                90 pcs
+            {% endif %}
+            </strong>
+        </div>
+        
+        <hr class="dashed-line">
+        
+        <!-- Transport Details -->
+        <div class="transport-section">
+            <strong>Transporter:</strong> XYZ Logistics Pvt. Ltd.<br>
+            <strong>LR No:</strong> 123456789<br>
+            <strong style="color: #e74c3c;">Vehicle No:</strong> <span style="color: #e74c3c;">UP-16-AB-1234</span>
+        </div>
+        
+        <hr class="dashed-line">
+        
+        <!-- Remarks -->
+        <div class="remarks-section">
+            <strong style="color: #e74c3c;">Remarks:</strong> <span style="color: #e74c3c;">Goods sent for Job Work only. Not for Sale.</span>
+        </div>
+        
+        <hr class="dashed-line">
+        
+        <!-- Signature Section -->
+        <div class="signature-section">
+            <strong>Authorized Signatory</strong><br>
+            (Seal & Signature)
+        </div>
+    </div>
+
+    <script>
+        // Auto-print when page loads
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
