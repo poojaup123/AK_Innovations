@@ -1710,9 +1710,9 @@
                                 </div>
                                 
                                 <!-- Total Cost -->
-                                {% set total_cost = (bom_tree.material_cost_per_unit or 0) + (bom.labor_cost_per_unit or 0) + 
-                                    ((bom_tree.material_cost_per_unit or 0) * (bom.overhead_percentage or 0) / 100 if bom.overhead_percentage else (bom.overhead_cost_per_unit or 0)) + 
-                                    ((bom.unit_weight * 10) if bom.unit_weight else (bom.freight_cost_per_unit or 0)) %}
+                                {% set overhead_cost = ((bom_tree.material_cost_per_unit or 0) * (bom.overhead_percentage or 0) / 100) if bom.overhead_percentage else (bom.overhead_cost_per_unit or 0) %}
+                                {% set freight_cost = (bom.unit_weight * 10) if bom.unit_weight else (bom.freight_cost_per_unit or 0) %}
+                                {% set total_cost = (bom_tree.material_cost_per_unit or 0) + total_process_cost + overhead_cost + freight_cost %}
                                 <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-light border-bottom">
                                     <div class="d-flex align-items-center">
                                         <span class="me-2">💰</span>
