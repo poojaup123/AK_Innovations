@@ -140,7 +140,7 @@
                                 <td>{{ bom.created_at.strftime('%m/%d/%Y') if bom.created_at else 'N/A' }}</td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{{ url_for('production.view_bom', id=bom.id) }}" class="btn btn-outline-primary btn-sm" title="View BOM Details">
+                                        <a href="{{ url_for('production.edit_bom', id=bom.id) }}" class="btn btn-outline-primary btn-sm" title="View BOM Details">
                                             <i class="fas fa-eye"></i> View
                                         </a>
                                         <a href="{{ url_for('production.edit_bom', id=bom.id) }}" class="btn btn-outline-secondary btn-sm" title="Edit BOM">
