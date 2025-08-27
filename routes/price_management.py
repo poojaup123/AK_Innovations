@@ -471,6 +471,64 @@ def price_history():
     # Sort all price changes by date (newest first)
     all_price_changes.sort(key=lambda x: x['date'] or datetime.min, reverse=True)
     
+    # Calculate price changes and add indicators
+    def calculate_price_change_indicators(price_changes):
+        """Calculate price change indicators (up/down arrows) and percentages"""
+        # Group by item_name for price change calculation
+        item_groups = {}
+        for record in price_changes:
+            item_key = record['item_name']
+            if item_key not in item_groups:
+                item_groups[item_key] = []
+            item_groups[item_key].append(record)
+        
+        # Calculate changes for each item group
+        for item_name, records in item_groups.items():
+            # Sort by date (newest first) to get proper price progression
+            sorted_records = sorted(records, key=lambda x: x['date'] or datetime.min, reverse=True)
+            
+            for i, record in enumerate(sorted_records):
+                # Compare with previous price (next in list since sorted newest first)
+                if i < len(sorted_records) - 1:
+                    current_price = record['price'] or 0
+                    previous_price = sorted_records[i + 1]['price'] or 0
+                    
+                    if previous_price > 0:
+                        price_diff = current_price - previous_price
+                        percentage_change = (price_diff / previous_price) * 100
+                        
+                        if price_diff > 0:
+                            record['price_change'] = 'increase'
+                            record['change_icon'] = '↗️'
+                            record['change_color'] = 'success'
+                            record['change_percentage'] = f'+{percentage_change:.1f}%'
+                        elif price_diff < 0:
+                            record['price_change'] = 'decrease'
+                            record['change_icon'] = '↘️'
+                            record['change_color'] = 'danger'
+                            record['change_percentage'] = f'{percentage_change:.1f}%'
+                        else:
+                            record['price_change'] = 'same'
+                            record['change_icon'] = '➡️'
+                            record['change_color'] = 'secondary'
+                            record['change_percentage'] = '0.0%'
+                    else:
+                        record['price_change'] = 'new'
+                        record['change_icon'] = '🆕'
+                        record['change_color'] = 'primary'
+                        record['change_percentage'] = 'New'
+                else:
+                    # This is the oldest/first price record
+                    record['price_change'] = 'first'
+                    record['change_icon'] = '⭐'
+                    record['change_color'] = 'info'
+                    record['change_percentage'] = 'Initial'
+        
+        return price_changes
+    
+    # Add price change indicators
+    all_price_changes = calculate_price_change_indicators(all_price_changes)
+    
     # Pagination for consolidated results
     per_page = 50
     total = len(all_price_changes)
