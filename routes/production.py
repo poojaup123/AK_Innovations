@@ -1151,8 +1151,24 @@ def api_bom_tree_data(bom_id):
         unit_weight = getattr(bom, 'unit_weight', 0.0)  # Weight per unit in kg
         freight_rate_per_kg = 10.0  # ₹10 per kg (kept for display purposes only)
         
-        scrap_recovery_rate = getattr(bom, 'scrap_recovery_rate', 0.30)  # 30%
-        scrap_recovery = material_cost_per_unit * scrap_recovery_rate
+        # Only apply scrap recovery if the BOM actually generates scrap
+        scrap_quantity = getattr(bom, 'scrap_quantity', 0) or 0
+        estimated_scrap_percent = getattr(bom, 'estimated_scrap_percent', 0) or 0
+        
+        # Check if any processes generate scrap
+        process_scrap_exists = any(
+            getattr(process, 'estimated_scrap_percent', 0) > 0 or
+            getattr(process, 'scrap_tracking_enabled', False)
+            for process in bom.processes
+        ) if bom.processes else False
+        
+        # Only calculate scrap recovery if scrap actually exists
+        if scrap_quantity > 0 or estimated_scrap_percent > 0 or process_scrap_exists:
+            scrap_recovery_rate = getattr(bom, 'scrap_value_recovery_percent', 15.0) / 100.0  # Use BOM's configured rate
+            scrap_recovery = material_cost_per_unit * scrap_recovery_rate
+        else:
+            scrap_recovery_rate = 0.0
+            scrap_recovery = 0.0
         markup_percentage = (getattr(bom, 'markup_percentage', 3) or 3) / 100.0  # Convert percentage to decimal
         
         total_before_markup = material_cost_per_unit + labor_cost_total + overhead_cost_per_unit + freight_cost_per_unit - scrap_recovery
