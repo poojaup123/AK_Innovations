@@ -976,15 +976,16 @@
                                         </select>
                                     </td>
                                     <td class="editable" data-field="unit_cost" data-type="number">
-                                        <span class="display-value">₹{{ "%.2f"|format(bom_item.unit_cost) }}</span>
+                                        {% set unit_cost = bom_item.unit_cost or (bom_item.item.unit_price if bom_item.item else 0) %}
+                                        <span class="display-value">₹{{ "%.2f"|format(unit_cost) }}</span>
                                         <div class="input-group input-group-sm edit-input" style="display: none;">
                                             <span class="input-group-text">₹</span>
                                             <input type="number" class="form-control" 
-                                                   value="{{ bom_item.unit_cost }}" step="0.01">
+                                                   value="{{ unit_cost }}" step="0.01">
                                         </div>
                                     </td>
                                     <td class="calculated-cost">
-                                        <strong>₹{{ "%.2f"|format(bom_item.quantity_required * bom_item.unit_cost) }}</strong>
+                                        <strong>₹{{ "%.2f"|format(bom_item.quantity_required * unit_cost) }}</strong>
                                     </td>
                                     <td>
                                         {% set stock = bom_item.item.total_stock or bom_item.item.current_stock or 0 %}
