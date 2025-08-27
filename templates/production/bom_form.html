@@ -1670,7 +1670,7 @@
                                     {% for process in bom.processes %}
                                     <div class="d-flex justify-content-between p-1 text-muted small">
                                         <span>{% if loop.last %}└── {% else %}├── {% endif %}{{ process.process_name }}:</span>
-                                        <span>₹{{ "%.4f"|format(process.cost_per_unit or 0) }}</span>
+                                        <span>₹{{ "%.4f"|format(process.converted_cost_per_unit or 0) }}</span>
                                     </div>
                                     {% endfor %}
                                 </div>
