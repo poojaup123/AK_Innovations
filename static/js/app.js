@@ -170,17 +170,50 @@ function setupDashboard() {
 }
 
 /**
- * Setup confirmation dialogs
+ * Setup confirmation dialogs with enhanced UX
  */
 function setupConfirmationDialogs() {
-    // Delete confirmations
+    // Delete confirmations - Use enhanced dialog if available
     const deleteButtons = document.querySelectorAll('[data-confirm-delete]');
     deleteButtons.forEach(function(button) {
         button.addEventListener('click', function(e) {
+            e.preventDefault();
             const message = this.getAttribute('data-confirm-delete') || 'Are you sure you want to delete this item?';
-            if (!confirm(message)) {
-                e.preventDefault();
-                return false;
+            const itemName = this.getAttribute('data-item-name') || 'this item';
+            
+            // Use enhanced confirmation dialog if available (from validation.js)
+            if (typeof confirmAction !== 'undefined') {
+                confirmAction(
+                    `Are you sure you want to delete ${itemName}? This action cannot be undone.`,
+                    'Delete Confirmation',
+                    'Yes, Delete',
+                    'Cancel'
+                ).then((confirmed) => {
+                    if (confirmed) {
+                        // Show loading state
+                        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+                        this.disabled = true;
+                        
+                        // Proceed with the deletion
+                        if (this.href) {
+                            window.location.href = this.href;
+                        } else if (this.closest('form')) {
+                            this.closest('form').submit();
+                        }
+                    }
+                });
+            } else {
+                // Fallback to basic confirm
+                if (confirm(message)) {
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+                    this.disabled = true;
+                    
+                    if (this.href) {
+                        window.location.href = this.href;
+                    } else if (this.closest('form')) {
+                        this.closest('form').submit();
+                    }
+                }
             }
         });
     });
@@ -189,10 +222,66 @@ function setupConfirmationDialogs() {
     const statusButtons = document.querySelectorAll('[data-confirm-status]');
     statusButtons.forEach(function(button) {
         button.addEventListener('click', function(e) {
+            e.preventDefault();
             const message = this.getAttribute('data-confirm-status') || 'Are you sure you want to change the status?';
-            if (!confirm(message)) {
-                e.preventDefault();
-                return false;
+            const statusName = this.getAttribute('data-status-name') || 'the status';
+            
+            if (typeof confirmAction !== 'undefined') {
+                confirmAction(
+                    `Are you sure you want to change ${statusName}? This may affect related processes.`,
+                    'Status Change Confirmation',
+                    'Yes, Change Status',
+                    'Cancel'
+                ).then((confirmed) => {
+                    if (confirmed) {
+                        // Show loading state
+                        const originalText = this.innerHTML;
+                        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+                        this.disabled = true;
+                        
+                        if (this.href) {
+                            window.location.href = this.href;
+                        } else if (this.closest('form')) {
+                            this.closest('form').submit();
+                        }
+                    }
+                });
+            } else {
+                if (confirm(message)) {
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+                    this.disabled = true;
+                    
+                    if (this.href) {
+                        window.location.href = this.href;
+                    } else if (this.closest('form')) {
+                        this.closest('form').submit();
+                    }
+                }
+            }
+        });
+    });
+    
+    // Form submission confirmations for critical actions
+    const criticalForms = document.querySelectorAll('[data-confirm-submit]');
+    criticalForms.forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const message = this.getAttribute('data-confirm-submit') || 'Are you sure you want to submit this form?';
+            
+            if (typeof confirmAction !== 'undefined') {
+                confirmAction(message).then((confirmed) => {
+                    if (confirmed) {
+                        // Remove the event listener to prevent loop and submit
+                        this.removeEventListener('submit', arguments.callee);
+                        this.submit();
+                    }
+                });
+            } else {
+                if (confirm(message)) {
+                    this.removeEventListener('submit', arguments.callee);
+                    this.submit();
+                }
             }
         });
     });
