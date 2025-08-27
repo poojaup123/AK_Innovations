@@ -287,7 +287,55 @@ def price_history():
                 'batch_number': '-'  # No batch for regular material prices
             })
     
-    # 1b. Batch Price History (new - batch-specific pricing)
+    # 1b. BOM-Calculated Prices (manufactured product costs)
+    if price_category in ('', 'material', 'bom'):
+        try:
+            from models import BOM
+            
+            # Find BOMs with recent cost calculations
+            bom_query = BOM.query.join(Item, BOM.product_id == Item.id)
+            
+            # Apply date filters for BOM cost updates
+            if date_range:
+                today = datetime.now()
+                if date_range == '6months':
+                    start_filter = today - timedelta(days=180)
+                elif date_range == '1year':
+                    start_filter = today - timedelta(days=365)
+                elif date_range == '2years':
+                    start_filter = today - timedelta(days=730)
+                elif date_range == '5years':
+                    start_filter = today - timedelta(days=1825)
+                else:
+                    start_filter = None
+                    
+                if start_filter:
+                    bom_query = bom_query.filter(BOM.updated_at >= start_filter)
+            
+            # Get BOMs and their calculated costs
+            boms = bom_query.order_by(BOM.updated_at.desc()).all()
+            
+            for bom in boms:
+                if bom.total_cost and bom.total_cost > 0:
+                    all_price_changes.append({
+                        'type': 'bom_calculated',
+                        'category': 'BOM Cost',
+                        'item_name': bom.item.name if bom.item else 'Unknown',
+                        'item_code': bom.item.code if bom.item else '',
+                        'price': bom.total_cost,
+                        'price_type': 'manufactured',
+                        'source': 'BOM Calculation',
+                        'date': bom.updated_at or bom.created_at,
+                        'updated_by': 'System',
+                        'details': f"BOM: {len(bom.items or [])} components | Material: ₹{bom.material_cost or 0:.2f} | Labor: ₹{bom.labor_cost or 0:.2f}",
+                        'vendor_name': 'Manufacturing',
+                        'batch_number': '-'
+                    })
+        except (ImportError, AttributeError) as e:
+            print(f"BOM cost tracking not available: {str(e)}")
+            pass
+    
+    # 1c. Batch Price History (new - batch-specific pricing)
     if price_category in ('', 'material', 'batch'):
         try:
             from models.batch import BatchPriceHistory, InventoryBatch
@@ -558,6 +606,7 @@ def price_history():
     price_categories = [
         ('', 'All Categories'),
         ('material', 'Material Prices'),
+        ('bom', 'BOM Costs'),
         ('batch', 'Batch Prices'),
         ('jobwork', 'Job Work Rates')
     ]
