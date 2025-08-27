@@ -1,10 +1,9 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from models import Item, PurchaseOrder, SalesOrder, Employee, JobWork, Production, Supplier, ItemPriceHistory
+from models import Item, PurchaseOrder, SalesOrder, Employee, JobWork, Production, Supplier
 from models.dashboard import DashboardModule, UserDashboardPreference, get_user_dashboard_modules, init_user_default_preferences
 from sqlalchemy import func
 from app import db
-from datetime import datetime, timedelta
 
 main_bp = Blueprint('main', __name__)
 
@@ -65,62 +64,12 @@ def dashboard():
             # If endpoint doesn't exist, set as None for fallback
             module.valid_url = None
     
-    # Get price management data
-    price_data = get_price_dashboard_data()
-    
-    return render_template('dashboard.html', 
+    return render_template('main/dashboard.html', 
                          stats=stats, 
                          recent_pos=recent_pos, 
                          recent_sos=recent_sos,
                          low_stock_items=low_stock_items,
-                         user_modules=user_modules,
-                         price_data=price_data)
-
-def get_price_dashboard_data():
-    """Get price management data for dashboard"""
-    try:
-        # Recent price changes (last 10)
-        recent_changes = ItemPriceHistory.query\
-            .join(Item)\
-            .order_by(ItemPriceHistory.created_at.desc())\
-            .limit(10).all()
-        
-        # Items with significant price changes (>10% in last 30 days)
-        thirty_days_ago = datetime.now() - timedelta(days=30)
-        significant_changes = db.session.query(ItemPriceHistory)\
-            .join(Item)\
-            .filter(ItemPriceHistory.created_at >= thirty_days_ago)\
-            .order_by(ItemPriceHistory.created_at.desc()).all()
-        
-        # Filter significant changes (>10% change)
-        filtered_significant = []
-        for change in significant_changes:
-            if change.previous_price and change.new_price:
-                price_diff = abs(change.new_price - change.previous_price)
-                percentage = (price_diff / change.previous_price * 100) if change.previous_price > 0 else 0
-                if percentage > 10:
-                    filtered_significant.append(change)
-        
-        # Items without recent price updates (>90 days)
-        ninety_days_ago = datetime.now() - timedelta(days=90)
-        stale_items = db.session.query(Item)\
-            .outerjoin(ItemPriceHistory)\
-            .group_by(Item.id)\
-            .having(func.max(ItemPriceHistory.created_at) < ninety_days_ago)\
-            .all()
-        
-        return {
-            'recent_changes': recent_changes,
-            'significant_changes': filtered_significant,
-            'stale_items': stale_items
-        }
-    except Exception as e:
-        # Return empty data if there's an error
-        return {
-            'recent_changes': [],
-            'significant_changes': [],
-            'stale_items': []
-        }
+                         user_modules=user_modules)
 
 @main_bp.route('/search')
 @login_required

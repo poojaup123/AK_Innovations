@@ -637,5 +637,36 @@ def price_history():
 @bp.route('/dashboard')
 @login_required
 def dashboard():
-    """Redirect to main dashboard - price data now integrated there"""
-    return redirect(url_for('main.dashboard'))
+    """Price management dashboard"""
+    # Recent price changes
+    recent_changes = ItemPriceHistory.query\
+        .join(Item)\
+        .order_by(ItemPriceHistory.created_at.desc())\
+        .limit(10).all()
+    
+    # Items with significant price changes (>10% in last 30 days)
+    from datetime import datetime, timedelta
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+    
+    significant_changes = db.session.query(ItemPriceHistory)\
+        .join(Item)\
+        .filter(ItemPriceHistory.created_at >= thirty_days_ago)\
+        .order_by(ItemPriceHistory.created_at.desc()).all()
+    
+    # Items without recent price updates (>90 days)
+    ninety_days_ago = datetime.now() - timedelta(days=90)
+    stale_items = db.session.query(Item)\
+        .outerjoin(ItemPriceHistory)\
+        .filter(
+            db.or_(
+                ItemPriceHistory.created_at < ninety_days_ago,
+                ItemPriceHistory.id.is_(None)
+            )
+        )\
+        .filter(Item.item_type == 'material')\
+        .limit(20).all()
+    
+    return render_template('price_management/dashboard.html',
+                         recent_changes=recent_changes,
+                         significant_changes=significant_changes,
+                         stale_items=stale_items)
