@@ -85,14 +85,28 @@ def dashboard():
         total_income = 0
         total_expenses = 0
         
-        # Use basic safe calculations for now
+        # Calculate from actual database values
         try:
-            total_assets = 10000  # Default placeholder
-            total_liabilities = 5000
-            total_income = 25000
-            total_expenses = 15000
+            # Calculate total assets from account balances
+            asset_accounts = Account.query.filter(Account.account_type.in_(['assets', 'current_assets', 'fixed_assets'])).all()
+            total_assets = sum(float(acc.current_balance or 0) for acc in asset_accounts)
+            
+            # Calculate total liabilities from account balances
+            liability_accounts = Account.query.filter(Account.account_type.in_(['liabilities', 'current_liabilities', 'long_term_liabilities'])).all()
+            total_liabilities = sum(float(acc.current_balance or 0) for acc in liability_accounts)
+            
+            # Calculate income and expenses from journal entries for current month
+            income_accounts = Account.query.filter(Account.account_type == 'income').all()
+            expense_accounts = Account.query.filter(Account.account_type == 'expense').all()
+            
+            total_income = sum(float(acc.current_balance or 0) for acc in income_accounts)
+            total_expenses = sum(float(acc.current_balance or 0) for acc in expense_accounts)
         except Exception:
-            pass
+            # Fallback to zero values if no data exists
+            total_assets = 0
+            total_liabilities = 0
+            total_income = 0
+            total_expenses = 0
         
         # Current month transactions
         month_start = datetime(current_year, current_month, 1).date()
@@ -107,9 +121,18 @@ def dashboard():
         except Exception:
             monthly_vouchers = 0
         
-        # Simplified outstanding amounts
-        outstanding_receivables = 5000
-        outstanding_payables = 3000
+        # Calculate outstanding amounts from actual data
+        try:
+            # Outstanding receivables - sum of debit balances in customer accounts
+            customer_accounts = Account.query.filter(Account.account_type == 'customer').all()
+            outstanding_receivables = sum(float(acc.current_balance or 0) for acc in customer_accounts if (acc.current_balance or 0) > 0)
+            
+            # Outstanding payables - sum of credit balances in supplier accounts
+            supplier_accounts = Account.query.filter(Account.account_type == 'supplier').all()
+            outstanding_payables = sum(abs(float(acc.current_balance or 0)) for acc in supplier_accounts if (acc.current_balance or 0) < 0)
+        except Exception:
+            outstanding_receivables = 0
+            outstanding_payables = 0
         
         # Recent transactions
         try:
