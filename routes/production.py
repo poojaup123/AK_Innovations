@@ -1243,14 +1243,43 @@ def bom_tree_view():
     for bom in top_level_boms:
         tree = build_bom_tree(bom)
         
-        # Calculate correct material cost for this BOM
+        # Calculate correct material cost for this BOM using unit_cost instead of purchase price
         material_cost = 0
         for item in bom.items:
-            item_cost = (item.qty_required or 0) * (item.item.unit_price or 0) if item.item else 0
+            quantity = item.qty_required or item.quantity_required or 0
+            unit_cost = item.unit_cost or (item.material.unit_price if item.material else 0) or 0
+            item_cost = quantity * unit_cost
             material_cost += item_cost
         
-        # Calculate correct total cost including labor and freight (per kg basis)
-        labor_cost_per_unit = bom.calculated_labor_cost_per_unit or 0
+        # Calculate labor costs including intermediate BOM processes
+        def calculate_total_labor_cost(current_bom, processed_boms=None):
+            """Recursively calculate labor costs including intermediate BOMs"""
+            if processed_boms is None:
+                processed_boms = set()
+            
+            if current_bom.id in processed_boms:
+                return 0  # Avoid infinite recursion
+            processed_boms.add(current_bom.id)
+            
+            # Direct labor cost from this BOM's processes
+            direct_labor = sum(process.converted_cost_per_unit for process in current_bom.processes) if current_bom.processes else 0
+            
+            # Labor costs from intermediate BOMs (manufactured components)
+            indirect_labor = 0
+            for item in current_bom.items:
+                material_item = getattr(item, 'material', None) or getattr(item, 'item', None)
+                if material_item:
+                    # Check if this material has its own BOM (intermediate product)
+                    material_bom = BOM.query.filter_by(product_id=material_item.id, is_active=True).first()
+                    if material_bom:
+                        # This is a manufactured component, include its labor costs
+                        intermediate_labor = calculate_total_labor_cost(material_bom, processed_boms.copy())
+                        quantity = item.qty_required or item.quantity_required or 0
+                        indirect_labor += intermediate_labor * quantity
+            
+            return direct_labor + indirect_labor
+        
+        labor_cost_per_unit = calculate_total_labor_cost(bom)
         unit_weight = bom.unit_weight or 0.114  # kg per unit
         freight_cost_per_unit_calculated = (bom.freight_cost_per_unit or 10) * unit_weight  # ₹10/kg × 0.114kg = ₹1.14
         overhead_cost_per_unit = bom.overhead_cost_per_unit or 0
