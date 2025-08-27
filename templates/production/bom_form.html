@@ -1667,18 +1667,12 @@
                                 
                                 <!-- Process breakdown -->
                                 <div class="ms-4 mb-2">
+                                    {% for process in bom.processes %}
                                     <div class="d-flex justify-content-between p-1 text-muted small">
-                                        <span>├── Cutting:</span>
-                                        <span>₹{{ "%.4f"|format((bom.labor_cost_per_unit or 0) * 0.25) }}</span>
+                                        <span>{% if loop.last %}└── {% else %}├── {% endif %}{{ process.process_name }}:</span>
+                                        <span>₹{{ "%.4f"|format(process.cost_per_unit or 0) }}</span>
                                     </div>
-                                    <div class="d-flex justify-content-between p-1 text-muted small">
-                                        <span>├── Bending:</span>
-                                        <span>₹{{ "%.4f"|format((bom.labor_cost_per_unit or 0) * 0.25) }}</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between p-1 text-muted small">
-                                        <span>└── Zinc:</span>
-                                        <span>₹{{ "%.4f"|format((bom.labor_cost_per_unit or 0) * 0.50) }}</span>
-                                    </div>
+                                    {% endfor %}
                                 </div>
                                 
                                 <!-- Overhead Cost -->
