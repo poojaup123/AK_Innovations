@@ -3006,7 +3006,14 @@ class BOM(db.Model):
         """Calculate total scrap percentage based on actual weights: scrap weight vs input material weight"""
         # Calculate based on actual weights for accurate scrap percentage
         total_scrap_weight = self.calculated_total_scrap_weight
-        total_input_weight = self.total_weight_per_unit * (self.output_quantity or 1)
+        
+        # Calculate total raw material input weight from BOM items
+        total_input_weight = 0.0
+        for bom_item in self.items:
+            if bom_item.material and bom_item.material.unit_weight:
+                # Total material weight for this batch = material unit weight × quantity required
+                material_weight = bom_item.material.unit_weight * bom_item.qty_required
+                total_input_weight += material_weight
         
         if total_input_weight > 0 and total_scrap_weight > 0:
             scrap_percent = (total_scrap_weight / total_input_weight) * 100
