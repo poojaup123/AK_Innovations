@@ -1998,17 +1998,10 @@ def generate_challan(job_id):
     except ImportError:
         pass
     
-    # Get BOM information if available
-    bom = None
-    if job.item:
-        from models import BOM
-        bom = BOM.query.filter_by(product_id=job.item.id, is_active=True).first()
-    
     return render_template('jobwork/challan.html', 
                          job=job, 
                          company_settings=company_settings,
-                         processes=processes,
-                         bom=bom)
+                         processes=processes)
 
 # Batch Tracking API Endpoints
 @jobwork_bp.route('/api/batches/by-item/<int:item_id>')

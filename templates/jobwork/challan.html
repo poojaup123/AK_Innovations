@@ -179,51 +179,6 @@
             </div>
         </div>
 
-        <!-- BOM Information -->
-        {% if job.item and job.item.bom %}
-        <div class="section-header">
-            <i>📋</i> Bill of Materials (BOM)
-        </div>
-        <div class="section-content">
-            <div style="margin-bottom: 15px;">
-                <strong>BOM:</strong> {{ job.item.bom.bom_code or 'BOM-' + ('%04d'|format(job.item.bom.id)) }}&nbsp;&nbsp;&nbsp;&nbsp;
-                <strong>Revision:</strong> {{ job.item.bom.revision or '1' }}<br>
-                <strong>Product:</strong> {{ job.item.name }}<br>
-                <span style="color: #dc3545; font-weight: bold;">Type: Normal BOM</span>
-            </div>
-            
-            <table>
-                <thead>
-                    <tr>
-                        <th>Component</th>
-                        <th>Qty</th>
-                        <th>UOM</th>
-                        <th>Unit Cost</th>
-                        <th>Total Cost</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% set total_cost = 0.0 %}
-                    {% for bom_item in job.item.bom.items %}
-                        {% set item_total = (bom_item.qty_required or bom_item.quantity_required or 0) * (bom_item.unit_cost or 0) %}
-                        {% set total_cost = total_cost + item_total %}
-                        <tr>
-                            <td>{{ (bom_item.material.name if bom_item.material else (bom_item.item.name if bom_item.item else 'Unknown')) }}</td>
-                            <td>{{ bom_item.qty_required or bom_item.quantity_required or 0 }}</td>
-                            <td>{{ bom_item.unit or (bom_item.uom.symbol if bom_item.uom else 'pcs') }}</td>
-                            <td>₹{{ "%.2f"|format(bom_item.unit_cost or 0) }}</td>
-                            <td>₹{{ "%.2f"|format(item_total) }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            
-            <div style="text-align: right; margin-top: 15px; font-weight: bold; font-size: 14px;">
-                Total Cost: ₹{{ "%.2f"|format(total_cost) }}
-            </div>
-        </div>
-        {% endif %}
-
         <!-- Material Dispatched -->
         <div class="section-header">
             <i>📦</i> Material Dispatched for Job Work
