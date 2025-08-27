@@ -398,7 +398,10 @@
                     My Stock
                 </a>
                 
-                <!-- Price History moved to Price Management Dashboard -->
+                <a class="nav-link {{ 'active' if 'price_management.dashboard' in request.endpoint }}" href="{{ url_for('price_management.dashboard') }}">
+                    <i class="fas fa-chart-line text-success"></i>
+                    Price History
+                </a>
                 
                 <a class="nav-link {{ 'active' if 'batch_tracking' in request.endpoint }}" href="{{ url_for('batch_tracking.dashboard') }}">
                     <i class="fas fa-layer-group text-info"></i>
