@@ -1109,8 +1109,12 @@ def api_bom_tree_data(bom_id):
         # Build tree structure for this BOM
         tree_data = build_single_bom_tree(bom)
         
-        # Calculate comprehensive costs
-        material_cost = sum(item.qty_required * item.unit_cost for item in bom.items if item.qty_required and item.unit_cost) if bom.items else 0
+        # Calculate comprehensive costs using BOM item unit costs, not item purchase prices
+        material_cost = sum(
+            (bom_item.quantity_required or bom_item.qty_required or 0) * 
+            (bom_item.unit_cost or (bom_item.item.unit_price if bom_item.item else 0) or 0)
+            for bom_item in bom.items if bom_item
+        ) if bom.items else 0
         material_cost_per_unit = material_cost / max(bom.output_quantity, 1)
         
         # Calculate actual labor costs from BOM processes (not the potentially incorrect bom.labor_cost_per_unit)
