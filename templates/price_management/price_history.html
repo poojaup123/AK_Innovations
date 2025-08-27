@@ -23,8 +23,9 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-history"></i> Recent Price Changes</h5>
+                    <button id="expandAllBtn" class="btn btn-sm btn-outline-primary" onclick="toggleAllGroups()">Expand All</button>
                 </div>
                 <div class="card-body">
                     {% if history and history.items %}
@@ -52,9 +53,16 @@
                                     
                                     {% for item_name, item_data in grouped_items.items() %}
                                         {% set sorted_records = item_data.records|sort(attribute='created_at', reverse=true) %}
-                                        <tr>
-                                            <td rowspan="{{ sorted_records|length }}">
-                                                <strong>{{ item_data.item.name }}</strong>
+                                        {% set group_id = item_name|replace(' ', '_')|replace('.', '_') %}
+                                        <tr class="group-header" onclick="toggleGroup('{{ group_id }}')" style="cursor: pointer;">
+                                            <td>
+                                                <strong>
+                                                    <i class="fas fa-chevron-down toggle-icon" id="icon_{{ group_id }}"></i>
+                                                    {{ item_data.item.name }}
+                                                    {% if sorted_records|length > 1 %}
+                                                        <span class="badge bg-secondary ms-2">{{ sorted_records|length }} changes</span>
+                                                    {% endif %}
+                                                </strong>
                                                 <br><small class="text-muted">{{ item_data.item.code }}</small>
                                             </td>
                                             <td>{{ sorted_records[0].created_at.strftime('%Y-%m-%d %H:%M') if sorted_records[0].created_at else 'N/A' }}</td>
@@ -64,7 +72,10 @@
                                             <td>{{ sorted_records[0].user.username if sorted_records[0].user else 'System' }}</td>
                                         </tr>
                                         {% for record in sorted_records[1:] %}
-                                        <tr class="table-light">
+                                        <tr class="group-detail table-light" id="detail_{{ group_id }}_{{ loop.index }}">
+                                            <td style="padding-left: 30px;">
+                                                <small class="text-muted">Previous Price</small>
+                                            </td>
                                             <td>{{ record.created_at.strftime('%Y-%m-%d %H:%M') if record.created_at else 'N/A' }}</td>
                                             <td><span class="fw-bold text-secondary">₹{{ "%.2f"|format(record.price or 0) }}</span></td>
                                             <td><span class="badge bg-secondary">{{ record.price_type or 'standard' }}</span></td>
@@ -126,4 +137,90 @@
         </div>
     </div>
 </div>
+
+<script>
+function toggleGroup(groupId) {
+    const icon = document.getElementById('icon_' + groupId);
+    const detailRows = document.querySelectorAll('[id^="detail_' + groupId + '_"]');
+    
+    let isExpanded = icon.classList.contains('fa-chevron-down');
+    
+    detailRows.forEach(row => {
+        if (isExpanded) {
+            row.style.display = 'none';
+        } else {
+            row.style.display = '';
+        }
+    });
+    
+    if (isExpanded) {
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-right');
+    } else {
+        icon.classList.remove('fa-chevron-right');
+        icon.classList.add('fa-chevron-down');
+    }
+}
+
+// Initialize - collapse all groups by default
+document.addEventListener('DOMContentLoaded', function() {
+    const groupHeaders = document.querySelectorAll('.group-header');
+    groupHeaders.forEach(header => {
+        const groupId = header.getAttribute('onclick').match(/'([^']+)'/)[1];
+        const detailRows = document.querySelectorAll('[id^="detail_' + groupId + '_"]');
+        if (detailRows.length > 0) {
+            detailRows.forEach(row => row.style.display = 'none');
+            const icon = document.getElementById('icon_' + groupId);
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-right');
+        }
+    });
+});
+
+// Add button to expand/collapse all
+function toggleAllGroups() {
+    const groupHeaders = document.querySelectorAll('.group-header');
+    const expandAllBtn = document.getElementById('expandAllBtn');
+    const isExpandingAll = expandAllBtn.textContent.includes('Expand');
+    
+    groupHeaders.forEach(header => {
+        const groupId = header.getAttribute('onclick').match(/'([^']+)'/)[1];
+        const detailRows = document.querySelectorAll('[id^="detail_' + groupId + '_"]');
+        const icon = document.getElementById('icon_' + groupId);
+        
+        if (detailRows.length > 0) {
+            detailRows.forEach(row => {
+                row.style.display = isExpandingAll ? '' : 'none';
+            });
+            
+            if (isExpandingAll) {
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-right');
+            }
+        }
+    });
+    
+    expandAllBtn.textContent = isExpandingAll ? 'Collapse All' : 'Expand All';
+    expandAllBtn.className = isExpandingAll ? 'btn btn-sm btn-outline-secondary' : 'btn btn-sm btn-outline-primary';
+}
+</script>
+
+<style>
+.group-header:hover {
+    background-color: #f8f9fa !important;
+}
+
+.toggle-icon {
+    width: 12px;
+    margin-right: 8px;
+}
+
+.group-detail {
+    border-left: 3px solid #e9ecef;
+}
+</style>
+
 {% endblock %}
