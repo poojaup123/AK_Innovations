@@ -90,10 +90,10 @@ def dashboard():
         expiring_soon = OptimizedBatchQueries.get_expiring_batches_fast(30, 10)
         movement_analysis = OptimizedBatchQueries.get_movement_analysis_fast(date_from_obj, 10)
     except Exception as e:
-        # Fallback to basic data if optimized queries fail
-        stats = {'total_batches': 3, 'active_batches': 3, 'pending_inspection': 0, 'expired_batches': 0, 'todays_movements': 0}
+        # Fallback to empty data if optimized queries fail (e.g., after reset)
+        stats = {'total_batches': 0, 'active_batches': 0, 'pending_inspection': 0, 'expired_batches': 0, 'todays_movements': 0}
         recent_movements = []
-        batch_status = {'raw_materials': '800.00', 'wip_materials': '0.00', 'finished_materials': '0.00', 'good_batches': 3, 'pending_batches': 0}
+        batch_status = {'raw_materials': '0.00', 'wip_materials': '0.00', 'finished_materials': '0.00', 'good_batches': 0, 'pending_batches': 0}
         low_stock_items = []
         expiring_soon = []
         movement_analysis = {'total_value': 0}
