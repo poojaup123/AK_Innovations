@@ -28,67 +28,34 @@
                 </div>
                 <div class="card-body">
                     {% if history and history.items %}
-                        {% set grouped_history = {} %}
-                        {% for record in history.items %}
-                            {% if record.item.name not in grouped_history %}
-                                {% if grouped_history.update({record.item.name: {'item': record.item, 'records': []}}) %}{% endif %}
-                            {% endif %}
-                            {% if grouped_history[record.item.name].records.append(record) %}{% endif %}
-                        {% endfor %}
-                        
-                        <div class="row">
-                            {% for item_name, item_data in grouped_history.items() %}
-                            <div class="col-md-6 mb-4">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h6 class="mb-0">
-                                            <strong>{{ item_data.item.name }}</strong>
-                                            <br><small class="text-muted">{{ item_data.item.code }}</small>
-                                        </h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="price-timeline">
-                                            {% for record in item_data.records|sort(attribute='created_at', reverse=true) %}
-                                            <div class="d-flex justify-content-between align-items-center mb-2 {% if loop.first %}border-bottom pb-2{% endif %}">
-                                                <div>
-                                                    <span class="fw-bold text-primary">₹{{ "%.2f"|format(record.price or 0) }}</span>
-                                                    <small class="text-muted d-block">{{ record.created_at.strftime('%Y-%m-%d') if record.created_at else 'N/A' }}</small>
-                                                </div>
-                                                <div class="text-end">
-                                                    <span class="badge bg-{{ 'success' if loop.first else 'secondary' }} mb-1">{{ record.price_type or 'standard' }}</span>
-                                                    <br><small class="text-muted">{{ record.source or 'Manual' }}</small>
-                                                </div>
-                                            </div>
-                                            {% endfor %}
-                                        </div>
-                                        {% if item_data.records|length > 1 %}
-                                        {% set sorted_records = item_data.records|sort(attribute='created_at', reverse=true) %}
-                                        {% set latest_price = sorted_records|first %}
-                                        {% set price_change = 0 %}
-                                        {% for record in sorted_records %}
-                                            {% if loop.index == 2 %}
-                                                {% set price_change = (latest_price.price or 0) - (record.price or 0) %}
-                                            {% endif %}
-                                        {% endfor %}
-                                        <div class="mt-2 pt-2 border-top">
-                                            <small class="text-muted">Price Change: </small>
-                                            {% if price_change > 0 %}
-                                                <span class="text-success">
-                                                    <i class="fas fa-arrow-up"></i> +₹{{ "%.2f"|format(price_change) }}
-                                                </span>
-                                            {% elif price_change < 0 %}
-                                                <span class="text-danger">
-                                                    <i class="fas fa-arrow-down"></i> ₹{{ "%.2f"|format(price_change) }}
-                                                </span>
-                                            {% else %}
-                                                <span class="text-muted">No change</span>
-                                            {% endif %}
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Date</th>
+                                        <th>Price</th>
+                                        <th>Price Type</th>
+                                        <th>Source</th>
+                                        <th>Updated By</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in history.items %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ record.item.name }}</strong>
+                                            <br><small class="text-muted">{{ record.item.code }}</small>
+                                        </td>
+                                        <td>{{ record.created_at.strftime('%Y-%m-%d %H:%M') if record.created_at else 'N/A' }}</td>
+                                        <td><span class="fw-bold text-primary">₹{{ "%.2f"|format(record.price or 0) }}</span></td>
+                                        <td><span class="badge bg-secondary">{{ record.price_type or 'standard' }}</span></td>
+                                        <td><span class="badge bg-info">{{ record.source or 'Manual' }}</span></td>
+                                        <td>{{ record.user.username if record.user else 'System' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                         
                         <!-- Pagination -->
