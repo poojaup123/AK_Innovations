@@ -215,23 +215,26 @@ def api_bulk_update():
 @bp.route('/history')
 @login_required
 def price_history():
-    """Price change history with cascading information"""
+    """Unified price change history - All price changes in one place"""
     from datetime import datetime, timedelta
     
     page = request.args.get('page', 1, type=int)
+    price_category = request.args.get('price_category', '')  # material, jobwork, labor, all
     price_type = request.args.get('price_type', '')
     date_range = request.args.get('date_range', '')
     start_date = request.args.get('start_date', '')
     end_date = request.args.get('end_date', '')
     
-    # Build the base query
-    query = ItemPriceHistory.query.join(Item)
+    # Collect all price changes from different sources
+    all_price_changes = []
     
-    # Apply price type filter
-    if price_type:
-        query = query.filter(ItemPriceHistory.price_type == price_type)
+    # 1. Material Price History (existing)
+    material_query = ItemPriceHistory.query.join(Item)
     
-    # Apply date filters
+    # Apply filters to material query
+    if price_type and price_category in ('', 'material'):
+        material_query = material_query.filter(ItemPriceHistory.price_type == price_type)
+    
     if date_range:
         today = datetime.now()
         if date_range == '6months':
@@ -246,43 +249,195 @@ def price_history():
             start_filter = None
             
         if start_filter:
-            query = query.filter(ItemPriceHistory.created_at >= start_filter)
+            material_query = material_query.filter(ItemPriceHistory.created_at >= start_filter)
     
-    # Apply custom date range if provided
     if start_date:
         try:
             start_filter = datetime.strptime(start_date, '%Y-%m-%d')
-            query = query.filter(ItemPriceHistory.created_at >= start_filter)
+            material_query = material_query.filter(ItemPriceHistory.created_at >= start_filter)
         except ValueError:
             pass
     
     if end_date:
         try:
             end_filter = datetime.strptime(end_date, '%Y-%m-%d')
-            # Add one day to include the end date
             end_filter = end_filter + timedelta(days=1)
-            query = query.filter(ItemPriceHistory.created_at < end_filter)
+            material_query = material_query.filter(ItemPriceHistory.created_at < end_filter)
         except ValueError:
             pass
     
-    # Get price history with pagination
-    history = query.order_by(ItemPriceHistory.created_at.desc())\
-        .paginate(page=page, per_page=50, error_out=False)
+    # Get material price changes
+    if price_category in ('', 'material'):
+        material_history = material_query.order_by(ItemPriceHistory.created_at.desc()).all()
+        
+        for record in material_history:
+            all_price_changes.append({
+                'type': 'material',
+                'category': 'Material Price',
+                'item_name': record.item.name if record.item else 'Unknown',
+                'item_code': record.item.code if record.item else '',
+                'price': record.price,
+                'price_type': record.price_type or 'standard',
+                'source': record.source or 'Manual',
+                'date': record.created_at,
+                'updated_by': getattr(record, 'updated_by', 'System'),
+                'details': f"Material: {record.item.name if record.item else 'Unknown'}",
+                'vendor_name': '-'
+            })
     
-    # Get unique price types for filter dropdown
-    price_types = db.session.query(ItemPriceHistory.price_type)\
-        .distinct()\
-        .order_by(ItemPriceHistory.price_type)\
-        .all()
-    price_types = [pt[0] for pt in price_types if pt[0]]
+    # 2. Job Work Rates History
+    if price_category in ('', 'jobwork'):
+        try:
+            from models import JobWorkRate
+            jobwork_rates = JobWorkRate.query.join(Item, JobWorkRate.item_id == Item.id).all()
+            
+            for rate in jobwork_rates:
+                # Apply date filters if any
+                should_include = True
+                if start_date:
+                    try:
+                        start_filter = datetime.strptime(start_date, '%Y-%m-%d')
+                        if rate.created_at < start_filter:
+                            should_include = False
+                    except (ValueError, AttributeError):
+                        pass
+                
+                if should_include and end_date:
+                    try:
+                        end_filter = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+                        if rate.created_at >= end_filter:
+                            should_include = False
+                    except (ValueError, AttributeError):
+                        pass
+                
+                if should_include and date_range:
+                    today = datetime.now()
+                    if date_range == '6months' and rate.created_at < (today - timedelta(days=180)):
+                        should_include = False
+                    elif date_range == '1year' and rate.created_at < (today - timedelta(days=365)):
+                        should_include = False
+                    elif date_range == '2years' and rate.created_at < (today - timedelta(days=730)):
+                        should_include = False
+                    elif date_range == '5years' and rate.created_at < (today - timedelta(days=1825)):
+                        should_include = False
+                
+                if should_include:
+                    all_price_changes.append({
+                        'type': 'jobwork',
+                        'category': 'Job Work Rate',
+                        'item_name': rate.item.name if rate.item else 'Unknown',
+                        'item_code': rate.item.code if rate.item else '',
+                        'price': rate.rate_per_unit,
+                        'price_type': rate.process_type or 'general',
+                        'source': 'Job Work Rate',
+                        'date': rate.created_at or rate.updated_at,
+                        'updated_by': 'Admin',
+                        'details': f"Process: {rate.process_type or 'General'} | Vendor: {rate.vendor_name or 'Any'}",
+                        'vendor_name': rate.vendor_name or '-'
+                    })
+        except ImportError:
+            pass  # JobWorkRate model not available
+    
+    # 3. Job Work Order Rates (actual rates used in orders)
+    if price_category in ('', 'jobwork'):
+        try:
+            from models import JobWork
+            job_works = JobWork.query.join(Item, JobWork.item_id == Item.id).all()
+            
+            for job in job_works:
+                # Apply date filters
+                should_include = True
+                job_date = job.created_at or job.sent_date
+                
+                if start_date:
+                    try:
+                        start_filter = datetime.strptime(start_date, '%Y-%m-%d')
+                        if job_date < start_filter:
+                            should_include = False
+                    except (ValueError, AttributeError):
+                        pass
+                
+                if should_include and end_date:
+                    try:
+                        end_filter = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+                        if job_date >= end_filter:
+                            should_include = False
+                    except (ValueError, AttributeError):
+                        pass
+                
+                if should_include and date_range:
+                    today = datetime.now()
+                    if date_range == '6months' and job_date < (today - timedelta(days=180)):
+                        should_include = False
+                    elif date_range == '1year' and job_date < (today - timedelta(days=365)):
+                        should_include = False
+                    elif date_range == '2years' and job_date < (today - timedelta(days=730)):
+                        should_include = False
+                    elif date_range == '5years' and job_date < (today - timedelta(days=1825)):
+                        should_include = False
+                
+                if should_include and job.rate_per_unit > 0:
+                    all_price_changes.append({
+                        'type': 'jobwork_order',
+                        'category': 'Job Work Order',
+                        'item_name': job.item.name if job.item else 'Unknown',
+                        'item_code': job.item.code if job.item else '',
+                        'price': job.rate_per_unit,
+                        'price_type': job.process or 'general',
+                        'source': 'Job Work Order',
+                        'date': job_date,
+                        'updated_by': 'System',
+                        'details': f"Job: {job.job_number} | Process: {job.process or 'General'} | Qty: {job.quantity_sent}",
+                        'vendor_name': job.customer_name or '-'
+                    })
+        except ImportError:
+            pass
+    
+    # Sort all price changes by date (newest first)
+    all_price_changes.sort(key=lambda x: x['date'] or datetime.min, reverse=True)
+    
+    # Pagination for consolidated results
+    per_page = 50
+    total = len(all_price_changes)
+    start = (page - 1) * per_page
+    end = start + per_page
+    current_page_items = all_price_changes[start:end]
+    
+    # Create pagination object manually
+    class SimplePagination:
+        def __init__(self, items, page, per_page, total):
+            self.items = items
+            self.page = page
+            self.per_page = per_page
+            self.total = total
+            self.pages = (total + per_page - 1) // per_page
+            self.prev_num = page - 1 if page > 1 else None
+            self.next_num = page + 1 if page < self.pages else None
+            self.has_prev = page > 1
+            self.has_next = page < self.pages
+    
+    history = SimplePagination(current_page_items, page, per_page, total)
+    
+    # Get available price types and categories
+    price_types = list(set([item['price_type'] for item in all_price_changes if item['price_type']]))
+    price_types.sort()
+    
+    price_categories = [
+        ('', 'All Categories'),
+        ('material', 'Material Prices'),
+        ('jobwork', 'Job Work Rates')
+    ]
     
     return render_template('price_management/price_history.html', 
                          history=history, 
                          price_types=price_types,
+                         price_categories=price_categories,
                          current_price_type=price_type,
+                         current_price_category=price_category,
                          current_date_range=date_range,
                          current_start_date=start_date,
-                         current_end_date=end_date)
+                         current_end_date=end_date,
+                         is_unified=True)
 
 @bp.route('/dashboard')
 @login_required

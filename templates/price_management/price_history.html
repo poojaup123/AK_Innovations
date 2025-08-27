@@ -31,17 +31,26 @@
                     
                     <!-- Filters -->
                     <form method="GET" class="row g-2">
-                        <div class="col-md-3">
-                            <select name="price_type" class="form-select form-select-sm">
-                                <option value="">All Price Types</option>
-                                {% for ptype in price_types %}
-                                <option value="{{ ptype }}" {% if ptype == current_price_type %}selected{% endif %}>
-                                    {{ ptype.title() }} Price
+                        <div class="col-md-2">
+                            <select name="price_category" class="form-select form-select-sm">
+                                {% for value, label in price_categories %}
+                                <option value="{{ value }}" {% if value == current_price_category %}selected{% endif %}>
+                                    {{ label }}
                                 </option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
+                            <select name="price_type" class="form-select form-select-sm">
+                                <option value="">All Types</option>
+                                {% for ptype in price_types %}
+                                <option value="{{ ptype }}" {% if ptype == current_price_type %}selected{% endif %}>
+                                    {{ ptype.title() }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
                             <select name="date_range" class="form-select form-select-sm" id="dateRangeSelect">
                                 <option value="">All Time</option>
                                 <option value="6months" {% if current_date_range == '6months' %}selected{% endif %}>Last 6 Months</option>
@@ -51,11 +60,11 @@
                                 <option value="custom" {% if current_start_date or current_end_date %}selected{% endif %}>Custom Range</option>
                             </select>
                         </div>
-                        <div class="col-md-2" id="startDateCol" style="display: {% if current_start_date or current_end_date %}block{% else %}none{% endif %};">
+                        <div class="col-md-1" id="startDateCol" style="display: {% if current_start_date or current_end_date %}block{% else %}none{% endif %};">
                             <input type="date" name="start_date" class="form-control form-control-sm" 
                                    placeholder="Start Date" value="{{ current_start_date }}">
                         </div>
-                        <div class="col-md-2" id="endDateCol" style="display: {% if current_start_date or current_end_date %}block{% else %}none{% endif %};">
+                        <div class="col-md-1" id="endDateCol" style="display: {% if current_start_date or current_end_date %}block{% else %}none{% endif %};">
                             <input type="date" name="end_date" class="form-control form-control-sm" 
                                    placeholder="End Date" value="{{ current_end_date }}">
                         </div>
@@ -75,57 +84,122 @@
                             <table class="table table-hover">
                                 <thead class="table-dark">
                                     <tr>
-                                        <th>Item</th>
+                                        <th>Category</th>
+                                        <th>Item/Service</th>
                                         <th>Date</th>
                                         <th>Price</th>
-                                        <th>Price Type</th>
-                                        <th>Source</th>
+                                        <th>Type</th>
+                                        <th>Vendor/Source</th>
+                                        <th>Details</th>
                                         <th>Updated By</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% set grouped_items = {} %}
-                                    {% for record in history.items %}
-                                        {% set item_key = record.item.name %}
-                                        {% if item_key not in grouped_items %}
-                                            {% set _ = grouped_items.update({item_key: {'item': record.item, 'records': []}}) %}
-                                        {% endif %}
-                                        {% set _ = grouped_items[item_key].records.append(record) %}
-                                    {% endfor %}
-                                    
-                                    {% for item_name, item_data in grouped_items.items() %}
-                                        {% set sorted_records = item_data.records|sort(attribute='created_at', reverse=true) %}
-                                        {% set group_id = item_name|replace(' ', '_')|replace('.', '_') %}
-                                        <tr class="group-header" onclick="toggleGroup('{{ group_id }}')" style="cursor: pointer;">
-                                            <td>
-                                                <strong>
-                                                    <i class="fas fa-chevron-down toggle-icon" id="icon_{{ group_id }}"></i>
-                                                    {{ item_data.item.name }}
-                                                    {% if sorted_records|length > 1 %}
-                                                        <span class="badge bg-secondary ms-2">{{ sorted_records|length }} changes</span>
-                                                    {% endif %}
-                                                </strong>
-                                                <br><small class="text-muted">{{ item_data.item.code }}</small>
-                                            </td>
-                                            <td>{{ sorted_records[0].created_at.strftime('%Y-%m-%d %H:%M') if sorted_records[0].created_at else 'N/A' }}</td>
-                                            <td><span class="fw-bold text-primary">₹{{ "%.2f"|format(sorted_records[0].price or 0) }}</span></td>
-                                            <td><span class="badge bg-secondary">{{ sorted_records[0].price_type or 'standard' }}</span></td>
-                                            <td><span class="badge bg-info">{{ sorted_records[0].source or 'Manual' }}</span></td>
-                                            <td>{{ sorted_records[0].user.username if sorted_records[0].user else 'System' }}</td>
-                                        </tr>
-                                        {% for record in sorted_records[1:] %}
-                                        <tr class="group-detail table-light" id="detail_{{ group_id }}_{{ loop.index }}">
-                                            <td style="padding-left: 30px;">
-                                                <small class="text-muted">Previous Price</small>
-                                            </td>
-                                            <td>{{ record.created_at.strftime('%Y-%m-%d %H:%M') if record.created_at else 'N/A' }}</td>
-                                            <td><span class="fw-bold text-secondary">₹{{ "%.2f"|format(record.price or 0) }}</span></td>
-                                            <td><span class="badge bg-secondary">{{ record.price_type or 'standard' }}</span></td>
-                                            <td><span class="badge bg-info">{{ record.source or 'Manual' }}</span></td>
-                                            <td>{{ record.user.username if record.user else 'System' }}</td>
-                                        </tr>
+                                    {% if is_unified %}
+                                        {# Unified view - show all price changes #}
+                                        {% set grouped_items = {} %}
+                                        {% for record in history.items %}
+                                            {% set item_key = record.item_name %}
+                                            {% if item_key not in grouped_items %}
+                                                {% set _ = grouped_items.update({item_key: {'item_name': record.item_name, 'item_code': record.item_code, 'records': []}}) %}
+                                            {% endif %}
+                                            {% set _ = grouped_items[item_key].records.append(record) %}
                                         {% endfor %}
-                                    {% endfor %}
+                                        
+                                        {% for item_name, item_data in grouped_items.items() %}
+                                            {% set sorted_records = item_data.records|sort(attribute='date', reverse=true) %}
+                                            {% set group_id = item_name|replace(' ', '_')|replace('.', '_')|replace('/', '_') %}
+                                            <tr class="group-header" onclick="toggleGroup('{{ group_id }}')" style="cursor: pointer;">
+                                                <td>
+                                                    <span class="badge bg-primary">{{ sorted_records[0].category }}</span>
+                                                </td>
+                                                <td>
+                                                    <strong>
+                                                        <i class="fas fa-chevron-down toggle-icon" id="icon_{{ group_id }}"></i>
+                                                        {{ item_data.item_name }}
+                                                        {% if sorted_records|length > 1 %}
+                                                            <span class="badge bg-secondary ms-2">{{ sorted_records|length }} changes</span>
+                                                        {% endif %}
+                                                    </strong>
+                                                    <br><small class="text-muted">{{ item_data.item_code }}</small>
+                                                </td>
+                                                <td>{{ sorted_records[0].date.strftime('%Y-%m-%d %H:%M') if sorted_records[0].date else 'N/A' }}</td>
+                                                <td><span class="fw-bold text-primary">₹{{ "%.2f"|format(sorted_records[0].price or 0) }}</span></td>
+                                                <td><span class="badge bg-secondary">{{ sorted_records[0].price_type }}</span></td>
+                                                <td><span class="badge bg-info">{{ sorted_records[0].vendor_name }}</span></td>
+                                                <td><small>{{ sorted_records[0].details }}</small></td>
+                                                <td>{{ sorted_records[0].updated_by }}</td>
+                                            </tr>
+                                            {% for record in sorted_records[1:] %}
+                                            <tr class="group-detail table-light" id="detail_{{ group_id }}_{{ loop.index }}">
+                                                <td>
+                                                    <span class="badge bg-outline-primary">{{ record.category }}</span>
+                                                </td>
+                                                <td style="padding-left: 30px;">
+                                                    <small class="text-muted">Previous Price</small>
+                                                </td>
+                                                <td>{{ record.date.strftime('%Y-%m-%d %H:%M') if record.date else 'N/A' }}</td>
+                                                <td><span class="fw-bold text-secondary">₹{{ "%.2f"|format(record.price or 0) }}</span></td>
+                                                <td><span class="badge bg-secondary">{{ record.price_type }}</span></td>
+                                                <td><span class="badge bg-info">{{ record.vendor_name }}</span></td>
+                                                <td><small>{{ record.details }}</small></td>
+                                                <td>{{ record.updated_by }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    {% else %}
+                                        {# Original material-only view #}
+                                        {% set grouped_items = {} %}
+                                        {% for record in history.items %}
+                                            {% set item_key = record.item.name if record.item else 'Unknown' %}
+                                            {% if item_key not in grouped_items %}
+                                                {% set _ = grouped_items.update({item_key: {'item': record.item, 'records': []}}) %}
+                                            {% endif %}
+                                            {% set _ = grouped_items[item_key].records.append(record) %}
+                                        {% endfor %}
+                                        
+                                        {% for item_name, item_data in grouped_items.items() %}
+                                            {% set sorted_records = item_data.records|sort(attribute='created_at', reverse=true) %}
+                                            {% set group_id = item_name|replace(' ', '_')|replace('.', '_') %}
+                                            <tr class="group-header" onclick="toggleGroup('{{ group_id }}')" style="cursor: pointer;">
+                                                <td>
+                                                    <span class="badge bg-success">Material</span>
+                                                </td>
+                                                <td>
+                                                    <strong>
+                                                        <i class="fas fa-chevron-down toggle-icon" id="icon_{{ group_id }}"></i>
+                                                        {{ item_data.item.name }}
+                                                        {% if sorted_records|length > 1 %}
+                                                            <span class="badge bg-secondary ms-2">{{ sorted_records|length }} changes</span>
+                                                        {% endif %}
+                                                    </strong>
+                                                    <br><small class="text-muted">{{ item_data.item.code }}</small>
+                                                </td>
+                                                <td>{{ sorted_records[0].created_at.strftime('%Y-%m-%d %H:%M') if sorted_records[0].created_at else 'N/A' }}</td>
+                                                <td><span class="fw-bold text-primary">₹{{ "%.2f"|format(sorted_records[0].price or 0) }}</span></td>
+                                                <td><span class="badge bg-secondary">{{ sorted_records[0].price_type or 'standard' }}</span></td>
+                                                <td><span class="badge bg-info">{{ sorted_records[0].source or 'Manual' }}</span></td>
+                                                <td><small>Material price change</small></td>
+                                                <td>{{ sorted_records[0].user.username if sorted_records[0].user else 'System' }}</td>
+                                            </tr>
+                                            {% for record in sorted_records[1:] %}
+                                            <tr class="group-detail table-light" id="detail_{{ group_id }}_{{ loop.index }}">
+                                                <td>
+                                                    <span class="badge bg-outline-success">Material</span>
+                                                </td>
+                                                <td style="padding-left: 30px;">
+                                                    <small class="text-muted">Previous Price</small>
+                                                </td>
+                                                <td>{{ record.created_at.strftime('%Y-%m-%d %H:%M') if record.created_at else 'N/A' }}</td>
+                                                <td><span class="fw-bold text-secondary">₹{{ "%.2f"|format(record.price or 0) }}</span></td>
+                                                <td><span class="badge bg-secondary">{{ record.price_type or 'standard' }}</span></td>
+                                                <td><span class="badge bg-info">{{ record.source or 'Manual' }}</span></td>
+                                                <td><small>Previous material price</small></td>
+                                                <td>{{ record.user.username if record.user else 'System' }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    {% endif %}
                                 </tbody>
                             </table>
                         </div>
