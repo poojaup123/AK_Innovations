@@ -696,7 +696,7 @@ def dashboard():
             'price_type': record.price_type or 'standard',
             'vendor_name': record.source or 'Manual',
             'details': f"Material: {record.item.name if record.item else 'Unknown'}",
-            'updated_by': record.user.username if record.user else 'System',
+            'updated_by': record.creator.username if record.creator else 'System',
             'category': 'Material Price',
             'batch_number': '-'
         }
