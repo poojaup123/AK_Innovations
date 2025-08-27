@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from forms import JobWorkForm, JobWorkQuantityUpdateForm, DailyJobWorkForm, JobWorkTeamAssignmentForm, JobWorkBatchReturnForm
-from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings, DailyJobWorkEntry, JobWorkTeamAssignment, Employee, JobWorkBatch, ItemBatch
-from models.batch import BatchMovementLedger, BatchConsumptionReport
+from models import JobWork, Supplier, Item, BOM, BOMItem, CompanySettings, DailyJobWorkEntry, JobWorkTeamAssignment, Employee, JobWorkBatch
+from models.batch import InventoryBatch, BatchMovementLedger, BatchConsumptionReport
 from utils.batch_tracking import BatchTracker, BatchValidator, get_batch_options_for_item_api, validate_batch_selection_api
 from services.batch_management import BatchManager, BatchValidator as BatchValidatorService
 from app import db
@@ -290,25 +290,25 @@ def api_get_item_batches(item_id):
         item = Item.query.get_or_404(item_id)
         
         # Get available batches with raw material quantity
-        available_batches = ItemBatch.query.filter(
-            ItemBatch.item_id == item_id,
-            ItemBatch.qty_raw > 0,
-            ItemBatch.quality_status.in_(['good', 'pending_inspection'])
-        ).order_by(ItemBatch.manufacture_date.asc()).all()  # FIFO order
+        available_batches = InventoryBatch.query.filter(
+            InventoryBatch.item_id == item_id,
+            InventoryBatch.qty_raw > 0,
+            InventoryBatch.inspection_status.in_(['passed', 'pending'])
+        ).order_by(InventoryBatch.mfg_date.asc()).all()  # FIFO order
         
         batches_data = []
         for batch in available_batches:
             batches_data.append({
                 'id': batch.id,
-                'batch_number': batch.batch_number,
-                'supplier_batch': batch.supplier_batch or '',
-                'manufacture_date': batch.manufacture_date.isoformat() if batch.manufacture_date else '',
+                'batch_number': batch.batch_code,
+                'supplier_batch': batch.supplier_batch_no or '',
+                'manufacture_date': batch.mfg_date.isoformat() if batch.mfg_date else '',
                 'expiry_date': batch.expiry_date.isoformat() if batch.expiry_date else '',
                 'available_quantity': batch.qty_raw or 0,
                 'unit_of_measure': item.unit_of_measure,
-                'quality_status': batch.quality_status,
-                'storage_location': batch.storage_location or 'Default',
-                'unit_cost': batch.unit_cost or 0,
+                'quality_status': batch.inspection_status,
+                'storage_location': batch.location or 'Default',
+                'unit_cost': batch.purchase_rate or 0,
                 'is_expiring_soon': batch.expiry_date and batch.expiry_date <= (datetime.now().date() + timedelta(days=7)) if batch.expiry_date else False
             })
         
@@ -2010,7 +2010,7 @@ def get_batches_by_item(item_id):
     """Get available batches for a specific item"""
     try:
         # Filter batches with available quantities (raw + finished)
-        batches = ItemBatch.query.filter_by(item_id=item_id).all()
+        batches = InventoryBatch.query.filter_by(item_id=item_id).all()
         
         # Filter batches with available quantity using Python (since available_quantity is a property)
         available_batches = [batch for batch in batches if batch.available_quantity > 0]
@@ -2018,19 +2018,19 @@ def get_batches_by_item(item_id):
         batch_data = []
         for batch in available_batches:
             # Debug batch quantities
-            print(f"Batch {batch.batch_number}: raw={batch.qty_raw}, finished={batch.qty_finished}, available={batch.available_quantity}")
+            print(f"Batch {batch.batch_code}: raw={batch.qty_raw}, finished={batch.qty_finished}, available={batch.available_quantity}")
             
             batch_data.append({
                 'id': batch.id,
-                'batch_number': batch.batch_number,
+                'batch_number': batch.batch_code,
                 'qty_available': batch.available_quantity,  # Use property
                 'available_quantity': batch.available_quantity,  # Duplicate for compatibility
                 'qty_raw': batch.qty_raw or 0,
                 'qty_finished': batch.qty_finished or 0,
-                'manufacture_date': batch.manufacture_date.isoformat() if batch.manufacture_date else None,
+                'manufacture_date': batch.mfg_date.isoformat() if batch.mfg_date else None,
                 'expiry_date': batch.expiry_date.isoformat() if batch.expiry_date else None,
-                'quality_status': batch.quality_status or 'good',
-                'storage_location': batch.storage_location or 'Default'
+                'quality_status': batch.inspection_status or 'passed',
+                'storage_location': batch.location or 'Default'
             })
         
         return jsonify({
@@ -2048,22 +2048,22 @@ def get_batches_by_item(item_id):
 def get_batch_details(batch_id):
     """Get detailed information about a specific batch"""
     try:
-        batch = ItemBatch.query.get_or_404(batch_id)
+        batch = InventoryBatch.query.get_or_404(batch_id)
         
         return jsonify({
             'success': True,
             'batch': {
                 'id': batch.id,
-                'batch_number': batch.batch_number,
+                'batch_number': batch.batch_code,
                 'item_id': batch.item_id,
                 'item_name': batch.item.name if batch.item else 'Unknown',
                 'qty_available': batch.available_quantity,  # Use property
                 'qty_total': batch.total_quantity,  # Use property
-                'manufacture_date': batch.manufacture_date.isoformat() if batch.manufacture_date else None,
+                'manufacture_date': batch.mfg_date.isoformat() if batch.mfg_date else None,
                 'expiry_date': batch.expiry_date.isoformat() if batch.expiry_date else None,
-                'quality_status': batch.quality_status or 'good',
-                'storage_location': batch.storage_location or 'Default',
-                'supplier_batch': batch.supplier_batch or '',
+                'quality_status': batch.inspection_status or 'passed',
+                'storage_location': batch.location or 'Default',
+                'supplier_batch': batch.supplier_batch_no or '',
                 'purchase_rate': float(batch.purchase_rate) if batch.purchase_rate else 0.0
             }
         })

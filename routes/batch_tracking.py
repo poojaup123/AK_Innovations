@@ -7,7 +7,7 @@ from flask import Blueprint, render_template, request, jsonify, flash, redirect,
 from flask_login import login_required, current_user
 from app import db
 from models import Item, JobWork
-from models.batch import InventoryBatch, BatchMovement
+from models.batch import InventoryBatch, BatchMovement, JobWorkBatch, BatchMovementLedger
 from utils.batch_tracking import BatchTracker, BatchValidator
 from sqlalchemy import func, and_, or_, desc
 from datetime import datetime, timedelta
@@ -38,7 +38,8 @@ def reset_batch_data():
             qty_finished=0.0,
             qty_scrap=5.0,
             location='MAIN-STORE',
-            inspection_status='passed'
+            inspection_status='passed',
+            uom=item.unit_of_measure or 'PCS'
         )
         
         batch2 = InventoryBatch(
@@ -48,7 +49,8 @@ def reset_batch_data():
             qty_finished=50.0,
             qty_scrap=2.0,
             location='FINISHED-GOODS',
-            inspection_status='passed'
+            inspection_status='passed',
+            uom=item.unit_of_measure or 'PCS'
         )
         
         db.session.add(batch1)
@@ -273,7 +275,6 @@ def traceability_report():
         if batch_id:
             batch = InventoryBatch.query.get_or_404(batch_id)
             # Get movement history from BatchMovementLedger
-            from models.batch_movement import BatchMovementLedger
             movements = BatchMovementLedger.query.filter_by(batch_id=batch_id).order_by(
                 BatchMovementLedger.movement_date.desc(),
                 BatchMovementLedger.created_at.desc()
