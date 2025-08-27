@@ -22,7 +22,7 @@ class ProcessIntegrationService:
         
         # Calculate totals from processes
         total_labor_cost = 0.0
-        total_scrap_percent = 0.0
+        total_yield = 1.0  # Start with 100% yield
         total_time_hours = 0.0
         process_notes = []
         final_output_weight = None
@@ -36,9 +36,11 @@ class ProcessIntegrationService:
             if process.cost_per_unit:
                 total_labor_cost += process.cost_per_unit
             
-            # Scrap percentage accumulation
+            # Scrap percentage accumulation (compound effect)
             if process.estimated_scrap_percent:
-                total_scrap_percent += process.estimated_scrap_percent
+                # Calculate cumulative yield reduction instead of simple addition
+                current_yield = 1.0 - (process.estimated_scrap_percent / 100.0)
+                total_yield *= current_yield
             
             # Time calculation
             if process.total_time_minutes:
@@ -90,6 +92,9 @@ class ProcessIntegrationService:
                 
                 conversion_factor = weight_conversions.get(uom, 1.0)
                 final_output_weight = final_output_weight * conversion_factor
+        
+        # Convert yield back to scrap percentage
+        total_scrap_percent = (1.0 - total_yield) * 100.0
         
         # Update BOM with calculated values
         bom.labor_cost_per_unit = total_labor_cost
