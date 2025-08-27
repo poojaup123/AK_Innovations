@@ -703,7 +703,6 @@ def dashboard():
         all_price_changes.append(change_data)
     
     # 2. BOM cost changes (manufactured items)
-    from models.bom import BOM
     try:
         bom_records = BOM.query.filter(BOM.is_active == True).all()
         for bom in bom_records:
