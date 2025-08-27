@@ -34,9 +34,9 @@
                                     <tr>
                                         <th>Item</th>
                                         <th>Date</th>
-                                        <th>Old Price</th>
-                                        <th>New Price</th>
-                                        <th>Change</th>
+                                        <th>Price</th>
+                                        <th>Price Type</th>
+                                        <th>Effective Date</th>
                                         <th>Source</th>
                                         <th>Updated By</th>
                                     </tr>
@@ -49,22 +49,9 @@
                                             <br><small class="text-muted">{{ record.item.code }}</small>
                                         </td>
                                         <td>{{ record.created_at.strftime('%Y-%m-%d %H:%M') if record.created_at else 'N/A' }}</td>
-                                        <td>₹{{ "%.2f"|format(record.old_price or 0) }}</td>
-                                        <td>₹{{ "%.2f"|format(record.new_price or 0) }}</td>
-                                        <td>
-                                            {% set change = (record.new_price or 0) - (record.old_price or 0) %}
-                                            {% if change > 0 %}
-                                                <span class="text-success">
-                                                    <i class="fas fa-arrow-up"></i> +₹{{ "%.2f"|format(change) }}
-                                                </span>
-                                            {% elif change < 0 %}
-                                                <span class="text-danger">
-                                                    <i class="fas fa-arrow-down"></i> ₹{{ "%.2f"|format(change) }}
-                                                </span>
-                                            {% else %}
-                                                <span class="text-muted">No change</span>
-                                            {% endif %}
-                                        </td>
+                                        <td>₹{{ "%.2f"|format(record.price or 0) }}</td>
+                                        <td><span class="badge bg-secondary">{{ record.price_type or 'standard' }}</span></td>
+                                        <td><span class="text-muted">{{ record.effective_date.strftime('%Y-%m-%d') if record.effective_date else 'N/A' }}</span></td>
                                         <td>
                                             <span class="badge bg-info">{{ record.source or 'Manual' }}</span>
                                         </td>

@@ -1034,7 +1034,6 @@ def unified_batch_management():
 @login_required
 def price_history():
     """Redirect to batch-wise price history (new enhanced version)"""
-    flash('Price history is now tracked at the batch level for better accuracy. Redirecting to batch-wise price history.', 'info')
     return redirect(url_for('price_management.price_history'))
     from models import ItemPriceHistory
     from datetime import datetime, timedelta
