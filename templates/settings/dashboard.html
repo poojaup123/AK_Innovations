@@ -295,6 +295,17 @@
                     
                     <h6 class="text-primary">Select sections to reset:</h6>
                     
+                    <!-- Select All Option -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="selectAll">
+                            <label class="form-check-label fw-bold text-primary" for="selectAll">
+                                <i class="fas fa-check-double"></i> Select All Sections
+                            </label>
+                        </div>
+                        <hr class="my-2">
+                    </div>
+                    
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-check mb-2">
@@ -403,6 +414,36 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('confirmResetBtn').disabled = !this.checked;
     });
 
+    // Handle Select All functionality
+    document.getElementById('selectAll').addEventListener('change', function () {
+        const isChecked = this.checked;
+        const checkboxes = document.querySelectorAll('#resetForm input[type="checkbox"]:not(#confirmResetCheckbox):not(#selectAll)');
+        
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = isChecked;
+        });
+    });
+
+    // Update Select All checkbox when individual checkboxes change
+    const resetCheckboxes = document.querySelectorAll('#resetForm input[type="checkbox"]:not(#confirmResetCheckbox):not(#selectAll)');
+    resetCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function () {
+            const allChecked = Array.from(resetCheckboxes).every(cb => cb.checked);
+            const noneChecked = Array.from(resetCheckboxes).every(cb => !cb.checked);
+            
+            if (allChecked) {
+                document.getElementById('selectAll').checked = true;
+                document.getElementById('selectAll').indeterminate = false;
+            } else if (noneChecked) {
+                document.getElementById('selectAll').checked = false;
+                document.getElementById('selectAll').indeterminate = false;
+            } else {
+                document.getElementById('selectAll').checked = false;
+                document.getElementById('selectAll').indeterminate = true;
+            }
+        });
+    });
+
     // Handle reset button click
     document.getElementById('confirmResetBtn').addEventListener('click', function() {
         if (!document.getElementById('confirmResetCheckbox').checked) {
@@ -411,7 +452,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         
         // Convert checkboxes to proper form values
-        const checkboxes = document.querySelectorAll('#resetForm input[type="checkbox"]:not(#confirmResetCheckbox)');
+        const checkboxes = document.querySelectorAll('#resetForm input[type="checkbox"]:not(#confirmResetCheckbox):not(#selectAll)');
         checkboxes.forEach(checkbox => {
             // Add hidden input with 'true' or 'false' value
             const hiddenInput = document.createElement('input');
