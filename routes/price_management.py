@@ -637,17 +637,27 @@ def price_history():
 @bp.route('/dashboard')
 @login_required
 def dashboard():
-    """Price management dashboard"""
-    # Recent price changes
+    """Unified Price management dashboard with comprehensive history"""
+    # Get filtering parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    price_type = request.args.get('price_type', '')
+    price_category = request.args.get('price_category', '')
+    batch_number = request.args.get('batch_number', '')
+    date_range = request.args.get('date_range', '')
+    start_date = request.args.get('start_date', '')
+    end_date = request.args.get('end_date', '')
+    
+    from datetime import datetime, timedelta
+    
+    # Recent price changes for summary cards
     recent_changes = ItemPriceHistory.query\
         .join(Item)\
         .order_by(ItemPriceHistory.created_at.desc())\
         .limit(10).all()
     
     # Items with significant price changes (>10% in last 30 days)
-    from datetime import datetime, timedelta
     thirty_days_ago = datetime.now() - timedelta(days=30)
-    
     significant_changes = db.session.query(ItemPriceHistory)\
         .join(Item)\
         .filter(ItemPriceHistory.created_at >= thirty_days_ago)\
@@ -666,7 +676,145 @@ def dashboard():
         .filter(Item.item_type == 'material')\
         .limit(20).all()
     
+    # COMPREHENSIVE PRICE HISTORY LOGIC (merged from price_history route)
+    # Comprehensive price changes from all sources
+    all_price_changes = []
+    
+    # 1. Item price history (materials)
+    item_price_query = ItemPriceHistory.query.join(Item)
+    if price_type:
+        item_price_query = item_price_query.filter(ItemPriceHistory.price_type == price_type)
+    
+    item_price_history = item_price_query.order_by(ItemPriceHistory.created_at.desc()).all()
+    
+    for record in item_price_history:
+        change_data = {
+            'item_name': record.item.name if record.item else 'Unknown Item',
+            'item_code': record.item.code if record.item else 'N/A',
+            'date': record.created_at,
+            'price': record.price,
+            'price_type': record.price_type or 'standard',
+            'vendor_name': record.source or 'Manual',
+            'details': f"Material: {record.item.name if record.item else 'Unknown'}",
+            'updated_by': record.user.username if record.user else 'System',
+            'category': 'Material Price',
+            'batch_number': '-'
+        }
+        all_price_changes.append(change_data)
+    
+    # 2. BOM cost changes (manufactured items)
+    from models.bom import BOM
+    try:
+        bom_records = BOM.query.filter(BOM.is_active == True).all()
+        for bom in bom_records:
+            if hasattr(bom, 'last_updated') and bom.last_updated:
+                change_data = {
+                    'item_name': f"{bom.item.name if bom.item else 'Unknown'} (BOM)",
+                    'item_code': bom.bom_code,
+                    'date': bom.last_updated,
+                    'price': getattr(bom, 'total_material_cost', 0) + getattr(bom, 'total_labor_cost', 0) + getattr(bom, 'total_overhead_cost', 0),
+                    'price_type': 'manufactured',
+                    'vendor_name': 'BOM Calculation',
+                    'details': f"BOM Cost: Materials + Labor + Overhead",
+                    'updated_by': 'System',
+                    'category': 'BOM Cost',
+                    'batch_number': '-'
+                }
+                all_price_changes.append(change_data)
+    except Exception:
+        pass
+    
+    # Apply date filtering
+    if date_range:
+        cutoff_date = None
+        if date_range == '6months':
+            cutoff_date = datetime.now() - timedelta(days=180)
+        elif date_range == '1year':
+            cutoff_date = datetime.now() - timedelta(days=365)
+        elif date_range == '2years':
+            cutoff_date = datetime.now() - timedelta(days=730)
+        elif date_range == '5years':
+            cutoff_date = datetime.now() - timedelta(days=1825)
+        
+        if cutoff_date:
+            all_price_changes = [change for change in all_price_changes if change['date'] >= cutoff_date]
+    
+    # Apply custom date range
+    if start_date:
+        start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+        all_price_changes = [change for change in all_price_changes if change['date'] >= start_dt]
+    if end_date:
+        end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+        all_price_changes = [change for change in all_price_changes if change['date'] <= end_dt]
+    
+    # Apply category filtering
+    if price_category:
+        if price_category == 'material':
+            all_price_changes = [change for change in all_price_changes if change['category'] == 'Material Price']
+        elif price_category == 'bom':
+            all_price_changes = [change for change in all_price_changes if change['category'] == 'BOM Cost']
+    
+    # Sort by date
+    all_price_changes.sort(key=lambda x: x['date'], reverse=True)
+    
+    # Simple pagination
+    total = len(all_price_changes)
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    current_page_items = all_price_changes[start_idx:end_idx]
+    
+    class SimplePagination:
+        def __init__(self, items, page, per_page, total):
+            self.items = items
+            self.page = page
+            self.per_page = per_page
+            self.total = total
+            self.pages = (total + per_page - 1) // per_page
+            self.prev_num = page - 1 if page > 1 else None
+            self.next_num = page + 1 if page < self.pages else None
+            self.has_prev = page > 1
+            self.has_next = page < self.pages
+        
+        def iter_pages(self):
+            for num in range(1, self.pages + 1):
+                yield num
+    
+    history = SimplePagination(current_page_items, page, per_page, total)
+    
+    # Get available price types and categories
+    price_types = list(set([item['price_type'] for item in all_price_changes if item['price_type']]))
+    price_types.sort()
+    
+    price_categories = [
+        ('', 'All Categories'),
+        ('material', 'Material Prices'),
+        ('bom', 'BOM Costs'),
+        ('batch', 'Batch Prices'),
+        ('jobwork', 'Job Work Rates')
+    ]
+    
+    # Get available batch numbers for dropdown
+    batch_numbers = []
+    try:
+        from models.batch import InventoryBatch
+        unique_batches = InventoryBatch.query.with_entities(InventoryBatch.batch_code)\
+            .distinct().order_by(InventoryBatch.batch_code).all()
+        batch_numbers = [batch[0] for batch in unique_batches if batch[0]]
+    except (ImportError, AttributeError):
+        batch_numbers = []
+    
     return render_template('price_management/dashboard.html',
                          recent_changes=recent_changes,
                          significant_changes=significant_changes,
-                         stale_items=stale_items)
+                         stale_items=stale_items,
+                         history=history,
+                         price_types=price_types,
+                         price_categories=price_categories,
+                         batch_numbers=batch_numbers,
+                         current_price_type=price_type,
+                         current_price_category=price_category,
+                         current_batch_number=batch_number,
+                         current_date_range=date_range,
+                         current_start_date=start_date,
+                         current_end_date=end_date,
+                         is_unified=True)
