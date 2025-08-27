@@ -2401,34 +2401,9 @@ class BOM(db.Model):
     
     @property
     def calculated_scrap_percent(self):
-        """Calculate total scrap percentage from all processes using compound yield"""
-        if not self.processes:
-            return self.estimated_scrap_percent or 0.0
-        
-        total_yield = 1.0  # Start with 100% yield
-        process_scrap_found = False
-        
-        # Apply compound scrap effect from each process
-        for process in self.processes:
-            if hasattr(process, 'estimated_scrap_percent') and process.estimated_scrap_percent:
-                # Convert scrap percentage to yield (e.g., 10% scrap = 90% yield)
-                current_yield = 1.0 - (process.estimated_scrap_percent / 100.0)
-                total_yield *= current_yield
-                process_scrap_found = True
-            elif hasattr(process, 'scrap_percentage') and process.scrap_percentage:
-                # Convert scrap percentage to yield (e.g., 10% scrap = 90% yield)
-                current_yield = 1.0 - (process.scrap_percentage / 100.0)
-                total_yield *= current_yield
-                process_scrap_found = True
-        
-        # If no process scrap was found, return the BOM-level estimated scrap
-        if not process_scrap_found:
-            return self.estimated_scrap_percent or 0.0
-        
-        # Convert final yield back to scrap percentage
-        final_scrap_percent = (1.0 - total_yield) * 100.0
-        
-        return final_scrap_percent
+        """Calculate total scrap percentage based on actual weights: scrap weight vs input material weight"""
+        # Use the same weight-based calculation as calculated_total_scrap_percent for consistency
+        return self.calculated_total_scrap_percent
     
     @property
     def calculated_freight_cost_per_unit(self):
