@@ -666,4 +666,7 @@ def dashboard():
         .filter(Item.item_type == 'material')\
         .limit(20).all()
     
-    return redirect(url_for('inventory.dashboard'))
+    return render_template('price_management/dashboard.html',
+                         recent_changes=recent_changes,
+                         significant_changes=significant_changes,
+                         stale_items=stale_items)

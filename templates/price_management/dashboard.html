@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Price Management Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-tachometer-alt text-primary"></i> Price Management Dashboard</h2>
+                    <p class="text-muted mb-0">Monitor and manage pricing across your business</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('price_management.history') }}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-chart-line"></i> Price History
+                    </a>
+                    <a href="{{ url_for('price_management.impact_analysis') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-analytics"></i> Impact Analysis
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-white-75 small">Recent Changes</div>
+                            <div class="text-lg font-weight-bold">{{ recent_changes|length }}</div>
+                        </div>
+                        <div><i class="fas fa-chart-line fa-2x text-white-50"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-warning text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-white-75 small">Significant Changes</div>
+                            <div class="text-lg font-weight-bold">{{ significant_changes|length }}</div>
+                        </div>
+                        <div><i class="fas fa-exclamation-triangle fa-2x text-white-50"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-success text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-white-75 small">Tracked Items</div>
+                            <div class="text-lg font-weight-bold">{{ (recent_changes|map(attribute='item')|unique|list)|length }}</div>
+                        </div>
+                        <div><i class="fas fa-boxes fa-2x text-white-50"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-danger text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-white-75 small">Stale Prices</div>
+                            <div class="text-lg font-weight-bold">{{ stale_items|length }}</div>
+                        </div>
+                        <div><i class="fas fa-clock fa-2x text-white-50"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Price Changes -->
+        <div class="col-xl-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-chart-line me-1"></i>
+                    Recent Price Changes
+                </div>
+                <div class="card-body">
+                    {% if recent_changes %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Previous Price</th>
+                                        <th>New Price</th>
+                                        <th>Change</th>
+                                        <th>Date</th>
+                                        <th>Source</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for change in recent_changes %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ change.item.name if change.item else 'Unknown' }}</strong>
+                                            <br><small class="text-muted">{{ change.item.item_code if change.item else '' }}</small>
+                                        </td>
+                                        <td>₹{{ "%.2f"|format(change.previous_price or 0) }}</td>
+                                        <td>₹{{ "%.2f"|format(change.new_price or 0) }}</td>
+                                        <td>
+                                            {% if change.previous_price and change.new_price %}
+                                                {% set price_diff = change.new_price - change.previous_price %}
+                                                {% set percentage = ((price_diff / change.previous_price) * 100) if change.previous_price > 0 else 0 %}
+                                                {% if price_diff > 0 %}
+                                                    <span class="text-danger">↗️ +₹{{ "%.2f"|format(price_diff) }} (+{{ "%.1f"|format(percentage) }}%)</span>
+                                                {% elif price_diff < 0 %}
+                                                    <span class="text-success">↘️ ₹{{ "%.2f"|format(price_diff|abs) }} ({{ "%.1f"|format(percentage) }}%)</span>
+                                                {% else %}
+                                                    <span class="text-muted">➡️ No change</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-info">🆕 Initial</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ change.effective_date.strftime('%Y-%m-%d') if change.effective_date else 'N/A' }}</td>
+                                        <td><small>{{ change.source or 'Manual' }}</small></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No recent price changes found.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Side Panel -->
+        <div class="col-xl-4">
+            <!-- Significant Changes -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    Significant Changes (Last 30 Days)
+                </div>
+                <div class="card-body">
+                    {% if significant_changes %}
+                        {% for change in significant_changes[:5] %}
+                        <div class="d-flex align-items-center border-bottom py-2">
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ change.item.name if change.item else 'Unknown' }}</div>
+                                <small class="text-muted">
+                                    {% if change.previous_price and change.new_price %}
+                                        {% set price_diff = change.new_price - change.previous_price %}
+                                        {% set percentage = ((price_diff / change.previous_price) * 100) if change.previous_price > 0 else 0 %}
+                                        {% if percentage|abs > 10 %}
+                                            {{ "%.1f"|format(percentage) }}% change
+                                        {% endif %}
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div>
+                                <small class="text-muted">{{ change.effective_date.strftime('%m-%d') if change.effective_date else '' }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                            <p class="text-muted small">No significant changes recently.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Stale Items -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-clock me-1"></i>
+                    Items Needing Price Review
+                </div>
+                <div class="card-body">
+                    {% if stale_items %}
+                        {% for item in stale_items[:5] %}
+                        <div class="d-flex align-items-center border-bottom py-2">
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ item.name }}</div>
+                                <small class="text-muted">{{ item.item_code }}</small>
+                            </div>
+                            <div>
+                                <span class="badge bg-warning">Review</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                            <p class="text-muted small">All prices are up to date!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
