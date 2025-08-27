@@ -1113,19 +1113,23 @@ def api_bom_tree_data(bom_id):
         material_cost = sum(item.qty_required * item.unit_cost for item in bom.items if item.qty_required and item.unit_cost) if bom.items else 0
         material_cost_per_unit = material_cost / max(bom.output_quantity, 1)
         
-        # Calculate actual labor costs from BOM data
-        # Get labor costs from BOM's labor_cost field or calculate from processes
-        labor_cost_total = getattr(bom, 'labor_cost_per_unit', 0) or 0
+        # Calculate actual labor costs from BOM processes (not the potentially incorrect bom.labor_cost_per_unit)
+        labor_cost_total = sum(process.converted_cost_per_unit for process in bom.processes) if bom.processes else 0
         
-        # If no labor cost in BOM, calculate from typical manufacturing processes
-        if labor_cost_total == 0:
-            # Calculate based on material cost percentage (typical 5-15% of material cost)
-            labor_cost_total = material_cost_per_unit * 0.1  # 10% of material cost as default
+        # Individual process costs (actual values, not percentages)
+        cutting_cost = 0
+        bending_cost = 0  
+        zinc_cost = 0
         
-        # Individual process costs (breakdown)
-        cutting_cost = labor_cost_total * 0.25 if labor_cost_total > 0 else 0.4000
-        bending_cost = labor_cost_total * 0.25 if labor_cost_total > 0 else 0.4000
-        zinc_cost = labor_cost_total * 0.50 if labor_cost_total > 0 else 0.7980
+        # Get actual individual process costs
+        for process in bom.processes:
+            process_cost = process.converted_cost_per_unit
+            if 'cutting' in process.process_name.lower():
+                cutting_cost = process_cost
+            elif 'zinc' in process.process_name.lower():
+                zinc_cost = process_cost
+            elif 'bending' in process.process_name.lower():
+                bending_cost = process_cost
         
         # Other cost components - check both overhead fields
         overhead_cost_per_unit = getattr(bom, 'overhead_cost_per_unit', 0) or 0
@@ -1138,10 +1142,10 @@ def api_bom_tree_data(bom_id):
             # Fallback to checking if there's a percentage in the database
             overhead_cost_per_unit = 0
         
-        # Calculate freight cost based on weight (₹10 per kg)
+        # Use actual freight cost from BOM, not hardcoded calculation
+        freight_cost_per_unit = getattr(bom, 'freight_cost_per_unit', 0) or 0
         unit_weight = getattr(bom, 'unit_weight', 0.0)  # Weight per unit in kg
-        freight_rate_per_kg = 10.0  # ₹10 per kg
-        freight_cost_per_unit = unit_weight * freight_rate_per_kg if unit_weight > 0 else getattr(bom, 'freight_cost_per_unit', 1.14)
+        freight_rate_per_kg = 10.0  # ₹10 per kg (kept for display purposes only)
         
         scrap_recovery_rate = getattr(bom, 'scrap_recovery_rate', 0.30)  # 30%
         scrap_recovery = material_cost_per_unit * scrap_recovery_rate
