@@ -1662,7 +1662,8 @@
                                         <span class="me-2">👷</span>
                                         <strong>Labor Cost (All Processes):</strong>
                                     </div>
-                                    <span class="text-info fw-bold">₹{{ "%.2f"|format(bom.labor_cost_per_unit or 0) }}</span>
+                                    {% set total_process_cost = bom.processes|sum(attribute='converted_cost_per_unit') %}
+                                    <span class="text-info fw-bold">₹{{ "%.2f"|format(total_process_cost or 0) }}</span>
                                 </div>
                                 
                                 <!-- Process breakdown -->
