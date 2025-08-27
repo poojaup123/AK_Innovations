@@ -80,42 +80,22 @@
                                 <div class="mb-3">
                                     {{ form.product_id.label(class="form-label") }}
                                     
-                                    <!-- Simple searchable input with datalist - no JavaScript needed -->
+                                    <!-- Simple dropdown that works reliably -->
                                     <div class="input-group">
-                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                        <input type="text" 
-                                               id="product-search-input" 
-                                               class="form-control" 
-                                               placeholder="Type product name or select from list..."
-                                               list="product-datalist"
-                                               autocomplete="off"
-                                               onchange="updateProductSelection(this.value)">
-                                        <button type="button" class="btn btn-outline-secondary" onclick="clearProductSelection()" title="Clear selection">
-                                            <i class="fas fa-times"></i>
-                                        </button>
+                                        <span class="input-group-text"><i class="fas fa-cube"></i></span>
+                                        <select class="form-select" name="product_id" id="product_id" required>
+                                            <option value="">Choose a product...</option>
+                                            {% for choice in form.product_id.choices %}
+                                            {% if choice[0] %}
+                                            <option value="{{ choice[0] }}" {{ 'selected' if choice[0] == form.product_id.data }}>
+                                                {{ choice[1] }}
+                                            </option>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </select>
                                     </div>
                                     
-                                    <!-- HTML5 datalist for native search functionality -->
-                                    <datalist id="product-datalist">
-                                        {% for choice in form.product_id.choices %}
-                                        {% if choice[0] %}
-                                        <option value="{{ choice[1] }}" data-id="{{ choice[0] }}">{{ choice[1] }}</option>
-                                        {% endif %}
-                                        {% endfor %}
-                                    </datalist>
-                                    
-                                    <!-- Hidden field for form submission -->
-                                    <input type="hidden" name="product_id" id="product_id" value="{{ form.product_id.data or '' }}" required>
-                                    
-                                    <!-- Selected product display -->
-                                    <div id="selected-product-display" class="mt-2" style="display: none;">
-                                        <small class="text-success">
-                                            <i class="fas fa-check-circle"></i> 
-                                            Selected: <strong id="selected-product-name"></strong>
-                                        </small>
-                                    </div>
-                                    
-                                    <small class="text-muted">Type to search products (native browser search - no JavaScript needed)</small>
+                                    <small class="text-muted">Select the product this BOM creates</small>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -2719,57 +2699,21 @@ function printTreeView() {
 
 {% block page_js %}
 <script>
-// Simple product selection using native HTML5 functionality
-function updateProductSelection(inputValue) {
-    // Find the selected option in the datalist
-    var datalist = document.getElementById('product-datalist');
-    var hiddenInput = document.getElementById('product_id');
-    var selectedDisplay = document.getElementById('selected-product-display');
-    var selectedName = document.getElementById('selected-product-name');
-    
-    // Clear previous selection
-    hiddenInput.value = '';
-    selectedDisplay.style.display = 'none';
-    
-    if (!inputValue) return;
-    
-    // Look for exact match in datalist options
-    var options = datalist.querySelectorAll('option');
-    for (var i = 0; i < options.length; i++) {
-        if (options[i].value === inputValue) {
-            var productId = options[i].getAttribute('data-id');
-            if (productId) {
-                hiddenInput.value = productId;
-                selectedName.textContent = inputValue;
-                selectedDisplay.style.display = 'block';
-                console.log('Product selected:', productId, inputValue);
-                break;
-            }
-        }
-    }
-}
-
-function clearProductSelection() {
-    document.getElementById('product-search-input').value = '';
-    document.getElementById('product_id').value = '';
-    document.getElementById('selected-product-display').style.display = 'none';
-}
-
-// Form validation
+// Simple form validation
 document.addEventListener('DOMContentLoaded', function() {
     var form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', function(e) {
-            var productId = document.getElementById('product_id').value;
-            if (!productId) {
-                alert('Please select a product from the list before saving.');
+            var productSelect = document.getElementById('product_id');
+            if (!productSelect.value) {
+                alert('Please select a product before saving.');
                 e.preventDefault();
                 return false;
             }
         });
     }
     
-    console.log('✅ Simple product selection initialized (no complex JavaScript needed)');
+    console.log('✅ Simple dropdown initialized successfully');
 });
 </script>
 {% endblock %}
