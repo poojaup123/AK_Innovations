@@ -78,9 +78,8 @@
                                 <div class="mb-3">
                                     {{ form.product_id.label(class="form-label") }}
                                     
-                                    <!-- Simple searchable select with native approach -->
-                                    <select class="form-select" name="product_id" id="product_id" 
-                                            onchange="updateProductSelection()" style="display: block;">
+                                    <!-- Regular dropdown - much simpler -->
+                                    <select class="form-select" name="product_id" id="product_id" required>
                                         <option value="">Select Product...</option>
                                         {% for choice in form.product_id.choices %}
                                         <option value="{{ choice[0] }}" {{ 'selected' if choice[0] == form.product_id.data }}>
@@ -89,22 +88,7 @@
                                         {% endfor %}
                                     </select>
                                     
-                                    <!-- Search input overlay -->
-                                    <div class="position-relative mt-2">
-                                        <div class="input-group">
-                                            <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                            <input type="text" 
-                                                   id="product-search-input" 
-                                                   class="form-control" 
-                                                   placeholder="Type to filter products above..."
-                                                   autocomplete="off">
-                                            <button type="button" class="btn btn-outline-secondary" onclick="clearProductSearch()" title="Clear search">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    <small class="text-muted">Use the search box above to filter the dropdown options</small>
+                                    <small class="text-muted">Select the product this BOM creates</small>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -2699,114 +2683,26 @@ function printTreeView() {
 
 {% block page_js %}
 <script>
-// Simple product filtering - filters the dropdown as you type
-var allOptions = [];
-var productSelect = null;
-
-function initProductSearch() {
-    productSelect = document.getElementById('product_id');
-    var searchInput = document.getElementById('product-search-input');
-    
-    if (!productSelect || !searchInput) {
-        console.log('Product elements not found');
-        return;
+// Simple form validation
+function validateForm() {
+    var productSelect = document.getElementById('product_id');
+    if (!productSelect.value) {
+        alert('Please select a product before saving.');
+        return false;
     }
-    
-    // Store all original options
-    allOptions = [];
-    for (var i = 0; i < productSelect.options.length; i++) {
-        allOptions.push({
-            value: productSelect.options[i].value,
-            text: productSelect.options[i].text
+    return true;
+}
+
+// Add form validation on submit
+document.addEventListener('DOMContentLoaded', function() {
+    var form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!validateForm()) {
+                e.preventDefault();
+            }
         });
     }
-    
-    console.log('Loaded ' + allOptions.length + ' product options');
-    
-    // Filter dropdown as user types
-    searchInput.addEventListener('input', function() {
-        filterProducts(this.value);
-    });
-}
-
-function filterProducts(searchTerm) {
-    if (!productSelect || !allOptions) return;
-    
-    // Clear current options
-    productSelect.innerHTML = '';
-    
-    // Add default option
-    var defaultOption = document.createElement('option');
-    defaultOption.value = '';
-    defaultOption.text = 'Select Product...';
-    productSelect.appendChild(defaultOption);
-    
-    if (!searchTerm || searchTerm.trim() === '') {
-        // Show all options if no search term
-        for (var i = 0; i < allOptions.length; i++) {
-            if (allOptions[i].value !== '') {
-                var option = document.createElement('option');
-                option.value = allOptions[i].value;
-                option.text = allOptions[i].text;
-                productSelect.appendChild(option);
-            }
-        }
-    } else {
-        // Filter options based on search term
-        var lowerSearch = searchTerm.toLowerCase();
-        var matchCount = 0;
-        
-        for (var i = 0; i < allOptions.length; i++) {
-            if (allOptions[i].value !== '' && 
-                allOptions[i].text.toLowerCase().indexOf(lowerSearch) !== -1) {
-                var option = document.createElement('option');
-                option.value = allOptions[i].value;
-                option.text = allOptions[i].text;
-                productSelect.appendChild(option);
-                matchCount++;
-                
-                if (matchCount >= 20) break; // Limit to 20 matches
-            }
-        }
-        
-        // If exact match, auto-select it
-        if (matchCount === 1) {
-            productSelect.selectedIndex = 1; // Select the first (and only) match
-        }
-    }
-}
-
-function clearProductSearch() {
-    var searchInput = document.getElementById('product-search-input');
-    if (searchInput) {
-        searchInput.value = '';
-        filterProducts(''); // Show all options
-    }
-}
-
-function updateProductSelection() {
-    var select = document.getElementById('product_id');
-    var searchInput = document.getElementById('product-search-input');
-    
-    if (select && searchInput && select.selectedIndex > 0) {
-        // Clear search when user manually selects from dropdown
-        searchInput.value = '';
-    }
-}
-
-// Initialize when page loads
-window.addEventListener('load', initProductSearch);
+});
 </script>
-
-<style>
-#product_id {
-    max-height: 200px;
-    overflow-y: auto;
-}
-
-.input-group .form-control:focus {
-    border-color: #86b7fe;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-</style>
 {% endblock %}
