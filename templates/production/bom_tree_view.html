@@ -204,9 +204,7 @@
                             <!-- This is an intermediate product with its own BOM -->
                             {% set is_phantom = material.intermediate_bom.bom.is_phantom_bom %}
                             {% set material_bom = material.intermediate_bom.bom %}
-                            {% set bom_total_cost = material_bom.total_cost_per_unit %}
-                            {% set output_qty = material_bom.output_quantity or 1.0 %}
-                            {% set per_unit_cost = bom_total_cost / output_qty if output_qty > 0 else bom_total_cost %}
+                            {% set per_unit_cost = material.cost %}
                             <div class="tree-node {% if is_phantom %}phantom-bom{% endif %}">
                                 <span class="tree-connector">{{ connector }}</span>
                                 <span class="tree-material">{{ material.item.name }}</span>
