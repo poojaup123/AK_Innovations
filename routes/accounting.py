@@ -1351,6 +1351,29 @@ def print_invoice(id):
     # Get company details
     company = CompanySettings.query.first()
     
+    # Get BOM data for each invoice item
+    bom_data = {}
+    for invoice_item in invoice.invoice_items:
+        if invoice_item.item_id:
+            # Check if this item has an active BOM
+            from models.production import BOM, BOMItem
+            bom = BOM.query.filter_by(
+                product_id=invoice_item.item_id,
+                is_active=True
+            ).first()
+            
+            if bom:
+                # Get BOM items with component details
+                bom_items = db.session.query(BOMItem, Item).join(
+                    Item, BOMItem.material_id == Item.id
+                ).filter(BOMItem.bom_id == bom.id).all()
+                
+                bom_data[invoice_item.item_id] = {
+                    'bom': bom,
+                    'items': bom_items
+                }
+    
     return render_template('accounting/invoice_print.html', 
                          invoice=invoice, 
-                         company=company)
+                         company=company,
+                         bom_data=bom_data)
