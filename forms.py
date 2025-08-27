@@ -5,28 +5,73 @@ from wtforms.validators import DataRequired, Length, Email, NumberRange, Optiona
 from wtforms.widgets import CheckboxInput, ListWidget
 from models import User, Item, Supplier, QualityIssue, Production, PurchaseOrder, JobWork, ItemType, DailyJobWorkEntry, Employee
 from models.uom import UnitOfMeasure
+from utils.validators import (
+    IndianPhoneValidator, GSTNumberValidator, PANNumberValidator, 
+    IFSCCodeValidator, ItemCodeValidator, PercentageValidator,
+    RequiredFieldValidator, UniqueFieldValidator, HSNCodeValidator,
+    PositiveNumberValidator
+)
 from datetime import datetime
 
 class LoginForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired(), Length(min=4, max=25)])
-    password = PasswordField('Password', validators=[DataRequired()])
+    username = StringField('Username', validators=[
+        RequiredFieldValidator('Username'),
+        Length(min=4, max=25, message='Username must be between 4 and 25 characters')
+    ], render_kw={'placeholder': 'Enter your username', 'class': 'form-control'})
+    password = PasswordField('Password', validators=[
+        RequiredFieldValidator('Password')
+    ], render_kw={'placeholder': 'Enter your password', 'class': 'form-control'})
 
 class ItemForm(FlaskForm):
-    code = StringField('Item Code', validators=[DataRequired(), Length(max=50)])
-    name = StringField('Item Name', validators=[DataRequired(), Length(max=100)])
-    description = TextAreaField('Description')
+    code = StringField('Item Code', validators=[
+        RequiredFieldValidator('Item Code'),
+        Length(max=50, message='Item code cannot exceed 50 characters'),
+        ItemCodeValidator()
+    ], render_kw={'placeholder': 'e.g., STL-001, BOLT-M8', 'class': 'form-control'})
+    
+    name = StringField('Item Name', validators=[
+        RequiredFieldValidator('Item Name'),
+        Length(max=100, message='Item name cannot exceed 100 characters')
+    ], render_kw={'placeholder': 'e.g., Mild Steel Sheet 2mm', 'class': 'form-control'})
+    
+    description = TextAreaField('Description', 
+                              render_kw={'placeholder': 'Detailed description of the item...', 
+                                       'class': 'form-control', 'rows': '3'})
+    
     unit_of_measure = SelectField('Unit of Measure', 
                                 choices=[],  # Will be populated dynamically
-                                validators=[DataRequired()])
-    hsn_code = StringField('HSN Code', validators=[Length(max=20)])
-    gst_rate = FloatField('GST Rate (%)', validators=[NumberRange(min=0, max=100)], default=18.0)
-    current_stock = FloatField('Current Stock', validators=[NumberRange(min=0)], default=0.0)
-    minimum_stock = FloatField('Minimum Stock', validators=[NumberRange(min=0)], default=0.0)
-    unit_price = FloatField('Unit Price', validators=[NumberRange(min=0)], default=0.0)
-    unit_weight = FloatField('Unit Weight (kg)', validators=[NumberRange(min=0)], default=0.0)
+                                validators=[RequiredFieldValidator('Unit of Measure')],
+                                render_kw={'class': 'form-select'})
+    
+    hsn_code = StringField('HSN Code', validators=[
+        Length(max=20, message='HSN code cannot exceed 20 characters'),
+        HSNCodeValidator()
+    ], render_kw={'placeholder': 'e.g., 7208, 72081000', 'class': 'form-control'})
+    
+    gst_rate = FloatField('GST Rate (%)', validators=[
+        PercentageValidator()
+    ], default=18.0, render_kw={'class': 'form-control', 'step': '0.01'})
+    
+    current_stock = FloatField('Current Stock', validators=[
+        PositiveNumberValidator(min_value=0, message='Stock cannot be negative')
+    ], default=0.0, render_kw={'class': 'form-control', 'step': '0.001'})
+    
+    minimum_stock = FloatField('Minimum Stock', validators=[
+        PositiveNumberValidator(min_value=0, message='Minimum stock cannot be negative')
+    ], default=0.0, render_kw={'class': 'form-control', 'step': '0.001'})
+    
+    unit_price = FloatField('Unit Price', validators=[
+        PositiveNumberValidator(min_value=0, message='Price cannot be negative')
+    ], default=0.0, render_kw={'class': 'form-control', 'step': '0.01'})
+    
+    unit_weight = FloatField('Unit Weight (kg)', validators=[
+        PositiveNumberValidator(min_value=0, message='Weight cannot be negative')
+    ], default=0.0, render_kw={'class': 'form-control', 'step': '0.001'})
+    
     item_type = SelectField('Item Type', 
                           choices=[],  # Will be populated dynamically
-                          validators=[DataRequired()])
+                          validators=[RequiredFieldValidator('Item Type')],
+                          render_kw={'class': 'form-select'})
     
     def __init__(self, *args, **kwargs):
         super(ItemForm, self).__init__(*args, **kwargs)
@@ -88,14 +133,25 @@ class ItemForm(FlaskForm):
 
 class SupplierForm(FlaskForm):
     # Basic Information
-    name = StringField('Business Partner Name', validators=[DataRequired(), Length(max=200)], 
-                      render_kw={"placeholder": "A.K. Metals"})
-    contact_person = StringField('Contact Person', validators=[Length(max=100)], 
-                                render_kw={"placeholder": "Mr. Rahul Kumar"})
-    phone = StringField('Mobile Number', validators=[Length(max=20)], 
-                       render_kw={"placeholder": "9876543210"})
-    email = StringField('Email', validators=[Optional(), Email(), Length(max=120)], 
-                       render_kw={"placeholder": "info@akmetals.com"})
+    name = StringField('Business Partner Name', validators=[
+        RequiredFieldValidator('Business Partner Name'),
+        Length(max=200, message='Business partner name cannot exceed 200 characters')
+    ], render_kw={"placeholder": "A.K. Metals", "class": "form-control"})
+    
+    contact_person = StringField('Contact Person', validators=[
+        Length(max=100, message='Contact person name cannot exceed 100 characters')
+    ], render_kw={"placeholder": "Mr. Rahul Kumar", "class": "form-control"})
+    
+    phone = StringField('Mobile Number', validators=[
+        Length(max=20, message='Phone number cannot exceed 20 characters'),
+        IndianPhoneValidator()
+    ], render_kw={"placeholder": "9876543210", "class": "form-control"})
+    
+    email = StringField('Email', validators=[
+        Optional(), 
+        Email(message='Please enter a valid email address'),
+        Length(max=120, message='Email cannot exceed 120 characters')
+    ], render_kw={"placeholder": "info@akmetals.com", "class": "form-control"})
     
     # Partner Type
     partner_type = SelectField('Partner Type', 
@@ -103,10 +159,16 @@ class SupplierForm(FlaskForm):
                               validators=[DataRequired()], default='supplier')
     
     # Compliance Information
-    gst_number = StringField('GST Number', validators=[Length(max=50)], 
-                            render_kw={"placeholder": "29ABCDE1234F1Z9"})
-    pan_number = StringField('PAN Number', validators=[Optional(), Length(max=20)], 
-                            render_kw={"placeholder": "ABCDE1234F"})
+    gst_number = StringField('GST Number', validators=[
+        Length(max=50, message='GST number cannot exceed 50 characters'),
+        GSTNumberValidator()
+    ], render_kw={"placeholder": "29ABCDE1234F1Z9", "class": "form-control"})
+    
+    pan_number = StringField('PAN Number', validators=[
+        Optional(), 
+        Length(max=20, message='PAN number cannot exceed 20 characters'),
+        PANNumberValidator()
+    ], render_kw={"placeholder": "ABCDE1234F", "class": "form-control"})
     
     # Address Information
     address = TextAreaField('Address', render_kw={"placeholder": "123, Industrial Area, Delhi"})
@@ -118,12 +180,21 @@ class SupplierForm(FlaskForm):
                           render_kw={"placeholder": "110001"})
     
     # Banking Information (Optional)
-    account_number = StringField('Account Number', validators=[Optional(), Length(max=50)], 
-                                render_kw={"placeholder": "123456789012"})
-    bank_name = StringField('Bank Name', validators=[Optional(), Length(max=200)], 
-                           render_kw={"placeholder": "State Bank of India"})
-    ifsc_code = StringField('IFSC Code', validators=[Optional(), Length(max=20)], 
-                           render_kw={"placeholder": "SBIN0001234"})
+    account_number = StringField('Account Number', validators=[
+        Optional(), 
+        Length(max=50, message='Account number cannot exceed 50 characters')
+    ], render_kw={"placeholder": "123456789012", "class": "form-control"})
+    
+    bank_name = StringField('Bank Name', validators=[
+        Optional(), 
+        Length(max=200, message='Bank name cannot exceed 200 characters')
+    ], render_kw={"placeholder": "State Bank of India", "class": "form-control"})
+    
+    ifsc_code = StringField('IFSC Code', validators=[
+        Optional(), 
+        Length(max=20, message='IFSC code cannot exceed 20 characters'),
+        IFSCCodeValidator()
+    ], render_kw={"placeholder": "SBIN0001234", "class": "form-control"})
     
     # Transportation Specific (for transporters)
     freight_rate_per_unit = FloatField('Freight Rate (₹)', validators=[Optional(), NumberRange(min=0)], default=0.0)
