@@ -2703,11 +2703,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const hiddenSelect = document.querySelector('select[name="product_id"]');
     const clearBtn = document.getElementById('clear-product-btn');
     
+    // Debug: Check if elements exist
+    console.log('Search elements found:', {
+        searchInput: !!searchInput,
+        resultsContainer: !!resultsContainer,
+        hiddenSelect: !!hiddenSelect,
+        clearBtn: !!clearBtn
+    });
+    
+    if (!searchInput || !resultsContainer || !hiddenSelect) {
+        console.error('Required elements not found for product search');
+        return;
+    }
+    
     // Get all products from the original select options
     const products = Array.from(hiddenSelect.options).map(option => ({
         id: option.value,
         text: option.text
     })).filter(product => product.id !== ''); // Remove empty option
+    
+    console.log('Products loaded:', products.length, products);
     
     let selectedProductId = null;
     
@@ -2768,6 +2783,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Search input handler
     searchInput.addEventListener('input', function() {
         const searchTerm = this.value.trim();
+        console.log('Search input:', searchTerm);
         
         if (searchTerm.length < 1) {
             resultsContainer.style.display = 'none';
@@ -2777,6 +2793,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const results = filterProducts(searchTerm);
+        console.log('Search results:', results);
         showResults(results);
     });
     
