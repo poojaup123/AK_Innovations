@@ -221,6 +221,7 @@ def price_history():
     page = request.args.get('page', 1, type=int)
     price_category = request.args.get('price_category', '')  # material, jobwork, labor, all
     price_type = request.args.get('price_type', '')
+    batch_number = request.args.get('batch_number', '')  # New batch filtering
     date_range = request.args.get('date_range', '')
     start_date = request.args.get('start_date', '')
     end_date = request.args.get('end_date', '')
@@ -282,8 +283,80 @@ def price_history():
                 'date': record.created_at,
                 'updated_by': getattr(record, 'updated_by', 'System'),
                 'details': f"Material: {record.item.name if record.item else 'Unknown'}",
-                'vendor_name': '-'
+                'vendor_name': '-',
+                'batch_number': '-'  # No batch for regular material prices
             })
+    
+    # 1b. Batch Price History (new - batch-specific pricing)
+    if price_category in ('', 'material', 'batch'):
+        try:
+            from models.batch import BatchPriceHistory, InventoryBatch
+            
+            # Build batch price query with joins
+            batch_price_query = BatchPriceHistory.query\
+                .join(InventoryBatch, BatchPriceHistory.batch_id == InventoryBatch.id)\
+                .join(Item, InventoryBatch.item_id == Item.id)
+            
+            # Apply batch number filter if specified
+            if batch_number:
+                batch_price_query = batch_price_query.filter(InventoryBatch.batch_code.ilike(f'%{batch_number}%'))
+            
+            # Apply date filters to batch prices
+            if date_range:
+                today = datetime.now()
+                if date_range == '6months':
+                    start_filter = today - timedelta(days=180)
+                elif date_range == '1year':
+                    start_filter = today - timedelta(days=365)
+                elif date_range == '2years':
+                    start_filter = today - timedelta(days=730)
+                elif date_range == '5years':
+                    start_filter = today - timedelta(days=1825)
+                else:
+                    start_filter = None
+                    
+                if start_filter:
+                    batch_price_query = batch_price_query.filter(BatchPriceHistory.effective_date >= start_filter)
+            
+            if start_date:
+                try:
+                    start_filter = datetime.strptime(start_date, '%Y-%m-%d')
+                    batch_price_query = batch_price_query.filter(BatchPriceHistory.effective_date >= start_filter)
+                except ValueError:
+                    pass
+            
+            if end_date:
+                try:
+                    end_filter = datetime.strptime(end_date, '%Y-%m-%d')
+                    end_filter = end_filter + timedelta(days=1)
+                    batch_price_query = batch_price_query.filter(BatchPriceHistory.effective_date < end_filter)
+                except ValueError:
+                    pass
+            
+            # Get batch price history
+            batch_price_history = batch_price_query.order_by(BatchPriceHistory.effective_date.desc()).all()
+            
+            for record in batch_price_history:
+                batch = record.batch
+                item = batch.item if batch else None
+                
+                all_price_changes.append({
+                    'type': 'batch_price',
+                    'category': 'Batch Price',
+                    'item_name': item.name if item else 'Unknown',
+                    'item_code': item.code if item else '',
+                    'price': record.new_price,
+                    'price_type': record.price_type or 'batch',
+                    'source': record.source or 'Batch Update',
+                    'date': record.effective_date,
+                    'updated_by': getattr(record, 'updated_by', 'System'),
+                    'details': f"Batch: {batch.batch_code if batch else 'Unknown'} | Previous: ₹{record.previous_price or 0:.2f}",
+                    'vendor_name': getattr(batch, 'supplier_batch_no', '-') if batch else '-',
+                    'batch_number': batch.batch_code if batch else '-'
+                })
+        except (ImportError, AttributeError) as e:
+            print(f"Batch price history not available: {str(e)}")
+            pass
     
     # 2. Job Work Rates History
     if price_category in ('', 'jobwork'):
@@ -333,7 +406,8 @@ def price_history():
                         'date': rate.created_at or rate.updated_at,
                         'updated_by': 'Admin',
                         'details': f"Process: {rate.process_type or 'General'} | Vendor: {rate.vendor_name or 'Any'}",
-                        'vendor_name': rate.vendor_name or '-'
+                        'vendor_name': rate.vendor_name or '-',
+                        'batch_number': '-'  # No batch for job work rates
                     })
         except ImportError:
             pass  # JobWorkRate model not available
@@ -388,7 +462,8 @@ def price_history():
                         'date': job_date,
                         'updated_by': 'System',
                         'details': f"Job: {job.job_number} | Process: {job.process or 'General'} | Qty: {job.quantity_sent}",
-                        'vendor_name': job.customer_name or '-'
+                        'vendor_name': job.customer_name or '-',
+                        'batch_number': '-'  # No batch for job work orders
                     })
         except ImportError:
             pass
@@ -425,15 +500,28 @@ def price_history():
     price_categories = [
         ('', 'All Categories'),
         ('material', 'Material Prices'),
+        ('batch', 'Batch Prices'),
         ('jobwork', 'Job Work Rates')
     ]
+    
+    # Get available batch numbers for dropdown
+    batch_numbers = []
+    try:
+        from models.batch import InventoryBatch
+        unique_batches = InventoryBatch.query.with_entities(InventoryBatch.batch_code)\
+            .distinct().order_by(InventoryBatch.batch_code).all()
+        batch_numbers = [batch[0] for batch in unique_batches if batch[0]]
+    except (ImportError, AttributeError):
+        batch_numbers = []
     
     return render_template('price_management/price_history.html', 
                          history=history, 
                          price_types=price_types,
                          price_categories=price_categories,
+                         batch_numbers=batch_numbers,
                          current_price_type=price_type,
                          current_price_category=price_category,
+                         current_batch_number=batch_number,
                          current_date_range=date_range,
                          current_start_date=start_date,
                          current_end_date=end_date,
