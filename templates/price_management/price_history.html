@@ -62,9 +62,14 @@
                                             {% endfor %}
                                         </div>
                                         {% if item_data.records|length > 1 %}
-                                        {% set latest_price = item_data.records|sort(attribute='created_at', reverse=true)|first %}
-                                        {% set previous_price = item_data.records|sort(attribute='created_at', reverse=true)|list[1] %}
-                                        {% set price_change = (latest_price.price or 0) - (previous_price.price or 0) %}
+                                        {% set sorted_records = item_data.records|sort(attribute='created_at', reverse=true) %}
+                                        {% set latest_price = sorted_records|first %}
+                                        {% set price_change = 0 %}
+                                        {% for record in sorted_records %}
+                                            {% if loop.index == 2 %}
+                                                {% set price_change = (latest_price.price or 0) - (record.price or 0) %}
+                                            {% endif %}
+                                        {% endfor %}
                                         <div class="mt-2 pt-2 border-top">
                                             <small class="text-muted">Price Change: </small>
                                             {% if price_change > 0 %}
