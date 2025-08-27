@@ -593,9 +593,9 @@
                                                 
                                                 <script>
                                                 // Store base costs for calculations (already converted to per-unit)
-                                                const materialCostPerUnit = {{ calculated_material_cost_per_unit|default(0) }};
-                                                const laborCostPerUnit = {{ calculated_labor_cost_per_unit|default(0) }};
-                                                const outputQuantity = {{ bom.output_quantity if bom and bom.output_quantity else 1 }};
+                                                const materialCostPerUnit = {{ calculated_material_cost_per_unit|default(0)|float }};
+                                                const laborCostPerUnit = {{ calculated_labor_cost_per_unit|default(0)|float }};
+                                                const outputQuantity = {{ (bom.output_quantity if bom and bom.output_quantity else 1)|float }};
                                                 
                                                 function updateCostBreakdown() {
                                                     // Get form values
@@ -1788,7 +1788,7 @@
 <script>
 // Sync BOM from Processes - Output Quantity and other calculations
 function syncBOMFromProcesses() {
-    const bomId = {{ bom.id if bom else 0 }};
+    const bomId = {{ (bom.id if bom else 0)|int }};
     if (!bomId) {
         alert('Please save the BOM first');
         return;
@@ -1895,7 +1895,7 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.disabled = true;
             
             // Fetch calculated weight from last process
-            fetch('/production/api/bom/{{ bom.id }}/final_weight')
+            fetch('/production/api/bom/{{ bom.id|int }}/final_weight')
                 .then(function(response) { return response.json(); })
                 .then(function(data) {
                     if (data.success) {
