@@ -10,7 +10,7 @@
             <p class="text-muted">Intelligent workflow integration between Manufacturing Processes and BOM</p>
         </div>
         <div>
-            <a href="{{ url_for('production.edit_bom', job_card_id=bom.id) }}" class="btn btn-secondary">
+            <a href="{{ url_for('production.edit_bom', id=bom.id) }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Back to BOM
             </a>
         </div>
@@ -82,7 +82,7 @@
                     </div>
                     
                     <div class="text-center">
-                        <form method="POST" action="{{ url_for('production.sync_bom_from_processes', job_card_id=bom.id) }}">
+                        <form method="POST" action="{{ url_for('production.sync_bom_from_processes', id=bom.id) }}">
                             <button type="submit" class="btn btn-success btn-sm">
                                 <i class="fas fa-sync"></i> Sync from Processes
                             </button>
