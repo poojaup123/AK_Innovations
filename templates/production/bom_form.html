@@ -453,7 +453,7 @@
                         <input type="hidden" name="estimated_scrap_percent" value="{{ bom.estimated_scrap_percent or 0 }}">
                         <input type="hidden" name="scrap_quantity" value="{{ bom.scrap_quantity or 0 }}">
                         <input type="hidden" name="scrap_uom" value="{{ bom.scrap_uom or 'kg' }}">
-                        <input type="hidden" name="scrap_value_recovery_percent" value="{{ bom.scrap_value_recovery_percent or 15 }}">
+                        <input type="hidden" name="scrap_value_recovery_percent" value="{{ bom.scrap_value_recovery_percent or 0 }}">
                         <input type="hidden" name="description" value="{{ bom.description or '' }}">
                         <input type="hidden" name="remarks" value="{{ bom.remarks or '' }}">
                         <input type="hidden" name="is_phantom_bom" value="{{ 'y' if bom.is_phantom_bom else 'n' }}">
@@ -1713,15 +1713,19 @@
                                     <span class="text-success fw-bold">₹{{ "%.2f"|format(total_cost) }}</span>
                                 </div>
                                 
-                                <!-- Scrap Recovery -->
-                                {% set scrap_recovery = (bom_tree.material_cost_per_unit or 0) * 0.30 %}
+                                <!-- Scrap Recovery - Only show if BOM actually generates scrap -->
+                                {% if (bom.scrap_quantity and bom.scrap_quantity > 0) or (bom.estimated_scrap_percent and bom.estimated_scrap_percent > 0) or (bom.scrap_value_recovery_percent and bom.scrap_value_recovery_percent > 0) %}
+                                {% set scrap_recovery = (bom_tree.material_cost_per_unit or 0) * ((bom.scrap_value_recovery_percent or 0) / 100) %}
                                 <div class="d-flex align-items-center justify-content-between p-2 mb-2 border-bottom">
                                     <div class="d-flex align-items-center">
                                         <span class="me-2">♻️</span>
-                                        <strong>Scrap Recovery (30.0%):</strong>
+                                        <strong>Scrap Recovery ({{ bom.scrap_value_recovery_percent or 0 }}%):</strong>
                                     </div>
                                     <span class="text-info fw-bold">-₹{{ "%.2f"|format(scrap_recovery) }}</span>
                                 </div>
+                                {% else %}
+                                {% set scrap_recovery = 0 %}
+                                {% endif %}
                                 
                                 <!-- Net Manufacturing Cost -->
                                 {% set net_cost = total_cost - scrap_recovery %}
