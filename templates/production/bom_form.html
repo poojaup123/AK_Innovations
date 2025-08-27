@@ -78,8 +78,21 @@
                                 <div class="mb-3">
                                     {{ form.product_id.label(class="form-label") }}
                                     
-                                    <!-- Regular dropdown - much simpler -->
-                                    <select class="form-select" name="product_id" id="product_id" required>
+                                    <!-- Search input -->
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                        <input type="text" 
+                                               id="product-search" 
+                                               class="form-control" 
+                                               placeholder="Type to search products..."
+                                               autocomplete="off">
+                                        <button type="button" class="btn btn-outline-secondary" id="clear-search" title="Clear search">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Hidden dropdown for form submission -->
+                                    <select class="form-select" name="product_id" id="product_id" required style="display: none;">
                                         <option value="">Select Product...</option>
                                         {% for choice in form.product_id.choices %}
                                         <option value="{{ choice[0] }}" {{ 'selected' if choice[0] == form.product_id.data }}>
@@ -88,7 +101,17 @@
                                         {% endfor %}
                                     </select>
                                     
-                                    <small class="text-muted">Select the product this BOM creates</small>
+                                    <!-- Search results -->
+                                    <div id="search-results" class="border rounded bg-white" style="display: none; max-height: 200px; overflow-y: auto; position: relative; z-index: 1000;">
+                                        <!-- Results populated by JavaScript -->
+                                    </div>
+                                    
+                                    <!-- Selected product display -->
+                                    <div id="selected-product" class="alert alert-info py-2" style="display: none;">
+                                        <small><strong>Selected:</strong> <span id="selected-product-name"></span></small>
+                                    </div>
+                                    
+                                    <small class="text-muted">Start typing to search and select the product this BOM creates</small>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -2683,26 +2706,146 @@ function printTreeView() {
 
 {% block page_js %}
 <script>
-// Simple form validation
-function validateForm() {
-    var productSelect = document.getElementById('product_id');
-    if (!productSelect.value) {
-        alert('Please select a product before saving.');
-        return false;
-    }
-    return true;
-}
-
-// Add form validation on submit
+// Product search functionality
 document.addEventListener('DOMContentLoaded', function() {
+    var searchInput = document.getElementById('product-search');
+    var searchResults = document.getElementById('search-results');
+    var productSelect = document.getElementById('product_id');
+    var selectedProductDiv = document.getElementById('selected-product');
+    var selectedProductName = document.getElementById('selected-product-name');
+    var clearBtn = document.getElementById('clear-search');
+    
+    // Get all products from the hidden select
+    var allProducts = [];
+    for (var i = 0; i < productSelect.options.length; i++) {
+        var option = productSelect.options[i];
+        if (option.value) {
+            allProducts.push({
+                id: option.value,
+                name: option.textContent
+            });
+        }
+    }
+    
+    console.log('Loaded', allProducts.length, 'products for search');
+    
+    // Search function
+    function searchProducts(term) {
+        if (!term || term.length < 1) {
+            searchResults.style.display = 'none';
+            return;
+        }
+        
+        var lowerTerm = term.toLowerCase();
+        var matches = [];
+        
+        // Find matching products
+        for (var i = 0; i < allProducts.length; i++) {
+            if (allProducts[i].name.toLowerCase().indexOf(lowerTerm) !== -1) {
+                matches.push(allProducts[i]);
+                if (matches.length >= 10) break; // Limit to 10 results
+            }
+        }
+        
+        // Show results
+        if (matches.length === 0) {
+            searchResults.innerHTML = '<div class="p-2 text-muted">No products found</div>';
+            searchResults.style.display = 'block';
+        } else {
+            var html = '';
+            for (var j = 0; j < matches.length; j++) {
+                html += '<div class="search-item p-2 border-bottom" style="cursor: pointer;" data-id="' + matches[j].id + '">' +
+                       '<i class="fas fa-cube text-primary me-2"></i>' + matches[j].name + '</div>';
+            }
+            searchResults.innerHTML = html;
+            searchResults.style.display = 'block';
+            
+            // Add click handlers
+            var items = searchResults.querySelectorAll('.search-item');
+            for (var k = 0; k < items.length; k++) {
+                items[k].addEventListener('click', function() {
+                    selectProduct(this.getAttribute('data-id'), this.textContent.trim());
+                });
+            }
+        }
+    }
+    
+    // Select product
+    function selectProduct(productId, productName) {
+        // Update hidden select
+        productSelect.value = productId;
+        
+        // Update search input
+        searchInput.value = productName.replace('🧩', '').trim();
+        
+        // Hide search results
+        searchResults.style.display = 'none';
+        
+        // Show selected product
+        selectedProductName.textContent = productName.replace('🧩', '').trim();
+        selectedProductDiv.style.display = 'block';
+        
+        console.log('Selected product:', productId, productName);
+    }
+    
+    // Clear selection
+    function clearSelection() {
+        searchInput.value = '';
+        productSelect.value = '';
+        searchResults.style.display = 'none';
+        selectedProductDiv.style.display = 'none';
+    }
+    
+    // Event listeners
+    searchInput.addEventListener('input', function() {
+        searchProducts(this.value.trim());
+        if (!this.value.trim()) {
+            selectedProductDiv.style.display = 'none';
+        }
+    });
+    
+    clearBtn.addEventListener('click', clearSelection);
+    
+    // Hide results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#product-search') && !e.target.closest('#search-results')) {
+            searchResults.style.display = 'none';
+        }
+    });
+    
+    // Form validation
     var form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', function(e) {
-            if (!validateForm()) {
+            if (!productSelect.value) {
+                alert('Please select a product before saving.');
                 e.preventDefault();
             }
         });
     }
+    
+    // Add hover effects
+    document.addEventListener('mouseover', function(e) {
+        if (e.target.classList.contains('search-item')) {
+            e.target.style.backgroundColor = '#f8f9fa';
+        }
+    });
+    
+    document.addEventListener('mouseout', function(e) {
+        if (e.target.classList.contains('search-item')) {
+            e.target.style.backgroundColor = '';
+        }
+    });
 });
 </script>
+
+<style>
+.search-item:hover {
+    background-color: #f8f9fa !important;
+}
+
+#search-results {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+</style>
 {% endblock %}
