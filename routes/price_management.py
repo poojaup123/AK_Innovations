@@ -224,7 +224,7 @@ def price_history():
         .order_by(ItemPriceHistory.created_at.desc())\
         .paginate(page=page, per_page=50, error_out=False)
     
-    return render_template('price_management/price_history.html', history=history)
+    return redirect(url_for('reports.dashboard'))
 
 @bp.route('/dashboard')
 @login_required
