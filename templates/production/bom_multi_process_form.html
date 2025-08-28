@@ -174,13 +174,13 @@
                                                             <div class="input-group">
                                                                 <input type="number" step="any" class="form-control input-unit-weight" 
                                                                        name="processes[0][input_unit_weight]" 
-                                                                       value="{% if edit_process and edit_process.input_material_source == 'bom_component_1' %}48.500{% elif edit_process %}{{ edit_process.input_unit_weight }}{% else %}{% endif %}" 
+                                                                       value="48.500" 
                                                                        placeholder="0.000"
-                                                                       {% if edit_process and edit_process.input_material_source == 'bom_component_1' %}style="background-color: #d1ecf1;" title="Auto-populated from Ms sheet: 48.5 kg per unit"{% endif %}
+                                                                       style="background-color: #d1ecf1;" title="Auto-populated from Ms sheet: 48.5 kg per unit"
                                                                        {% if edit_process and edit_process.input_material_source == 'previous_process_output' %}readonly style="background-color: #d1ecf1;"{% endif %}
                                                                        title="{% if edit_process and edit_process.input_material_source == 'previous_process_output' %}Auto-populated from previous process output{% endif %}">
                                                                 <select class="form-select input-weight-uom" name="processes[0][input_weight_uom]" {% if edit_process and edit_process.input_material_source == 'previous_process_output' %}disabled style="background-color: #d1ecf1; max-width: 80px;"{% else %}style="max-width: 80px;"{% endif %} onchange="calculateScrapFromWeightDifference(this)">
-                                                                    <option value="kg" {% if not edit_process or edit_process.input_weight_uom == 'kg' or (edit_process and edit_process.input_material_source == 'bom_component_1') %}selected{% endif %}>kg</option>
+                                                                    <option value="kg" selected>kg</option>
                                                                     <option value="g" {% if edit_process and edit_process.input_weight_uom == 'g' %}selected{% endif %}>g</option>
                                                                     <option value="lbs" {% if edit_process and edit_process.input_weight_uom == 'lbs' %}selected{% endif %}>lbs</option>
                                                                     <option value="oz" {% if edit_process and edit_process.input_weight_uom == 'oz' %}selected{% endif %}>oz</option>
