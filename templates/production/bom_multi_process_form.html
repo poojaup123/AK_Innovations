@@ -578,11 +578,6 @@ function createProcessItem(processNumber) {
                             <label class="form-label">Material Used in Process</label>
                             <select class="form-select process-material-source" name="processes[${index}][input_material_source]" onchange="handleMaterialSourceChange(this)">
                                 <option value="">Select Material Source</option>
-                                {% for item in bom.items %}
-                                    {% if item.material %}
-                                    <option value="bom_component_{{ item.id }}">{{ item.material.name }} ({{ item.qty_required }} {{ item.uom.symbol if item.uom else item.unit }})</option>
-                                    {% endif %}
-                                {% endfor %}
                                 <option value="raw_material">Direct Raw Material</option>
                                 ${processNumber > 1 ? '<option value="previous_process_output">Previous Process Output</option>' : ''}
                             </select>
