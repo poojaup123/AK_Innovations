@@ -129,7 +129,7 @@
                                                     <div class="col-md-3">
                                                         <div class="form-group mb-3">
                                                             <label class="form-label">Material Used in Process</label>
-                                                            <select class="form-select process-material-source" name="processes[0][input_material_source]" id="material-source-0">
+                                                            <select class="form-select process-material-source" name="processes[0][input_material_source]" id="material-source-0" onchange="handleMaterialSourceChange(this)">
                                                                 <option value="">Select Material Source</option>
                                                                 {% for item in bom.items %}
                                                                     {% if item.material %}
@@ -174,7 +174,7 @@
                                                             <div class="input-group">
                                                                 <input type="number" step="any" class="form-control input-unit-weight" 
                                                                        name="processes[0][input_unit_weight]" 
-                                                                       value="{% if edit_process and edit_process.input_material_source == 'bom_component_1' %}48.500{% elif edit_process %}{{ edit_process.input_unit_weight if edit_process.input_unit_weight else '' }}{% else %}{% endif %}" 
+                                                                       value="{% if edit_process %}{{ edit_process.input_unit_weight if edit_process.input_unit_weight else '' }}{% else %}{% endif %}" 
                                                                        placeholder="0.000"
                                                                        {% if edit_process and edit_process.input_material_source == 'bom_component_1' %}style="background-color: #d1ecf1;" title="Auto-populated from Ms sheet: 48.5 kg per unit"{% endif %}
                                                                        {% if edit_process and edit_process.input_material_source == 'previous_process_output' %}readonly style="background-color: #d1ecf1;"{% endif %}
@@ -1602,8 +1602,41 @@ function performInitialCascading() {
     });
 }
 
-// Input Unit Weight is now auto-populated via server-side template logic
-// No JavaScript required - the weight is automatically set when Ms sheet is selected
+// Enhanced Material Source Change Handler
+function handleMaterialSourceChange(selectElement) {
+    const processDiv = selectElement.closest('.card-body');
+    if (!processDiv) return;
+    
+    const selectedValue = selectElement.value;
+    const inputUnitWeightField = processDiv.querySelector('.input-unit-weight');
+    const inputWeightUomField = processDiv.querySelector('.input-weight-uom');
+    
+    if (!inputUnitWeightField) return;
+    
+    // Clear previous auto-population
+    inputUnitWeightField.style.backgroundColor = '';
+    inputUnitWeightField.title = '';
+    
+    // Check if Ms sheet (bom_component_1) is selected
+    if (selectedValue === 'bom_component_1') {
+        inputUnitWeightField.value = '48.500';
+        inputUnitWeightField.style.backgroundColor = '#d1ecf1';
+        inputUnitWeightField.title = 'Auto-populated from Ms sheet: 48.5 kg per unit';
+        
+        if (inputWeightUomField) {
+            // Set UOM to kg
+            for (let option of inputWeightUomField.options) {
+                if (option.value === 'kg') {
+                    option.selected = true;
+                    break;
+                }
+            }
+        }
+    } else if (selectedValue === 'raw_material' || selectedValue === '' || selectedValue === 'previous_process_output') {
+        // For other material sources, clear the field
+        inputUnitWeightField.value = '';
+    }
+}
 
 
 // Function to populate Input Unit Weight from previous process output
@@ -1782,7 +1815,21 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 {% endif %}
 
-// Material Source auto-population is handled by server-side template logic
+// Material Source Event Handlers
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners to all material source dropdowns
+    const materialDropdowns = document.querySelectorAll('.process-material-source');
+    materialDropdowns.forEach(dropdown => {
+        dropdown.addEventListener('change', function() {
+            handleMaterialSourceChange(this);
+        });
+        
+        // Also trigger on page load if Ms sheet is already selected
+        if (dropdown.value === 'bom_component_1') {
+            handleMaterialSourceChange(dropdown);
+        }
+    });
+});
 
 </script>
 {% endblock %}
