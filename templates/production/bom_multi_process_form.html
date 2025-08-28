@@ -1700,37 +1700,38 @@ document.getElementById('addProcessBtn').addEventListener('click', function() {
 // Initialize existing process data on page load
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
-        {% if not edit_process %}
-        // Only initialize for new processes, not editing existing ones
-        initializeExistingProcessData();
-        {% else %}
-        // For editing mode, just apply correct styling
-        {% if edit_process.input_material_source == 'previous_process_output' %}
-        const inputWeight = document.querySelector('.input-unit-weight');
-        const inputQty = document.querySelector('.input-quantity');
-        const inputWeightUom = document.querySelector('.input-weight-uom');
+        const isEditMode = {{ 'true' if edit_process else 'false' }};
+        const isPreviousProcessOutput = {{ 'true' if edit_process and edit_process.input_material_source == 'previous_process_output' else 'false' }};
         
-        if (inputWeight) {
-            inputWeight.style.backgroundColor = '#d1ecf1';
-            inputWeight.readOnly = true;
+        if (!isEditMode) {
+            // Only initialize for new processes, not editing existing ones
+            initializeExistingProcessData();
+        } else if (isPreviousProcessOutput) {
+            // For editing mode, just apply correct styling
+            const inputWeight = document.querySelector('.input-unit-weight');
+            const inputQty = document.querySelector('.input-quantity');
+            const inputWeightUom = document.querySelector('.input-weight-uom');
+            
+            if (inputWeight) {
+                inputWeight.style.backgroundColor = '#d1ecf1';
+                inputWeight.readOnly = true;
+            }
+            if (inputQty) {
+                inputQty.style.backgroundColor = '#d1ecf1';
+                inputQty.readOnly = true;
+            }
+            
+            // Also style the input quantity UOM dropdown
+            const inputQtyUom = document.querySelector('.input-qty-uom');
+            if (inputQtyUom) {
+                inputQtyUom.style.backgroundColor = '#d1ecf1';
+                inputQtyUom.disabled = true;
+            }
+            if (inputWeightUom) {
+                inputWeightUom.style.backgroundColor = '#d1ecf1';
+                inputWeightUom.disabled = true;
+            }
         }
-        if (inputQty) {
-            inputQty.style.backgroundColor = '#d1ecf1';
-            inputQty.readOnly = true;
-        }
-        
-        // Also style the input quantity UOM dropdown
-        const inputQtyUom = document.querySelector('.input-qty-uom');
-        if (inputQtyUom) {
-            inputQtyUom.style.backgroundColor = '#d1ecf1';
-            inputQtyUom.disabled = true;
-        }
-        if (inputWeightUom) {
-            inputWeightUom.style.backgroundColor = '#d1ecf1';
-            inputWeightUom.disabled = true;
-        }
-        {% endif %}
-        {% endif %}
     }, 100);
 });
 
@@ -1780,9 +1781,10 @@ document.addEventListener('DOMContentLoaded', function() {
     firstProcess.querySelector('[name="processes[0][estimated_scrap_percent]"]').value = '{{ edit_process.estimated_scrap_percent or 0 }}';
     
     // Set scrap tracking checkbox
-    {% if edit_process and edit_process.scrap_tracking_enabled %}
-    firstProcess.querySelector('[name="processes[0][scrap_tracking_enabled]"]').checked = true;
-    {% endif %}
+    const scrapTrackingEnabled = {{ 'true' if edit_process and edit_process.scrap_tracking_enabled else 'false' }};
+    if (scrapTrackingEnabled) {
+        firstProcess.querySelector('[name="processes[0][scrap_tracking_enabled]"]').checked = true;
+    }
     
     // Pre-populate material source dropdown
     const materialSourceDropdown = firstProcess.querySelector('[name="processes[0][input_material_source]"]');
