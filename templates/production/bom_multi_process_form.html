@@ -129,20 +129,7 @@
                                                     <div class="col-md-3">
                                                         <div class="form-group mb-3">
                                                             <label class="form-label">Material Used in Process</label>
-                                                            <select class="form-select process-material-source" name="processes[0][input_material_source]" onchange="
-                                                                if (this.value === 'bom_component_1') {
-                                                                    var weightField = document.querySelector('.input-unit-weight');
-                                                                    var uomField = document.querySelector('.input-weight-uom');
-                                                                    if (weightField) {
-                                                                        weightField.value = '48.500';
-                                                                        weightField.style.backgroundColor = '#d1ecf1';
-                                                                        uomField.value = 'kg';
-                                                                        alert('SUCCESS: Ms sheet weight auto-populated to 48.500 kg');
-                                                                    } else {
-                                                                        alert('ERROR: Weight field not found');
-                                                                    }
-                                                                }
-                                                            " id="material-source-0">
+                                                            <select class="form-select process-material-source" name="processes[0][input_material_source]" onchange="alert('Dropdown changed to: ' + this.value);" id="material-source-0">
                                                                 <option value="">Select Material Source</option>
                                                                 {% for item in bom.items %}
                                                                     {% if item.material %}
