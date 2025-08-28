@@ -1299,10 +1299,10 @@ def bom_tree_view():
         unit_weight = bom.unit_weight or 0.114  # kg per unit
         freight_cost_per_unit_calculated = (bom.freight_cost_per_unit or 10) * unit_weight  # ₹10/kg × 0.114kg = ₹1.14
         overhead_cost_per_unit = bom.overhead_cost_per_unit or 0
-        # Calculate overhead based on material cost if not set (typically 5% of material cost)
-        if overhead_cost_per_unit == 0:
+        # Calculate overhead based on percentage if configured
+        if overhead_cost_per_unit == 0 and bom.overhead_percentage and bom.overhead_percentage > 0:
             material_cost_per_unit = material_cost / (bom.output_quantity or 1)
-            overhead_cost_per_unit = material_cost_per_unit * 0.05  # 5% overhead rate
+            overhead_cost_per_unit = material_cost_per_unit * (bom.overhead_percentage / 100)
         
         # Total cost = Material + Labor + Overhead + Freight (all per unit, then multiply by quantity)
         cost_per_unit = (material_cost / (bom.output_quantity or 1)) + labor_cost_per_unit + overhead_cost_per_unit + freight_cost_per_unit_calculated
