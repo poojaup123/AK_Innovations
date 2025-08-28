@@ -2967,8 +2967,8 @@ class BOM(db.Model):
         
         total_scrap = 0.0
         for process in self.processes:
-            if process.scrap_tracking_enabled and process.calculated_scrap_weight:
-                total_scrap += process.calculated_scrap_weight
+            if process.scrap_weight_per_unit and process.scrap_weight_per_unit > 0:
+                total_scrap += process.scrap_weight_per_unit
         
         # Add manual scrap weight if specified
         if self.scrap_weight:
