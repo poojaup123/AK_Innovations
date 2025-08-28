@@ -920,14 +920,15 @@
                                         </button>
                                     </th>
                                     <th style="width: 4%">#</th>
-                                    <th style="width: 23%">Component</th>
-                                    <th style="width: 11%">Required Qty</th>
-                                    <th style="width: 8%">Unit</th>
-                                    <th style="width: 11%">Unit Cost</th>
-                                    <th style="width: 11%">Total Cost</th>
-                                    <th style="width: 14%">Stock Status</th>
-                                    <th style="width: 10%">Notes</th>
-                                    <th style="width: 9%">Actions</th>
+                                    <th style="width: 20%">Component</th>
+                                    <th style="width: 10%">Required Qty</th>
+                                    <th style="width: 7%">Unit</th>
+                                    <th style="width: 9%">Unit Weight</th>
+                                    <th style="width: 10%">Unit Cost</th>
+                                    <th style="width: 10%">Total Cost</th>
+                                    <th style="width: 12%">Stock Status</th>
+                                    <th style="width: 9%">Notes</th>
+                                    <th style="width: 8%">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -974,6 +975,14 @@
                                                 {% endfor %}
                                             {% endif %}
                                         </select>
+                                    </td>
+                                    <td>
+                                        {% set unit_weight = bom_item.item.unit_weight if bom_item.item and bom_item.item.unit_weight else 0 %}
+                                        {% if unit_weight > 0 %}
+                                            <span class="text-info">{{ "%.3f"|format(unit_weight) }} kg</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
                                     </td>
                                     <td class="editable" data-field="unit_cost" data-type="number">
                                         {% set unit_cost = bom_item.unit_cost or (bom_item.item.unit_price if bom_item.item else 0) %}
@@ -1054,6 +1063,7 @@
                                                         <small class="text-muted">Material Properties</small>
                                                         <ul class="list-unstyled small mb-0">
                                                             <li><strong>Category:</strong> {{ bom_item.item.item_type or 'N/A' }}</li>
+                                                            <li><strong>Unit Weight:</strong> {{ ("%.3f kg"|format(bom_item.item.unit_weight)) if bom_item.item.unit_weight else 'Not Set' }}</li>
                                                             <li><strong>Description:</strong> {{ bom_item.item.description or 'N/A' }}</li>
                                                             <li><strong>Supplier:</strong> {{ bom_item.item.supplier.name if bom_item.item.supplier else 'N/A' }}</li>
                                                         </ul>
