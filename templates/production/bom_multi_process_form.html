@@ -1601,12 +1601,18 @@ function performInitialCascading() {
 
 // Function to handle material source change and auto-populate material weight
 function handleMaterialSourceChange(selectElement) {
+    console.log('🔥 handleMaterialSourceChange called!');
+    console.log('Selected value:', selectElement.value);
+    
     const selectedValue = selectElement.value;
-    const processDiv = selectElement.closest('.process-item');
+    const processDiv = selectElement.closest('.process-item') || selectElement.closest('.card-body');
+    
+    console.log('Process div found:', processDiv ? 'YES' : 'NO');
     
     // Check if a BOM component is selected (starts with "bom_component_")
     if (selectedValue.startsWith('bom_component_')) {
         const bomItemId = selectedValue.replace('bom_component_', '');
+        console.log('BOM Item ID:', bomItemId);
         
         // Get BOM materials data from server-side
         const bomMaterials = [
@@ -1622,6 +1628,8 @@ function handleMaterialSourceChange(selectElement) {
                 }{% if not loop.last %},{% endif %}
             {% endfor %}
         ];
+        
+        console.log('BOM Materials array:', bomMaterials);
         
         // Find the selected BOM item
         const selectedBomItem = bomMaterials.find(item => item.id == bomItemId);
