@@ -471,7 +471,7 @@
 {% block scripts %}
 <script>
 // Initialize processCount based on existing processes in the BOM
-let processCount = {{ bom.processes|length + 1 }};
+let processCount = {{ (bom.processes|length + 1) | tojson }};
 
 document.getElementById('addProcessBtn').addEventListener('click', function() {
     const processContainer = document.getElementById('processContainer');
@@ -957,26 +957,17 @@ function populateBOMMaterials(processDiv, index) {
     const materialsContainer = processDiv.querySelector(`#bomMaterials-${index}`);
     if (materialsContainer) {
         // Get BOM materials data from server-side
-        const bomMaterials = [
-            {% for item in bom.items %}
-                {
-                    material_name: "{{ item.material.name if item.material else 'Unknown' }}",
-                    qty_required: {{ item.qty_required or 0 }},
-                    unit: "{{ item.uom.symbol if item.uom else item.unit or 'pcs' }}"
-                }{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ];
+        const bomMaterials = {{ bom.items | map(attribute='material.name') | list | tojson }} || [];
         
         let materialsHtml = '';
         
         if (bomMaterials && bomMaterials.length > 0) {
-            bomMaterials.forEach(item => {
-                if (item.material_name && item.material_name !== 'Unknown') {
-                    const materialName = item.material_name.length > 15 ? 
-                        item.material_name.substring(0, 15) + '...' : 
-                        item.material_name;
-                    const tooltip = `${item.material_name} - ${item.qty_required} ${item.unit}`;
-                    materialsHtml += `<span class="badge bg-primary text-white me-1" title="${tooltip}">${materialName}</span>`;
+            bomMaterials.forEach(materialName => {
+                if (materialName && materialName !== 'Unknown') {
+                    const displayName = materialName.length > 15 ? 
+                        materialName.substring(0, 15) + '...' : 
+                        materialName;
+                    materialsHtml += `<span class="badge bg-primary text-white me-1" title="${materialName}">${displayName}</span>`;
                 }
             });
         }
@@ -1409,7 +1400,7 @@ function manualCascade(toProcessNumber) {
 
 // Function to fetch previous process data from the server
 function fetchPreviousProcessData(currentSequence, processDiv) {
-    const bomId = {{ bom.id }};
+    const bomId = {{ bom.id | tojson }};
     
     // Fetching previous process data for sequence
     
@@ -1667,8 +1658,8 @@ function populateInputWeightFromPreviousProcess(processDiv) {
         }
     } else {
         // If no previous process found, check database for existing processes
-        const bomId = {{ bom.id }};
-        const stepNumber = {{ edit_process.step_number if edit_process else 1 }};
+        const bomId = {{ bom.id | tojson }};
+        const stepNumber = {{ edit_process.step_number | tojson if edit_process else 1 }};
         
         if (stepNumber > 1) {
             // Make AJAX call to get previous process data
@@ -1789,9 +1780,9 @@ document.addEventListener('DOMContentLoaded', function() {
     firstProcess.querySelector('[name="processes[0][estimated_scrap_percent]"]').value = '{{ edit_process.estimated_scrap_percent or 0 }}';
     
     // Set scrap tracking checkbox
-    if ('{{ edit_process.scrap_tracking_enabled }}' === 'True') {
-        firstProcess.querySelector('[name="processes[0][scrap_tracking_enabled]"]').checked = true;
-    }
+    {% if edit_process and edit_process.scrap_tracking_enabled %}
+    firstProcess.querySelector('[name="processes[0][scrap_tracking_enabled]"]').checked = true;
+    {% endif %}
     
     // Pre-populate material source dropdown
     const materialSourceDropdown = firstProcess.querySelector('[name="processes[0][input_material_source]"]');
