@@ -1700,8 +1700,8 @@ document.getElementById('addProcessBtn').addEventListener('click', function() {
 // Initialize existing process data on page load
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
-        const isEditMode = {{ 'true' if edit_process else 'false' }};
-        const isPreviousProcessOutput = {{ 'true' if edit_process and edit_process.input_material_source == 'previous_process_output' else 'false' }};
+        const isEditMode = '{{ edit_process }}' !== '';
+        const isPreviousProcessOutput = '{{ edit_process.input_material_source if edit_process else '' }}' === 'previous_process_output';
         
         if (!isEditMode) {
             // Only initialize for new processes, not editing existing ones
@@ -1781,7 +1781,7 @@ document.addEventListener('DOMContentLoaded', function() {
     firstProcess.querySelector('[name="processes[0][estimated_scrap_percent]"]').value = '{{ edit_process.estimated_scrap_percent or 0 }}';
     
     // Set scrap tracking checkbox
-    const scrapTrackingEnabled = {{ 'true' if edit_process and edit_process.scrap_tracking_enabled else 'false' }};
+    const scrapTrackingEnabled = '{{ edit_process.scrap_tracking_enabled if edit_process else '' }}' === 'True';
     if (scrapTrackingEnabled) {
         firstProcess.querySelector('[name="processes[0][scrap_tracking_enabled]"]').checked = true;
     }
