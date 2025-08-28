@@ -120,12 +120,12 @@
                                                    step="0.01" readonly
                                                    title="Cost per single unit (Material cost ÷ output quantity)">
                                             <span class="input-group-text bg-success text-white" 
-                                                  title="Cost per individual base plate">
+                                                  title="Cost per individual {{ bom.product.name.lower() if bom.product else 'unit' }}">
                                                 <i class="fas fa-calculator"></i>
                                             </span>
                                         </div>
                                         <small class="text-success">
-                                            <i class="fas fa-info-circle"></i> Cost per single base plate (₹{{ '%.2f'|format(material_cost) }} ÷ {{ bom.output_quantity }} units)
+                                            <i class="fas fa-info-circle"></i> Cost per single {{ bom.product.name.lower() if bom.product else 'unit' }} (₹{{ '%.2f'|format(material_cost) }} ÷ {{ bom.output_quantity }} units)
                                         </small>
                                     {% else %}
                                         <div class="input-group">
