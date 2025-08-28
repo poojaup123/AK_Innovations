@@ -1601,43 +1601,35 @@ function performInitialCascading() {
 
 // Function to handle material source change and auto-populate material weight
 function handleMaterialSourceChange(selectElement) {
-    console.log('🔥 handleMaterialSourceChange called!');
-    console.log('Selected value:', selectElement.value);
-    
-    const selectedValue = selectElement.value;
-    const processDiv = selectElement.closest('.process-item') || selectElement.closest('.card-body');
-    
-    console.log('Process div found:', processDiv ? 'YES' : 'NO');
-    
-    // Check if a BOM component is selected (starts with "bom_component_")
-    if (selectedValue.startsWith('bom_component_')) {
-        const bomItemId = selectedValue.replace('bom_component_', '');
-        console.log('BOM Item ID:', bomItemId);
+    try {
+        const selectedValue = selectElement.value;
+        const processDiv = selectElement.closest('.process-item') || selectElement.closest('.card-body');
         
-        // Get BOM materials data from server-side
-        const bomMaterials = [
-            {% for item in bom.items %}
-                {
-                    id: {{ item.id }},
-                    material_name: "{{ item.item.name if item.item else 'Unknown' }}",
-                    material_weight: {{ item.item.unit_weight if item.item and item.item.unit_weight else 0 }},
-                    qty_required: {{ item.quantity_required or 0 }},
-                    unit: "{{ item.uom.symbol if item.uom else item.unit or 'pcs' }}",
-                    unit_full_name: "{{ item.uom.name if item.uom else item.unit or 'pieces' }}",
-                    material_unit_price: {{ item.item.unit_price if item.item and item.item.unit_price else 0 }}
-                }{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ];
+        if (!processDiv) return;
         
-        console.log('BOM Materials array:', bomMaterials);
-        
-        // Find the selected BOM item
-        const selectedBomItem = bomMaterials.find(item => item.id == bomItemId);
-        
-        console.log('Selected BOM Item:', selectedBomItem);
-        console.log('Material Weight:', selectedBomItem ? selectedBomItem.material_weight : 'No item found');
-        
-        if (selectedBomItem) {
+        // Check if a BOM component is selected (starts with "bom_component_")
+        if (selectedValue.startsWith('bom_component_')) {
+            const bomItemId = selectedValue.replace('bom_component_', '');
+            
+            // Get BOM materials data from server-side
+            const bomMaterials = [
+                {% for item in bom.items %}
+                    {
+                        id: {{ item.id }},
+                        material_name: "{{ item.item.name if item.item else 'Unknown' }}",
+                        material_weight: {{ item.item.unit_weight if item.item and item.item.unit_weight else 0 }},
+                        qty_required: {{ item.quantity_required or 0 }},
+                        unit: "{{ item.uom.symbol if item.uom else item.unit or 'pcs' }}",
+                        unit_full_name: "{{ item.uom.name if item.uom else item.unit or 'pieces' }}",
+                        material_unit_price: {{ item.item.unit_price if item.item and item.item.unit_price else 0 }}
+                    }{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ];
+            
+            // Find the selected BOM item
+            const selectedBomItem = bomMaterials.find(item => item.id == bomItemId);
+            
+            if (selectedBomItem) {
             // Auto-populate input quantity with BOM requirement
             const inputQtyField = processDiv.querySelector('.input-quantity');
             const inputQtyUomField = processDiv.querySelector('.input-qty-uom');
@@ -1668,14 +1660,11 @@ function handleMaterialSourceChange(selectElement) {
                 }
             }
             
-            // Auto-populate input unit weight from material
-            const inputUnitWeightField = processDiv.querySelector('.input-unit-weight');
-            const inputWeightUomField = processDiv.querySelector('.input-weight-uom');
-            console.log('Input Unit Weight Field:', inputUnitWeightField);
-            console.log('Material Weight Value:', selectedBomItem.material_weight);
-            
-            if (inputUnitWeightField) {
-                if (selectedBomItem.material_weight && selectedBomItem.material_weight > 0) {
+                // Auto-populate input unit weight from material
+                const inputUnitWeightField = processDiv.querySelector('.input-unit-weight');
+                const inputWeightUomField = processDiv.querySelector('.input-weight-uom');
+                
+                if (inputUnitWeightField && selectedBomItem.material_weight && selectedBomItem.material_weight > 0) {
                     inputUnitWeightField.value = selectedBomItem.material_weight.toFixed(3);
                     inputUnitWeightField.style.backgroundColor = '#d1ecf1';
                     inputUnitWeightField.title = `Auto-populated from ${selectedBomItem.material_name}: ${selectedBomItem.material_weight} kg per unit`;
@@ -1684,15 +1673,7 @@ function handleMaterialSourceChange(selectElement) {
                     if (inputWeightUomField) {
                         inputWeightUomField.value = 'kg';
                     }
-                    console.log('✅ Auto-populated Input Unit Weight:', selectedBomItem.material_weight);
-                } else {
-                    console.log('⚠️ Material weight is 0 or not available');
-                    // Clear the field if no weight available
-                    inputUnitWeightField.value = '';
-                    inputUnitWeightField.style.backgroundColor = '';
-                    inputUnitWeightField.title = '';
                 }
-            }
             
             // Update quantity field labels with actual UOM
             const inputQtyLabel = processDiv.querySelector('.input-quantity').closest('.form-group').querySelector('label');
@@ -1738,6 +1719,8 @@ function handleMaterialSourceChange(selectElement) {
                 }
             }
         }
+    } catch (error) {
+        console.error('Error in handleMaterialSourceChange:', error);
     }
 }
 
@@ -1916,5 +1899,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 {% endif %}
+
+// Additional event handlers for Material Source dropdowns
+document.addEventListener('DOMContentLoaded', function() {
+    // Attach event handlers to all material source dropdowns
+    const materialDropdowns = document.querySelectorAll('.process-material-source');
+    materialDropdowns.forEach(dropdown => {
+        dropdown.addEventListener('change', function() {
+            handleMaterialSourceChange(this);
+        });
+    });
+});
+
 </script>
 {% endblock %}
