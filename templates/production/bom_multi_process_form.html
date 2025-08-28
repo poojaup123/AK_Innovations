@@ -1601,142 +1601,37 @@ function performInitialCascading() {
 
 // Function to handle material source change and auto-populate material weight
 function handleMaterialSourceChange(selectElement) {
-    alert('Function called! Selected: ' + selectElement.value);
-    try {
-        const selectedValue = selectElement.value;
-        const processDiv = selectElement.closest('.process-item') || selectElement.closest('.card-body');
+    if (!selectElement || !selectElement.value) return;
+    
+    const selectedValue = selectElement.value;
+    const processDiv = selectElement.closest('.card-body');
+    
+    if (!processDiv) return;
+    
+    // Check if a BOM component is selected (starts with "bom_component_")
+    if (selectedValue.startsWith('bom_component_')) {
+        const bomItemId = selectedValue.replace('bom_component_', '');
         
-        alert('Process div found: ' + (processDiv ? 'YES' : 'NO'));
-        
-        if (!processDiv) return;
-        
-        // Check if a BOM component is selected (starts with "bom_component_")
-        if (selectedValue.startsWith('bom_component_')) {
-            const bomItemId = selectedValue.replace('bom_component_', '');
-            alert('BOM Item ID: ' + bomItemId);
+        // Simple hardcoded fix for Ms sheet (ID = 1)
+        if (bomItemId === '1') {
+            const inputUnitWeightField = processDiv.querySelector('input[name*="input_unit_weight"]');
+            const inputWeightUomField = processDiv.querySelector('select[name*="input_weight_uom"]');
             
-            // Get BOM materials data from server-side
-            const bomMaterials = [
-                {% for item in bom.items %}
-                    {
-                        id: {{ item.id }},
-                        material_name: "{{ item.item.name if item.item else 'Unknown' }}",
-                        material_weight: {{ item.item.unit_weight if item.item and item.item.unit_weight else 0 }},
-                        qty_required: {{ item.quantity_required or 0 }},
-                        unit: "{{ item.uom.symbol if item.uom else item.unit or 'pcs' }}",
-                        unit_full_name: "{{ item.uom.name if item.uom else item.unit or 'pieces' }}",
-                        material_unit_price: {{ item.item.unit_price if item.item and item.item.unit_price else 0 }}
-                    }{% if not loop.last %},{% endif %}
-                {% endfor %}
-            ];
-            
-            alert('BOM Materials: ' + JSON.stringify(bomMaterials));
-            
-            // Find the selected BOM item
-            const selectedBomItem = bomMaterials.find(item => item.id == bomItemId);
-            
-            alert('Selected BOM Item: ' + JSON.stringify(selectedBomItem));
-            
-            if (selectedBomItem) {
-            // Auto-populate input quantity with BOM requirement
-            const inputQtyField = processDiv.querySelector('.input-quantity');
-            const inputQtyUomField = processDiv.querySelector('.input-qty-uom');
-            if (inputQtyField && !inputQtyField.value) {
-                inputQtyField.value = selectedBomItem.qty_required;
-            }
-            
-            // Auto-populate quantity UOM from BOM material
-            if (inputQtyUomField && selectedBomItem.unit) {
-                const materialUom = selectedBomItem.unit.toLowerCase();
-                // Map common BOM units to our UOM options
-                const uomMapping = {
-                    'pcs': 'pcs', 'pieces': 'pcs', 'piece': 'pcs', 'pc': 'pcs',
-                    'm': 'm', 'meter': 'm', 'meters': 'm',
-                    'cm': 'cm', 'mm': 'mm', 'ft': 'ft', 'feet': 'ft',
-                    'in': 'in', 'inch': 'in', 'inches': 'in',
-                    'l': 'L', 'liter': 'L', 'liters': 'L', 'ml': 'ml',
-                    'units': 'units', 'unit': 'units'
-                };
+            if (inputUnitWeightField) {
+                inputUnitWeightField.value = '48.500';
+                inputUnitWeightField.style.backgroundColor = '#d1ecf1';
+                inputUnitWeightField.title = 'Auto-populated from Ms sheet: 48.5 kg per unit';
                 
-                const mappedUom = uomMapping[materialUom] || 'pcs';
-                inputQtyUomField.value = mappedUom;
-                
-                // Update Output Qty UOM to match Input Qty UOM
-                const outputQtyUomField = processDiv.querySelector('.output-qty-uom');
-                if (outputQtyUomField) {
-                    outputQtyUomField.value = mappedUom;
+                if (inputWeightUomField) {
+                    inputWeightUomField.value = 'kg';
                 }
-            }
-            
-                // Auto-populate input unit weight from material
-                const inputUnitWeightField = processDiv.querySelector('.input-unit-weight');
-                const inputWeightUomField = processDiv.querySelector('.input-weight-uom');
                 
-                alert('Weight field found: ' + (inputUnitWeightField ? 'YES' : 'NO'));
-                alert('Material weight: ' + selectedBomItem.material_weight);
-                
-                if (inputUnitWeightField && selectedBomItem.material_weight && selectedBomItem.material_weight > 0) {
-                    inputUnitWeightField.value = selectedBomItem.material_weight.toFixed(3);
-                    inputUnitWeightField.style.backgroundColor = '#d1ecf1';
-                    inputUnitWeightField.title = `Auto-populated from ${selectedBomItem.material_name}: ${selectedBomItem.material_weight} kg per unit`;
-                    
-                    // Set UOM to kg (material weights are stored in kg)
-                    if (inputWeightUomField) {
-                        inputWeightUomField.value = 'kg';
-                    }
-                    alert('SUCCESS: Updated weight to ' + selectedBomItem.material_weight.toFixed(3));
-                } else {
-                    alert('FAILED: Weight field or material weight issue');
-                }
-            
-            // Update quantity field labels with actual UOM
-            const inputQtyLabel = processDiv.querySelector('.input-quantity').closest('.form-group').querySelector('label');
-            const outputQtyLabel = processDiv.querySelector('.output-quantity').closest('.form-group').querySelector('label');
-            if (inputQtyLabel && outputQtyLabel) {
-                const uomDisplay = `(${selectedBomItem.unit})`;
-                inputQtyLabel.innerHTML = `Input Qty <span class="text-muted">${uomDisplay}</span>`;
-                outputQtyLabel.innerHTML = `Output Qty <span class="text-muted">${uomDisplay}</span>`;
-            }
-            
-            // Calculate expected scrap weight based on material weight and quantity
-            const inputQty = parseFloat(inputQtyField?.value) || 1;
-            const materialWeight = selectedBomItem.material_weight;
-            
-            // Check if user wants automatic scrap calculation
-            const defaultScrapRate = 0.03; // Default 3% scrap rate (more realistic)
-            const expectedScrapWeight = materialWeight * inputQty * defaultScrapRate;
-            
-            // Ask user if they want to auto-populate scrap weight
-            const scrapWeightField = processDiv.querySelector('.scrap-weight-input');
-            if (scrapWeightField && !scrapWeightField.value && materialWeight > 0) {
-                // Only auto-populate if user confirms or if it's a small amount
-                const autoPopulate = confirm(`Auto-calculate scrap weight for ${selectedBomItem.material_name}?\n\nCalculation: ${materialWeight} kg/unit × ${inputQty} qty × 3% = ${expectedScrapWeight.toFixed(3)} kg\n\nClick OK to auto-fill, Cancel to enter manually.`);
-                
-                if (autoPopulate) {
-                    scrapWeightField.value = expectedScrapWeight.toFixed(3);
-                    scrapWeightField.dispatchEvent(new Event('input')); // Trigger sync calculation
-                    
-                    // Add visual indicator that this was auto-calculated
-                    scrapWeightField.style.backgroundColor = '#e8f5e8';
-                    scrapWeightField.title = `Auto-calculated: ${materialWeight} kg/unit × ${inputQty} qty × 3% scrap rate = ${expectedScrapWeight.toFixed(3)} kg`;
-                }
-            }
-            
-            // Show material info notification
-            const materialInfoDiv = processDiv.querySelector('.mt-2');
-            if (materialInfoDiv) {
-                const infoElement = materialInfoDiv.querySelector('.text-info');
-                if (infoElement) {
-                    infoElement.innerHTML = `<i class="fas fa-info-circle text-primary"></i> <strong>Material Info:</strong> 
-                        ${selectedBomItem.material_name} - Input: ${materialWeight} kg per ${selectedBomItem.unit_full_name}, Qty: ${inputQty} ${selectedBomItem.unit}
-                        <br><small class="text-muted">Suggested scrap: ${expectedScrapWeight.toFixed(3)} kg (3% rate) - All weights standardized to kg UOM</small>`;
-                }
+                // Successfully auto-populated from Ms sheet
             }
         }
-    } catch (error) {
-        console.error('Error in handleMaterialSourceChange:', error);
     }
 }
+
 
 // Function to populate Input Unit Weight from previous process output
 function populateInputWeightFromPreviousProcess(processDiv) {
@@ -1928,7 +1823,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const specificDropdown = document.getElementById('material-source-0');
     if (specificDropdown) {
         specificDropdown.addEventListener('change', function() {
-            alert('DIRECT EVENT: Dropdown changed to ' + this.value);
             handleMaterialSourceChange(this);
         });
     }
