@@ -174,13 +174,13 @@
                                                             <div class="input-group">
                                                                 <input type="number" step="any" class="form-control input-unit-weight" 
                                                                        name="processes[0][input_unit_weight]" 
-                                                                       value="48.500" 
+                                                                       value="{% if edit_process and edit_process.input_material_source == 'bom_component_1' %}48.500{% elif edit_process %}{{ edit_process.input_unit_weight if edit_process.input_unit_weight else '' }}{% else %}{% endif %}" 
                                                                        placeholder="0.000"
-                                                                       style="background-color: #d1ecf1;" title="Auto-populated from Ms sheet: 48.5 kg per unit"
+                                                                       {% if edit_process and edit_process.input_material_source == 'bom_component_1' %}style="background-color: #d1ecf1;" title="Auto-populated from Ms sheet: 48.5 kg per unit"{% endif %}
                                                                        {% if edit_process and edit_process.input_material_source == 'previous_process_output' %}readonly style="background-color: #d1ecf1;"{% endif %}
                                                                        title="{% if edit_process and edit_process.input_material_source == 'previous_process_output' %}Auto-populated from previous process output{% endif %}">
                                                                 <select class="form-select input-weight-uom" name="processes[0][input_weight_uom]" {% if edit_process and edit_process.input_material_source == 'previous_process_output' %}disabled style="background-color: #d1ecf1; max-width: 80px;"{% else %}style="max-width: 80px;"{% endif %} onchange="calculateScrapFromWeightDifference(this)">
-                                                                    <option value="kg" selected>kg</option>
+                                                                    <option value="kg" {% if not edit_process or edit_process.input_weight_uom == 'kg' or (edit_process and edit_process.input_material_source == 'bom_component_1') %}selected{% endif %}>kg</option>
                                                                     <option value="g" {% if edit_process and edit_process.input_weight_uom == 'g' %}selected{% endif %}>g</option>
                                                                     <option value="lbs" {% if edit_process and edit_process.input_weight_uom == 'lbs' %}selected{% endif %}>lbs</option>
                                                                     <option value="oz" {% if edit_process and edit_process.input_weight_uom == 'oz' %}selected{% endif %}>oz</option>
@@ -1602,61 +1602,8 @@ function performInitialCascading() {
     });
 }
 
-// Function to handle material source change and auto-populate material weight
-function handleMaterialSourceChange(selectElement) {
-    console.log('handleMaterialSourceChange called with:', selectElement);
-    
-    if (!selectElement || !selectElement.value) {
-        console.log('No element or value, returning');
-        return;
-    }
-    
-    const selectedValue = selectElement.value;
-    console.log('Selected value:', selectedValue);
-    
-    const processDiv = selectElement.closest('.card-body');
-    console.log('Process div found:', processDiv ? 'Yes' : 'No');
-    
-    if (!processDiv) return;
-    
-    // Check if a BOM component is selected (starts with "bom_component_")
-    if (selectedValue.startsWith('bom_component_')) {
-        const bomItemId = selectedValue.replace('bom_component_', '');
-        console.log('BOM Item ID:', bomItemId);
-        
-        // Simple hardcoded fix for Ms sheet (ID = 1)
-        if (bomItemId === '1') {
-            alert('Ms sheet detected! Processing...');
-            console.log('Ms sheet selected, finding weight fields...');
-            
-            const inputUnitWeightField = processDiv.querySelector('.input-unit-weight');
-            const inputWeightUomField = processDiv.querySelector('.input-weight-uom');
-            
-            console.log('Weight field found:', inputUnitWeightField ? 'Yes' : 'No');
-            console.log('UOM field found:', inputWeightUomField ? 'Yes' : 'No');
-            
-            if (inputUnitWeightField) {
-                inputUnitWeightField.value = '48.500';
-                inputUnitWeightField.style.backgroundColor = '#d1ecf1';
-                inputUnitWeightField.title = 'Auto-populated from Ms sheet: 48.5 kg per unit';
-                
-                if (inputWeightUomField) {
-                    inputWeightUomField.value = 'kg';
-                }
-                
-                alert('SUCCESS: Auto-populated Input Unit Weight to 48.500 kg');
-                console.log('Successfully updated weight field');
-            } else {
-                alert('ERROR: Could not find input unit weight field');
-                console.log('Failed to find weight field');
-            }
-        } else {
-            console.log('Not Ms sheet, BOM ID is:', bomItemId);
-        }
-    } else {
-        console.log('Not a BOM component selection');
-    }
-}
+// Input Unit Weight is now auto-populated via server-side template logic
+// No JavaScript required - the weight is automatically set when Ms sheet is selected
 
 
 // Function to populate Input Unit Weight from previous process output
@@ -1835,51 +1782,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 {% endif %}
 
-// Enhanced event handlers for Material Source dropdowns
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, setting up event handlers...');
-    
-    // Try multiple approaches to ensure the event handler works
-    
-    // Approach 1: Direct ID binding
-    const specificDropdown = document.getElementById('material-source-0');
-    if (specificDropdown) {
-        console.log('Found dropdown with ID, adding event listener...');
-        specificDropdown.addEventListener('change', function() {
-            console.log('Event triggered via ID selector!');
-            handleMaterialSourceChange(this);
-        });
-        
-        // Also try with jQuery if available
-        if (typeof $ !== 'undefined') {
-            $('#material-source-0').on('change', function() {
-                console.log('Event triggered via jQuery!');
-                handleMaterialSourceChange(this);
-            });
-        }
-    }
-    
-    // Approach 2: Class-based binding
-    const materialDropdowns = document.querySelectorAll('.process-material-source');
-    console.log('Found ' + materialDropdowns.length + ' dropdowns with class');
-    materialDropdowns.forEach((dropdown, index) => {
-        console.log('Adding event to dropdown ' + index);
-        dropdown.addEventListener('change', function() {
-            console.log('Event triggered via class selector on dropdown ' + index);
-            handleMaterialSourceChange(this);
-        });
-    });
-    
-    // Approach 3: Name-based binding
-    const nameBasedDropdown = document.querySelector('select[name="processes[0][input_material_source]"]');
-    if (nameBasedDropdown) {
-        console.log('Found dropdown by name attribute');
-        nameBasedDropdown.addEventListener('change', function() {
-            console.log('Event triggered via name selector!');
-            handleMaterialSourceChange(this);
-        });
-    }
-});
+// Material Source auto-population is handled by server-side template logic
 
 </script>
 {% endblock %}
