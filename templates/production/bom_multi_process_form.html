@@ -129,7 +129,7 @@
                                                     <div class="col-md-3">
                                                         <div class="form-group mb-3">
                                                             <label class="form-label">Material Used in Process</label>
-                                                            <select class="form-select process-material-source" name="processes[0][input_material_source]" onchange="handleMaterialSourceChange(this)" id="material-source-0">
+                                                            <select class="form-select process-material-source" name="processes[0][input_material_source]" onchange="console.log('Inline event triggered!'); handleMaterialSourceChange(this);" id="material-source-0">
                                                                 <option value="">Select Material Source</option>
                                                                 {% for item in bom.items %}
                                                                     {% if item.material %}
@@ -1623,6 +1623,7 @@ function handleMaterialSourceChange(selectElement) {
         
         // Simple hardcoded fix for Ms sheet (ID = 1)
         if (bomItemId === '1') {
+            alert('Ms sheet detected! Processing...');
             console.log('Ms sheet selected, finding weight fields...');
             
             const inputUnitWeightField = processDiv.querySelector('.input-unit-weight');
