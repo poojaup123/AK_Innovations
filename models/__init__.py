@@ -2965,15 +2965,13 @@ class BOM(db.Model):
         if not self.processes:
             return self.scrap_weight or 0.0
         
+        # When processes exist, calculate scrap from processes only
         total_scrap = 0.0
         for process in self.processes:
             if process.scrap_weight_per_unit and process.scrap_weight_per_unit > 0:
                 total_scrap += process.scrap_weight_per_unit
         
-        # Add manual scrap weight if specified
-        if self.scrap_weight:
-            total_scrap += self.scrap_weight
-            
+        # Don't add manual scrap weight when processes are calculating it automatically
         return total_scrap
     
     @property
