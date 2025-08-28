@@ -1601,15 +1601,19 @@ function performInitialCascading() {
 
 // Function to handle material source change and auto-populate material weight
 function handleMaterialSourceChange(selectElement) {
+    alert('Function called! Selected: ' + selectElement.value);
     try {
         const selectedValue = selectElement.value;
         const processDiv = selectElement.closest('.process-item') || selectElement.closest('.card-body');
+        
+        alert('Process div found: ' + (processDiv ? 'YES' : 'NO'));
         
         if (!processDiv) return;
         
         // Check if a BOM component is selected (starts with "bom_component_")
         if (selectedValue.startsWith('bom_component_')) {
             const bomItemId = selectedValue.replace('bom_component_', '');
+            alert('BOM Item ID: ' + bomItemId);
             
             // Get BOM materials data from server-side
             const bomMaterials = [
@@ -1626,8 +1630,12 @@ function handleMaterialSourceChange(selectElement) {
                 {% endfor %}
             ];
             
+            alert('BOM Materials: ' + JSON.stringify(bomMaterials));
+            
             // Find the selected BOM item
             const selectedBomItem = bomMaterials.find(item => item.id == bomItemId);
+            
+            alert('Selected BOM Item: ' + JSON.stringify(selectedBomItem));
             
             if (selectedBomItem) {
             // Auto-populate input quantity with BOM requirement
@@ -1664,6 +1672,9 @@ function handleMaterialSourceChange(selectElement) {
                 const inputUnitWeightField = processDiv.querySelector('.input-unit-weight');
                 const inputWeightUomField = processDiv.querySelector('.input-weight-uom');
                 
+                alert('Weight field found: ' + (inputUnitWeightField ? 'YES' : 'NO'));
+                alert('Material weight: ' + selectedBomItem.material_weight);
+                
                 if (inputUnitWeightField && selectedBomItem.material_weight && selectedBomItem.material_weight > 0) {
                     inputUnitWeightField.value = selectedBomItem.material_weight.toFixed(3);
                     inputUnitWeightField.style.backgroundColor = '#d1ecf1';
@@ -1673,6 +1684,9 @@ function handleMaterialSourceChange(selectElement) {
                     if (inputWeightUomField) {
                         inputWeightUomField.value = 'kg';
                     }
+                    alert('SUCCESS: Updated weight to ' + selectedBomItem.material_weight.toFixed(3));
+                } else {
+                    alert('FAILED: Weight field or material weight issue');
                 }
             
             // Update quantity field labels with actual UOM
