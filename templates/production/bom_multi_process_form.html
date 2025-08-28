@@ -129,7 +129,7 @@
                                                     <div class="col-md-3">
                                                         <div class="form-group mb-3">
                                                             <label class="form-label">Material Used in Process</label>
-                                                            <select class="form-select process-material-source" name="processes[0][input_material_source]" onchange="handleMaterialSourceChange(this)">
+                                                            <select class="form-select process-material-source" name="processes[0][input_material_source]" onchange="handleMaterialSourceChange(this)" id="material-source-0">
                                                                 <option value="">Select Material Source</option>
                                                                 {% for item in bom.items %}
                                                                     {% if item.material %}
@@ -1923,6 +1923,15 @@ document.addEventListener('DOMContentLoaded', function() {
             handleMaterialSourceChange(this);
         });
     });
+    
+    // Also try direct binding to the specific dropdown
+    const specificDropdown = document.getElementById('material-source-0');
+    if (specificDropdown) {
+        specificDropdown.addEventListener('change', function() {
+            alert('DIRECT EVENT: Dropdown changed to ' + this.value);
+            handleMaterialSourceChange(this);
+        });
+    }
 });
 
 </script>
