@@ -471,7 +471,7 @@
 {% block scripts %}
 <script>
 // Initialize processCount based on existing processes in the BOM
-let processCount = {{ (bom.processes|length + 1) | tojson }};
+let processCount = parseInt('{{ bom.processes|length + 1 }}');
 
 document.getElementById('addProcessBtn').addEventListener('click', function() {
     const processContainer = document.getElementById('processContainer');
@@ -956,8 +956,8 @@ function updateUnitDisplays() {
 function populateBOMMaterials(processDiv, index) {
     const materialsContainer = processDiv.querySelector(`#bomMaterials-${index}`);
     if (materialsContainer) {
-        // Get BOM materials data from server-side
-        const bomMaterials = {{ bom.items | map(attribute='material.name') | list | tojson }} || [];
+        // Get BOM materials data from server-side  
+        const bomMaterials = [];
         
         let materialsHtml = '';
         
@@ -1400,7 +1400,7 @@ function manualCascade(toProcessNumber) {
 
 // Function to fetch previous process data from the server
 function fetchPreviousProcessData(currentSequence, processDiv) {
-    const bomId = {{ bom.id | tojson }};
+    const bomId = parseInt('{{ bom.id }}');
     
     // Fetching previous process data for sequence
     
@@ -1658,8 +1658,8 @@ function populateInputWeightFromPreviousProcess(processDiv) {
         }
     } else {
         // If no previous process found, check database for existing processes
-        const bomId = {{ bom.id | tojson }};
-        const stepNumber = {{ edit_process.step_number | tojson if edit_process else 1 }};
+        const bomId = parseInt('{{ bom.id }}');
+        const stepNumber = parseInt('{{ edit_process.step_number if edit_process else 1 }}');
         
         if (stepNumber > 1) {
             // Make AJAX call to get previous process data
