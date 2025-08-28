@@ -129,7 +129,7 @@
                                                     <div class="col-md-3">
                                                         <div class="form-group mb-3">
                                                             <label class="form-label">Material Used in Process</label>
-                                                            <select class="form-select process-material-source" name="processes[0][input_material_source]">
+                                                            <select class="form-select process-material-source" name="processes[0][input_material_source]" onchange="handleMaterialSourceChange(this)">
                                                                 <option value="">Select Material Source</option>
                                                                 {% for item in bom.items %}
                                                                     {% if item.material %}
@@ -573,7 +573,7 @@ function createProcessItem(processNumber) {
                     <div class="col-md-3">
                         <div class="form-group mb-3">
                             <label class="form-label">Material Used in Process</label>
-                            <select class="form-select process-material-source" name="processes[${index}][input_material_source]">
+                            <select class="form-select process-material-source" name="processes[${index}][input_material_source]" onchange="handleMaterialSourceChange(this)">
                                 <option value="">Select Material Source</option>
                                 {% for item in bom.items %}
                                     {% if item.material %}
