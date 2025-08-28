@@ -487,8 +487,8 @@
                                                     <tr>
                                                         <td>{{ item.item.name if item.item else 'N/A' }}</td>
                                                         <td>{{ item.qty_required }} {{ item.uom.symbol if item.uom else item.unit }}</td>
-                                                        <td>₹{{ '{:,.2f}'.format(item.item.unit_price) if item.item and item.item.unit_price else '0.00' }}</td>
-                                                        <td class="text-end">₹{{ '{:,.2f}'.format((item.qty_required or 0) * (item.item.unit_price or 0)) }}</td>
+                                                        <td>₹{{ '{:,.2f}'.format(item.unit_cost) if item.unit_cost else '0.00' }}</td>
+                                                        <td class="text-end">₹{{ '{:,.2f}'.format((item.qty_required or 0) * (item.unit_cost or 0)) }}</td>
                                                     </tr>
                                                         {% endfor %}
                                                     {% else %}
