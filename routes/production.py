@@ -1599,8 +1599,22 @@ def edit_bom(id):
     corrected_total_cost = material_cost + (labor_cost_per_unit * bom.output_quantity)
     total_cost_per_unit = corrected_total_cost
     
-    # Product Unit Cost = corrected total cost ÷ output_quantity for individual unit cost
-    product_unit_cost = corrected_total_cost / max(bom.output_quantity, 1)
+    # Calculate full unit cost including overhead, freight, and scrap recovery (same as Components tab)
+    material_cost_per_unit = material_cost / max(bom.output_quantity, 1)
+    overhead_cost_per_unit = 0
+    if bom.overhead_percentage and bom.overhead_percentage > 0:
+        overhead_cost_per_unit = material_cost_per_unit * (bom.overhead_percentage / 100)
+    freight_cost_per_unit = 0
+    if bom.freight_cost_per_unit and bom.unit_weight:
+        freight_cost_per_unit = bom.freight_cost_per_unit * bom.unit_weight
+    
+    # Calculate scrap recovery per unit
+    scrap_recovery_per_unit = 0
+    if bom.scrap_value_recovery_percent and bom.scrap_value_recovery_percent > 0:
+        scrap_recovery_per_unit = material_cost_per_unit * (bom.scrap_value_recovery_percent / 100)
+    
+    # Product Unit Cost = complete calculation including all factors (matches Components tab)
+    product_unit_cost = material_cost_per_unit + labor_cost_per_unit + overhead_cost_per_unit + freight_cost_per_unit - scrap_recovery_per_unit
     # BOM Total Cost = corrected total cost (total cost for the batch)
     bom_total_cost = corrected_total_cost
     
