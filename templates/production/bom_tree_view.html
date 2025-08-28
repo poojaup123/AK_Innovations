@@ -385,8 +385,6 @@
                         
                         <span class="text-success">♻️ Scrap Recovery ({{ '%.1f'|format(tree.bom.scrap_value_recovery_percent or 0) }}%): -₹{{ "%.2f"|format(scrap_recovery_per_unit) }}</span><br>
                         {% set net_cost = total_cost_per_unit - scrap_recovery_per_unit %}
-                    {% else %}
-                        {% set net_cost = total_cost_per_unit %}
                         <strong class="text-success">🔧 Net Manufacturing Cost: ₹{{ "%.2f"|format(net_cost) }}</strong><br>
                         {% if tree.bom.markup_percentage and tree.bom.markup_percentage > 0 %}
                             {% set markup_value = net_cost * (tree.bom.markup_percentage / 100) %}
@@ -397,6 +395,7 @@
                             <strong class="text-success">🎯 Final Unit Cost: ₹{{ "%.2f"|format(net_cost) }}</strong>
                         {% endif %}
                     {% else %}
+                        {% set net_cost = total_cost_per_unit %}
                         {% if tree.bom.markup_percentage and tree.bom.markup_percentage > 0 %}
                             {% set markup_value = total_cost_per_unit * (tree.bom.markup_percentage / 100) %}
                             <span class="text-warning">📈 Markup ({{ '%.1f'|format(tree.bom.markup_percentage) }}%): ₹{{ "%.2f"|format(markup_value) }}</span><br>
