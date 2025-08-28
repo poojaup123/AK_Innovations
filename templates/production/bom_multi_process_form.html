@@ -1615,10 +1615,10 @@ function handleMaterialSourceChange(selectElement) {
                     id: {{ item.id }},
                     material_name: "{{ item.item.name if item.item else 'Unknown' }}",
                     material_weight: {{ item.item.unit_weight if item.item and item.item.unit_weight else 0 }},
-                    qty_required: {{ item.qty_required or 0 }},
+                    qty_required: {{ item.quantity_required or 0 }},
                     unit: "{{ item.uom.symbol if item.uom else item.unit or 'pcs' }}",
                     unit_full_name: "{{ item.uom.name if item.uom else item.unit or 'pieces' }}",
-                    material_unit_price: {{ item.material.unit_price if item.material and item.material.unit_price else 0 }}
+                    material_unit_price: {{ item.item.unit_price if item.item and item.item.unit_price else 0 }}
                 }{% if not loop.last %},{% endif %}
             {% endfor %}
         ];
@@ -1626,7 +1626,10 @@ function handleMaterialSourceChange(selectElement) {
         // Find the selected BOM item
         const selectedBomItem = bomMaterials.find(item => item.id == bomItemId);
         
-        if (selectedBomItem && selectedBomItem.material_weight > 0) {
+        console.log('Selected BOM Item:', selectedBomItem);
+        console.log('Material Weight:', selectedBomItem ? selectedBomItem.material_weight : 'No item found');
+        
+        if (selectedBomItem) {
             // Auto-populate input quantity with BOM requirement
             const inputQtyField = processDiv.querySelector('.input-quantity');
             const inputQtyUomField = processDiv.querySelector('.input-qty-uom');
@@ -1660,14 +1663,26 @@ function handleMaterialSourceChange(selectElement) {
             // Auto-populate input unit weight from material
             const inputUnitWeightField = processDiv.querySelector('.input-unit-weight');
             const inputWeightUomField = processDiv.querySelector('.input-weight-uom');
-            if (inputUnitWeightField && selectedBomItem.material_weight) {
-                inputUnitWeightField.value = selectedBomItem.material_weight.toFixed(3);
-                inputUnitWeightField.style.backgroundColor = '#f8f9fa';
-                inputUnitWeightField.title = `Material unit weight: ${selectedBomItem.material_name} = ${selectedBomItem.material_weight} kg per ${selectedBomItem.unit_full_name}`;
-                
-                // Set UOM to kg (material weights are stored in kg)
-                if (inputWeightUomField) {
-                    inputWeightUomField.value = 'kg';
+            console.log('Input Unit Weight Field:', inputUnitWeightField);
+            console.log('Material Weight Value:', selectedBomItem.material_weight);
+            
+            if (inputUnitWeightField) {
+                if (selectedBomItem.material_weight && selectedBomItem.material_weight > 0) {
+                    inputUnitWeightField.value = selectedBomItem.material_weight.toFixed(3);
+                    inputUnitWeightField.style.backgroundColor = '#d1ecf1';
+                    inputUnitWeightField.title = `Auto-populated from ${selectedBomItem.material_name}: ${selectedBomItem.material_weight} kg per unit`;
+                    
+                    // Set UOM to kg (material weights are stored in kg)
+                    if (inputWeightUomField) {
+                        inputWeightUomField.value = 'kg';
+                    }
+                    console.log('✅ Auto-populated Input Unit Weight:', selectedBomItem.material_weight);
+                } else {
+                    console.log('⚠️ Material weight is 0 or not available');
+                    // Clear the field if no weight available
+                    inputUnitWeightField.value = '';
+                    inputUnitWeightField.style.backgroundColor = '';
+                    inputUnitWeightField.title = '';
                 }
             }
             
