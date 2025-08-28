@@ -1293,7 +1293,7 @@ function manualCascade(processIndex) {
     const currentProcess = allProcesses[processIndex - 1]; // Previous process
     
     if (currentProcess) {
-        console.log('Manual cascade triggered for process', processIndex);
+        // Manual cascade triggered for process
         cascadeToNextProcess(currentProcess);
     }
 }
@@ -1411,12 +1411,12 @@ function manualCascade(toProcessNumber) {
 function fetchPreviousProcessData(currentSequence, processDiv) {
     const bomId = {{ bom.id }};
     
-    console.log('Fetching previous process data for sequence:', currentSequence);
+    // Fetching previous process data for sequence
     
     fetch(`/production/api/bom/${bomId}/previous_process_data/${currentSequence}`)
         .then(response => response.json())
         .then(data => {
-            console.log('API response:', data);
+            // API response received
             
             if (data.success && data.previous_process) {
                 const prevData = data.previous_process;
@@ -1602,7 +1602,7 @@ function performInitialCascading() {
     });
 }
 
-// Enhanced Material Source Change Handler
+// Material Source Change Handler - Auto-populate Input Unit Weight
 function handleMaterialSourceChange(selectElement) {
     const processDiv = selectElement.closest('.card-body');
     if (!processDiv) return;
@@ -1613,11 +1613,11 @@ function handleMaterialSourceChange(selectElement) {
     
     if (!inputUnitWeightField) return;
     
-    // Clear previous auto-population
+    // Clear previous auto-population styling
     inputUnitWeightField.style.backgroundColor = '';
     inputUnitWeightField.title = '';
     
-    // Check if Ms sheet (bom_component_1) is selected
+    // Auto-populate for Ms sheet selection
     if (selectedValue === 'bom_component_1') {
         inputUnitWeightField.value = '48.500';
         inputUnitWeightField.style.backgroundColor = '#d1ecf1';
@@ -1633,7 +1633,7 @@ function handleMaterialSourceChange(selectElement) {
             }
         }
     } else if (selectedValue === 'raw_material' || selectedValue === '' || selectedValue === 'previous_process_output') {
-        // For other material sources, clear the field
+        // Clear field for other material sources
         inputUnitWeightField.value = '';
     }
 }
@@ -1689,7 +1689,7 @@ function populateInputWeightFromPreviousProcess(processDiv) {
                         }
                     }
                 })
-                .catch(error => console.log('Previous process data not found:', error));
+                .catch(error => { /* Previous process data not found */ });
         }
     }
 }
@@ -1815,16 +1815,15 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 {% endif %}
 
-// Material Source Event Handlers
+// Initialize Material Source Auto-population
 document.addEventListener('DOMContentLoaded', function() {
-    // Add event listeners to all material source dropdowns
     const materialDropdowns = document.querySelectorAll('.process-material-source');
     materialDropdowns.forEach(dropdown => {
         dropdown.addEventListener('change', function() {
             handleMaterialSourceChange(this);
         });
         
-        // Also trigger on page load if Ms sheet is already selected
+        // Trigger on page load if Ms sheet is already selected
         if (dropdown.value === 'bom_component_1') {
             handleMaterialSourceChange(dropdown);
         }
