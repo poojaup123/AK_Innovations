@@ -1601,21 +1601,35 @@ function performInitialCascading() {
 
 // Function to handle material source change and auto-populate material weight
 function handleMaterialSourceChange(selectElement) {
-    if (!selectElement || !selectElement.value) return;
+    console.log('handleMaterialSourceChange called with:', selectElement);
+    
+    if (!selectElement || !selectElement.value) {
+        console.log('No element or value, returning');
+        return;
+    }
     
     const selectedValue = selectElement.value;
+    console.log('Selected value:', selectedValue);
+    
     const processDiv = selectElement.closest('.card-body');
+    console.log('Process div found:', processDiv ? 'Yes' : 'No');
     
     if (!processDiv) return;
     
     // Check if a BOM component is selected (starts with "bom_component_")
     if (selectedValue.startsWith('bom_component_')) {
         const bomItemId = selectedValue.replace('bom_component_', '');
+        console.log('BOM Item ID:', bomItemId);
         
         // Simple hardcoded fix for Ms sheet (ID = 1)
         if (bomItemId === '1') {
+            console.log('Ms sheet selected, finding weight fields...');
+            
             const inputUnitWeightField = processDiv.querySelector('.input-unit-weight');
             const inputWeightUomField = processDiv.querySelector('.input-weight-uom');
+            
+            console.log('Weight field found:', inputUnitWeightField ? 'Yes' : 'No');
+            console.log('UOM field found:', inputWeightUomField ? 'Yes' : 'No');
             
             if (inputUnitWeightField) {
                 inputUnitWeightField.value = '48.500';
@@ -1627,10 +1641,16 @@ function handleMaterialSourceChange(selectElement) {
                 }
                 
                 alert('SUCCESS: Auto-populated Input Unit Weight to 48.500 kg');
+                console.log('Successfully updated weight field');
             } else {
                 alert('ERROR: Could not find input unit weight field');
+                console.log('Failed to find weight field');
             }
+        } else {
+            console.log('Not Ms sheet, BOM ID is:', bomItemId);
         }
+    } else {
+        console.log('Not a BOM component selection');
     }
 }
 
@@ -1811,20 +1831,47 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 {% endif %}
 
-// Additional event handlers for Material Source dropdowns
+// Enhanced event handlers for Material Source dropdowns
 document.addEventListener('DOMContentLoaded', function() {
-    // Attach event handlers to all material source dropdowns
+    console.log('DOM loaded, setting up event handlers...');
+    
+    // Try multiple approaches to ensure the event handler works
+    
+    // Approach 1: Direct ID binding
+    const specificDropdown = document.getElementById('material-source-0');
+    if (specificDropdown) {
+        console.log('Found dropdown with ID, adding event listener...');
+        specificDropdown.addEventListener('change', function() {
+            console.log('Event triggered via ID selector!');
+            handleMaterialSourceChange(this);
+        });
+        
+        // Also try with jQuery if available
+        if (typeof $ !== 'undefined') {
+            $('#material-source-0').on('change', function() {
+                console.log('Event triggered via jQuery!');
+                handleMaterialSourceChange(this);
+            });
+        }
+    }
+    
+    // Approach 2: Class-based binding
     const materialDropdowns = document.querySelectorAll('.process-material-source');
-    materialDropdowns.forEach(dropdown => {
+    console.log('Found ' + materialDropdowns.length + ' dropdowns with class');
+    materialDropdowns.forEach((dropdown, index) => {
+        console.log('Adding event to dropdown ' + index);
         dropdown.addEventListener('change', function() {
+            console.log('Event triggered via class selector on dropdown ' + index);
             handleMaterialSourceChange(this);
         });
     });
     
-    // Also try direct binding to the specific dropdown
-    const specificDropdown = document.getElementById('material-source-0');
-    if (specificDropdown) {
-        specificDropdown.addEventListener('change', function() {
+    // Approach 3: Name-based binding
+    const nameBasedDropdown = document.querySelector('select[name="processes[0][input_material_source]"]');
+    if (nameBasedDropdown) {
+        console.log('Found dropdown by name attribute');
+        nameBasedDropdown.addEventListener('change', function() {
+            console.log('Event triggered via name selector!');
             handleMaterialSourceChange(this);
         });
     }
