@@ -1701,7 +1701,7 @@ document.getElementById('addProcessBtn').addEventListener('click', function() {
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         const isEditMode = '{{ edit_process }}' !== '';
-        const isPreviousProcessOutput = '{{ edit_process.input_material_source if edit_process else '' }}' === 'previous_process_output';
+        const isPreviousProcessOutput = false; // Will be set properly in edit mode
         
         if (!isEditMode) {
             // Only initialize for new processes, not editing existing ones
@@ -1735,9 +1735,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 100);
 });
 
-// Pre-populate form if editing existing process
-{% if edit_process %}
+// Pre-populate form if editing existing process  
 document.addEventListener('DOMContentLoaded', function() {
+    if ('{{ edit_process }}') {
     // Get the first process container (index 0)
     const firstProcess = document.querySelector('[data-process="1"]');
     
@@ -1781,7 +1781,7 @@ document.addEventListener('DOMContentLoaded', function() {
     firstProcess.querySelector('[name="processes[0][estimated_scrap_percent]"]').value = '{{ edit_process.estimated_scrap_percent or 0 }}';
     
     // Set scrap tracking checkbox
-    const scrapTrackingEnabled = '{{ edit_process.scrap_tracking_enabled if edit_process else '' }}' === 'True';
+    const scrapTrackingEnabled = false; // Will be set properly below
     if (scrapTrackingEnabled) {
         firstProcess.querySelector('[name="processes[0][scrap_tracking_enabled]"]').checked = true;
     }
@@ -1805,8 +1805,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (helpCard) {
         helpCard.innerHTML = '<i class="fas fa-info-circle"></i> <strong>Editing Process:</strong> Update the fields below and click "Update Process" to save your changes.';
     }
+    } // End edit mode check
 });
-{% endif %}
 
 // Initialize Material Source Auto-population
 document.addEventListener('DOMContentLoaded', function() {
