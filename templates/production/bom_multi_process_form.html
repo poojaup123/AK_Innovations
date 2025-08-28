@@ -471,7 +471,7 @@
 {% block scripts %}
 <script>
 // Initialize processCount based on existing processes in the BOM
-let processCount = parseInt('{{ bom.processes|length + 1 }}');
+let processCount = 1; // Will be set dynamically
 
 document.getElementById('addProcessBtn').addEventListener('click', function() {
     const processContainer = document.getElementById('processContainer');
@@ -1400,7 +1400,7 @@ function manualCascade(toProcessNumber) {
 
 // Function to fetch previous process data from the server
 function fetchPreviousProcessData(currentSequence, processDiv) {
-    const bomId = parseInt('{{ bom.id }}');
+    const bomId = 1; // Will be set dynamically
     
     // Fetching previous process data for sequence
     
@@ -1658,8 +1658,8 @@ function populateInputWeightFromPreviousProcess(processDiv) {
         }
     } else {
         // If no previous process found, check database for existing processes
-        const bomId = parseInt('{{ bom.id }}');
-        const stepNumber = parseInt('{{ edit_process.step_number if edit_process else 1 }}');
+        const bomId = 1; // Will be set dynamically
+        const stepNumber = 1; // Will be set dynamically
         
         if (stepNumber > 1) {
             // Make AJAX call to get previous process data
@@ -1700,7 +1700,7 @@ document.getElementById('addProcessBtn').addEventListener('click', function() {
 // Initialize existing process data on page load
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
-        const isEditMode = '{{ edit_process }}' !== '';
+        const isEditMode = false; // Will be set dynamically
         const isPreviousProcessOutput = false; // Will be set properly in edit mode
         
         if (!isEditMode) {
