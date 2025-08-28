@@ -45,125 +45,155 @@ const ValidationUtils = {
 // Real-time validation feedback
 function setupRealTimeValidation() {
     // Phone number validation
-    $('input[name*="phone"], input[id*="phone"]').on('blur', function() {
-        const phone = $(this).val().trim();
-        if (phone && !ValidationUtils.validatePhone(phone)) {
-            showFieldError($(this), 'Please enter a valid 10-digit mobile number starting with 6-9');
-        } else {
-            clearFieldError($(this));
-        }
+    const phoneInputs = document.querySelectorAll('input[name*="phone"], input[id*="phone"]');
+    phoneInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            const phone = this.value.trim();
+            if (phone && !ValidationUtils.validatePhone(phone)) {
+                showFieldError(this, 'Please enter a valid 10-digit mobile number starting with 6-9');
+            } else {
+                clearFieldError(this);
+            }
+        });
     });
 
     // GST number validation
-    $('input[name*="gst"], input[id*="gst"]').on('blur', function() {
-        const gst = $(this).val().trim();
-        if (gst && !ValidationUtils.validateGST(gst)) {
-            showFieldError($(this), 'Please enter a valid GST number (e.g., 29ABCDE1234F1Z9)');
-        } else {
-            clearFieldError($(this));
-        }
+    const gstInputs = document.querySelectorAll('input[name*="gst"], input[id*="gst"]');
+    gstInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            const gst = this.value.trim();
+            if (gst && !ValidationUtils.validateGST(gst)) {
+                showFieldError(this, 'Please enter a valid GST number (e.g., 29ABCDE1234F1Z9)');
+            } else {
+                clearFieldError(this);
+            }
+        });
     });
 
     // PAN number validation
-    $('input[name*="pan"], input[id*="pan"]').on('blur', function() {
-        const pan = $(this).val().trim();
-        if (pan && !ValidationUtils.validatePAN(pan)) {
-            showFieldError($(this), 'Please enter a valid PAN number (e.g., ABCDE1234F)');
-        } else {
-            clearFieldError($(this));
-        }
+    const panInputs = document.querySelectorAll('input[name*="pan"], input[id*="pan"]');
+    panInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            const pan = this.value.trim();
+            if (pan && !ValidationUtils.validatePAN(pan)) {
+                showFieldError(this, 'Please enter a valid PAN number (e.g., ABCDE1234F)');
+            } else {
+                clearFieldError(this);
+            }
+        });
     });
 
     // IFSC code validation
-    $('input[name*="ifsc"], input[id*="ifsc"]').on('blur', function() {
-        const ifsc = $(this).val().trim();
-        if (ifsc && !ValidationUtils.validateIFSC(ifsc)) {
-            showFieldError($(this), 'Please enter a valid IFSC code (e.g., SBIN0001234)');
-        } else {
-            clearFieldError($(this));
-        }
+    const ifscInputs = document.querySelectorAll('input[name*="ifsc"], input[id*="ifsc"]');
+    ifscInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            const ifsc = this.value.trim();
+            if (ifsc && !ValidationUtils.validateIFSC(ifsc)) {
+                showFieldError(this, 'Please enter a valid IFSC code (e.g., SBIN0001234)');
+            } else {
+                clearFieldError(this);
+            }
+        });
     });
 
     // Item code validation
-    $('input[name*="code"], input[id*="code"]').on('blur', function() {
-        const code = $(this).val().trim();
-        if (code && !ValidationUtils.validateItemCode(code)) {
-            showFieldError($(this), 'Item code can only contain letters, numbers, hyphens, and underscores');
-        } else {
-            clearFieldError($(this));
-        }
+    const codeInputs = document.querySelectorAll('input[name*="code"], input[id*="code"]');
+    codeInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            const code = this.value.trim();
+            if (code && !ValidationUtils.validateItemCode(code)) {
+                showFieldError(this, 'Item code can only contain letters, numbers, hyphens, and underscores');
+            } else {
+                clearFieldError(this);
+            }
+        });
     });
 
     // Percentage fields validation
-    $('input[name*="rate"], input[name*="percent"], input[id*="rate"], input[id*="percent"]').on('blur', function() {
-        const value = $(this).val().trim();
-        const fieldName = $(this).attr('name') || $(this).attr('id');
-        
-        if (value && !ValidationUtils.validatePercentage(value)) {
-            showFieldError($(this), 'Please enter a valid percentage between 0 and 100');
-        } else {
-            clearFieldError($(this));
-        }
+    const percentInputs = document.querySelectorAll('input[name*="rate"], input[name*="percent"], input[id*="rate"], input[id*="percent"]');
+    percentInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            const value = this.value.trim();
+            
+            if (value && !ValidationUtils.validatePercentage(value)) {
+                showFieldError(this, 'Please enter a valid percentage between 0 and 100');
+            } else {
+                clearFieldError(this);
+            }
+        });
     });
 
     // Required field validation
-    $('input[required], select[required], textarea[required]').on('blur', function() {
-        const value = $(this).val().trim();
-        if (!value) {
-            const fieldName = $(this).closest('.form-group').find('label').text() || $(this).attr('placeholder') || 'This field';
-            showFieldError($(this), `${fieldName.replace('*', '')} is required`);
-        } else {
-            clearFieldError($(this));
-        }
+    const requiredInputs = document.querySelectorAll('input[required], select[required], textarea[required]');
+    requiredInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            const value = this.value.trim();
+            if (!value) {
+                const formGroup = this.closest('.form-group');
+                const label = formGroup ? formGroup.querySelector('label') : null;
+                const fieldName = (label ? label.textContent : (this.getAttribute('placeholder') || 'This field'));
+                showFieldError(this, `${fieldName.replace('*', '')} is required`);
+            } else {
+                clearFieldError(this);
+            }
+        });
     });
 
     // Numeric field validation
-    $('input[type="number"], input[step]').on('blur', function() {
-        const value = $(this).val().trim();
-        const min = parseFloat($(this).attr('min'));
-        const max = parseFloat($(this).attr('max'));
-        
-        if (value && isNaN(parseFloat(value))) {
-            showFieldError($(this), 'Please enter a valid number');
-        } else if (!isNaN(min) && parseFloat(value) < min) {
-            showFieldError($(this), `Value must be at least ${min}`);
-        } else if (!isNaN(max) && parseFloat(value) > max) {
-            showFieldError($(this), `Value must not exceed ${max}`);
-        } else {
-            clearFieldError($(this));
-        }
+    const numericInputs = document.querySelectorAll('input[type="number"], input[step]');
+    numericInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            const value = this.value.trim();
+            const min = parseFloat(this.getAttribute('min'));
+            const max = parseFloat(this.getAttribute('max'));
+            
+            if (value && isNaN(parseFloat(value))) {
+                showFieldError(this, 'Please enter a valid number');
+            } else if (!isNaN(min) && parseFloat(value) < min) {
+                showFieldError(this, `Value must be at least ${min}`);
+            } else if (!isNaN(max) && parseFloat(value) > max) {
+                showFieldError(this, `Value must not exceed ${max}`);
+            } else {
+                clearFieldError(this);
+            }
+        });
     });
 }
 
 // Show field-specific error
 function showFieldError(field, message) {
     clearFieldError(field);
-    field.addClass('is-invalid');
-    field.after(`<div class="invalid-feedback d-block">${message}</div>`);
+    field.classList.add('is-invalid');
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'invalid-feedback d-block';
+    errorDiv.textContent = message;
+    field.parentNode.insertBefore(errorDiv, field.nextSibling);
 }
 
 // Clear field error
 function clearFieldError(field) {
-    field.removeClass('is-invalid');
-    field.next('.invalid-feedback').remove();
+    field.classList.remove('is-invalid');
+    const errorFeedback = field.parentNode.querySelector('.invalid-feedback');
+    if (errorFeedback) {
+        errorFeedback.remove();
+    }
 }
 
 // Enhanced confirmation dialogs
 function confirmAction(message, title = 'Confirm Action', confirmText = 'Yes, Continue', cancelText = 'Cancel') {
     return new Promise((resolve) => {
         const modalHtml = `
-            <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+            <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
-                        <div class="modal-header border-0">
-                            <h5 class="modal-title text-warning">
-                                <i class="fas fa-exclamation-triangle me-2"></i>${title}
-                            </h5>
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="confirmModalLabel">${title}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <p class="mb-0">${message}</p>
+                            <p>${message}</p>
                         </div>
-                        <div class="modal-footer border-0">
+                        <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${cancelText}</button>
                             <button type="button" class="btn btn-danger" id="confirmActionBtn">${confirmText}</button>
                         </div>
@@ -171,183 +201,224 @@ function confirmAction(message, title = 'Confirm Action', confirmText = 'Yes, Co
                 </div>
             </div>
         `;
-
+        
         // Remove existing modal if any
-        $('#confirmModal').remove();
+        const existingModal = document.getElementById('confirmModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
         
-        // Add modal to page
-        $('body').append(modalHtml);
+        // Add modal to body
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
         
-        // Show modal
         const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
         modal.show();
         
-        // Handle confirm
-        $('#confirmActionBtn').on('click', function() {
+        // Handle confirm action
+        document.getElementById('confirmActionBtn').addEventListener('click', function() {
             modal.hide();
             resolve(true);
         });
         
-        // Handle cancel/dismiss
-        $('#confirmModal').on('hidden.bs.modal', function() {
-            $(this).remove();
+        // Handle modal hidden event
+        document.getElementById('confirmModal').addEventListener('hidden.bs.modal', function() {
+            this.remove();
             resolve(false);
         });
     });
 }
 
-// Setup delete confirmation for all delete buttons
-function setupDeleteConfirmations() {
-    $(document).on('click', '[data-confirm-delete]', function(e) {
-        e.preventDefault();
-        const deleteUrl = $(this).attr('href') || $(this).data('href');
-        const itemName = $(this).data('item-name') || 'this item';
-        
-        confirmAction(
-            `Are you sure you want to delete ${itemName}? This action cannot be undone.`,
-            'Delete Confirmation',
-            'Yes, Delete',
-            'Cancel'
-        ).then((confirmed) => {
-            if (confirmed) {
-                if ($(this).closest('form').length) {
-                    $(this).closest('form').submit();
-                } else {
-                    window.location.href = deleteUrl;
+// Confirm delete handler
+function setupConfirmDelete() {
+    document.addEventListener('click', function(e) {
+        if (e.target.hasAttribute('data-confirm-delete')) {
+            e.preventDefault();
+            const deleteUrl = e.target.getAttribute('href') || e.target.getAttribute('data-href');
+            const itemName = e.target.getAttribute('data-item-name') || 'this item';
+            
+            confirmAction(
+                `Are you sure you want to delete ${itemName}? This action cannot be undone.`,
+                'Confirm Delete',
+                'Yes, Delete',
+                'Cancel'
+            ).then(confirmed => {
+                if (confirmed) {
+                    if (e.target.closest('form')) {
+                        e.target.closest('form').submit();
+                    } else {
+                        window.location.href = deleteUrl;
+                    }
                 }
-            }
-        });
+            });
+        }
     });
 }
 
-// Setup form submission confirmations
-function setupFormConfirmations() {
-    $(document).on('click', '[data-confirm-submit]', function(e) {
-        e.preventDefault();
-        const form = $(this).closest('form');
-        const message = $(this).data('confirm-message') || 'Are you sure you want to submit this form?';
-        
-        confirmAction(message).then((confirmed) => {
-            if (confirmed) {
-                form.submit();
-            }
-        });
+// Confirm form submission
+function setupConfirmSubmit() {
+    document.addEventListener('click', function(e) {
+        if (e.target.hasAttribute('data-confirm-submit')) {
+            e.preventDefault();
+            const form = e.target.closest('form');
+            const message = e.target.getAttribute('data-confirm-message') || 'Are you sure you want to submit this form?';
+            
+            confirmAction(message).then(confirmed => {
+                if (confirmed && form) {
+                    form.submit();
+                }
+            });
+        }
     });
 }
 
 // Enhanced toast notifications
 function showToast(message, type = 'info', duration = 5000) {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        document.body.insertAdjacentHTML('beforeend', '<div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>');
+        toastContainer = document.getElementById('toast-container');
+    }
+
+    const toastId = 'toast-' + Date.now();
     const toastHtml = `
-        <div class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="${duration}">
+        <div id="${toastId}" class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
-                <div class="toast-body">
-                    <i class="fas fa-${getToastIcon(type)} me-2"></i>
-                    ${message}
-                </div>
+                <div class="toast-body">${message}</div>
                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
         </div>
     `;
     
-    let toastContainer = $('#toast-container');
-    if (!toastContainer.length) {
-        $('body').append('<div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>');
-        toastContainer = $('#toast-container');
-    }
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { delay: duration });
     
-    toastContainer.append(toastHtml);
-    const toastElement = toastContainer.find('.toast').last();
-    const toast = new bootstrap.Toast(toastElement[0]);
     toast.show();
     
-    // Remove toast element after it's hidden
-    toastElement.on('hidden.bs.toast', function() {
-        $(this).remove();
+    // Remove toast after it's hidden
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        this.remove();
     });
 }
 
-function getToastIcon(type) {
-    const icons = {
-        'success': 'check-circle',
-        'danger': 'exclamation-triangle',
-        'warning': 'exclamation-triangle',
-        'info': 'info-circle',
-        'primary': 'info-circle'
-    };
-    return icons[type] || 'info-circle';
+// Input enhancement utilities
+function setupInputEnhancements() {
+    // Phone number formatting
+    const phoneInputs = document.querySelectorAll('input[name*="phone"], input[id*="phone"]');
+    phoneInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            let value = this.value.replace(/\D/g, '');
+            if (value.length > 10) {
+                this.value = value.substring(0, 10);
+            }
+        });
+    });
+
+    // Auto-uppercase for GST and PAN
+    const uppercaseInputs = document.querySelectorAll('input[name*="gst"], input[name*="pan"], input[id*="gst"], input[id*="pan"]');
+    uppercaseInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    });
+
+    // Auto-uppercase for IFSC
+    const ifscInputs = document.querySelectorAll('input[name*="ifsc"], input[id*="ifsc"]');
+    ifscInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    });
+
+    // Prevent negative numbers for positive-only fields
+    const positiveInputs = document.querySelectorAll('input[type="number"][min="0"]');
+    positiveInputs.forEach(input => {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                e.preventDefault();
+            }
+        });
+    });
+
+    // Auto-calculate totals for quantity/price fields
+    const calculationInputs = document.querySelectorAll('input[name*="quantity"], input[name*="price"], input[name*="rate"]');
+    calculationInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            calculateRowTotal(this);
+        });
+    });
 }
 
-// Form enhancement utilities
-function enhanceFormUX() {
-    // Auto-format phone numbers
-    $('input[name*="phone"], input[id*="phone"]').on('input', function() {
-        let value = $(this).val().replace(/\D/g, '');
-        if (value.length <= 10) {
-            $(this).val(value);
-        }
-    });
-
-    // Auto-uppercase GST and PAN fields
-    $('input[name*="gst"], input[name*="pan"], input[id*="gst"], input[id*="pan"]').on('input', function() {
-        $(this).val($(this).val().toUpperCase());
-    });
-
-    // Auto-format IFSC codes
-    $('input[name*="ifsc"], input[id*="ifsc"]').on('input', function() {
-        $(this).val($(this).val().toUpperCase());
-    });
-
-    // Prevent negative values in number inputs where min=0
-    $('input[type="number"][min="0"]').on('keydown', function(e) {
-        if (e.key === '-' || e.key === 'e' || e.key === 'E') {
-            e.preventDefault();
-        }
-    });
-
-    // Auto-calculate totals if needed
-    $('input[name*="quantity"], input[name*="price"], input[name*="rate"]').on('blur', function() {
-        calculateRowTotal($(this));
-    });
-}
-
+// Row total calculation
 function calculateRowTotal(element) {
-    const row = element.closest('tr, .form-row, .row');
-    const qty = parseFloat(row.find('input[name*="quantity"]').val()) || 0;
-    const price = parseFloat(row.find('input[name*="price"], input[name*="rate"]').val()) || 0;
-    const totalField = row.find('input[name*="total"], .total-display');
-    
-    if (totalField.length && (qty > 0 || price > 0)) {
-        const total = qty * price;
-        if (totalField.is('input')) {
-            totalField.val(total.toFixed(2));
+    const row = element.closest('tr') || element.closest('.row') || element.closest('.form-row');
+    if (!row) return;
+
+    const qtyField = row.querySelector('input[name*="quantity"]');
+    const priceField = row.querySelector('input[name*="price"], input[name*="rate"]');
+    const totalField = row.querySelector('input[name*="total"], .total-display');
+
+    if (qtyField && priceField && totalField) {
+        const qty = parseFloat(qtyField.value) || 0;
+        const price = parseFloat(priceField.value) || 0;
+        const total = (qty * price).toFixed(2);
+        
+        if (totalField.tagName === 'INPUT') {
+            totalField.value = total;
         } else {
-            totalField.text('₹' + total.toFixed(2));
+            totalField.textContent = total;
         }
     }
 }
 
-// Initialize all validation and UX enhancements
-$(document).ready(function() {
+// Initialize all validation and enhancement features
+document.addEventListener('DOMContentLoaded', function() {
     setupRealTimeValidation();
-    setupDeleteConfirmations();
-    setupFormConfirmations();
-    enhanceFormUX();
+    setupConfirmDelete();
+    setupConfirmSubmit();
+    setupInputEnhancements();
     
-    // Convert flash messages to toasts
-    $('.alert').each(function() {
-        const message = $(this).text().trim();
+    // Convert server-side flash messages to toasts
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(alert => {
+        const message = alert.textContent.trim();
         let type = 'info';
         
-        if ($(this).hasClass('alert-success')) type = 'success';
-        else if ($(this).hasClass('alert-danger')) type = 'danger';
-        else if ($(this).hasClass('alert-warning')) type = 'warning';
+        if (alert.classList.contains('alert-success')) type = 'success';
+        else if (alert.classList.contains('alert-danger')) type = 'danger';
+        else if (alert.classList.contains('alert-warning')) type = 'warning';
         
         if (message) {
             showToast(message, type);
         }
         
-        $(this).hide();
+        // Hide original alert
+        alert.style.display = 'none';
+    });
+});
+
+// Global validation function for forms
+function validateForm(formElement) {
+    let isValid = true;
+    const requiredFields = formElement.querySelectorAll('[required]');
+    
+    requiredFields.forEach(field => {
+        if (!field.value.trim()) {
+            showFieldError(field, 'This field is required');
+            isValid = false;
+        } else {
+            clearFieldError(field);
+        }
     });
     
-    console.log('✅ Enhanced validation and UX features loaded');
-});
+    return isValid;
+}
+
+// Export utilities for global use
+window.ValidationUtils = ValidationUtils;
+window.showToast = showToast;
+window.confirmAction = confirmAction;
+window.validateForm = validateForm;
+window.showFieldError = showFieldError;
+window.clearFieldError = clearFieldError;
