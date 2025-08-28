@@ -496,7 +496,7 @@ function renderExactCostBreakdown(treeData) {
     const overheadCost = treeData.overhead_cost_per_unit || 0;
     const freightCost = treeData.freight_cost_per_unit || 0;
     const scrapRecovery = treeData.scrap_recovery || 0;
-    const scrapRate = ((treeData.scrap_recovery_rate || 0.30) * 100).toFixed(1);
+    const scrapRate = ((treeData.scrap_recovery_rate || 0) * 100).toFixed(1);
     const markupAmount = treeData.markup_amount || 0;
     const markupRate = ((treeData.markup_percentage || 0.03) * 100).toFixed(1); // Convert to percentage
     const totalCost = materialCostPerUnit + laborCost + overheadCost + freightCost;
