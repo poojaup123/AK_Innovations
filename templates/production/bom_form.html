@@ -1942,7 +1942,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
         });
     }
-    }
     
     // Activate tab based on URL fragment on page load
     activateTabFromHash();
@@ -2005,6 +2004,19 @@ document.addEventListener('DOMContentLoaded', function() {
     tooltipTriggerList.map(function(tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+    
+    // Form validation
+    var form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            var productSelect = document.getElementById('product_id');
+            if (!productSelect.value) {
+                alert('Please select a product before saving.');
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
 });
 
 function toggleInlineEdit(row, itemId) {
@@ -2704,21 +2716,7 @@ function printTreeView() {
 
 {% block page_js %}
 <script>
-// Simple form validation
-document.addEventListener('DOMContentLoaded', function() {
-    var form = document.querySelector('form');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            var productSelect = document.getElementById('product_id');
-            if (!productSelect.value) {
-                alert('Please select a product before saving.');
-                e.preventDefault();
-                return false;
-            }
-        });
-    }
-    
-    console.log('✅ Simple dropdown initialized successfully');
-});
+// Form validation is handled in the main DOMContentLoaded block above
+console.log('✅ BOM form validation ready');
 </script>
 {% endblock %}
