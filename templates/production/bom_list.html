@@ -257,12 +257,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
     const filterForm = document.getElementById('filterForm');
     
+    // Only proceed if elements exist
+    if (!searchInput || !filterForm) {
+        return;
+    }
+    
     // Auto-submit form when filters change (except search input)
     const filterSelects = document.querySelectorAll('#statusFilter, #productFilter');
     filterSelects.forEach(select => {
-        select.addEventListener('change', function() {
-            filterForm.submit();
-        });
+        if (select) {
+            select.addEventListener('change', function() {
+                filterForm.submit();
+            });
+        }
     });
     
     // Add enter key support for search
@@ -300,6 +307,12 @@ function openBOMTreeModal(bomId, bomCode, productName) {
     const modalElement = document.getElementById('bomTreeModal');
     const modalTitle = document.getElementById('bomTreeModalLabel');
     const modalContent = document.getElementById('bomTreeContent');
+    
+    // Check if modal elements exist
+    if (!modalElement || !modalTitle || !modalContent) {
+        console.error('Modal elements not found');
+        return;
+    }
     
     // Update modal title
     modalTitle.innerHTML = `<i class="fas fa-sitemap"></i> BOM Tree: ${bomCode} - ${productName}`;
@@ -354,6 +367,10 @@ function openBOMTreeModal(bomId, bomCode, productName) {
 function closeBOMTreeModal() {
     const modalElement = document.getElementById('bomTreeModal');
     
+    if (!modalElement) {
+        return;
+    }
+    
     // Animate out
     modalElement.style.opacity = '0';
     
@@ -373,6 +390,11 @@ function handleModalEscape(event) {
 
 function renderBOMTree(treeData) {
     const modalContent = document.getElementById('bomTreeContent');
+    
+    if (!modalContent) {
+        console.error('Modal content element not found');
+        return;
+    }
     
     // Calculate costs
     const materialCost = treeData.materials.reduce((total, material) => {
