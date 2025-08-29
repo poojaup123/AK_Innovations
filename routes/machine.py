@@ -11,10 +11,72 @@ from flask_login import login_required, current_user
 
 from app import db
 from models import Machine, MachineOperator, MachineExpense, OperatorMachineTime, Employee, BOM, BOMProcess
-from services.machine_management import MachineManagementService
-from services.utility_bill_integration import UtilityBillProcessor
-from services.machine_bom_integration import MachineBOMIntegration
-from services.machine_cost_analysis import MachineKPIAnalyzer, MachineFinancialAnalyzer
+# Import services conditionally to avoid circular imports
+try:
+    from services.machine_management import MachineManagementService
+    from services.utility_bill_integration import UtilityBillProcessor
+    from services.machine_bom_integration import MachineBOMIntegration
+    from services.machine_cost_analysis import MachineKPIAnalyzer, MachineFinancialAnalyzer
+except ImportError as e:
+    print(f"Warning: Some machine services not available: {e}")
+    # Define fallback classes
+    class MachineManagementService:
+        @staticmethod
+        def get_machine_dashboard_data():
+            return {}
+        @staticmethod
+        def get_real_time_machine_costs():
+            return []
+        @staticmethod
+        def create_machine(data):
+            return None, "Machine services not available"
+        @staticmethod
+        def assign_operator_to_machine(machine_id, employee_id, data):
+            return False, "Machine services not available"
+        @staticmethod
+        def start_machine_operation(machine_id, operator_id, job_card_id, process_name, units_planned):
+            return False, "Machine services not available", None
+        @staticmethod
+        def end_machine_operation(operation_id, units_produced, units_good, units_scrap, notes):
+            return False, "Machine services not available", None
+        @staticmethod
+        def record_machine_expense(machine_id, expense_data):
+            return False, "Machine services not available", None
+    
+    class UtilityBillProcessor:
+        @staticmethod
+        def process_utility_bill(bill_data):
+            return False, "Utility services not available", []
+        @staticmethod
+        def get_machine_utility_costs_summary(machine_id, months):
+            return {}
+    
+    class MachineBOMIntegration:
+        @staticmethod
+        def calculate_machine_based_bom_costs(bom_id, use_real_time_costs=True):
+            return {'error': 'Machine BOM services not available'}
+        @staticmethod
+        def update_bom_with_machine_costs(bom_id, auto_update_price):
+            return False, "Machine BOM services not available", {}
+        @staticmethod
+        def sync_all_boms_with_machine_costs(filter_active_only=True):
+            return {'error': 'Machine BOM services not available'}
+    
+    class MachineKPIAnalyzer:
+        @staticmethod
+        def calculate_machine_oee(machine_id, start_date, end_date):
+            return {}
+        @staticmethod
+        def analyze_cost_trends(machine_id, months):
+            return {}
+        @staticmethod
+        def benchmark_machine_performance(machine_id, days):
+            return {}
+    
+    class MachineFinancialAnalyzer:
+        @staticmethod
+        def calculate_machine_roi(machine_id, months):
+            return {}
 
 # Create Blueprint
 machine_bp = Blueprint('machine', __name__, url_prefix='/machine')
