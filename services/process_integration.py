@@ -172,47 +172,47 @@ class ProcessIntegrationService:
             return False
         
         try:
-            # Calculate total BOM cost per unit
-            total_cost = 0.0
+            # Calculate total BOM cost per unit (CORRECTED for output quantity)
             
-            # Material costs
-            material_cost = bom.total_material_cost
-            total_cost += material_cost
+            # Material costs (total material cost divided by output quantity)
+            material_cost_total = bom.total_material_cost
+            output_qty = bom.output_quantity or 1.0  # Default to 1 if not set
+            material_cost_per_unit = material_cost_total / output_qty
             
-            # Labor costs
-            labor_cost = bom.labor_cost_per_unit or 0
-            total_cost += labor_cost
+            # Labor costs (already per unit)
+            labor_cost_per_unit = bom.labor_cost_per_unit or 0
             
-            # Overhead costs  
-            overhead_cost = bom.overhead_cost_per_unit or 0
-            total_cost += overhead_cost
+            # Overhead costs (already per unit)
+            overhead_cost_per_unit = bom.overhead_cost_per_unit or 0
             
-            # Freight costs
-            freight_cost = getattr(bom, 'freight_cost_per_unit', 0) or 0
-            total_cost += freight_cost
+            # Freight costs (already per unit)  
+            freight_cost_per_unit = getattr(bom, 'freight_cost_per_unit', 0) or 0
+            
+            # Total cost per unit
+            total_cost_per_unit = material_cost_per_unit + labor_cost_per_unit + overhead_cost_per_unit + freight_cost_per_unit
             
             # Apply markup if specified
             if bom.markup_percentage and bom.markup_percentage > 0:
-                markup_amount = total_cost * (bom.markup_percentage / 100)
-                total_cost += markup_amount
+                markup_amount = total_cost_per_unit * (bom.markup_percentage / 100)
+                total_cost_per_unit += markup_amount
             
             # Update finished product unit price
             finished_item = bom.product
             old_price = finished_item.unit_price or 0
             
-            if total_cost > 0:
+            if total_cost_per_unit > 0:
                 # Update item price using the existing update_price method
                 finished_item.update_price(
-                    new_price=total_cost,
+                    new_price=total_cost_per_unit,
                     price_type='standard',
                     effective_date=datetime.now().date(),
                     source='BOM Cost Synchronization',
                     source_reference=f'BOM-{bom.bom_code}',
-                    notes=f'Auto-sync: Materials(₹{material_cost:.2f}) + Labor(₹{labor_cost:.2f}) + Overhead(₹{overhead_cost:.2f}) + Freight(₹{freight_cost:.2f})',
+                    notes=f'Per unit: Materials(₹{material_cost_per_unit:.2f}) + Labor(₹{labor_cost_per_unit:.2f}) + Overhead(₹{overhead_cost_per_unit:.2f}) + Freight(₹{freight_cost_per_unit:.2f}) | Output Qty: {output_qty}',
                     user_id=1  # System user
                 )
                 
-                print(f"✅ Synced {finished_item.name}: ₹{old_price:.2f} → ₹{total_cost:.2f}")
+                print(f"✅ Synced {finished_item.name}: ₹{old_price:.2f} → ₹{total_cost_per_unit:.2f} (Output Qty: {output_qty})")
                 return True
             else:
                 print(f"⚠️ Skipped {finished_item.name}: Total cost is zero")
