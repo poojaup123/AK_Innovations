@@ -177,10 +177,12 @@
                         <i class="fas fa-file-invoice-dollar"></i> Process Utility Bill
                     </button>
                     
-                    <a href="{{ url_for('machine.sync_all_boms') }}" class="btn btn-info" 
-                       onclick="return confirm('This will update all BOM costs with current machine rates. Continue?')">
-                        <i class="fas fa-sync"></i> Sync All BOMs
-                    </a>
+                    <form method="POST" action="{{ url_for('machine.sync_all_boms') }}" class="d-inline">
+                        <button type="submit" class="btn btn-info" 
+                                onclick="return confirm('This will update all BOM costs with current machine rates. Continue?')">
+                            <i class="fas fa-sync"></i> Sync All BOMs
+                        </button>
+                    </form>
                 </div>
 
                 <hr>
