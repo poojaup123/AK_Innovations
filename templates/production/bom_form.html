@@ -1833,9 +1833,20 @@ function syncBOMFromProcesses() {
 
 // Dynamic Scrap Weight to Percentage Conversion
 function convertScrapValues() {
-    const scrapWeight = parseFloat(document.getElementById('scrap_weight').value) || 0;
-    const scrapPercent = parseFloat(document.getElementById('scrap_percent').value) || 0;
-    const unitWeight = parseFloat(document.getElementById('unit_weight').value) || 0;
+    // Get elements with null checks
+    const scrapWeightEl = document.getElementById('scrap_weight');
+    const scrapPercentEl = document.getElementById('scrap_percent');
+    const unitWeightEl = document.getElementById('unit_weight');
+    const scrapRecoveryEl = document.getElementById('scrap_recovery_value');
+    
+    // If required elements don't exist, exit early
+    if (!scrapWeightEl || !scrapPercentEl || !unitWeightEl) {
+        return;
+    }
+    
+    const scrapWeight = parseFloat(scrapWeightEl.value) || 0;
+    const scrapPercent = parseFloat(scrapPercentEl.value) || 0;
+    const unitWeight = parseFloat(unitWeightEl.value) || 0;
     const materialRate = 45; // Default MS sheet rate - could be dynamic
     const recoveryRate = 0.70; // 70% recovery rate
     
@@ -1845,27 +1856,36 @@ function convertScrapValues() {
     if (activeElement && activeElement.id === 'scrap_weight' && scrapWeight > 0 && unitWeight > 0) {
         // Convert weight to percentage
         const calculatedPercent = (scrapWeight / unitWeight) * 100;
-        document.getElementById('scrap_percent').value = calculatedPercent.toFixed(2);
+        scrapPercentEl.value = calculatedPercent.toFixed(2);
         
     } else if (activeElement && activeElement.id === 'scrap_percent' && scrapPercent > 0 && unitWeight > 0) {
         // Convert percentage to weight
         const calculatedWeight = (unitWeight * scrapPercent) / 100;
-        document.getElementById('scrap_weight').value = calculatedWeight.toFixed(3);
+        scrapWeightEl.value = calculatedWeight.toFixed(3);
     }
     
     // Calculate recovery value regardless of which field changed
-    const currentScrapWeight = parseFloat(document.getElementById('scrap_weight').value) || 0;
-    if (currentScrapWeight > 0) {
-        const recoveryValue = currentScrapWeight * materialRate * recoveryRate;
-        document.getElementById('scrap_recovery_value').value = recoveryValue.toFixed(2);
-    } else {
-        document.getElementById('scrap_recovery_value').value = '0.00';
+    const currentScrapWeight = parseFloat(scrapWeightEl.value) || 0;
+    if (scrapRecoveryEl) {
+        if (currentScrapWeight > 0) {
+            const recoveryValue = currentScrapWeight * materialRate * recoveryRate;
+            scrapRecoveryEl.value = recoveryValue.toFixed(2);
+        } else {
+            scrapRecoveryEl.value = '0.00';
+        }
     }
 }
 
 function updateUnitWeightDisplay() {
-    const unitWeight = parseFloat(document.getElementById('unit_weight').value) || 0;
-    document.getElementById('display_unit_weight').textContent = unitWeight.toFixed(3);
+    const unitWeightEl = document.getElementById('unit_weight');
+    const displayEl = document.getElementById('display_unit_weight');
+    
+    if (!unitWeightEl || !displayEl) {
+        return;
+    }
+    
+    const unitWeight = parseFloat(unitWeightEl.value) || 0;
+    displayEl.textContent = unitWeight.toFixed(3);
     // Recalculate scrap conversions when unit weight changes
     convertScrapValues();
 }
