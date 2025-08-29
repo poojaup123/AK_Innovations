@@ -235,6 +235,18 @@ def update_daily_status(production_id):
                 production.quantity_good = cumulative_good
                 production.quantity_damaged = cumulative_defective
                 production.scrap_quantity = cumulative_scrap
+                production.actual_end_date = datetime.now().date()
+                
+                # Update item unit price with actual production costs
+                try:
+                    from services.production_cost_analysis import ProductionCostAnalysisService
+                    ProductionCostAnalysisService.update_item_price_from_production(
+                        production_id=production.id,
+                        update_method='weighted_average'
+                    )
+                except Exception as e:
+                    print(f"Warning: Could not update item price from production costs: {e}")
+                
             elif form.daily_status.data == 'active' and production.status == 'planned':
                 production.status = 'in_progress'
             
@@ -296,6 +308,18 @@ def quick_daily_update():
         if status == 'completed':
             production.status = 'completed'
             production.quantity_produced = cumulative_completed
+            production.actual_end_date = datetime.now().date()
+            
+            # Update item unit price with actual production costs
+            try:
+                from services.production_cost_analysis import ProductionCostAnalysisService
+                ProductionCostAnalysisService.update_item_price_from_production(
+                    production_id=production.id,
+                    update_method='weighted_average'
+                )
+            except Exception as e:
+                print(f"Warning: Could not update item price from production costs: {e}")
+                
         elif status == 'active' and production.status == 'planned':
             production.status = 'in_progress'
         
@@ -456,7 +480,18 @@ def api_complete_production(production_id):
         production.scrap_quantity = scrap_quantity
         production.quality_control_passed = quality_control_passed
         production.status = 'completed'
+        production.actual_end_date = datetime.now().date()
         production.updated_at = datetime.utcnow()
+        
+        # Update item unit price with actual production costs
+        try:
+            from services.production_cost_analysis import ProductionCostAnalysisService
+            ProductionCostAnalysisService.update_item_price_from_production(
+                production_id=production.id,
+                update_method='weighted_average'
+            )
+        except Exception as e:
+            print(f"Warning: Could not update item price from production costs: {e}")
         
         # Create output batch if batch tracking is enabled
         if production.batch_tracking_enabled and quantity_good > 0:
