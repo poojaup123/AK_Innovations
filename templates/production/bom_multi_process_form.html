@@ -365,53 +365,38 @@ function handleMaterialSourceChange(selectElement) {
     }
 }
 
-// Function to dynamically fetch previous process data from API
+// Function to populate from previous process data (no API call needed)
 function fetchPreviousProcessData(processDiv, inputWeightField, inputWeightUomField) {
-    // Get BOM ID and current step number from the form
-    const bomId = {{ bom.id }};
-    const currentStep = 2; // Zinc is step 2, so previous step is 1 (Cutting)
-    
-    // Make API call to get previous process data
-    fetch(`/api/bom/${bomId}/previous_process_data/${currentStep}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const previousProcess = data.previous_process;
-                
-                // Convert previous process output weight to input weight
-                const previousOutputWeight = previousProcess.output_unit_weight;
-                const previousOutputUom = previousProcess.output_weight_uom;
-                
-                // Set input weight and UOM from previous process
-                inputWeightField.value = previousOutputWeight.toString();
-                if (inputWeightUomField) {
-                    inputWeightUomField.value = previousOutputUom;
-                }
-                
-                // Clear all output fields so this process can calculate them fresh
-                const outputQtyField = processDiv.querySelector('.output-quantity');
-                const outputUnitWeightField = processDiv.querySelector('.output-unit-weight');
-                const scrapWeightField = processDiv.querySelector('.scrap-weight-input');
-                const scrapPercentField = processDiv.querySelector('.scrap-percent-input');
-                
-                if (outputQtyField) outputQtyField.value = '';
-                if (outputUnitWeightField) outputUnitWeightField.value = '';
-                if (scrapWeightField) scrapWeightField.value = '';
-                if (scrapPercentField) scrapPercentField.value = '';
-                
-                console.log(`✅ Fetched previous process "${previousProcess.process_name}": ${previousOutputWeight} ${previousOutputUom}`);
-                console.log(`✅ Cleared output fields for fresh calculation`);
-            } else {
-                console.error('Error fetching previous process data:', data.message);
-                // Fallback: clear the input field
-                inputWeightField.value = '';
-            }
-        })
-        .catch(error => {
-            console.error('API error:', error);
-            // Fallback: clear the input field
-            inputWeightField.value = '';
-        });
+    {% if previous_process %}
+        // Use previous process data directly from template
+        const previousOutputWeight = {{ previous_process.output_unit_weight }};
+        const previousOutputUom = '{{ previous_process.output_weight_uom }}';
+        const previousProcessName = '{{ previous_process.process_name }}';
+        
+        // Set input weight and UOM from previous process
+        inputWeightField.value = previousOutputWeight.toString();
+        if (inputWeightUomField) {
+            inputWeightUomField.value = previousOutputUom;
+        }
+        
+        // Clear all output fields so this process can calculate them fresh
+        const outputQtyField = processDiv.querySelector('.output-quantity');
+        const outputUnitWeightField = processDiv.querySelector('.output-unit-weight');
+        const scrapWeightField = processDiv.querySelector('.scrap-weight-input');
+        const scrapPercentField = processDiv.querySelector('.scrap-percent-input');
+        
+        if (outputQtyField) outputQtyField.value = '';
+        if (outputUnitWeightField) outputUnitWeightField.value = '';
+        if (scrapWeightField) scrapWeightField.value = '';
+        if (scrapPercentField) scrapPercentField.value = '';
+        
+        console.log(`✅ Used previous process "${previousProcessName}": ${previousOutputWeight} ${previousOutputUom}`);
+        console.log(`✅ Cleared output fields for fresh calculation`);
+    {% else %}
+        // No previous process available
+        console.log('⚠️ No previous process data available');
+        inputWeightField.value = '';
+    {% endif %}
 }
 
 // Function to convert weight to kg based on UOM

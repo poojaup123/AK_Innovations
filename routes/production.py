@@ -2386,6 +2386,14 @@ def add_multi_bom_process(bom_id):
     # Get available items for transformation dropdowns
     available_items = Item.query.order_by(Item.name).all()
     
+    # Get previous process data for cascading logic
+    previous_process = None
+    if edit_process and edit_process.step_number > 1:
+        previous_process = BOMProcess.query.filter_by(
+            bom_id=bom.id,
+            step_number=edit_process.step_number - 1
+        ).first()
+    
     # Determine the title based on whether we're editing or adding
     if edit_process:
         title = f'Edit Process: {edit_process.process_name} - {bom.bom_code}'
@@ -2397,6 +2405,7 @@ def add_multi_bom_process(bom_id):
                          form=form,
                          available_items=available_items,
                          edit_process=edit_process,
+                         previous_process=previous_process,
                          title=title)
 
 @production_bp.route('/api/item/<int:item_id>/unit')
