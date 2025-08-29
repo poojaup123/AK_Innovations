@@ -235,61 +235,53 @@ function viewBOMCostAnalysis(itemId) {
     $('#bomAnalysisContent').html('<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Loading analysis...</p></div>');
     
     // Fetch BOM cost analysis
-    fetch(`/accounting/inventory-valuation/bom-cost-analysis/${itemId}`)
+    fetch('/accounting/inventory-valuation/bom-cost-analysis/' + itemId)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                $('#bomAnalysisContent').html(`<div class="alert alert-danger">${data.error}</div>`);
+                $('#bomAnalysisContent').html('<div class="alert alert-danger">' + data.error + '</div>');
                 return;
             }
             
-            let html = `
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <h6>Item: ${data.item.code} - ${data.item.name}</h6>
-                        <p>Current Stock: ${data.item.current_stock}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>BOM: ${data.bom.code} (v${data.bom.version})</h6>
-                    </div>
-                </div>
-                
-                <h6>Material Breakdown:</h6>
-                <table class="table table-sm">
-                    <thead>
-                        <tr><th>Item</th><th>Qty Required</th><th>Unit Price</th><th>Line Cost</th></tr>
-                    </thead>
-                    <tbody>
-            `;
+            let html = '<div class="row mb-3">' +
+                '<div class="col-md-6">' +
+                '<h6>Item: ' + data.item.code + ' - ' + data.item.name + '</h6>' +
+                '<p>Current Stock: ' + data.item.current_stock + '</p>' +
+                '</div>' +
+                '<div class="col-md-6">' +
+                '<h6>BOM: ' + data.bom.code + ' (v' + data.bom.version + ')</h6>' +
+                '</div>' +
+                '</div>' +
+                '<h6>Material Breakdown:</h6>' +
+                '<table class="table table-sm">' +
+                '<thead>' +
+                '<tr><th>Item</th><th>Qty Required</th><th>Unit Price</th><th>Line Cost</th></tr>' +
+                '</thead>' +
+                '<tbody>';
             
             data.material_breakdown.forEach(item => {
-                html += `
-                    <tr>
-                        <td>${item.item_code} - ${item.item_name}</td>
-                        <td>${item.quantity_required} ${item.uom}</td>
-                        <td>₹${item.unit_price.toFixed(2)}</td>
-                        <td>₹${item.line_cost.toFixed(2)}</td>
-                    </tr>
-                `;
+                html += '<tr>' +
+                    '<td>' + item.item_code + ' - ' + item.item_name + '</td>' +
+                    '<td>' + item.quantity_required + ' ' + item.uom + '</td>' +
+                    '<td>₹' + item.unit_price.toFixed(2) + '</td>' +
+                    '<td>₹' + item.line_cost.toFixed(2) + '</td>' +
+                    '</tr>';
             });
             
-            html += `
-                    </tbody>
-                </table>
-                
-                <h6>Cost Summary:</h6>
-                <table class="table table-sm">
-                    <tr><td>Material Cost:</td><td>₹${data.cost_breakdown.material_cost.toFixed(2)}</td></tr>
-                    <tr><td>Labor Cost:</td><td>₹${data.cost_breakdown.labor_cost.toFixed(2)}</td></tr>
-                    <tr><td>Overhead Cost:</td><td>₹${data.cost_breakdown.overhead_cost.toFixed(2)}</td></tr>
-                    <tr class="table-success"><td><strong>Total Cost per Unit:</strong></td><td><strong>₹${data.cost_breakdown.total_cost.toFixed(2)}</strong></td></tr>
-                </table>
-            `;
+            html += '</tbody>' +
+                '</table>' +
+                '<h6>Cost Summary:</h6>' +
+                '<table class="table table-sm">' +
+                '<tr><td>Material Cost:</td><td>₹' + data.cost_breakdown.material_cost.toFixed(2) + '</td></tr>' +
+                '<tr><td>Labor Cost:</td><td>₹' + data.cost_breakdown.labor_cost.toFixed(2) + '</td></tr>' +
+                '<tr><td>Overhead Cost:</td><td>₹' + data.cost_breakdown.overhead_cost.toFixed(2) + '</td></tr>' +
+                '<tr class="table-success"><td><strong>Total Cost per Unit:</strong></td><td><strong>₹' + data.cost_breakdown.total_cost.toFixed(2) + '</strong></td></tr>' +
+                '</table>';
             
             $('#bomAnalysisContent').html(html);
         })
         .catch(error => {
-            $('#bomAnalysisContent').html(`<div class="alert alert-danger">Error loading analysis: ${error}</div>`);
+            $('#bomAnalysisContent').html('<div class="alert alert-danger">Error loading analysis: ' + error + '</div>');
         });
 }
 </script>
