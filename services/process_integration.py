@@ -131,6 +131,9 @@ class ProcessIntegrationService:
         if process_notes:
             bom.remarks += f"\n\nProcess Notes:\n" + "\n".join(process_notes[:3])  # Limit to first 3 notes
         
+        # Sync BOM total cost to finished product unit price
+        ProcessIntegrationService.sync_bom_cost_to_item_price(bom)
+        
         # Create accounting cost allocation entry for BOM
         try:
             from services.authentic_accounting_integration import AuthenticAccountingIntegration
@@ -158,6 +161,66 @@ class ProcessIntegrationService:
         
         db.session.commit()
         return True
+    
+    @staticmethod
+    def sync_bom_cost_to_item_price(bom):
+        """
+        Synchronize BOM total cost to finished product unit price
+        This ensures item prices reflect actual manufacturing costs
+        """
+        if not bom or not bom.product:
+            return False
+        
+        try:
+            # Calculate total BOM cost per unit
+            total_cost = 0.0
+            
+            # Material costs
+            material_cost = bom.total_material_cost
+            total_cost += material_cost
+            
+            # Labor costs
+            labor_cost = bom.labor_cost_per_unit or 0
+            total_cost += labor_cost
+            
+            # Overhead costs  
+            overhead_cost = bom.overhead_cost_per_unit or 0
+            total_cost += overhead_cost
+            
+            # Freight costs
+            freight_cost = getattr(bom, 'freight_cost_per_unit', 0) or 0
+            total_cost += freight_cost
+            
+            # Apply markup if specified
+            if bom.markup_percentage and bom.markup_percentage > 0:
+                markup_amount = total_cost * (bom.markup_percentage / 100)
+                total_cost += markup_amount
+            
+            # Update finished product unit price
+            finished_item = bom.product
+            old_price = finished_item.unit_price or 0
+            
+            if total_cost > 0:
+                # Update item price using the existing update_price method
+                finished_item.update_price(
+                    new_price=total_cost,
+                    price_type='standard',
+                    effective_date=datetime.now().date(),
+                    source='BOM Cost Synchronization',
+                    source_reference=f'BOM-{bom.bom_code}',
+                    notes=f'Auto-sync: Materials(₹{material_cost:.2f}) + Labor(₹{labor_cost:.2f}) + Overhead(₹{overhead_cost:.2f}) + Freight(₹{freight_cost:.2f})',
+                    user_id=1  # System user
+                )
+                
+                print(f"✅ Synced {finished_item.name}: ₹{old_price:.2f} → ₹{total_cost:.2f}")
+                return True
+            else:
+                print(f"⚠️ Skipped {finished_item.name}: Total cost is zero")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Error syncing BOM cost to item price: {str(e)}")
+            return False
     
     @staticmethod
     def sync_process_weights(bom):
