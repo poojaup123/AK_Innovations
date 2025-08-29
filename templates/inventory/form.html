@@ -161,12 +161,23 @@
                         // Enhanced weight management with kg/g conversion
                         document.addEventListener('DOMContentLoaded', function() {
                             const formConfig = document.getElementById('formConfig');
+                            if (!formConfig) {
+                                // Weight management not needed on this page
+                                return;
+                            }
+                            
                             const uomSelectId = formConfig.dataset.uomSelectId;
                             const uomSelect = document.getElementById(uomSelectId);
                             const weightField = document.getElementById('unit_weight_field');
                             const weightUnitSelect = document.getElementById('weight_unit_select');
                             const weightHelpText = document.getElementById('weight_help_text');
                             const weightInKgField = document.getElementById('weight_in_kg');
+                            
+                            // Early exit if any required element is missing
+                            if (!uomSelect || !weightField || !weightUnitSelect || !weightHelpText || !weightInKgField) {
+                                // Weight management elements not available on this page
+                                return;
+                            }
                             
                             // Convert and store weight in kg for database
                             function updateWeightInKg() {
@@ -226,11 +237,7 @@
                                 updateWeightLabel();
                             }
                             
-                            // Initialize only if all required elements exist
-                            if (!uomSelect || !weightField || !weightUnitSelect || !weightHelpText || !weightInKgField) {
-                                console.warn('Some form elements not found for weight management');
-                                return;
-                            }
+                            // Initialize weight management
                             
                             const currentWeight = parseFloat(weightField.value) || 0;
                             if (currentWeight > 0 && currentWeight < 1) {
