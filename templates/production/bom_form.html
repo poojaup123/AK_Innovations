@@ -947,7 +947,7 @@
                                         <button class="btn btn-sm btn-outline-secondary expand-toggle" 
                                                 data-bom-item-id="{{ bom_item.id }}" class="toggle-details-btn" 
                                                 title="Expand/Collapse Details">
-                                            <i class="fas fa-chevron-right" id="toggle-{{ bom_item.id }}"></i>
+                                            <i class="fas fa-chevron-right toggle-icon"></i>
                                         </button>
                                     </td>
                                     <td>{{ loop.index }}</td>
@@ -1061,7 +1061,7 @@
                                 </tr>
                                 
                                 <!-- Expandable Details Row -->
-                                <tr class="component-details-row" id="details-{{ bom_item.id }}" style="display: none;">
+                                <tr class="component-details-row component-details" data-bom-item-id="{{ bom_item.id }}" style="display: none;">
                                     <td></td>
                                     <td colspan="9">
                                         <div class="card bg-light border-0">
@@ -1109,7 +1109,7 @@
                                 <!-- Nested Sub-BOM Row -->
                                 {% set item_bom = bom_item.item.active_bom %}
                                 {% if item_bom %}
-                                <tr class="sub-bom-row" id="sub-bom-{{ bom_item.id }}" style="display: none;">
+                                <tr class="sub-bom-row sub-bom-details" data-bom-item-id="{{ bom_item.id }}" style="display: none;">
                                     <td></td>
                                     <td colspan="9">
                                         <div class="card border-warning">
