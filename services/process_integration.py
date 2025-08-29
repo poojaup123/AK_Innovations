@@ -172,19 +172,25 @@ class ProcessIntegrationService:
             return False
         
         try:
-            # Sync only material costs to match BOM interface exactly (₹6.77)
-            # Exclude labor costs from sync as per user preference
-            
+            # Calculate EXACT cost like BOM interface (₹6.77) including scrap recovery
             output_qty = bom.output_quantity or 1.0
-            total_material_cost = bom.total_material_cost  # Total for all units
             
-            # Calculate material cost per individual unit (like BOM interface shows)
-            material_cost_per_unit = total_material_cost / output_qty
+            # Calculate material cost directly from BOM items (like route does)
+            material_cost = sum(item.qty_required * item.unit_cost for item in bom.items)
+            material_cost_per_unit = material_cost / max(output_qty, 1)
             
-            # Use only material costs (no labor, no overhead)
-            total_cost_per_unit = material_cost_per_unit
+            # Calculate scrap recovery per unit (BOM interface includes this)
+            scrap_recovery_per_unit = 0
+            if hasattr(bom, 'scrap_value_recovery_percent') and bom.scrap_value_recovery_percent and bom.scrap_value_recovery_percent > 0:
+                scrap_recovery_per_unit = material_cost_per_unit * (bom.scrap_value_recovery_percent / 100)
             
-            # Apply markup if specified (only on material costs)
+            # Get labor cost per unit (distributed)
+            labor_cost_per_unit = bom.calculated_labor_cost_per_unit if hasattr(bom, 'calculated_labor_cost_per_unit') else 0
+            
+            # Calculate final unit cost exactly like BOM interface
+            total_cost_per_unit = material_cost_per_unit + labor_cost_per_unit - scrap_recovery_per_unit
+            
+            # Apply markup if specified
             if bom.markup_percentage and bom.markup_percentage > 0:
                 markup_amount = total_cost_per_unit * (bom.markup_percentage / 100)
                 total_cost_per_unit += markup_amount
@@ -199,13 +205,13 @@ class ProcessIntegrationService:
                     new_price=total_cost_per_unit,
                     price_type='standard',
                     effective_date=datetime.now().date(),
-                    source='BOM Material Cost Sync',
+                    source='BOM Interface Cost Sync',
                     source_reference=f'BOM-{bom.bom_code}',
-                    notes=f'Material cost only (matching BOM interface): ₹{material_cost_per_unit:.2f} | Output Qty: {output_qty}',
+                    notes=f'Exact BOM interface calculation: Material(₹{material_cost_per_unit:.2f}) + Labor(₹{labor_cost_per_unit:.2f}) - Scrap Recovery(₹{scrap_recovery_per_unit:.2f}) = ₹{total_cost_per_unit:.2f}',
                     user_id=1  # System user
                 )
                 
-                print(f"✅ Synced {finished_item.name}: ₹{old_price:.2f} → ₹{total_cost_per_unit:.2f} (Material Cost Only)")
+                print(f"✅ Synced {finished_item.name}: ₹{old_price:.2f} → ₹{total_cost_per_unit:.2f} (Exact BOM Interface Match)")
                 return True
             else:
                 print(f"⚠️ Skipped {finished_item.name}: Total cost is zero")
