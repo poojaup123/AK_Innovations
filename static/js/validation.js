@@ -211,20 +211,32 @@ function confirmAction(message, title = 'Confirm Action', confirmText = 'Yes, Co
         // Add modal to body
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         
-        const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-        modal.show();
-        
-        // Handle confirm action
-        document.getElementById('confirmActionBtn').addEventListener('click', function() {
-            modal.hide();
-            resolve(true);
-        });
-        
-        // Handle modal hidden event
-        document.getElementById('confirmModal').addEventListener('hidden.bs.modal', function() {
-            this.remove();
-            resolve(false);
-        });
+        // Wait for DOM to update then access elements
+        setTimeout(() => {
+            const modalEl = document.getElementById('confirmModal');
+            const confirmBtn = document.getElementById('confirmActionBtn');
+            
+            if (!modalEl || !confirmBtn) {
+                console.error('Modal elements not found');
+                resolve(false);
+                return;
+            }
+            
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+            
+            // Handle confirm action
+            confirmBtn.addEventListener('click', function() {
+                modal.hide();
+                resolve(true);
+            });
+            
+            // Handle modal hidden event
+            modalEl.addEventListener('hidden.bs.modal', function() {
+                this.remove();
+                resolve(false);
+            });
+        }, 10);
     });
 }
 
