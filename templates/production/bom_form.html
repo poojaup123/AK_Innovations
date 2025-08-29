@@ -591,11 +591,20 @@
                                                     <i class="fas fa-calculator"></i> Live calculations based on form inputs
                                                 </small>
                                                 
+                                                <!-- Store cost data in data attributes to avoid template syntax in JS -->
+                                                <div id="bomCostData" 
+                                                     data-material-cost="{{ (calculated_material_cost_per_unit or 0)|float }}"
+                                                     data-labor-cost="{{ (calculated_labor_cost_per_unit or 0)|float }}"
+                                                     data-output-quantity="{{ (bom.output_quantity or 1)|float }}"
+                                                     data-bom-id="{{ (bom.id or 0)|int }}"
+                                                     style="display: none;"></div>
+                                                
                                                 <script>
-                                                // Store base costs for calculations (already converted to per-unit)
-                                                const materialCostPerUnit = {{ (calculated_material_cost_per_unit or 0)|float }};
-                                                const laborCostPerUnit = {{ (calculated_labor_cost_per_unit or 0)|float }};
-                                                const outputQuantity = {{ (bom.output_quantity or 1)|float }};
+                                                // Get cost data from data attributes
+                                                const costData = document.getElementById('bomCostData');
+                                                const materialCostPerUnit = parseFloat(costData.dataset.materialCost) || 0;
+                                                const laborCostPerUnit = parseFloat(costData.dataset.laborCost) || 0;
+                                                const outputQuantity = parseFloat(costData.dataset.outputQuantity) || 1;
                                                 
                                                 function updateCostBreakdown() {
                                                     // Get form values
@@ -1793,9 +1802,10 @@
 
 {% block scripts %}
 <script>
-// Sync BOM from Processes - Output Quantity and other calculations
+// Sync BOM from Processes - Output Quantity and other calculations  
 function syncBOMFromProcesses() {
-    const bomId = {{ (bom.id or 0)|int }};
+    const bomData = document.getElementById('bomCostData');
+    const bomId = parseInt(bomData?.dataset.bomId || '0');
     if (!bomId) {
         alert('Please save the BOM first');
         return;
@@ -1913,7 +1923,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var autoFetchWeightBtn = document.getElementById('autoFetchWeightBtn');
     if (autoFetchWeightBtn) {
         autoFetchWeightBtn.addEventListener('click', function() {
-            var bomId = {{ (bom.id or 0)|int }};
+            const bomData = document.getElementById('bomCostData');
+            var bomId = parseInt(bomData?.dataset.bomId || '0');
             if (!bomId) {
                 alert('Please save the BOM first');
                 return;
