@@ -134,6 +134,13 @@ def create_app():
     from routes.live_status import live_status_bp
     from routes.job_cards import job_cards_bp
     
+    # Import machine management blueprint
+    try:
+        from routes.machine import machine_bp
+    except ImportError as e:
+        print(f"Machine management module import error: {e}")
+        machine_bp = None
+    
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
@@ -157,6 +164,10 @@ def create_app():
     app.register_blueprint(packing_bp, url_prefix='/packing')
     app.register_blueprint(tally_import_bp, url_prefix='/tally')
     app.register_blueprint(job_cards_bp, url_prefix='/job-cards')
+    
+    # Register machine management blueprint if available
+    if machine_bp:
+        app.register_blueprint(machine_bp, url_prefix='/machine')
     
     from routes.daily_production import daily_production_bp
     app.register_blueprint(daily_production_bp)

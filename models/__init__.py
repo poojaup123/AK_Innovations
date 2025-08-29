@@ -8,6 +8,9 @@ from .department import Department
 # Import UOM models
 from .uom import UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionLog
 
+# Import Machine models
+from .machine import Machine, MachineOperator, MachineExpense, OperatorMachineTime, MachineCostAnalysis
+
 # Import permission models
 from .permissions import Permission, UserPermission
 
@@ -3011,7 +3014,7 @@ class BOMProcess(db.Model):
     setup_time_minutes = db.Column(db.Float, default=0.0)  # Setup time in minutes
     run_time_minutes = db.Column(db.Float, default=0.0)  # Runtime per unit in minutes
     labor_rate_per_hour = db.Column(db.Float, default=0.0)  # Labor rate for this process
-    machine_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)  # Machine/tool used
+    machine_id = db.Column(db.Integer, db.ForeignKey('machines.id'), nullable=True)  # Machine used for this process
     department_id = db.Column(db.Integer, db.ForeignKey('departments.id'), nullable=True)  # Department
     is_outsourced = db.Column(db.Boolean, default=False)  # Is this process outsourced?
     vendor_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=True)  # Outsourcing vendor
@@ -3043,7 +3046,7 @@ class BOMProcess(db.Model):
     notes = db.Column(db.Text)
     
     # Relationships
-    machine = db.relationship('Item', foreign_keys=[machine_id])
+    machine = db.relationship('Machine', foreign_keys=[machine_id])
     department = db.relationship('Department', foreign_keys=[department_id])
     vendor = db.relationship('Supplier', foreign_keys=[vendor_id])
     input_product = db.relationship('Item', foreign_keys=[input_product_id])
