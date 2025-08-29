@@ -172,24 +172,21 @@ class ProcessIntegrationService:
             return False
         
         try:
-            # Calculate total BOM cost per unit (CORRECTED for output quantity)
+            # Calculate final unit cost exactly like BOM interface does
+            # Total cost divided by output quantity to get cost per individual unit
             
-            # Material costs (total material cost divided by output quantity)
-            material_cost_total = bom.total_material_cost
-            output_qty = bom.output_quantity or 1.0  # Default to 1 if not set
-            material_cost_per_unit = material_cost_total / output_qty
+            # Get total costs (for entire batch)
+            total_material_cost = bom.total_material_cost  # Total for all units
+            total_labor_cost = bom.labor_cost_per_unit or 0  # Already per unit
+            total_overhead_cost = bom.overhead_cost_per_unit or 0  # Already per unit
+            output_qty = bom.output_quantity or 1.0
             
-            # Labor costs (already per unit)
-            labor_cost_per_unit = bom.labor_cost_per_unit or 0
+            # Calculate cost per individual unit (like BOM interface shows)
+            material_cost_per_unit = total_material_cost / output_qty  # Divide material by quantity
+            # Labor and overhead are already per unit, don't divide again
             
-            # Overhead costs (already per unit)
-            overhead_cost_per_unit = bom.overhead_cost_per_unit or 0
-            
-            # Freight costs (already per unit)  
-            freight_cost_per_unit = getattr(bom, 'freight_cost_per_unit', 0) or 0
-            
-            # Total cost per unit
-            total_cost_per_unit = material_cost_per_unit + labor_cost_per_unit + overhead_cost_per_unit + freight_cost_per_unit
+            # Final unit cost = Material per unit + Labor per unit + Overhead per unit
+            total_cost_per_unit = material_cost_per_unit + total_labor_cost + total_overhead_cost
             
             # Apply markup if specified
             if bom.markup_percentage and bom.markup_percentage > 0:
@@ -206,13 +203,13 @@ class ProcessIntegrationService:
                     new_price=total_cost_per_unit,
                     price_type='standard',
                     effective_date=datetime.now().date(),
-                    source='BOM Cost Synchronization',
+                    source='BOM Final Unit Cost Sync',
                     source_reference=f'BOM-{bom.bom_code}',
-                    notes=f'Per unit: Materials(₹{material_cost_per_unit:.2f}) + Labor(₹{labor_cost_per_unit:.2f}) + Overhead(₹{overhead_cost_per_unit:.2f}) + Freight(₹{freight_cost_per_unit:.2f}) | Output Qty: {output_qty}',
+                    notes=f'Direct sync from BOM Final Unit Cost: ₹{total_cost_per_unit:.2f}',
                     user_id=1  # System user
                 )
                 
-                print(f"✅ Synced {finished_item.name}: ₹{old_price:.2f} → ₹{total_cost_per_unit:.2f} (Output Qty: {output_qty})")
+                print(f"✅ Synced {finished_item.name}: ₹{old_price:.2f} → ₹{total_cost_per_unit:.2f} (BOM Final Cost)")
                 return True
             else:
                 print(f"⚠️ Skipped {finished_item.name}: Total cost is zero")
