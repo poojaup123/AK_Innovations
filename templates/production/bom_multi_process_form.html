@@ -151,7 +151,7 @@
                                                                 <input type="number" step="any" class="form-control input-unit-weight" 
                                                                        name="processes[0][input_unit_weight]" 
                                                                        value="{% if edit_process %}{{ edit_process.input_unit_weight if edit_process.input_unit_weight else '' }}{% else %}{% endif %}" 
-                                                                       placeholder="0.000" readonly>
+                                                                       placeholder="0.000" readonly oninput="calculateScrapFromWeightDifference(this)">
                                                                 <select class="form-select input-weight-uom" name="processes[0][input_weight_uom]" style="max-width: 80px;">
                                                                     <option value="kg" selected>kg</option>
                                                                     <option value="g">g</option>
@@ -168,7 +168,7 @@
                                                             <label class="form-label">Output Qty</label>
                                                             <div class="input-group">
                                                                 <input type="number" step="any" class="form-control output-quantity" 
-                                                                       name="processes[0][output_quantity]" value="{{ edit_process.output_quantity if edit_process else '' }}" placeholder="1.0">
+                                                                       name="processes[0][output_quantity]" value="{{ edit_process.output_quantity if edit_process else '' }}" placeholder="1.0" oninput="calculateScrapFromWeightDifference(this)">
                                                                 <select class="form-select output-qty-uom" name="processes[0][output_qty_uom]" style="max-width: 80px;">
                                                                     <option value="pcs" selected>Pcs</option>
                                                                     <option value="m">m</option>
@@ -190,7 +190,7 @@
                                                             <div class="input-group">
                                                                 <input type="number" step="any" class="form-control output-unit-weight" 
                                                                        name="processes[0][output_unit_weight]" 
-                                                                       value="{% if edit_process %}{{ edit_process.output_unit_weight }}{% else %}{% endif %}" placeholder="0.000">
+                                                                       value="{% if edit_process %}{{ edit_process.output_unit_weight }}{% else %}{% endif %}" placeholder="0.000" oninput="calculateScrapFromWeightDifference(this)">
                                                                 <select class="form-select output-weight-uom" name="processes[0][output_weight_uom]" style="max-width: 80px;">
                                                                     <option value="kg" selected>kg</option>
                                                                     <option value="g">g</option>
@@ -351,9 +351,88 @@ function handleMaterialSourceChange(selectElement) {
         if (inputWeightUomField) {
             inputWeightUomField.value = 'kg';
         }
+        
+        // Trigger scrap calculation
+        calculateScrapFromWeightDifference(inputWeightField);
     } else {
         // Clear the input weight field for other selections
         inputWeightField.value = '';
+    }
+}
+
+// Function to convert weight to kg based on UOM
+function convertWeightToKg(weight, uom) {
+    if (!weight || !uom) return 0;
+    
+    const conversions = {
+        'kg': 1,
+        'g': 0.001,
+        'lbs': 0.453592,
+        'oz': 0.0283495,
+        'ton': 1000
+    };
+    
+    return weight * (conversions[uom] || 1);
+}
+
+// Function to calculate scrap weight and percentage from input/output difference
+function calculateScrapFromWeightDifference(changedElement) {
+    const processDiv = changedElement.closest('.card-body') || changedElement.closest('.process-item') || changedElement.closest('.card');
+    if (!processDiv) return;
+    
+    // Get all the required fields
+    const outputQtyField = processDiv.querySelector('.output-quantity');
+    const inputUnitWeightField = processDiv.querySelector('.input-unit-weight');
+    const outputUnitWeightField = processDiv.querySelector('.output-unit-weight');
+    const inputWeightUomField = processDiv.querySelector('.input-weight-uom');
+    const outputWeightUomField = processDiv.querySelector('.output-weight-uom');
+    const scrapWeightField = processDiv.querySelector('.scrap-weight-input');
+    const scrapPercentField = processDiv.querySelector('.scrap-percent-input');
+    
+    // Get values
+    const inputQty = 1; // Since we removed the input qty field, assume 1 unit
+    const outputQty = parseFloat(outputQtyField?.value) || 0;
+    const inputUnitWeightRaw = parseFloat(inputUnitWeightField?.value) || 0;
+    const outputUnitWeightRaw = parseFloat(outputUnitWeightField?.value) || 0;
+    const inputWeightUom = inputWeightUomField?.value || 'kg';
+    const outputWeightUom = outputWeightUomField?.value || 'kg';
+    
+    // Convert weights to kg for calculation
+    const inputUnitWeight = convertWeightToKg(inputUnitWeightRaw, inputWeightUom);
+    const outputUnitWeight = convertWeightToKg(outputUnitWeightRaw, outputWeightUom);
+    
+    // Only calculate if we have meaningful values
+    if (inputUnitWeight > 0 && outputQty > 0 && outputUnitWeight > 0) {
+        // Calculate total input weight and total output weight
+        const totalInputWeight = inputQty * inputUnitWeight;
+        const totalOutputWeight = outputQty * outputUnitWeight;
+        
+        // Calculate scrap weight (difference)
+        const scrapWeight = totalInputWeight - totalOutputWeight;
+        
+        if (scrapWeight >= 0) { // Allow zero scrap
+            // Calculate scrap weight per unit (divide by input quantity)
+            const scrapWeightPerUnit = inputQty > 0 ? scrapWeight / inputQty : 0;
+            
+            // Calculate scrap percentage
+            const scrapPercentage = totalInputWeight > 0 ? (scrapWeight / totalInputWeight) * 100 : 0;
+            
+            // Update the scrap weight field
+            if (scrapWeightField) {
+                scrapWeightField.value = scrapWeightPerUnit.toFixed(3);
+                scrapWeightField.style.backgroundColor = scrapPercentage > 50 ? '#fff3cd' : '#e8f5e8';
+                scrapWeightField.title = `Auto-calculated: Total scrap ${scrapWeight.toFixed(3)} kg ÷ ${inputQty} units = ${scrapWeightPerUnit.toFixed(3)} kg per unit`;
+            }
+            
+            // Update the scrap percentage field  
+            if (scrapPercentField) {
+                scrapPercentField.value = scrapPercentage.toFixed(2);
+                scrapPercentField.style.backgroundColor = scrapPercentage > 50 ? '#fff3cd' : '#e8f5e8';
+                scrapPercentField.title = `Auto-calculated: ${scrapWeight.toFixed(3)} kg scrap ÷ ${totalInputWeight.toFixed(3)} kg input × 100 = ${scrapPercentage.toFixed(2)}%`;
+            }
+            
+            console.log(`✅ Scrap Calculation: ${inputUnitWeightRaw}${inputWeightUom} - (${outputQty} × ${outputUnitWeightRaw}${outputWeightUom}) = ${scrapWeight.toFixed(3)}kg scrap (${scrapPercentage.toFixed(2)}%)`);
+        }
     }
 }
 </script>
