@@ -218,7 +218,6 @@ class MachineExpense(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     
     # Relationships
-    document = db.relationship('Document', backref='machine_expense_records')
     creator = db.relationship('User', backref='machine_expenses_created')
     
     def __repr__(self):

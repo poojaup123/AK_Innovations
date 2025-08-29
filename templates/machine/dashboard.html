@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}Machine Management Dashboard - AK Innovations{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="fas fa-industry text-warning"></i>
+        Machine Management Dashboard
+    </h1>
+    <p class="page-subtitle">Real-time machine costing and performance monitoring</p>
+</div>
+
+<div class="row">
+    <!-- Machine Summary Stats -->
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <h5><i class="fas fa-cogs"></i> Total Machines</h5>
+                    <h3>{{ dashboard_data.get('total_machines', 0) }}</h3>
+                </div>
+                <div class="text-end">
+                    <small>Active: {{ dashboard_data.get('active_machines', 0) }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="stat-card success">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <h5><i class="fas fa-play-circle"></i> Running Now</h5>
+                    <h3>{{ dashboard_data.get('running_machines', 0) }}</h3>
+                </div>
+                <div class="text-end">
+                    <small>Operations</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="stat-card info">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <h5><i class="fas fa-rupee-sign"></i> Avg Cost/Hour</h5>
+                    <h3>₹{{ "%.0f"|format(dashboard_data.get('avg_hourly_cost', 0)) }}</h3>
+                </div>
+                <div class="text-end">
+                    <small>Real-time</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="stat-card warning">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <h5><i class="fas fa-calendar-day"></i> Today's Usage</h5>
+                    <h3>{{ "%.1f"|format(dashboard_data.get('today_hours', 0)) }}h</h3>
+                </div>
+                <div class="text-end">
+                    <small>Machine Hours</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Real-time Machine Costs -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-chart-line"></i> Real-Time Machine Costs</h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="refreshCosts()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div class="card-body">
+                {% if real_time_costs %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Machine</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Current Cost/Hour</th>
+                                <th>Base Rate</th>
+                                <th>Efficiency</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for machine_cost in real_time_costs %}
+                            <tr>
+                                <td>
+                                    <strong>{{ machine_cost.machine_code }}</strong><br>
+                                    <small class="text-muted">{{ machine_cost.machine_name }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ machine_cost.machine_type }}</span>
+                                </td>
+                                <td>
+                                    {% if machine_cost.is_running %}
+                                    <span class="badge bg-success">Running</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Idle</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong class="text-primary">₹{{ "%.2f"|format(machine_cost.current_hourly_cost) }}</strong>
+                                </td>
+                                <td>₹{{ "%.2f"|format(machine_cost.base_hourly_rate) }}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ machine_cost.efficiency_rating }}%"
+                                             aria-valuenow="{{ machine_cost.efficiency_rating }}" 
+                                             aria-valuemin="0" aria-valuemax="100">
+                                            {{ "%.0f"|format(machine_cost.efficiency_rating) }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('machine.machine_detail', machine_id=machine_cost.machine_id) }}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('machine.machine_analytics', machine_id=machine_cost.machine_id) }}" 
+                                           class="btn btn-outline-info btn-sm">
+                                            <i class="fas fa-chart-bar"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                    <h5>No machines configured yet</h5>
+                    <p class="text-muted">Start by adding your first machine to begin tracking costs.</p>
+                    <a href="{{ url_for('machine.create_machine') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Machine
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('machine.create_machine') }}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Add New Machine
+                    </a>
+                    
+                    <a href="{{ url_for('machine.machine_list') }}" class="btn btn-primary">
+                        <i class="fas fa-list"></i> View All Machines
+                    </a>
+                    
+                    <button class="btn btn-warning" onclick="showUtilityBillModal()">
+                        <i class="fas fa-file-invoice-dollar"></i> Process Utility Bill
+                    </button>
+                    
+                    <a href="{{ url_for('machine.sync_all_boms') }}" class="btn btn-info" 
+                       onclick="return confirm('This will update all BOM costs with current machine rates. Continue?')">
+                        <i class="fas fa-sync"></i> Sync All BOMs
+                    </a>
+                </div>
+
+                <hr>
+                
+                <h6><i class="fas fa-info-circle"></i> System Info</h6>
+                <small class="text-muted">
+                    <div class="mb-2">
+                        <strong>Cost Range:</strong> ₹45-65/hour<br>
+                        <strong>Update Frequency:</strong> Real-time<br>
+                        <strong>Integration:</strong> BOM, Production, Utility Bills
+                    </div>
+                </small>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6><i class="fas fa-clock"></i> Recent Activity</h6>
+            </div>
+            <div class="card-body">
+                {% if dashboard_data.get('recent_operations') %}
+                <div class="timeline">
+                    {% for operation in dashboard_data.get('recent_operations', [])[:5] %}
+                    <div class="timeline-item">
+                        <small class="text-muted">{{ operation.timestamp.strftime('%H:%M') }}</small>
+                        <div class="fw-bold">{{ operation.machine_code }}</div>
+                        <small>{{ operation.operation_type }} - ₹{{ "%.2f"|format(operation.cost) }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-calendar-times fa-2x mb-2"></i><br>
+                    No recent activity
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Utility Bill Processing Modal -->
+<div class="modal fade" id="utilityBillModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-invoice-dollar"></i> Process Utility Bill
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('machine.process_utility_bill') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Utility Type</label>
+                                <select class="form-select" name="utility_type" required>
+                                    <option value="">Select Type</option>
+                                    <option value="electricity">Electricity</option>
+                                    <option value="water">Water</option>
+                                    <option value="gas">Gas</option>
+                                    <option value="compressed_air">Compressed Air</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Total Amount (₹)</label>
+                                <input type="number" class="form-control" name="total_amount" 
+                                       step="0.01" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Billing Start Date</label>
+                                <input type="date" class="form-control" name="billing_start_date" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Billing End Date</label>
+                                <input type="date" class="form-control" name="billing_end_date" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Units Consumed</label>
+                                <input type="number" class="form-control" name="units_consumed" step="0.01">
+                                <div class="form-text">Optional - for per-unit calculations</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Bill Reference</label>
+                                <input type="text" class="form-control" name="bill_reference">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-calculator"></i> Process & Allocate
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshCosts() {
+    // Add loading indicator
+    const button = document.querySelector('button[onclick="refreshCosts()"]');
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+    button.disabled = true;
+    
+    // Simulate refresh (in real implementation, this would be an AJAX call)
+    setTimeout(() => {
+        location.reload();
+    }, 1000);
+}
+
+function showUtilityBillModal() {
+    const modal = new bootstrap.Modal(document.getElementById('utilityBillModal'));
+    modal.show();
+}
+
+// Auto-refresh costs every 5 minutes
+setInterval(() => {
+    refreshCosts();
+}, 300000);
+</script>
+
+{% endblock %}

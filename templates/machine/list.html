@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Machine List - AK Innovations{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="fas fa-industry text-warning"></i>
+        Machine List
+    </h1>
+    <p class="page-subtitle">Manage your manufacturing machines</p>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list"></i> All Machines</h5>
+                <a href="{{ url_for('machine.create_machine') }}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Add Machine
+                </a>
+            </div>
+            <div class="card-body">
+                {% if machines %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Hourly Rate</th>
+                                <th>Power Consumption</th>
+                                <th>Efficiency</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for machine in machines %}
+                            <tr>
+                                <td><strong>{{ machine.machine_code }}</strong></td>
+                                <td>{{ machine.name }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ machine.machine_type or 'General' }}</span>
+                                </td>
+                                <td>₹{{ "%.2f"|format(machine.hourly_rate) }}</td>
+                                <td>{{ machine.power_consumption_kw }}kW</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {{ machine.efficiency_rating }}%"
+                                             aria-valuenow="{{ machine.efficiency_rating }}" 
+                                             aria-valuemin="0" aria-valuemax="100">
+                                            {{ "%.0f"|format(machine.efficiency_rating) }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if machine.status == 'active' %}
+                                    <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('machine.machine_detail', machine_id=machine.id) }}" 
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <a href="{{ url_for('machine.machine_analytics', machine_id=machine.id) }}" 
+                                           class="btn btn-outline-info btn-sm">
+                                            <i class="fas fa-chart-bar"></i> Analytics
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-cogs fa-4x text-muted mb-3"></i>
+                    <h4>No Machines Found</h4>
+                    <p class="text-muted">Start by adding your first machine to begin tracking costs and performance.</p>
+                    <a href="{{ url_for('machine.create_machine') }}" class="btn btn-success btn-lg">
+                        <i class="fas fa-plus"></i> Add Your First Machine
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

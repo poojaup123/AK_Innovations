@@ -11,6 +11,9 @@ from .uom import UnitOfMeasure, UOMConversion, ItemUOMConversion, UOMConversionL
 # Import Machine models
 from .machine import Machine, MachineOperator, MachineExpense, OperatorMachineTime, MachineCostAnalysis
 
+# Import Document models
+from .document import Document
+
 # Import permission models
 from .permissions import Permission, UserPermission
 
