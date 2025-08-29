@@ -905,8 +905,8 @@
                                 <!-- Quick Add Button -->
                                 <div class="col-12 mt-2">
                                     <div class="d-flex justify-content-center">
-                                        <button type="button" class="btn btn-outline-primary btn-sm" id="quickAddRowBtn" 
-                                                onclick="addQuickRow()" title="Quick add another row">
+                                        <button type="button" class="btn btn-outline-primary btn-sm add-quick-row-btn" id="quickAddRowBtn" 
+                                                title="Quick add another row">
                                             <i class="fas fa-plus-circle"></i> Add Another Component
                                         </button>
                                     </div>
@@ -924,7 +924,7 @@
                             <thead class="table-dark sticky-top">
                                 <tr>
                                     <th style="width: 3%">
-                                        <button class="btn btn-sm btn-outline-light" onclick="toggleAllRows()" title="Expand/Collapse All">
+                                        <button class="btn btn-sm btn-outline-light toggle-all-rows-btn" title="Expand/Collapse All">
                                             <i class="fas fa-compress-alt" id="toggleAllIcon"></i>
                                         </button>
                                     </th>
@@ -1039,21 +1039,20 @@
                                                 </button>
                                             {% endif %}
                                             
-                                            <button class="btn btn-outline-primary btn-edit" 
-                                                    onclick="enableInlineEdit(this)" title="Edit inline">
+                                            <button class="btn btn-outline-primary btn-edit enable-inline-edit-btn" 
+                                                    title="Edit inline">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <button class="btn btn-outline-success btn-save" 
-                                                    onclick="saveInlineEdit(this)" title="Save changes" style="display: none;">
+                                                    class="save-inline-edit-btn" title="Save changes" style="display: none;">
                                                 <i class="fas fa-save"></i>
                                             </button>
                                             <button class="btn btn-outline-secondary btn-cancel" 
-                                                    onclick="cancelInlineEdit(this)" title="Cancel edit" style="display: none;">
+                                                    class="cancel-inline-edit-btn" title="Cancel edit" style="display: none;">
                                                 <i class="fas fa-times"></i>
                                             </button>
                                             <a href="{{ url_for('production.delete_bom_item', id=bom_item.id) }}" 
-                                               class="btn btn-outline-danger"
-                                               onclick="return confirm('Remove this component?')"
+                                               class="btn btn-outline-danger delete-component-btn"
                                                title="Remove">
                                                 <i class="fas fa-trash"></i>
                                             </a>
@@ -1392,7 +1391,7 @@
                                 <i class="fas fa-plus"></i> {{ 'Add Process' if not bom.processes else 'Add Another Process' }}
                             </a>
                             {% if bom.processes %}
-                            <button type="button" class="btn btn-outline-success me-2" onclick="syncBOMFromProcesses()">
+                            <button type="button" class="btn btn-outline-success me-2 sync-bom-processes-btn">
                                 <i class="fas fa-sync"></i> Sync from Processes
                             </button>
                             {% endif %}
@@ -1781,13 +1780,13 @@
 
                     <div class="mt-3">
                         <div class="btn-group">
-                            <button class="btn btn-outline-primary" onclick="expandAllTreeNodes()">
+                            <button class="btn btn-outline-primary expand-all-tree-btn">
                                 <i class="fas fa-expand-arrows-alt"></i> Expand All
                             </button>
-                            <button class="btn btn-outline-secondary" onclick="collapseAllTreeNodes()">
+                            <button class="btn btn-outline-secondary collapse-all-tree-btn">
                                 <i class="fas fa-compress-arrows-alt"></i> Collapse All
                             </button>
-                            <button class="btn btn-outline-info" onclick="printTreeView()">
+                            <button class="btn btn-outline-info print-tree-view-btn">
                                 <i class="fas fa-print"></i> Print Tree
                             </button>
                         </div>
@@ -2076,6 +2075,50 @@ document.addEventListener('DOMContentLoaded', function() {
             const bomItemId = btn.dataset.bomItemId;
             const subBomId = btn.dataset.subBomId;
             refreshSubBOM(bomItemId, subBomId);
+        }
+        
+        // Handle all other button clicks
+        if (e.target.closest('.add-quick-row-btn')) {
+            addQuickRow();
+        }
+        
+        if (e.target.closest('.toggle-all-rows-btn')) {
+            toggleAllRows();
+        }
+        
+        if (e.target.closest('.enable-inline-edit-btn')) {
+            enableInlineEdit(e.target.closest('.enable-inline-edit-btn'));
+        }
+        
+        if (e.target.closest('.save-inline-edit-btn')) {
+            saveInlineEdit(e.target.closest('.save-inline-edit-btn'));
+        }
+        
+        if (e.target.closest('.cancel-inline-edit-btn')) {
+            cancelInlineEdit(e.target.closest('.cancel-inline-edit-btn'));
+        }
+        
+        if (e.target.closest('.delete-component-btn')) {
+            if (!confirm('Remove this component?')) {
+                e.preventDefault();
+                return false;
+            }
+        }
+        
+        if (e.target.closest('.sync-bom-processes-btn')) {
+            syncBOMFromProcesses();
+        }
+        
+        if (e.target.closest('.expand-all-tree-btn')) {
+            expandAllTreeNodes();
+        }
+        
+        if (e.target.closest('.collapse-all-tree-btn')) {
+            collapseAllTreeNodes();
+        }
+        
+        if (e.target.closest('.print-tree-view-btn')) {
+            printTreeView();
         }
     });
 });
