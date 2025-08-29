@@ -153,11 +153,11 @@
                                                                        value="{% if edit_process %}{{ edit_process.input_unit_weight if edit_process.input_unit_weight else '' }}{% else %}{% endif %}" 
                                                                        placeholder="0.000" readonly oninput="calculateScrapFromWeightDifference(this)">
                                                                 <select class="form-select input-weight-uom" name="processes[0][input_weight_uom]" style="max-width: 80px;">
-                                                                    <option value="kg" selected>kg</option>
-                                                                    <option value="g">g</option>
-                                                                    <option value="lbs">lbs</option>
-                                                                    <option value="oz">oz</option>
-                                                                    <option value="ton">ton</option>
+                                                                    <option value="kg" {% if edit_process and edit_process.input_weight_uom == 'kg' %}selected{% elif not edit_process %}selected{% endif %}>kg</option>
+                                                                    <option value="g" {% if edit_process and edit_process.input_weight_uom == 'g' %}selected{% endif %}>g</option>
+                                                                    <option value="lbs" {% if edit_process and edit_process.input_weight_uom == 'lbs' %}selected{% endif %}>lbs</option>
+                                                                    <option value="oz" {% if edit_process and edit_process.input_weight_uom == 'oz' %}selected{% endif %}>oz</option>
+                                                                    <option value="ton" {% if edit_process and edit_process.input_weight_uom == 'ton' %}selected{% endif %}>ton</option>
                                                                 </select>
                                                             </div>
                                                             <small class="text-muted">Weight per input unit</small>
@@ -192,11 +192,11 @@
                                                                        name="processes[0][output_unit_weight]" 
                                                                        value="{% if edit_process %}{{ edit_process.output_unit_weight }}{% else %}{% endif %}" placeholder="0.000" oninput="calculateScrapFromWeightDifference(this)">
                                                                 <select class="form-select output-weight-uom" name="processes[0][output_weight_uom]" style="max-width: 80px;">
-                                                                    <option value="kg" selected>kg</option>
-                                                                    <option value="g">g</option>
-                                                                    <option value="lbs">lbs</option>
-                                                                    <option value="oz">oz</option>
-                                                                    <option value="ton">ton</option>
+                                                                    <option value="kg" {% if edit_process and edit_process.output_weight_uom == 'kg' %}selected{% elif not edit_process %}selected{% endif %}>kg</option>
+                                                                    <option value="g" {% if edit_process and edit_process.output_weight_uom == 'g' %}selected{% endif %}>g</option>
+                                                                    <option value="lbs" {% if edit_process and edit_process.output_weight_uom == 'lbs' %}selected{% endif %}>lbs</option>
+                                                                    <option value="oz" {% if edit_process and edit_process.output_weight_uom == 'oz' %}selected{% endif %}>oz</option>
+                                                                    <option value="ton" {% if edit_process and edit_process.output_weight_uom == 'ton' %}selected{% endif %}>ton</option>
                                                                 </select>
                                                             </div>
                                                             <small class="text-muted">Weight per output unit</small>
@@ -212,11 +212,11 @@
                                                                 <input type="number" step="any" class="form-control scrap-weight-input" 
                                                                        name="processes[0][scrap_weight_per_unit]" value="{{ edit_process.scrap_weight_per_unit if edit_process else '' }}" placeholder="0.000">
                                                                 <select class="form-select scrap-weight-uom" name="processes[0][scrap_weight_uom]" style="max-width: 80px;">
-                                                                    <option value="kg" selected>kg</option>
-                                                                    <option value="g">g</option>
-                                                                    <option value="lbs">lbs</option>
-                                                                    <option value="oz">oz</option>
-                                                                    <option value="ton">ton</option>
+                                                                    <option value="kg" {% if edit_process and edit_process.scrap_weight_uom == 'kg' %}selected{% elif not edit_process %}selected{% endif %}>kg</option>
+                                                                    <option value="g" {% if edit_process and edit_process.scrap_weight_uom == 'g' %}selected{% endif %}>g</option>
+                                                                    <option value="lbs" {% if edit_process and edit_process.scrap_weight_uom == 'lbs' %}selected{% endif %}>lbs</option>
+                                                                    <option value="oz" {% if edit_process and edit_process.scrap_weight_uom == 'oz' %}selected{% endif %}>oz</option>
+                                                                    <option value="ton" {% if edit_process and edit_process.scrap_weight_uom == 'ton' %}selected{% endif %}>ton</option>
                                                                 </select>
                                                             </div>
                                                             <small class="text-muted">Weight per unit</small>
