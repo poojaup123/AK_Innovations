@@ -945,7 +945,7 @@
                                 <tr data-item-id="{{ bom_item.id }}" class="main-component-row">
                                     <td>
                                         <button class="btn btn-sm btn-outline-secondary expand-toggle" 
-                                                onclick="toggleComponentDetails('{{ bom_item.id }}')" 
+                                                data-bom-item-id="{{ bom_item.id }}" class="toggle-details-btn" 
                                                 title="Expand/Collapse Details">
                                             <i class="fas fa-chevron-right" id="toggle-{{ bom_item.id }}"></i>
                                         </button>
@@ -1027,13 +1027,13 @@
                                             {% set item_bom = bom_item.item.active_bom %}
                                             {% if item_bom %}
                                                 <button class="btn btn-outline-info btn-sub-bom" 
-                                                        onclick="toggleSubBOM('{{ bom_item.id }}', '{{ item_bom.id }}')" 
+                                                        data-bom-item-id="{{ bom_item.id }}" data-sub-bom-id="{{ item_bom.id }}" class="toggle-sub-bom-btn" 
                                                         title="View/Edit Sub-BOM">
                                                     <i class="fas fa-sitemap"></i>
                                                 </button>
                                             {% else %}
                                                 <button class="btn btn-outline-secondary btn-create-bom" 
-                                                        onclick="createSubBOM('{{ bom_item.id }}', '{{ bom_item.item.id }}')" 
+                                                        data-bom-item-id="{{ bom_item.id }}" data-item-id="{{ bom_item.item.id }}" class="create-sub-bom-btn" 
                                                         title="Create Sub-BOM for this component">
                                                     <i class="fas fa-plus-square"></i>
                                                 </button>
@@ -1126,7 +1126,7 @@
                                                             <i class="fas fa-external-link-alt"></i> Edit
                                                         </a>
                                                         <button class="btn btn-sm btn-outline-dark" 
-                                                                onclick="refreshSubBOM('{{ bom_item.id }}', '{{ item_bom.id }}')" 
+                                                                data-bom-item-id="{{ bom_item.id }}" data-sub-bom-id="{{ item_bom.id }}" class="refresh-sub-bom-btn" 
                                                                 title="Refresh sub-BOM data">
                                                             <i class="fas fa-sync-alt"></i>
                                                         </button>
@@ -2048,6 +2048,36 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Add event listeners for BOM component buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.toggle-details-btn')) {
+            const btn = e.target.closest('.toggle-details-btn');
+            const bomItemId = btn.dataset.bomItemId;
+            toggleComponentDetails(bomItemId);
+        }
+        
+        if (e.target.closest('.toggle-sub-bom-btn')) {
+            const btn = e.target.closest('.toggle-sub-bom-btn');
+            const bomItemId = btn.dataset.bomItemId;
+            const subBomId = btn.dataset.subBomId;
+            toggleSubBOM(bomItemId, subBomId);
+        }
+        
+        if (e.target.closest('.create-sub-bom-btn')) {
+            const btn = e.target.closest('.create-sub-bom-btn');
+            const bomItemId = btn.dataset.bomItemId;
+            const itemId = btn.dataset.itemId;
+            createSubBOM(bomItemId, itemId);
+        }
+        
+        if (e.target.closest('.refresh-sub-bom-btn')) {
+            const btn = e.target.closest('.refresh-sub-bom-btn');
+            const bomItemId = btn.dataset.bomItemId;
+            const subBomId = btn.dataset.subBomId;
+            refreshSubBOM(bomItemId, subBomId);
+        }
+    });
 });
 
 function toggleInlineEdit(row, itemId) {
