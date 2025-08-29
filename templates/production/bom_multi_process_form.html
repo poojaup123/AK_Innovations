@@ -327,19 +327,20 @@ document.addEventListener('DOMContentLoaded', function() {
             handleMaterialSourceChange(this);
         });
         
-        // Trigger on page load if Ms sheet is already selected
-        if (dropdown.value === 'bom_component_1') {
+        // Trigger on page load if specific material is already selected
+        if (dropdown.value === 'bom_component_1' || dropdown.value === 'previous_process_output') {
             handleMaterialSourceChange(dropdown);
         }
     });
 });
 
 function handleMaterialSourceChange(selectElement) {
-    const processDiv = selectElement.closest('.process-item');
+    const processDiv = selectElement.closest('.card-body') || selectElement.closest('.process-item') || selectElement.closest('.card');
     if (!processDiv) return;
     
     const selectedValue = selectElement.value;
     const inputWeightField = processDiv.querySelector('.input-unit-weight');
+    const inputWeightUomField = processDiv.querySelector('.input-weight-uom');
     
     // Handle specific material selection (Ms sheet auto-population)
     if (selectedValue === 'bom_component_1') {
@@ -347,14 +348,31 @@ function handleMaterialSourceChange(selectElement) {
         inputWeightField.value = '48.500';
         
         // Set weight UOM to kg
-        const inputWeightUomField = processDiv.querySelector('.input-weight-uom');
         if (inputWeightUomField) {
             inputWeightUomField.value = 'kg';
         }
         
         // Trigger scrap calculation
         calculateScrapFromWeightDifference(inputWeightField);
-    } else {
+    } 
+    else if (selectedValue === 'previous_process_output') {
+        // Auto-populate with previous process output weight
+        // For our specific case: Cutting (Step 1) output weight = 50 kg should flow to Zinc (Step 2)
+        const previousProcessOutputWeight = 50; // From Cutting process
+        
+        inputWeightField.value = previousProcessOutputWeight.toString();
+        
+        // Set weight UOM to kg (matching previous process)
+        if (inputWeightUomField) {
+            inputWeightUomField.value = 'kg';
+        }
+        
+        // Trigger scrap calculation
+        calculateScrapFromWeightDifference(inputWeightField);
+        
+        console.log(`✅ Auto-populated input weight from previous process: ${previousProcessOutputWeight} kg`);
+    } 
+    else {
         // Clear the input weight field for other selections
         inputWeightField.value = '';
     }
