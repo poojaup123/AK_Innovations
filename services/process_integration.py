@@ -172,23 +172,19 @@ class ProcessIntegrationService:
             return False
         
         try:
-            # Calculate final unit cost exactly like BOM interface does
-            # Total cost divided by output quantity to get cost per individual unit
+            # Sync only material costs to match BOM interface exactly (₹6.77)
+            # Exclude labor costs from sync as per user preference
             
-            # Get total costs (for entire batch)
-            total_material_cost = bom.total_material_cost  # Total for all units
-            total_labor_cost = bom.labor_cost_per_unit or 0  # Already per unit
-            total_overhead_cost = bom.overhead_cost_per_unit or 0  # Already per unit
             output_qty = bom.output_quantity or 1.0
+            total_material_cost = bom.total_material_cost  # Total for all units
             
-            # Calculate cost per individual unit (like BOM interface shows)
-            material_cost_per_unit = total_material_cost / output_qty  # Divide material by quantity
-            # Labor and overhead are already per unit, don't divide again
+            # Calculate material cost per individual unit (like BOM interface shows)
+            material_cost_per_unit = total_material_cost / output_qty
             
-            # Final unit cost = Material per unit + Labor per unit + Overhead per unit
-            total_cost_per_unit = material_cost_per_unit + total_labor_cost + total_overhead_cost
+            # Use only material costs (no labor, no overhead)
+            total_cost_per_unit = material_cost_per_unit
             
-            # Apply markup if specified
+            # Apply markup if specified (only on material costs)
             if bom.markup_percentage and bom.markup_percentage > 0:
                 markup_amount = total_cost_per_unit * (bom.markup_percentage / 100)
                 total_cost_per_unit += markup_amount
@@ -203,13 +199,13 @@ class ProcessIntegrationService:
                     new_price=total_cost_per_unit,
                     price_type='standard',
                     effective_date=datetime.now().date(),
-                    source='BOM Final Unit Cost Sync',
+                    source='BOM Material Cost Sync',
                     source_reference=f'BOM-{bom.bom_code}',
-                    notes=f'Direct sync from BOM Final Unit Cost: ₹{total_cost_per_unit:.2f}',
+                    notes=f'Material cost only (matching BOM interface): ₹{material_cost_per_unit:.2f} | Output Qty: {output_qty}',
                     user_id=1  # System user
                 )
                 
-                print(f"✅ Synced {finished_item.name}: ₹{old_price:.2f} → ₹{total_cost_per_unit:.2f} (BOM Final Cost)")
+                print(f"✅ Synced {finished_item.name}: ₹{old_price:.2f} → ₹{total_cost_per_unit:.2f} (Material Cost Only)")
                 return True
             else:
                 print(f"⚠️ Skipped {finished_item.name}: Total cost is zero")
