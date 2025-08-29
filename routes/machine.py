@@ -431,7 +431,7 @@ def api_utility_summary():
         })
 
 
-@machine_bp.route('/sync_all_boms', methods=['POST'])
+@machine_bp.route('/sync_all_boms', methods=['GET', 'POST'])
 @login_required
 def sync_all_boms():
     """Sync all BOMs with current machine costs"""

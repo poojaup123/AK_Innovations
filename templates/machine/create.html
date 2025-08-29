@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Add Machine - AK Innovations{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="fas fa-plus text-success"></i>
+        Add New Machine
+    </h1>
+    <p class="page-subtitle">Configure a new manufacturing machine</p>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-cogs"></i> Machine Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('machine.create_machine') }}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Machine Code *</label>
+                                <input type="text" class="form-control" name="machine_code" 
+                                       placeholder="e.g., CNC-001, LATHE-01" required>
+                                <div class="form-text">Unique identifier for the machine</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Machine Name *</label>
+                                <input type="text" class="form-control" name="name" 
+                                       placeholder="e.g., CNC Milling Machine" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Machine Type</label>
+                                <select class="form-select" name="machine_type">
+                                    <option value="">Select Type</option>
+                                    <option value="CNC">CNC Machine</option>
+                                    <option value="Lathe">Lathe</option>
+                                    <option value="Milling">Milling Machine</option>
+                                    <option value="Drilling">Drilling Machine</option>
+                                    <option value="Grinding">Grinding Machine</option>
+                                    <option value="Welding">Welding Machine</option>
+                                    <option value="Press">Press Machine</option>
+                                    <option value="Cutting">Cutting Machine</option>
+                                    <option value="Assembly">Assembly Station</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Location</label>
+                                <input type="text" class="form-control" name="location" 
+                                       placeholder="e.g., Production Floor A" value="Production Floor">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Base Hourly Rate (₹) *</label>
+                                <input type="number" class="form-control" name="hourly_rate" 
+                                       step="0.01" min="0" value="50" required>
+                                <div class="form-text">Base cost per hour (before adjustments)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Power Consumption (kW)</label>
+                                <input type="number" class="form-control" name="power_consumption_kw" 
+                                       step="0.1" min="0" value="5">
+                                <div class="form-text">Used for utility cost allocation</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Efficiency Rating (%)</label>
+                                <input type="number" class="form-control" name="efficiency_rating" 
+                                       min="0" max="150" value="100">
+                                <div class="form-text">Machine performance factor (100% = normal)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('machine.machine_list') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Create Machine
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="fas fa-info-circle"></i> Cost Calculation Info</h6>
+            </div>
+            <div class="card-body">
+                <h6>Real-Time Costing Formula:</h6>
+                <div class="small text-muted mb-3">
+                    <strong>Effective Rate = </strong><br>
+                    Base Rate + Utility Cost/Hour + Maintenance/Hour + Operator Salary/Hour × Efficiency Factor
+                </div>
+
+                <h6>Features:</h6>
+                <ul class="small text-muted">
+                    <li>Automatic utility bill allocation</li>
+                    <li>Operator efficiency tracking</li>
+                    <li>Maintenance cost integration</li>
+                    <li>BOM process cost synchronization</li>
+                    <li>Performance analytics</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
