@@ -152,10 +152,17 @@
                             </div>
                         </div>
                         
+                        <!-- Store form field IDs in data attributes to avoid template syntax in JS -->
+                        <div id="formConfig" 
+                             data-uom-select-id="{{ form.unit_of_measure.id }}" 
+                             style="display: none;"></div>
+                        
                         <script>
                         // Enhanced weight management with kg/g conversion
                         document.addEventListener('DOMContentLoaded', function() {
-                            const uomSelect = document.getElementById('{{ form.unit_of_measure.id }}');
+                            const formConfig = document.getElementById('formConfig');
+                            const uomSelectId = formConfig.dataset.uomSelectId;
+                            const uomSelect = document.getElementById(uomSelectId);
                             const weightField = document.getElementById('unit_weight_field');
                             const weightUnitSelect = document.getElementById('weight_unit_select');
                             const weightHelpText = document.getElementById('weight_help_text');
@@ -175,9 +182,12 @@
                             
                             // Update help text based on UOM and weight unit
                             function updateWeightLabel() {
+                                if (!uomSelect || uomSelect.selectedIndex < 0 || !uomSelect.options[uomSelect.selectedIndex]) {
+                                    return;
+                                }
                                 const selectedOption = uomSelect.options[uomSelect.selectedIndex];
                                 const uomText = selectedOption.text;
-                                const weightUnit = weightUnitSelect.value;
+                                const weightUnit = weightUnitSelect?.value || 'kg';
                                 
                                 let contextText = '';
                                 if (uomText.includes('Pieces') || uomText.includes('Numbers')) {
@@ -216,7 +226,12 @@
                                 updateWeightLabel();
                             }
                             
-                            // Initialize
+                            // Initialize only if all required elements exist
+                            if (!uomSelect || !weightField || !weightUnitSelect || !weightHelpText || !weightInKgField) {
+                                console.warn('Some form elements not found for weight management');
+                                return;
+                            }
+                            
                             const currentWeight = parseFloat(weightField.value) || 0;
                             if (currentWeight > 0 && currentWeight < 1) {
                                 // If weight is less than 1kg, default to grams

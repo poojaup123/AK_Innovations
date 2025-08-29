@@ -19,7 +19,7 @@ function createPreviewFunction(formConfig) {
         for (const [key, config] of Object.entries(formConfig.fields)) {
             if (config.type === 'select') {
                 const select = form.querySelector(`select[name="${key}"]`);
-                if (select && select.selectedIndex >= 0) {
+                if (select && select.selectedIndex >= 0 && select.options[select.selectedIndex]) {
                     previewData[key] = select.options[select.selectedIndex].text;
                 }
             } else {
