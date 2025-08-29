@@ -255,17 +255,19 @@ class MobileEnhancements {
         
         document.body.appendChild(fabContainer);
         
-        // FAB toggle functionality
+        // FAB toggle functionality with null checks
         const fabToggle = document.getElementById('mobileFabToggle');
         const fabMenu = document.getElementById('mobileFabMenu');
         
-        fabToggle.addEventListener('click', () => {
-            this.fabMenuOpen = !this.fabMenuOpen;
-            fabMenu.classList.toggle('show', this.fabMenuOpen);
-            fabToggle.innerHTML = this.fabMenuOpen 
-                ? '<i class="fas fa-times"></i>' 
-                : '<i class="fas fa-plus"></i>';
-        });
+        if (fabToggle && fabMenu) {
+            fabToggle.addEventListener('click', () => {
+                this.fabMenuOpen = !this.fabMenuOpen;
+                fabMenu.classList.toggle('show', this.fabMenuOpen);
+                fabToggle.innerHTML = this.fabMenuOpen 
+                    ? '<i class="fas fa-times"></i>' 
+                    : '<i class="fas fa-plus"></i>';
+            });
+        }
         
         // Close FAB menu when clicking outside
         document.addEventListener('click', (e) => {
@@ -409,10 +411,12 @@ class MobileEnhancements {
     
     showToast(toastElement) {
         const container = document.getElementById('mobileToastContainer');
-        container.appendChild(toastElement);
-        
-        const toast = new bootstrap.Toast(toastElement);
-        toast.show();
+        if (container) {
+            container.appendChild(toastElement);
+            
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+        }
         
         // Remove toast after it's hidden
         toastElement.addEventListener('hidden.bs.toast', () => {

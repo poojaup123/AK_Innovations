@@ -115,13 +115,17 @@ class SearchableDropdown {
     }
 
     bindEvents() {
-        // Input events
-        this.input.addEventListener('input', (e) => this.handleSearch(e.target.value));
-        this.input.addEventListener('focus', () => this.open());
-        this.input.addEventListener('keydown', (e) => this.handleKeydown(e));
+        // Input events with null checks
+        if (this.input) {
+            this.input.addEventListener('input', (e) => this.handleSearch(e.target.value));
+            this.input.addEventListener('focus', () => this.open());
+            this.input.addEventListener('keydown', (e) => this.handleKeydown(e));
+        }
         
-        // Button events
-        this.button.addEventListener('click', () => this.toggle());
+        // Button events with null checks
+        if (this.button) {
+            this.button.addEventListener('click', () => this.toggle());
+        }
         
         // Click outside to close
         document.addEventListener('click', (e) => {
@@ -131,11 +135,13 @@ class SearchableDropdown {
         });
         
         // Prevent form submission on Enter when dropdown is open
-        this.input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && this.isOpen) {
-                e.preventDefault();
-            }
-        });
+        if (this.input) {
+            this.input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && this.isOpen) {
+                    e.preventDefault();
+                }
+            });
+        }
     }
 
     async loadData() {
